@@ -6,11 +6,15 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from urllib.error import HTTPError, URLError
+from urllib.parse import urlencode, urlparse
+from urllib.request import Request as UrlRequest, urlopen
 from uuid import uuid4
 
 from fastapi import FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
+from pydantic import BaseModel
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -41,6 +45,13 @@ HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 
 USER_HISTORY_LIMIT = 50
+SUPABASE_HTTP_TIMEOUT_SECONDS = 10
+EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+
+class PasswordResetRequest(BaseModel):
+    email: str
+    redirect_to: str | None = None
 
 for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -160,6 +171,98 @@ def _normalize_user_email(value: str | None) -> str:
     return str(value or "").strip()[:320]
 
 
+def _is_http_url(value: str | None) -> bool:
+    parsed = urlparse(str(value or "").strip())
+    return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
+
+
+def _supabase_auth_config() -> tuple[str, str]:
+    supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
+    service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+
+    if not supabase_url or not service_role_key:
+        raise HTTPException(status_code=503, detail="서버 Supabase 인증 설정이 누락되었습니다.")
+    if not _is_http_url(supabase_url):
+        raise HTTPException(status_code=503, detail="SUPABASE_URL 형식이 올바르지 않습니다.")
+
+    return supabase_url, service_role_key
+
+
+def _extract_supabase_error_message(raw: bytes) -> str:
+    if not raw:
+        return ""
+
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        return ""
+
+    if isinstance(payload, dict):
+        return str(
+            payload.get("msg")
+            or payload.get("error_description")
+            or payload.get("message")
+            or payload.get("error")
+            or ""
+        ).strip()
+    return ""
+
+
+def _supabase_request_json(method: str, url: str, service_role_key: str, payload: dict | None = None) -> dict:
+    body = json.dumps(payload).encode("utf-8") if payload is not None else None
+    headers = {
+        "apikey": service_role_key,
+        "Authorization": f"Bearer {service_role_key}",
+    }
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+
+    request = UrlRequest(url=url, method=method.upper(), headers=headers, data=body)
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except HTTPError as error:
+        detail = _extract_supabase_error_message(error.read())
+        if error.code in {401, 403}:
+            raise HTTPException(status_code=503, detail="서버 Supabase 관리자 키가 올바르지 않습니다.") from error
+        if error.code == 429:
+            raise HTTPException(status_code=429, detail="요청이 많습니다. 잠시 후 다시 시도해 주세요.") from error
+        raise HTTPException(status_code=502, detail=detail or "Supabase 인증 요청에 실패했습니다.") from error
+    except URLError as error:
+        raise HTTPException(status_code=502, detail="Supabase 인증 서버에 연결하지 못했습니다.") from error
+
+    if not raw:
+        return {}
+    try:
+        parsed = json.loads(raw.decode("utf-8"))
+    except Exception:
+        return {}
+    return parsed if isinstance(parsed, dict) else {}
+
+
+def _supabase_user_exists(supabase_url: str, service_role_key: str, email: str) -> bool:
+    query = urlencode({"email": email})
+    payload = _supabase_request_json("GET", f"{supabase_url}/auth/v1/admin/users?{query}", service_role_key)
+    users = payload.get("users", []) if isinstance(payload, dict) else []
+    if not isinstance(users, list):
+        return False
+
+    for user in users:
+        if not isinstance(user, dict):
+            continue
+        user_email = str(user.get("email") or "").strip().lower()
+        if user_email == email:
+            return True
+    return False
+
+
+def _send_supabase_password_reset(supabase_url: str, service_role_key: str, email: str, redirect_to: str | None) -> None:
+    url = f"{supabase_url}/auth/v1/recover"
+    if redirect_to:
+        url = f"{url}?{urlencode({'redirect_to': redirect_to})}"
+    _supabase_request_json("POST", url, service_role_key, {"email": email})
+
+
 def _request_user_identity(request: Request, *, required: bool = False) -> tuple[str, str]:
     user_id = _normalize_user_identity(request.headers.get("X-DOO-USER-ID"))
     user_email = _normalize_user_email(request.headers.get("X-DOO-USER-EMAIL"))
@@ -271,6 +374,24 @@ async def convert_kml(request: Request, file: UploadFile = File(...)):
         return _job_response(job_data, base_url)
     finally:
         temp_path.unlink(missing_ok=True)
+
+
+@app.post("/api/auth/password-reset/request")
+async def request_password_reset(payload: PasswordResetRequest):
+    email = _normalize_user_email(payload.email).lower()
+    if not email or not EMAIL_PATTERN.match(email):
+        raise HTTPException(status_code=400, detail="유효한 이메일을 입력해 주세요.")
+
+    redirect_to = str(payload.redirect_to or "").strip()
+    if redirect_to and not _is_http_url(redirect_to):
+        raise HTTPException(status_code=400, detail="redirect_to URL 형식이 올바르지 않습니다.")
+
+    supabase_url, service_role_key = _supabase_auth_config()
+    if not _supabase_user_exists(supabase_url, service_role_key, email):
+        raise HTTPException(status_code=404, detail="가입되지 않은 이메일입니다.")
+
+    _send_supabase_password_reset(supabase_url, service_role_key, email, redirect_to or None)
+    return {"ok": True}
 
 
 @app.get("/api/download/{job_id}/txt")

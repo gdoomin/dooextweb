@@ -4,6 +4,7 @@ import Link from "next/link";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { API_BASE_URL } from "@/lib/convert";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 type ResetPasswordFormProps = {
@@ -141,19 +142,23 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
     setMessage("비밀번호 재설정 메일을 보내는 중입니다.");
 
     try {
-      const supabase = createSupabaseClient();
-      if (!supabase) {
-        throw new Error("Supabase 인증 설정이 필요합니다.");
-      }
-
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo:
-          typeof window !== "undefined"
-            ? `${window.location.origin}/reset-password?next=${encodeURIComponent(safeNextPath)}`
-            : undefined,
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/reset-password?next=${encodeURIComponent(safeNextPath)}`
+          : undefined;
+      const response = await fetch(`${API_BASE_URL}/api/auth/password-reset/request`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          redirect_to: redirectTo,
+        }),
       });
-      if (error) {
-        throw error;
+      const payload = (await response.json()) as { detail?: string };
+      if (!response.ok) {
+        throw new Error(payload.detail || "비밀번호 재설정 메일 발송에 실패했습니다.");
       }
 
       setTone("success");
