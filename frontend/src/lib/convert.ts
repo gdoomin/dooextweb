@@ -83,15 +83,25 @@ export function resolveApiBaseUrl(): string {
   const configured = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
   if (configured) {
+    const configuredHost = new URL(configured).hostname;
+    const configuredOnLocalHost = isLocalHost(configuredHost);
+
+    // In production builds, never expose localhost API endpoints.
+    if (configuredOnLocalHost && process.env.NODE_ENV === "production") {
+      return PROD_API_BASE_URL;
+    }
+
     if (typeof window !== "undefined") {
       const runningOnLocalHost = isLocalHost(window.location.hostname);
-      const configuredHost = new URL(configured).hostname;
-      const configuredOnLocalHost = isLocalHost(configuredHost);
       if (!runningOnLocalHost && configuredOnLocalHost) {
         return PROD_API_BASE_URL;
       }
     }
     return configured;
+  }
+
+  if (process.env.NODE_ENV === "production") {
+    return PROD_API_BASE_URL;
   }
 
   if (typeof window !== "undefined" && !isLocalHost(window.location.hostname)) {
