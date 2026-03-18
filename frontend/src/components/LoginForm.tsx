@@ -1,6 +1,7 @@
 "use client";
 
 import { type FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
@@ -112,6 +113,17 @@ export function LoginForm({ nextPath, authAvailable = true }: LoginFormProps) {
         <button type="submit" className="auth-submit" disabled={isSubmitting}>
           {isSubmitting ? "처리 중.." : mode === "login" ? "로그인" : "회원가입"}
         </button>
+
+        {mode === "login" ? (
+          <div className="auth-link-row">
+            <Link
+              className="auth-link"
+              href={`/reset-password?next=${encodeURIComponent(nextPath)}`}
+            >
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
+        ) : null}
       </form>
 
       <div className={`auth-message auth-message-${tone}`}>{message}</div>
