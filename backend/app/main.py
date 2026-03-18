@@ -217,6 +217,14 @@ def _job_response(job: dict, base_url: str) -> dict:
     }
 
 
+def _external_base_url(request: Request) -> str:
+    forwarded_proto = str(request.headers.get("X-Forwarded-Proto") or request.url.scheme).split(",")[0].strip()
+    forwarded_host = str(request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or request.url.netloc).split(",")[0].strip()
+    if forwarded_host:
+        return f"{forwarded_proto}://{forwarded_host}"
+    return str(request.base_url).rstrip("/")
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "doo-extractor-web"}
@@ -241,7 +249,7 @@ async def convert_kml(request: Request, file: UploadFile = File(...)):
         map_payload = build_web_map_payload(results, project_name, mode, _build_map_layer_catalog())
         text_output = format_text(results, project_name, mode)
         job_id = uuid4().hex
-        base_url = str(request.base_url).rstrip("/")
+        base_url = _external_base_url(request)
         user_id, user_email = _request_user_identity(request)
 
         job_data = {
@@ -346,7 +354,7 @@ def get_history_item(job_id: str, request: Request):
     job = _load_job(job_id)
     if _normalize_user_identity(str(job.get("user_id") or "")) != user_id:
         raise HTTPException(status_code=404, detail="history item not found")
-    return JSONResponse(_job_response(job, str(request.base_url).rstrip("/")))
+    return JSONResponse(_job_response(job, _external_base_url(request)))
 
 
 @app.get("/api/assets/html2canvas.min.js")

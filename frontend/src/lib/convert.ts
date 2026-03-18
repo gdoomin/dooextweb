@@ -55,7 +55,53 @@ export type ServerHistoryItem = {
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "https://dooext-api.dooheetv.com";
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
+const PROD_API_BASE_URL = "https://dooext-api.dooheetv.com";
+
+function isLocalHost(hostname: string) {
+  return hostname === "127.0.0.1" || hostname === "localhost" || hostname === "::1";
+}
+
+function normalizeApiBaseUrl(rawValue: string | undefined): string | null {
+  const value = rawValue?.trim();
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const parsed = new URL(value);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    return parsed.toString().replace(/\/$/, "");
+  } catch {
+    return null;
+  }
+}
+
+export function resolveApiBaseUrl(): string {
+  const configured = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
+
+  if (configured) {
+    if (typeof window !== "undefined") {
+      const runningOnLocalHost = isLocalHost(window.location.hostname);
+      const configuredHost = new URL(configured).hostname;
+      const configuredOnLocalHost = isLocalHost(configuredHost);
+      if (!runningOnLocalHost && configuredOnLocalHost) {
+        return PROD_API_BASE_URL;
+      }
+    }
+    return configured;
+  }
+
+  if (typeof window !== "undefined" && !isLocalHost(window.location.hostname)) {
+    return PROD_API_BASE_URL;
+  }
+
+  return LOCAL_API_BASE_URL;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl();
 
 type ErrorLike = {
   detail?: string;
