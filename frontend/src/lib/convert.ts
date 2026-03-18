@@ -55,7 +55,7 @@ export type ServerHistoryItem = {
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8000";
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "https://dooext-api.dooheetv.com";
 
 type ErrorLike = {
   detail?: string;
