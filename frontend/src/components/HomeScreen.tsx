@@ -58,6 +58,36 @@ export function HomeScreen({
   const pathLabel = useMemo(() => response?.filename || "", [response]);
   const modeText = response ? modeLabel[response.mode] : "KML을 업로드하면 변환 결과가 표시됩니다.";
 
+  async function resolveCurrentIdentity() {
+    if (!authAvailable) {
+      return { id: "", email: "" };
+    }
+
+    const supabase = createSupabaseClient();
+    if (!supabase) {
+      return { id: userId, email: userEmail };
+    }
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const resolvedId = user?.id || "";
+      const resolvedEmail = user?.email || "";
+
+      if (resolvedId !== userId) {
+        setUserId(resolvedId);
+      }
+      if (resolvedEmail !== userEmail) {
+        setUserEmail(resolvedEmail);
+      }
+
+      return { id: resolvedId, email: resolvedEmail };
+    } catch {
+      return { id: userId, email: userEmail };
+    }
+  }
+
   useEffect(() => {
     if (!authAvailable) {
       setUserId("");
@@ -180,8 +210,8 @@ export function HomeScreen({
     }).format(date);
   }
 
-  async function refreshHistory() {
-    if (!userId) {
+  async function refreshHistory(nextUserId = userId, nextUserEmail = userEmail) {
+    if (!nextUserId) {
       setHistoryItems([]);
       setHistoryError("");
       return;
@@ -190,7 +220,7 @@ export function HomeScreen({
     setHistoryLoading(true);
     setHistoryError("");
     try {
-      const items = await fetchUserHistory(userId, userEmail);
+      const items = await fetchUserHistory(nextUserId, nextUserEmail);
       setHistoryItems(items);
     } catch (error) {
       setHistoryError(error instanceof Error ? error.message : "히스토리를 불러오지 못했습니다.");
@@ -213,7 +243,9 @@ export function HomeScreen({
     setStatusMessage("파일을 변환하고 있습니다...");
 
     try {
-      const responseHeaders = isAuthenticated ? buildUserHeaders(userId, userEmail) : undefined;
+      const identity = await resolveCurrentIdentity();
+      const uploadAuthenticated = Boolean(identity.id);
+      const responseHeaders = uploadAuthenticated ? buildUserHeaders(identity.id, identity.email) : undefined;
       const res = await fetch(`${API_BASE_URL}/api/convert`, {
         method: "POST",
         body: formData,
@@ -230,13 +262,13 @@ export function HomeScreen({
       setResponse(converted);
       saveLastConvert(converted);
 
-      if (isAuthenticated) {
-        await refreshHistory();
+      if (uploadAuthenticated) {
+        await refreshHistory(identity.id, identity.email);
       }
 
       setStatusTone("success");
       setStatusMessage(
-        isAuthenticated
+        uploadAuthenticated
           ? `${converted.result_count}개 결과를 변환했고, 내 히스토리에 저장했습니다.`
           : `${converted.result_count}개 결과를 불러왔습니다. 로그인하면 개인 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
