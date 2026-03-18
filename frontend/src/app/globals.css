@@ -178,6 +178,13 @@ textarea {
   color: #8b949e;
 }
 
+.doo-note-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .doo-note-label {
   font-size: 11px;
   letter-spacing: 0.18em;

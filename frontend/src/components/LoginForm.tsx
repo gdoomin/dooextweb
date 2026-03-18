@@ -9,9 +9,10 @@ import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 type LoginFormProps = {
   nextPath: string;
   authAvailable?: boolean;
+  onSuccess?: () => void;
 };
 
-export function LoginForm({ nextPath, authAvailable = true }: LoginFormProps) {
+export function LoginForm({ nextPath, authAvailable = true, onSuccess }: LoginFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -51,6 +52,7 @@ export function LoginForm({ nextPath, authAvailable = true }: LoginFormProps) {
 
         setTone("success");
         setMessage("로그인에 성공했습니다.");
+        onSuccess?.();
         router.replace(nextPath);
         router.refresh();
         return;

@@ -390,12 +390,12 @@ export function HomeScreen({
               <button
                 type="button"
                 className="doo-info-button"
-                title="정보"
+                title="메뉴"
                 onClick={() =>
-                  window.alert("DOO Extractor\n\n버전: 2.3 Web MVP\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
+                  window.alert("DOO Extractor\n\n버전: 3.0 web ver\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
                 }
               >
-                i
+                ☰
               </button>
               <div>
                 <h1>DOO Extractor</h1>
@@ -419,9 +419,11 @@ export function HomeScreen({
 
             <div className="doo-sidebar-footer">
               <div className="doo-sidebar-note">
-                <span className="doo-note-label">{isAuthenticated ? "로그인 계정" : "사용 상태"}</span>
+                <div className="doo-note-head">
+                  <span className="doo-note-label">{isAuthenticated ? "로그인 계정" : "사용 상태"}</span>
+                  {isAuthenticated ? <div className="doo-auth-state">로그인됨</div> : null}
+                </div>
                 <code>{isAuthenticated ? userEmail : "비회원 미리보기 모드"}</code>
-                {isAuthenticated ? <div className="doo-auth-state">로그인됨</div> : null}
                 <button type="button" className="doo-auth-button" onClick={handleAuthButton}>
                   {isAuthenticated ? "로그아웃" : "회원가입 / 로그인"}
                 </button>
@@ -511,13 +513,6 @@ export function HomeScreen({
               </aside>
             </div>
 
-            <div className="doo-main-meta">
-              <div className="doo-connection-card">
-                <span className="doo-note-label">현재 연결</span>
-                <code>{API_BASE_URL}</code>
-              </div>
-            </div>
-
             <div className="doo-bottom-bar">
               <div className={`doo-status doo-status-${statusTone}`}>{statusMessage}</div>
               <div className="doo-actions">
@@ -547,7 +542,15 @@ export function HomeScreen({
               <h2>{authMessage}</h2>
               <p>좌표 추출은 바로 확인할 수 있지만, 개인 히스토리 저장과 다시열기 같은 기능은 로그인 후 사용할 수 있습니다.</p>
             </div>
-            <LoginForm nextPath="/" authAvailable={authAvailable} />
+            <LoginForm
+              nextPath="/"
+              authAvailable={authAvailable}
+              onSuccess={() => {
+                setShowAuthModal(false);
+                setStatusTone("success");
+                setStatusMessage("로그인되었습니다.");
+              }}
+            />
             <button type="button" className="auth-modal-close" onClick={() => setShowAuthModal(false)}>
               닫기
             </button>
