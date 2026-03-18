@@ -1,17 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { LoginForm } from "@/components/LoginForm";
-import { createClient } from "@/lib/supabase/server";
+import { getUser, isSupabaseConfigured } from "@/lib/supabase/server";
 
 type LoginPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
   if (user) {
     redirect("/");
@@ -30,7 +27,7 @@ export default async function LoginPage({ searchParams }: LoginPageProps) {
           <p>이메일과 비밀번호 계정으로 로그인한 뒤 KML 변환 기능을 사용할 수 있습니다.</p>
         </div>
 
-        <LoginForm nextPath={nextPath} />
+        <LoginForm nextPath={nextPath} authAvailable={isSupabaseConfigured()} />
       </section>
     </main>
   );

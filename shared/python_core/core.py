@@ -1,12 +1,17 @@
 import json
 import re
 import unicodedata
+from math import atan2, cos, radians, sin, sqrt
 from pathlib import Path
 from typing import Any
 
 
 POLYGON_ONLY_MESSAGE = "시작점과 끝점이 없는 도형으로 된 파일입니다"
 _GENERIC_LINE_NAMES = {"line", "linestring", "flight line"}
+EARTH_RADIUS_KM = 6371.0088
+AIRCRAFT_SPEED_KNOTS = 130
+KNOT_TO_KMH = 1.852
+TURN_MINUTES_PER_LINE = 3
 
 
 def wlen(value: str) -> int:
@@ -25,12 +30,11 @@ def center_w(value: str, width: int) -> str:
 
 def dd_to_dms(dd: float, is_lat: bool = True) -> str:
     direction = ("N" if dd >= 0 else "S") if is_lat else ("E" if dd >= 0 else "W")
-    dd = abs(dd)
-    degree = int(dd)
-    minute_float = (dd - degree) * 60
-    minute = int(minute_float)
-    second = (minute_float - minute) * 60
-    return f"{degree}째{minute:02d}'{second:05.2f}\"{direction}"
+    total_centiseconds = int(round(abs(dd) * 3600 * 100))
+    degree, remaining_centiseconds = divmod(total_centiseconds, 3600 * 100)
+    minute, second_centiseconds = divmod(remaining_centiseconds, 60 * 100)
+    second = second_centiseconds / 100
+    return f"{degree}\u00B0{minute:02d}'{second:05.2f}\"{direction}"
 
 
 def _read_kml(filepath: str) -> str | None:
@@ -380,6 +384,30 @@ def _build_force_labels(results: list[dict[str, Any]]) -> dict[int, str]:
     return {idx: str(rank) for rank, idx in enumerate(ordered, 1)}
 
 
+def _haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    lat1_rad = radians(lat1)
+    lat2_rad = radians(lat2)
+    delta_lat = radians(lat2 - lat1)
+    delta_lon = radians(lon2 - lon1)
+    a = sin(delta_lat / 2) ** 2 + cos(lat1_rad) * cos(lat2_rad) * sin(delta_lon / 2) ** 2
+    return 2 * EARTH_RADIUS_KM * atan2(sqrt(a), sqrt(1 - a))
+
+
+def _build_linestring_meta_text(results: list[dict[str, Any]]) -> str:
+    total_length_km = 0.0
+    for row in results:
+        total_length_km += _haversine_km(row["s_lat"], row["s_lon"], row["e_lat"], row["e_lon"])
+
+    flight_hours = total_length_km / (AIRCRAFT_SPEED_KNOTS * KNOT_TO_KMH) if total_length_km > 0 else 0.0
+    turn_hours = (len(results) * TURN_MINUTES_PER_LINE) / 60
+    total_capture_hours = flight_hours + turn_hours
+    return (
+        f"{len(results)}\uac1c \ub77c\uc778"
+        f" \u00b7 \ucd1d\uae38\uc774 {total_length_km:.1f}km"
+        f" \u00b7 \ucd1d\ucd2c\uc601\uc2dc\uac04 : \ub300\ub7b5 {total_capture_hours:.1f}\uc2dc\uac04"
+    )
+
+
 def build_web_map_payload(
     results: list[dict[str, Any]],
     project_name: str,
@@ -446,7 +474,7 @@ def build_web_map_payload(
         "has_layers": bool(layer_catalog),
         "layer_catalog": layer_catalog,
         "default_gray_map": False,
-        "meta_text": f"{len(payload_results)}개 라인",
+        "meta_text": _build_linestring_meta_text(results),
     }
 
 

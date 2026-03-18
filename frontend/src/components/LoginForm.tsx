@@ -7,9 +7,10 @@ import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 type LoginFormProps = {
   nextPath: string;
+  authAvailable?: boolean;
 };
 
-export function LoginForm({ nextPath }: LoginFormProps) {
+export function LoginForm({ nextPath, authAvailable = true }: LoginFormProps) {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
@@ -17,6 +18,14 @@ export function LoginForm({ nextPath }: LoginFormProps) {
   const [message, setMessage] = useState("Supabase 계정으로 로그인합니다.");
   const [tone, setTone] = useState<"idle" | "success" | "error">("idle");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!authAvailable) {
+    return (
+      <div className="auth-message auth-message-error">
+        Supabase 인증을 사용하려면 `frontend/.env.local`에 실제 URL과 anon key를 입력해 주세요.
+      </div>
+    );
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -26,6 +35,9 @@ export function LoginForm({ nextPath }: LoginFormProps) {
 
     try {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase 인증 설정이 필요합니다.");
+      }
 
       if (mode === "login") {
         const { error } = await supabase.auth.signInWithPassword({

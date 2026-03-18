@@ -1,0 +1,404 @@
+from __future__ import annotations
+
+import json
+import time
+from datetime import datetime, timezone
+from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
+
+
+DEFAULT_WEATHER_BBOX = (33.0, 124.0, 39.0, 132.0)
+_CACHE: dict[str, tuple[float, Any]] = {}
+_USER_AGENT = "dooextweb-weather/0.1"
+
+
+class WeatherProviderError(RuntimeError):
+    pass
+
+
+def parse_bbox_param(raw: str | None) -> tuple[float, float, float, float]:
+    if not raw:
+        return DEFAULT_WEATHER_BBOX
+
+    parts = [part.strip() for part in str(raw).split(",")]
+    if len(parts) != 4:
+        raise ValueError("bbox must have south,west,north,east")
+
+    south, west, north, east = [float(part) for part in parts]
+    south = max(-90.0, min(90.0, south))
+    north = max(-90.0, min(90.0, north))
+    west = max(-180.0, min(180.0, west))
+    east = max(-180.0, min(180.0, east))
+
+    if south > north:
+        south, north = north, south
+    if west > east:
+        west, east = east, west
+
+    return south, west, north, east
+
+
+def build_weather_config() -> dict[str, Any]:
+    maps = _get_json(
+        "weather:rainviewer:maps",
+        "https://api.rainviewer.com/public/weather-maps.json",
+        ttl_seconds=600,
+    )
+    host = str(maps.get("host") or "https://tilecache.rainviewer.com").rstrip("/")
+    radar_root = maps.get("radar") if isinstance(maps, dict) else {}
+    frame = _pick_radar_frame(radar_root if isinstance(radar_root, dict) else {})
+    radar_url = ""
+    radar_generated = ""
+    if frame:
+        radar_path = str(frame.get("path") or "").strip()
+        radar_time = frame.get("time")
+        if radar_path:
+            radar_url = f"{host}{radar_path}/256/{{z}}/{{x}}/{{y}}/6/1_1.png"
+        if radar_time:
+            radar_generated = datetime.fromtimestamp(int(radar_time), tz=timezone.utc).isoformat()
+
+    satellite_date = datetime.now(timezone.utc).date().isoformat()
+    satellite_url = (
+        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"
+        f"MODIS_Terra_CorrectedReflectance_TrueColor/default/{satellite_date}/"
+        "GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg"
+    )
+
+    return {
+        "ok": True,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "radar": {
+            "tile_url": radar_url,
+            "updated_at": radar_generated,
+            "attribution": "RainViewer",
+            "opacity": 0.68,
+            "max_zoom": 12,
+        },
+        "satellite": {
+            "tile_url": satellite_url,
+            "date": satellite_date,
+            "attribution": "NASA GIBS / MODIS Terra",
+            "opacity": 0.52,
+            "max_zoom": 9,
+        },
+    }
+
+
+def build_weather_grid(
+    bbox: tuple[float, float, float, float],
+    rows: int = 4,
+    cols: int = 5,
+) -> dict[str, Any]:
+    south, west, north, east = bbox
+    rows = max(2, min(6, int(rows)))
+    cols = max(2, min(6, int(cols)))
+    points = _sample_grid_points(south, west, north, east, rows, cols)
+    latitudes = ",".join(f"{lat:.4f}" for lat, _ in points)
+    longitudes = ",".join(f"{lng:.4f}" for _, lng in points)
+    cache_key = f"weather:grid:{rows}:{cols}:{_bbox_key(bbox)}"
+    url = (
+        "https://api.open-meteo.com/v1/forecast"
+        f"?latitude={latitudes}"
+        f"&longitude={longitudes}"
+        "&current=precipitation,cloud_cover,wind_speed_10m,wind_direction_10m,weather_code"
+    )
+    data = _get_json(cache_key, url, ttl_seconds=180)
+    items = data if isinstance(data, list) else []
+
+    output = []
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        current = item.get("current") if isinstance(item.get("current"), dict) else {}
+        current_units = item.get("current_units") if isinstance(item.get("current_units"), dict) else {}
+        lat = _as_float(item.get("latitude"))
+        lng = _as_float(item.get("longitude"))
+        wind_speed = _as_float(current.get("wind_speed_10m"))
+        wind_speed_knots = _to_knots(wind_speed, str(current_units.get("wind_speed_10m") or "km/h"))
+        output.append(
+            {
+                "lat": lat,
+                "lng": lng,
+                "precipitation_mm": _as_float(current.get("precipitation")),
+                "cloud_cover": _as_float(current.get("cloud_cover")),
+                "wind_speed": wind_speed,
+                "wind_speed_knots": round(wind_speed_knots, 1),
+                "wind_direction_deg": _as_float(current.get("wind_direction_10m")),
+                "weather_code": _as_int(current.get("weather_code")),
+                "observed_at": str(current.get("time") or ""),
+            }
+        )
+
+    return {
+        "ok": True,
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "rows": rows,
+        "cols": cols,
+        "points": output,
+    }
+
+
+def build_aviation_overlay(bbox: tuple[float, float, float, float]) -> dict[str, Any]:
+    south, west, north, east = bbox
+    bbox_value = f"{south:.4f},{west:.4f},{north:.4f},{east:.4f}"
+    metar = _get_json(
+        f"weather:metar:{_bbox_key(bbox)}",
+        f"https://aviationweather.gov/api/data/metar?format=geojson&bbox={bbox_value}",
+        ttl_seconds=300,
+    )
+    taf_items = _get_json(
+        f"weather:taf:{_bbox_key(bbox)}",
+        f"https://aviationweather.gov/api/data/taf?format=json&bbox={bbox_value}",
+        ttl_seconds=300,
+    )
+
+    taf_by_icao: dict[str, dict[str, Any]] = {}
+    if isinstance(taf_items, list):
+        for item in taf_items:
+            if not isinstance(item, dict):
+                continue
+            icao = str(item.get("icaoId") or "").strip().upper()
+            if icao:
+                taf_by_icao[icao] = item
+
+    features: list[dict[str, Any]] = []
+    for feature in _feature_list(metar):
+        geometry = feature.get("geometry")
+        props = dict(feature.get("properties") or {})
+        icao = str(props.get("id") or props.get("icaoId") or props.get("site") or "").strip().upper()
+        taf = taf_by_icao.pop(icao, None)
+        props["icaoId"] = icao
+        props["kind"] = "metar-taf" if taf else "metar"
+        props["tafRaw"] = str((taf or {}).get("rawTAF") or "")
+        props["tafValidFrom"] = str((taf or {}).get("validTimeFrom") or "")
+        props["tafValidTo"] = str((taf or {}).get("validTimeTo") or "")
+        props["tafName"] = str((taf or {}).get("name") or props.get("site") or icao)
+        props["tafForecastCount"] = len((taf or {}).get("fcsts") or [])
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": geometry,
+                "properties": props,
+            }
+        )
+
+    for icao, taf in taf_by_icao.items():
+        lat = _as_float(taf.get("lat"))
+        lng = _as_float(taf.get("lon"))
+        if lat is None or lng is None:
+            continue
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [lng, lat],
+                },
+                "properties": {
+                    "icaoId": icao,
+                    "site": str(taf.get("name") or icao),
+                    "kind": "taf",
+                    "rawOb": "",
+                    "obsTime": "",
+                    "fltcat": "",
+                    "wx": "",
+                    "tafRaw": str(taf.get("rawTAF") or ""),
+                    "tafValidFrom": str(taf.get("validTimeFrom") or ""),
+                    "tafValidTo": str(taf.get("validTimeTo") or ""),
+                    "tafForecastCount": len(taf.get("fcsts") or []),
+                },
+            }
+        )
+
+    return {
+        "type": "FeatureCollection",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "features": features,
+    }
+
+
+def build_advisory_overlay(bbox: tuple[float, float, float, float]) -> dict[str, Any]:
+    isigmet = _get_json(
+        "weather:isigmet",
+        "https://aviationweather.gov/api/data/isigmet?format=geojson",
+        ttl_seconds=600,
+    )
+    gairmet = _get_json(
+        "weather:gairmet",
+        "https://aviationweather.gov/api/data/gairmet?format=geojson",
+        ttl_seconds=600,
+    )
+
+    features: list[dict[str, Any]] = []
+    features.extend(_normalize_advisories(_feature_list(isigmet), bbox, "ISIGMET"))
+    features.extend(_normalize_advisories(_feature_list(gairmet), bbox, "GAIRMET"))
+
+    return {
+        "type": "FeatureCollection",
+        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "features": features,
+    }
+
+
+def _normalize_advisories(
+    raw_features: list[dict[str, Any]],
+    bbox: tuple[float, float, float, float],
+    source: str,
+) -> list[dict[str, Any]]:
+    items: list[dict[str, Any]] = []
+    for feature in raw_features:
+        if not _feature_intersects_bbox(feature, bbox):
+            continue
+        props = dict(feature.get("properties") or {})
+        hazard = str(props.get("hazard") or props.get("forecast") or props.get("tag") or "").strip()
+        title_bits = [source]
+        if hazard:
+            title_bits.append(hazard)
+        title = " · ".join(title_bits)
+        props["source"] = source
+        props["title"] = title
+        props["detail"] = str(props.get("rawSigmet") or props.get("forecast") or props.get("dueTo") or "")
+        props["validFrom"] = str(props.get("validTimeFrom") or props.get("issueTime") or "")
+        props["validTo"] = str(props.get("validTimeTo") or props.get("validTime") or "")
+        items.append(
+            {
+                "type": "Feature",
+                "geometry": feature.get("geometry"),
+                "properties": props,
+            }
+        )
+    return items
+
+
+def _pick_radar_frame(radar_root: dict[str, Any]) -> dict[str, Any] | None:
+    for key in ("nowcast", "past"):
+        frames = radar_root.get(key)
+        if isinstance(frames, list) and frames:
+            for frame in reversed(frames):
+                if isinstance(frame, dict) and frame.get("path"):
+                    return frame
+    return None
+
+
+def _sample_grid_points(
+    south: float,
+    west: float,
+    north: float,
+    east: float,
+    rows: int,
+    cols: int,
+) -> list[tuple[float, float]]:
+    lat_step = (north - south) / (rows - 1) if rows > 1 else 0.0
+    lng_step = (east - west) / (cols - 1) if cols > 1 else 0.0
+    points: list[tuple[float, float]] = []
+    for row in range(rows):
+        lat = north - (lat_step * row) if rows > 1 else (south + north) / 2
+        for col in range(cols):
+            lng = west + (lng_step * col) if cols > 1 else (west + east) / 2
+            points.append((round(lat, 4), round(lng, 4)))
+    return points
+
+
+def _bbox_key(bbox: tuple[float, float, float, float]) -> str:
+    south, west, north, east = bbox
+    return f"{south:.2f}:{west:.2f}:{north:.2f}:{east:.2f}"
+
+
+def _get_json(cache_key: str, url: str, ttl_seconds: int) -> Any:
+    cached = _CACHE.get(cache_key)
+    now = time.time()
+    if cached and cached[0] > now:
+        return cached[1]
+
+    request = Request(
+        url,
+        headers={
+            "User-Agent": _USER_AGENT,
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=18) as response:
+            payload = json.load(response)
+    except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
+        raise WeatherProviderError(str(error)) from error
+
+    _CACHE[cache_key] = (now + ttl_seconds, payload)
+    return payload
+
+
+def _feature_list(data: Any) -> list[dict[str, Any]]:
+    features = data.get("features") if isinstance(data, dict) else []
+    return features if isinstance(features, list) else []
+
+
+def _feature_intersects_bbox(feature: dict[str, Any], bbox: tuple[float, float, float, float]) -> bool:
+    feature_bbox = _geometry_bbox(feature.get("geometry"))
+    if not feature_bbox:
+        return False
+    f_south, f_west, f_north, f_east = feature_bbox
+    south, west, north, east = bbox
+    return not (f_east < west or f_west > east or f_north < south or f_south > north)
+
+
+def _geometry_bbox(geometry: Any) -> tuple[float, float, float, float] | None:
+    if not isinstance(geometry, dict):
+        return None
+    coords = geometry.get("coordinates")
+    if coords is None:
+        return None
+
+    min_lat = 91.0
+    max_lat = -91.0
+    min_lng = 181.0
+    max_lng = -181.0
+    found = False
+
+    for lng, lat in _iter_lon_lat(coords):
+        found = True
+        min_lat = min(min_lat, lat)
+        max_lat = max(max_lat, lat)
+        min_lng = min(min_lng, lng)
+        max_lng = max(max_lng, lng)
+
+    if not found:
+        return None
+    return min_lat, min_lng, max_lat, max_lng
+
+
+def _iter_lon_lat(value: Any):
+    if isinstance(value, (list, tuple)):
+        if len(value) >= 2 and all(isinstance(item, (int, float)) for item in value[:2]):
+            yield float(value[0]), float(value[1])
+            return
+        for item in value:
+            yield from _iter_lon_lat(item)
+
+
+def _to_knots(value: float | None, unit: str) -> float:
+    speed = value or 0.0
+    normalized = unit.strip().lower()
+    if normalized in {"km/h", "kmh", "kph"}:
+        return speed / 1.852
+    if normalized in {"m/s", "ms"}:
+        return speed * 1.943844
+    return speed
+
+
+def _as_float(value: Any) -> float | None:
+    try:
+        if value in ("", None):
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value: Any) -> int | None:
+    try:
+        if value in ("", None):
+            return None
+        return int(value)
+    except (TypeError, ValueError):
+        return None

@@ -122,8 +122,8 @@
       font-size: 12px;
     }
     .toolbar {
-      --tool-card-width: clamp(62px, 4.1vw, 74px);
-      --tool-card-height: clamp(46px, 3.1vw, 56px);
+      --tool-card-width: clamp(44px, 2.9vw, 52px);
+      --tool-card-height: clamp(32px, 2.2vw, 39px);
       --tool-banner-height: var(--tool-card-height);
       top: 16px;
       right: 16px;
@@ -463,17 +463,20 @@
           0 16px 32px rgba(0, 0, 0, 0.30);
       }
     }
-    .layer-panel {
+    .layer-panel,
+    .weather-panel {
       top: 88px;
       right: 16px;
-      width: min(92vw, 340px);
+      width: min(92vw, 380px);
       padding: 12px;
       display: none;
     }
-    .layer-panel.is-visible {
+    .layer-panel.is-visible,
+    .weather-panel.is-visible {
       display: block;
     }
-    .layer-title {
+    .layer-title,
+    .weather-title {
       margin: 0 0 10px;
       font-size: 13px;
       color: #79c0ff;
@@ -508,6 +511,208 @@
       padding: 0;
       background: transparent;
       cursor: pointer;
+    }
+    .weather-help {
+      margin: -4px 0 10px;
+      color: #9fb3c8;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .weather-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 9px 6px;
+      border-radius: 12px;
+    }
+    .weather-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .weather-row label {
+      display: inline-flex;
+      align-items: flex-start;
+      gap: 10px;
+      color: #e6edf3;
+      font-size: 12px;
+      line-height: 1.3;
+    }
+    .weather-label {
+      display: grid;
+      gap: 2px;
+    }
+    .weather-name {
+      color: #e6edf3;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .weather-note {
+      color: #8b949e;
+      font-size: 11px;
+    }
+    .weather-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 44px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      background: rgba(255, 255, 255, 0.05);
+      color: #c9d1d9;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      white-space: nowrap;
+    }
+    .weather-badge[data-tone="loading"] {
+      color: #ffe88c;
+      border-color: rgba(255, 214, 77, 0.38);
+      background: rgba(255, 214, 77, 0.10);
+    }
+    .weather-badge[data-tone="live"] {
+      color: #a7f3d0;
+      border-color: rgba(77, 211, 164, 0.36);
+      background: rgba(16, 185, 129, 0.12);
+    }
+    .weather-badge[data-tone="error"] {
+      color: #ffb4ab;
+      border-color: rgba(255, 123, 114, 0.38);
+      background: rgba(255, 123, 114, 0.10);
+    }
+    .weather-wind-pin {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.24));
+      pointer-events: none;
+    }
+    .weather-wind-rotator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(14, 24, 34, 0.86);
+      border: 1px solid rgba(121, 192, 255, 0.26);
+      transform: rotate(var(--wind-rotation, 0deg));
+    }
+    .weather-wind-arrow {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 14px solid #8bd4ff;
+      transform: translateY(-1px);
+      opacity: var(--wind-opacity, 1);
+    }
+    .weather-wind-speed {
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: rgba(14, 24, 34, 0.88);
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      color: #eef7ff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+    .weather-cloud-pin {
+      min-width: 38px;
+      padding: 5px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.34);
+      color: #17202b;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.18);
+      pointer-events: none;
+    }
+    .weather-popup {
+      min-width: 220px;
+      max-width: 320px;
+      color: #f3f8fd;
+      text-shadow: none;
+      filter: none;
+    }
+    .weather-popup h3 {
+      margin: 0 0 8px;
+      color: #a8ddff;
+      font-size: 14px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    .weather-popup-summary {
+      margin: 0 0 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(121, 192, 255, 0.30);
+      background: rgba(53, 112, 170, 0.26);
+      color: #f5fbff;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.6;
+      word-break: keep-all;
+    }
+    .weather-popup-row {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 8px;
+      margin: 4px 0;
+      color: #edf4fb;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .weather-popup-row strong {
+      color: #c5d9ee;
+      font-weight: 700;
+    }
+    .weather-popup pre {
+      margin: 10px 0 0;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      background: rgba(5, 10, 16, 0.88);
+      color: #f4f8fc;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .leaflet-popup.doo-popup .leaflet-popup-content-wrapper {
+      background: rgba(6, 11, 18, 0.985);
+      color: #f4f8fc;
+      border: 1px solid rgba(121, 192, 255, 0.28);
+      border-radius: 16px;
+      box-shadow:
+        0 18px 44px rgba(0, 0, 0, 0.52),
+        0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+      backdrop-filter: none;
+    }
+    .leaflet-popup.doo-popup .leaflet-popup-content {
+      margin: 14px 16px;
+      color: #f4f8fc;
+      font-size: 12.5px;
+      line-height: 1.55;
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+    }
+    .leaflet-popup.doo-popup .leaflet-popup-tip {
+      background: rgba(6, 11, 18, 0.985);
+      box-shadow: none;
+    }
+    .leaflet-popup.doo-popup .leaflet-popup-close-button {
+      color: #d7e6f5;
+      opacity: 0.96;
+      transition: color 140ms ease, background 140ms ease;
+    }
+    .leaflet-popup.doo-popup .leaflet-popup-close-button:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 999px;
     }
     .hint {
       left: 16px;
@@ -965,6 +1170,12 @@
       </g>
       <path d="M26 58h44" stroke="#61a5e8" stroke-width="3.2" stroke-linecap="round"></path>
     </symbol>
+    <symbol id="toolIconWeather" viewBox="0 0 96 72">
+      <path d="M25 47c-6 0-11-5-11-11 0-6 4-10 10-11 2-9 10-15 20-15 10 0 18 6 21 15 6 1 10 6 10 12 0 6-5 10-11 10Z" fill="#eef7ff" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round"></path>
+      <path d="M28 52c8-4 15-4 22 0M53 51c5-3 10-3 15 0" fill="none" stroke="#61a5e8" stroke-width="3" stroke-linecap="round"></path>
+      <path d="M33 56c0 4-3 7-3 7s-3-3-3-7a3 3 0 0 1 6 0ZM48 57c0 4-3 7-3 7s-3-3-3-7a3 3 0 0 1 6 0Z" fill="#4fa3ea" stroke="#17324b" stroke-width="2"></path>
+      <circle cx="68" cy="18" r="6" fill="#ffe37b" stroke="#17324b" stroke-width="2.4"></circle>
+    </symbol>
     <symbol id="toolIconMeasure" viewBox="0 0 96 72">
       <g transform="rotate(-32 49 36)">
         <rect x="27" y="20" width="44" height="32" rx="8" fill="#f7fbff" stroke="#17324b" stroke-width="3"></rect>
@@ -1037,6 +1248,9 @@
       <button id="layerButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="겹" title="겹">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconLayer"></use></svg></span>
       </button>
+      <button id="weatherButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="기상" title="기상">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconWeather"></use></svg></span>
+      </button>
       <button id="measureButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="측정" title="측정">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconMeasure"></use></svg></span>
       </button>
@@ -1085,6 +1299,11 @@
   <div id="layerPanel" class="panel layer-panel">
     <p class="layer-title">겹</p>
     <div id="layerRows"></div>
+  </div>
+  <div id="weatherPanel" class="panel weather-panel">
+    <p class="weather-title">기상</p>
+    <p class="weather-help">실험용 실황/준실황 오버레이입니다. 체크하면 현재 지도 범위 기준으로 외부 기상 정보를 겹쳐 보여줍니다.</p>
+    <div id="weatherRows"></div>
   </div>
   <div id="hintPanel" class="panel hint">휠 또는 트랙패드로 부드럽게 확대/축소 · 드래그 이동 · 겹 토글/색상 변경 · 측정 또는 T 글자 입력 가능</div>
   <div id="captureModal" class="capture-modal">
@@ -1165,6 +1384,10 @@
     const measureColor = '#7A36FF';
     const isPolygonMode = payload.mode === 'polygon';
     const layerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
+    const WEATHER_LAYER_DEFS = [
+      { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
+      { key: 'satellite', label: '위성영상', note: 'NASA GIBS True Color', badge: 'SAT' },
+    ];
     const renderer = L.canvas({ padding: 0.5 });
     const map = L.map('map', {
       preferCanvas: true,
@@ -1181,6 +1404,8 @@
     });
     map.createPane('completionPane');
     map.getPane('completionPane').style.zIndex = '360';
+    map.createPane('weatherSatellitePane');
+    map.getPane('weatherSatellitePane').style.zIndex = '240';
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
@@ -1209,6 +1434,7 @@
     const titlebar = document.getElementById('titlebar');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
+    const weatherButton = document.getElementById('weatherButton');
     const measureButton = document.getElementById('measureButton');
     const textButton = document.getElementById('textButton');
     const doneButton = document.getElementById('doneButton');
@@ -1218,6 +1444,8 @@
     const expandToolbarButton = document.getElementById('expandToolbarButton');
     const layerPanel = document.getElementById('layerPanel');
     const layerRows = document.getElementById('layerRows');
+    const weatherPanel = document.getElementById('weatherPanel');
+    const weatherRows = document.getElementById('weatherRows');
     const forceControls = document.getElementById('forceControls');
     const forceStartInput = document.getElementById('forceStartInput');
     const forceStatus = document.getElementById('forceStatus');
@@ -1270,9 +1498,23 @@
 
     const layerControls = new Map();
     const layerBundles = new Map();
+    const weatherControls = new Map();
     const resultLineEntries = [];
     let layerDataMap = null;
     let layerDataPromise = null;
+    const weatherGroups = {
+      metar: L.layerGroup(),
+    };
+    const weatherTiles = {
+      satellite: null,
+    };
+    const weatherConfigState = {
+      data: null,
+      fetchedAt: 0,
+      promise: null,
+    };
+    let weatherRefreshTimer = null;
+    let weatherRefreshToken = 0;
 
     const measureState = {
       active: false,
@@ -1316,7 +1558,7 @@
       A5: { label: 'A5', width: 1748, height: 2480 },
       LETTER: { label: 'Letter', width: 2550, height: 3300 },
     };
-    const VIEWER_STATE_VERSION = 1;
+    const VIEWER_STATE_VERSION = 2;
     const UNDO_LIMIT = 10;
     let viewerStateSaveTimer = null;
     let viewerStateRestoring = false;
@@ -1342,6 +1584,388 @@
 
     function nextFrame() {
       return new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+    }
+
+    function fetchJson(url) {
+      return fetch(url, { cache: 'no-store' }).then(async (response) => {
+        if (!response.ok) {
+          const fallback = `${response.status} ${response.statusText}`.trim();
+          let detail = fallback;
+          try {
+            const payload = await response.json();
+            if (payload && payload.detail) {
+              detail = String(payload.detail);
+            }
+          } catch (error) {
+            // Ignore JSON parse failures and keep the HTTP status text.
+          }
+          throw new Error(detail);
+        }
+        return response.json();
+      });
+    }
+
+    function formatWeatherTime(value) {
+      if (!value) {
+        return '';
+      }
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) {
+        return String(value);
+      }
+      return new Intl.DateTimeFormat('ko-KR', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZoneName: 'short',
+      }).format(date);
+    }
+
+    function formatWeatherRange(fromValue, toValue) {
+      const fromText = formatWeatherTime(fromValue);
+      const toText = formatWeatherTime(toValue);
+      if (fromText && toText) {
+        return `${fromText} ~ ${toText}`;
+      }
+      return fromText || toText || '';
+    }
+
+    function buildWeatherPopupHtml(title, rows, detail = '', summary = '') {
+      const rowHtml = rows
+        .filter((item) => Array.isArray(item) && item.length === 2 && item[1] != null && item[1] !== '')
+        .map(([label, value]) => `<div class="weather-popup-row"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(value)}</span></div>`)
+        .join('');
+      const summaryHtml = summary ? `<div class="weather-popup-summary">${escapeHtml(summary)}</div>` : '';
+      const detailHtml = detail ? `<pre>${escapeHtml(detail)}</pre>` : '';
+      return `<div class="weather-popup"><h3>${escapeHtml(title)}</h3>${summaryHtml}${rowHtml}${detailHtml}</div>`;
+    }
+
+    function resetWeatherBadge(key) {
+      const controls = weatherControls.get(key);
+      if (!controls) {
+        return;
+      }
+      controls.badge.textContent = controls.definition.badge;
+      controls.badge.dataset.tone = 'idle';
+    }
+
+    function setWeatherBadge(key, text, tone = 'idle') {
+      const controls = weatherControls.get(key);
+      if (!controls) {
+        return;
+      }
+      controls.badge.textContent = text;
+      controls.badge.dataset.tone = tone;
+    }
+
+    function isWeatherEnabled(key) {
+      const controls = weatherControls.get(key);
+      return !!(controls && controls.toggle.checked);
+    }
+
+    function getWeatherBoundsQuery() {
+      const bounds = map.getBounds().pad(0.18);
+      return `${bounds.getSouth().toFixed(4)},${bounds.getWest().toFixed(4)},${bounds.getNorth().toFixed(4)},${bounds.getEast().toFixed(4)}`;
+    }
+
+    function weatherTileLayer(url, options) {
+      return L.tileLayer(url, {
+        opacity: options.opacity,
+        pane: options.pane,
+        maxZoom: options.maxZoom || 12,
+        minZoom: 2,
+        keepBuffer: 8,
+        updateWhenIdle: false,
+        updateWhenZooming: true,
+        detectRetina: true,
+        crossOrigin: true,
+        attribution: options.attribution || '',
+      });
+    }
+
+    function aviationColor(props) {
+      const kind = String(props.kind || '').toLowerCase();
+      const category = String(props.fltcat || '').toUpperCase();
+      if (kind === 'taf') {
+        return '#f6c177';
+      }
+      if (category === 'LIFR') {
+        return '#c084fc';
+      }
+      if (category === 'IFR') {
+        return '#ff7b72';
+      }
+      if (category === 'MVFR') {
+        return '#58a6ff';
+      }
+      return '#4ade80';
+    }
+
+    function parseWeatherNumber(value) {
+      if (value == null || value === '') {
+        return null;
+      }
+      const parsed = Number(value);
+      return Number.isFinite(parsed) ? parsed : null;
+    }
+
+    function formatWeatherNumber(value, digits = 0) {
+      const parsed = parseWeatherNumber(value);
+      if (!Number.isFinite(parsed)) {
+        return '';
+      }
+      if (digits > 0) {
+        return parsed.toFixed(digits).replace(/\.0+$/, '').replace(/(\.\d*?)0+$/, '$1');
+      }
+      return Math.abs(parsed - Math.round(parsed)) < 0.05 ? String(Math.round(parsed)) : parsed.toFixed(1).replace(/\.0$/, '');
+    }
+
+    function describeWindDirection(degrees) {
+      const parsed = parseWeatherNumber(degrees);
+      if (!Number.isFinite(parsed)) {
+        return '';
+      }
+      const labels = ['북', '북북동', '북동', '동북동', '동', '동남동', '남동', '남남동', '남', '남남서', '남서', '서남서', '서', '서북서', '북서', '북북서'];
+      const normalized = ((parsed % 360) + 360) % 360;
+      return labels[Math.round(normalized / 22.5) % labels.length];
+    }
+
+    function describeVisibilityKorean(value) {
+      if (value == null || value === '') {
+        return '';
+      }
+      const raw = String(value).trim();
+      const numeric = parseWeatherNumber(raw.replace('+', ''));
+      if (!Number.isFinite(numeric)) {
+        return `가시거리 ${raw}`;
+      }
+      const distanceKm = numeric * 1.60934;
+      const kmText = formatWeatherNumber(distanceKm, distanceKm < 10 ? 1 : 0);
+      if (raw.includes('+')) {
+        return `가시거리 ${raw}SM 이상(약 ${kmText}km 이상)`;
+      }
+      return `가시거리 ${raw}SM(약 ${kmText}km)`;
+    }
+
+    function describeCloudCoverKorean(value) {
+      const raw = String(value || '').trim().toUpperCase();
+      if (!raw) {
+        return '';
+      }
+      const map = {
+        CAVOK: '맑고 시정 양호(CAVOK)',
+        SKC: '맑음(SKC)',
+        CLR: '맑음(CLR)',
+        NSC: '중요한 구름 없음(NSC)',
+        FEW: '소량 구름(FEW)',
+        SCT: '산발 구름(SCT)',
+        BKN: '다소 많은 구름(BKN)',
+        OVC: '전운(OVC)',
+        VV: '수직시정 제한(VV)',
+      };
+      return map[raw] || raw;
+    }
+
+    function describeFlightCategoryKorean(value, kind = '') {
+      const raw = String(value || '').trim().toUpperCase();
+      const map = {
+        VFR: '시계비행 양호(VFR)',
+        MVFR: '제한적 시계비행(MVFR)',
+        IFR: '계기비행 상태(IFR)',
+        LIFR: '저시정 계기비행 상태(LIFR)',
+      };
+      if (map[raw]) {
+        return map[raw];
+      }
+      if (String(kind || '').toLowerCase() === 'taf') {
+        return 'TAF 예보만 제공';
+      }
+      return '';
+    }
+
+    function describeWeatherCodeToken(token) {
+      let raw = String(token || '').trim().toUpperCase();
+      if (!raw) {
+        return '';
+      }
+      const intensity = raw.startsWith('+') ? '강한 ' : raw.startsWith('-') ? '약한 ' : '';
+      if (raw.startsWith('+') || raw.startsWith('-')) {
+        raw = raw.slice(1);
+      }
+      let vicinity = '';
+      if (raw.startsWith('VC')) {
+        vicinity = '인근 ';
+        raw = raw.slice(2);
+      }
+      const qualifiers = [];
+      const qualifierMap = {
+        MI: '얕은',
+        BC: '군데군데',
+        PR: '부분적',
+        DR: '낮게 날리는',
+        BL: '강하게 날리는',
+        SH: '소나기성',
+        TS: '뇌우성',
+        FZ: '착빙성',
+      };
+      while (raw.length >= 2 && qualifierMap[raw.slice(0, 2)]) {
+        qualifiers.push(qualifierMap[raw.slice(0, 2)]);
+        raw = raw.slice(2);
+      }
+      const phenomenonMap = {
+        DZ: '이슬비',
+        RA: '비',
+        SN: '눈',
+        SG: '싸락눈',
+        IC: '빙정',
+        PL: '진눈깨비',
+        GR: '우박',
+        GS: '싸라기우박',
+        UP: '미확인 강수',
+        BR: '박무',
+        FG: '안개',
+        FU: '연기',
+        VA: '화산재',
+        DU: '먼지',
+        SA: '모래',
+        HZ: '연무',
+        PY: '분무',
+        PO: '먼지기둥',
+        SQ: '돌풍',
+        FC: '깔때기구름',
+        SS: '모래폭풍',
+        DS: '먼지폭풍',
+      };
+      const phenomena = [];
+      while (raw.length >= 2) {
+        const code = raw.slice(0, 2);
+        if (!phenomenonMap[code]) {
+          break;
+        }
+        phenomena.push(phenomenonMap[code]);
+        raw = raw.slice(2);
+      }
+      const detail = phenomena.length ? phenomena.join(' ') : String(token || '').trim().toUpperCase();
+      const prefix = [intensity.trim(), vicinity.trim(), qualifiers.join(' ')].filter(Boolean).join(' ').trim();
+      return [prefix, detail].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function describeWeatherPhenomenaKorean(value) {
+      const raw = String(value || '').trim();
+      if (!raw) {
+        return '';
+      }
+      return raw
+        .split(/\s+/)
+        .map((token) => describeWeatherCodeToken(token))
+        .filter(Boolean)
+        .join(', ');
+    }
+
+    function buildAviationSummary(props) {
+      const sentences = [];
+      const flight = describeFlightCategoryKorean(props.fltcat, props.kind);
+      if (flight) {
+        sentences.push(flight === 'TAF 예보만 제공' ? '현재 TAF 예보만 제공합니다.' : `현재 ${flight}입니다.`);
+      } else if (props.obsTime) {
+        sentences.push('현재 METAR 관측이 제공됩니다.');
+      }
+
+      const detailParts = [];
+      const windDirection = describeWindDirection(props.wdir);
+      const windSpeed = formatWeatherNumber(props.wspd);
+      const windGust = formatWeatherNumber(props.wgst);
+      if (windDirection || windSpeed) {
+        let windText = '';
+        if (windDirection && windSpeed) {
+          windText = `${windDirection}풍 ${windSpeed}kt`;
+        } else if (windSpeed) {
+          windText = `풍속 ${windSpeed}kt`;
+        } else {
+          windText = `${windDirection}풍`;
+        }
+        if (windGust) {
+          windText += `, 순간최대 ${windGust}kt`;
+        }
+        detailParts.push(windText);
+      }
+
+      const visibilityText = describeVisibilityKorean(props.visib);
+      if (visibilityText) {
+        detailParts.push(visibilityText);
+      }
+
+      const weatherText = describeWeatherPhenomenaKorean(props.wx);
+      if (weatherText) {
+        detailParts.push(`현상 ${weatherText}`);
+      }
+
+      const cloudText = describeCloudCoverKorean(props.cover);
+      const ceilingText = formatWeatherNumber(props.ceil);
+      if (cloudText && ceilingText) {
+        detailParts.push(`${cloudText}, 운저 약 ${ceilingText}ft`);
+      } else if (cloudText) {
+        detailParts.push(cloudText);
+      } else if (ceilingText) {
+        detailParts.push(`운저 약 ${ceilingText}ft`);
+      }
+
+      const temperature = formatWeatherNumber(props.temp);
+      if (temperature) {
+        detailParts.push(`기온 ${temperature}°C`);
+      }
+
+      if (detailParts.length) {
+        sentences.push(`${detailParts.join(', ')}.`);
+      }
+
+      if (props.tafRaw) {
+        const tafRange = formatWeatherRange(props.tafValidFrom, props.tafValidTo);
+        sentences.push(tafRange ? `TAF 예보는 ${tafRange} 기준으로 함께 제공합니다.` : 'TAF 예보가 함께 제공됩니다.');
+      }
+
+      return sentences.join(' ').trim();
+    }
+
+    function buildAviationPopup(props) {
+      const title = props.icaoId || props.site || 'METAR / TAF';
+      const site = props.site && props.site !== title ? props.site : '';
+      const detailBlocks = [];
+      if (props.rawOb) {
+        detailBlocks.push(`METAR\n${props.rawOb}`);
+      }
+      if (props.tafRaw) {
+        detailBlocks.push(`TAF\n${props.tafRaw}`);
+      }
+      const summary = buildAviationSummary(props);
+      return buildWeatherPopupHtml(title, [
+        ['지점', site],
+        ['관측', formatWeatherTime(props.obsTime)],
+        ['비행등급', props.fltcat || (props.kind === 'taf' ? 'TAF only' : '')],
+        ['현상', props.wx || ''],
+        ['TAF', formatWeatherRange(props.tafValidFrom, props.tafValidTo)],
+      ], detailBlocks.join('\n\n'), summary);
+    }
+
+    function ensureWeatherConfig() {
+      const stillFresh = weatherConfigState.data && (Date.now() - weatherConfigState.fetchedAt) < 600000;
+      if (stillFresh) {
+        return Promise.resolve(weatherConfigState.data);
+      }
+      if (!weatherConfigState.promise) {
+        weatherConfigState.promise = fetchJson('/api/weather/config')
+          .then((data) => {
+            weatherConfigState.data = data;
+            weatherConfigState.fetchedAt = Date.now();
+            return data;
+          })
+          .finally(() => {
+            weatherConfigState.promise = null;
+          });
+      }
+      return weatherConfigState.promise;
     }
 
     function labelIcon(text, kind, inlineStyle = '') {
@@ -2031,6 +2655,10 @@
           visible: !!controls.toggle.checked,
           color: controls.color.value,
         })),
+        weather: Array.from(weatherControls.entries()).map(([key, controls]) => ({
+          key,
+          visible: !!controls.toggle.checked,
+        })),
         completedLineIds: resultLineEntries
           .filter((entry) => entry.completed)
           .map((entry) => entry.id),
@@ -2135,6 +2763,24 @@
           }
         }
         applyLayerColor(layerState.key);
+      }
+    }
+
+    async function applySavedWeatherState(savedWeather) {
+      if (!Array.isArray(savedWeather)) {
+        return;
+      }
+      savedWeather.forEach((item) => {
+        if (!item || !weatherControls.has(item.key)) {
+          return;
+        }
+        weatherControls.get(item.key).toggle.checked = !!item.visible;
+      });
+      for (const item of savedWeather) {
+        if (!item || !weatherControls.has(item.key) || !weatherControls.get(item.key).toggle.checked) {
+          continue;
+        }
+        await syncWeatherLayer(item.key);
       }
     }
 
@@ -2246,6 +2892,8 @@
           map.setView(saved.view.center, saved.view.zoom, { animate: false });
         }
 
+        await applySavedWeatherState(saved.weather);
+
         clearMeasurement();
         measureState.unit = saved.measure && saved.measure.unit === 'nm' ? 'nm' : 'km';
         if (saved.activeTool === 'measure') {
@@ -2315,6 +2963,47 @@
       scheduleViewerStateSave();
     });
     applyBaseMapTone();
+
+    function buildWeatherRows() {
+      WEATHER_LAYER_DEFS.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'weather-row';
+        row.dataset.weatherKey = item.key;
+
+        const label = document.createElement('label');
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.checked = false;
+
+        const textWrap = document.createElement('span');
+        textWrap.className = 'weather-label';
+
+        const name = document.createElement('span');
+        name.className = 'weather-name';
+        name.textContent = item.label;
+
+        const note = document.createElement('span');
+        note.className = 'weather-note';
+        note.textContent = item.note;
+
+        textWrap.append(name, note);
+        label.append(toggle, textWrap);
+
+        const badge = document.createElement('span');
+        badge.className = 'weather-badge';
+        badge.textContent = item.badge;
+        badge.dataset.tone = 'idle';
+
+        row.append(label, badge);
+        weatherRows.appendChild(row);
+        weatherControls.set(item.key, { toggle, badge, definition: item });
+
+        toggle.addEventListener('change', async () => {
+          await syncWeatherLayer(item.key);
+          scheduleViewerStateSave();
+        });
+      });
+    }
 
     function buildLayerRows() {
       if (!payload.has_layers || !layerCatalog.length) {
@@ -2520,12 +3209,197 @@
       }
     }
 
+    function renderWeatherAviation(featureCollection) {
+      weatherGroups.metar.clearLayers();
+      const features = Array.isArray(featureCollection && featureCollection.features) ? featureCollection.features : [];
+      features.forEach((feature) => {
+        const geometry = feature && feature.geometry;
+        const props = feature && feature.properties ? feature.properties : {};
+        if (!geometry || geometry.type !== 'Point' || !Array.isArray(geometry.coordinates) || geometry.coordinates.length < 2) {
+          return;
+        }
+        const lat = Number(geometry.coordinates[1]);
+        const lng = Number(geometry.coordinates[0]);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          return;
+        }
+        const marker = L.circleMarker([lat, lng], {
+          radius: String(props.kind || '').toLowerCase() === 'taf' ? 5 : 7,
+          color: '#13202f',
+          weight: 1.5,
+          fillColor: aviationColor(props),
+          fillOpacity: 0.94,
+          dashArray: String(props.kind || '').toLowerCase() === 'taf' ? '4 3' : null,
+          renderer: renderer,
+        });
+        const title = props.icaoId || props.site || 'OBS';
+        marker.bindTooltip(title, {
+          className: 'doo-tooltip',
+          direction: 'top',
+          offset: [0, -4],
+          opacity: 0.96,
+        });
+        marker.bindPopup(buildAviationPopup(props), {
+          className: 'doo-popup',
+          maxWidth: 360,
+        });
+        weatherGroups.metar.addLayer(marker);
+      });
+      if (isWeatherEnabled('metar')) {
+        if (!map.hasLayer(weatherGroups.metar)) {
+          map.addLayer(weatherGroups.metar);
+        }
+      } else {
+        map.removeLayer(weatherGroups.metar);
+      }
+    }
+
+    async function refreshWeatherAviationData(query, token) {
+      if (!isWeatherEnabled('metar')) {
+        weatherGroups.metar.clearLayers();
+        map.removeLayer(weatherGroups.metar);
+        return;
+      }
+      setWeatherBadge('metar', '로딩', 'loading');
+      const data = await fetchJson(`/api/weather/aviation?bbox=${encodeURIComponent(query.bbox)}`);
+      if (token !== weatherRefreshToken) {
+        return;
+      }
+      renderWeatherAviation(data);
+      setWeatherBadge('metar', `${Array.isArray(data.features) ? data.features.length : 0}개`, 'live');
+    }
+
+    async function refreshWeatherData() {
+      if (!isWeatherEnabled('metar')) {
+        return;
+      }
+      const query = {
+        bbox: getWeatherBoundsQuery(),
+      };
+      const token = ++weatherRefreshToken;
+      try {
+        await refreshWeatherAviationData(query, token);
+      } catch (error) {
+        if (isWeatherEnabled('metar')) {
+          setWeatherBadge('metar', '오류', 'error');
+        }
+      }
+    }
+
+    function scheduleWeatherRefresh(delay = 320) {
+      if (!isWeatherEnabled('metar')) {
+        return;
+      }
+      window.clearTimeout(weatherRefreshTimer);
+      weatherRefreshTimer = window.setTimeout(() => {
+        refreshWeatherData().catch(() => {
+          if (isWeatherEnabled('metar')) {
+            setWeatherBadge('metar', '오류', 'error');
+          }
+        });
+      }, delay);
+    }
+
+    async function syncTileWeatherLayer(key, configKey, paneName) {
+      const controls = weatherControls.get(key);
+      if (!controls) {
+        return;
+      }
+
+      if (!controls.toggle.checked) {
+        if (weatherTiles[key]) {
+          map.removeLayer(weatherTiles[key]);
+        }
+        resetWeatherBadge(key);
+        return;
+      }
+
+      setWeatherBadge(key, '로딩', 'loading');
+      try {
+        weatherButton.disabled = true;
+        const config = await ensureWeatherConfig();
+        if (!controls.toggle.checked) {
+          return;
+        }
+        const layerConfig = config && config[configKey] ? config[configKey] : null;
+        if (!layerConfig || !layerConfig.tile_url) {
+          throw new Error('tile url unavailable');
+        }
+        if (!weatherTiles[key]) {
+          weatherTiles[key] = weatherTileLayer(layerConfig.tile_url, {
+            pane: paneName,
+            opacity: layerConfig.opacity || 0.6,
+            attribution: layerConfig.attribution || '',
+            maxZoom: layerConfig.max_zoom || 12,
+          });
+        } else if (typeof weatherTiles[key].setUrl === 'function') {
+          weatherTiles[key].setUrl(layerConfig.tile_url);
+          if (typeof weatherTiles[key].setOpacity === 'function' && Number.isFinite(layerConfig.opacity)) {
+            weatherTiles[key].setOpacity(layerConfig.opacity);
+          }
+        }
+        if (!map.hasLayer(weatherTiles[key])) {
+          weatherTiles[key].addTo(map);
+        }
+        setWeatherBadge(key, controls.definition.badge, 'live');
+      } catch (error) {
+        controls.toggle.checked = false;
+        if (weatherTiles[key]) {
+          map.removeLayer(weatherTiles[key]);
+        }
+        setWeatherBadge(key, '오류', 'error');
+        throw error;
+      } finally {
+        weatherButton.disabled = false;
+      }
+    }
+
+    async function syncWeatherLayer(layerKey) {
+      if (!weatherControls.has(layerKey)) {
+        return;
+      }
+
+      if (layerKey === 'satellite') {
+        await syncTileWeatherLayer('satellite', 'satellite', 'weatherSatellitePane');
+        return;
+      }
+
+      if (!isWeatherEnabled(layerKey)) {
+        if (layerKey === 'metar') {
+          weatherGroups.metar.clearLayers();
+          map.removeLayer(weatherGroups.metar);
+        }
+        resetWeatherBadge(layerKey);
+        return;
+      }
+
+      try {
+        await refreshWeatherData();
+      } catch (error) {
+        setWeatherBadge(layerKey, '오류', 'error');
+        window.alert('기상 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+      }
+    }
+
     function setLayerPanelVisible(visible) {
       if (!payload.has_layers || !layerCatalog.length) {
         return;
       }
       layerPanel.classList.toggle('is-visible', visible);
       layerButton.classList.toggle('is-active', visible);
+      if (visible) {
+        weatherPanel.classList.remove('is-visible');
+        weatherButton.classList.remove('is-active');
+      }
+    }
+
+    function setWeatherPanelVisible(visible) {
+      weatherPanel.classList.toggle('is-visible', visible);
+      weatherButton.classList.toggle('is-active', visible);
+      if (visible) {
+        layerPanel.classList.remove('is-visible');
+        layerButton.classList.remove('is-active');
+      }
     }
 
     function applyInterfaceCollapseState(collapsed) {
@@ -2534,6 +3408,7 @@
       hintPanel.classList.toggle('is-hidden', collapsed);
       if (collapsed) {
         setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
       }
     }
 
@@ -2910,9 +3785,13 @@
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const mapRect = liveMap.getBoundingClientRect();
-      const tileImages = Array.from(
-        liveMap.querySelectorAll('.leaflet-tile-pane img.leaflet-tile, .leaflet-tile-pane .leaflet-tile')
-      );
+      const tileImages = Array.from(liveMap.querySelectorAll('img.leaflet-tile')).sort((left, right) => {
+        const leftPane = left.closest('.leaflet-pane');
+        const rightPane = right.closest('.leaflet-pane');
+        const leftZ = Number(leftPane && leftPane.style && leftPane.style.zIndex || 0);
+        const rightZ = Number(rightPane && rightPane.style && rightPane.style.zIndex || 0);
+        return leftZ - rightZ;
+      });
 
       tileImages.forEach((tile) => {
         if (!(tile instanceof HTMLImageElement) || !tile.complete || !tile.naturalWidth) {
@@ -2955,12 +3834,16 @@
           if (element.classList && element.classList.contains('leaflet-control-container')) {
             return true;
           }
+          if (element.classList && element.classList.contains('leaflet-tile')) {
+            return true;
+          }
           if (element.classList && element.classList.contains('leaflet-tile-pane')) {
             return true;
           }
           return typeof element.closest === 'function' && (
             !!element.closest('.leaflet-control-container') ||
-            !!element.closest('.leaflet-tile-pane')
+            !!element.closest('.leaflet-tile-pane') ||
+            !!element.closest('.leaflet-tile')
           );
         },
         onclone: (doc) => {
@@ -3091,6 +3974,7 @@
       }
 
       setLayerPanelVisible(false);
+      setWeatherPanelVisible(false);
       captureButton.disabled = true;
       captureStatus.textContent = '현재 지도를 캡처하는 중입니다...';
 
@@ -3270,12 +4154,22 @@
       setLayerPanelVisible(!layerPanel.classList.contains('is-visible'));
     });
 
+    weatherButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      setWeatherPanelVisible(!weatherPanel.classList.contains('is-visible'));
+    });
+
     layerPanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    weatherPanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
 
     document.addEventListener('click', () => {
       setLayerPanelVisible(false);
+      setWeatherPanelVisible(false);
     });
     captureCard.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -3588,7 +4482,12 @@
       scheduleViewerStateSave();
     });
 
+    map.on('moveend zoomend', () => {
+      scheduleWeatherRefresh(420);
+    });
+
     async function initializeViewer() {
+      buildWeatherRows();
       buildLayerRows();
       renderResults();
 

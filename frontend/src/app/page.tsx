@@ -1,11 +1,14 @@
 import { HomeScreen } from "@/components/HomeScreen";
-import { createClient } from "@/lib/supabase/server";
+import { getUser, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function HomePage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await getUser();
 
-  return <HomeScreen initialUserEmail={user?.email || ""} />;
+  return (
+    <HomeScreen
+      initialUserEmail={user?.email || ""}
+      initialUserId={user?.id || ""}
+      authAvailable={isSupabaseConfigured()}
+    />
+  );
 }

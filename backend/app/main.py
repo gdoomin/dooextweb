@@ -1,6 +1,8 @@
 import json
 import os
+import re
 import sys
+from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
@@ -16,6 +18,14 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from shared.python_core import POLYGON_ONLY_MESSAGE, build_web_map_html, build_web_map_payload, format_text, parse_kml, save_excel
+from .weather import (
+    WeatherProviderError,
+    build_advisory_overlay,
+    build_aviation_overlay,
+    build_weather_config,
+    build_weather_grid,
+    parse_bbox_param,
+)
 
 
 APP_DIR = Path(__file__).resolve().parent
@@ -24,12 +34,15 @@ ASSETS_DIR = BACKEND_DIR / "assets"
 RUNTIME_DIR = BACKEND_DIR / "runtime"
 JOBS_DIR = RUNTIME_DIR / "jobs"
 VIEWER_STATE_DIR = RUNTIME_DIR / "viewer_states"
+USER_HISTORY_DIR = RUNTIME_DIR / "user_history"
 MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 
-for path in (JOBS_DIR, VIEWER_STATE_DIR):
+USER_HISTORY_LIMIT = 50
+
+for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
 
 
@@ -56,6 +69,10 @@ def _job_path(job_id: str) -> Path:
 
 def _viewer_state_path(job_id: str) -> Path:
     return VIEWER_STATE_DIR / f"{job_id}.json"
+
+
+def _user_history_path(user_id: str) -> Path:
+    return USER_HISTORY_DIR / f"{user_id}.json"
 
 
 def _load_json(path: Path, default):
@@ -130,6 +147,76 @@ def _download_filename(job: dict, suffix: str) -> str:
     return f"{base}_DMS{suffix}"
 
 
+def _utc_now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat()
+
+
+def _normalize_user_identity(value: str | None) -> str:
+    cleaned = re.sub(r"[^a-zA-Z0-9_-]", "", str(value or "").strip())
+    return cleaned[:128]
+
+
+def _normalize_user_email(value: str | None) -> str:
+    return str(value or "").strip()[:320]
+
+
+def _request_user_identity(request: Request, *, required: bool = False) -> tuple[str, str]:
+    user_id = _normalize_user_identity(request.headers.get("X-DOO-USER-ID"))
+    user_email = _normalize_user_email(request.headers.get("X-DOO-USER-EMAIL"))
+    if required and not user_id:
+        raise HTTPException(status_code=401, detail="login required")
+    return user_id, user_email
+
+
+def _job_history_entry(job: dict) -> dict:
+    return {
+        "job_id": str(job.get("job_id") or ""),
+        "filename": str(job.get("filename") or ""),
+        "project_name": str(job.get("project_name") or ""),
+        "mode": str(job.get("mode") or ""),
+        "result_count": int(job.get("result_count") or 0),
+        "uploaded_at": str(job.get("created_at") or ""),
+    }
+
+
+def _record_user_history(job: dict) -> None:
+    user_id = _normalize_user_identity(str(job.get("user_id") or ""))
+    if not user_id:
+        return
+    path = _user_history_path(user_id)
+    existing = _load_json(path, [])
+    items = existing if isinstance(existing, list) else []
+    entry = _job_history_entry(job)
+    next_items = [entry]
+    next_items.extend(item for item in items if isinstance(item, dict) and item.get("job_id") != entry["job_id"])
+    _save_json(path, next_items[:USER_HISTORY_LIMIT])
+
+
+def _load_user_history(user_id: str) -> list[dict]:
+    items = _load_json(_user_history_path(user_id), [])
+    if not isinstance(items, list):
+        return []
+    return [item for item in items if isinstance(item, dict)]
+
+
+def _job_response(job: dict, base_url: str) -> dict:
+    job_id = str(job.get("job_id") or "")
+    return {
+        "ok": True,
+        "filename": str(job.get("filename") or ""),
+        "project_name": str(job.get("project_name") or ""),
+        "mode": str(job.get("mode") or ""),
+        "result_count": int(job.get("result_count") or 0),
+        "text_output": str(job.get("text_output") or ""),
+        "map_payload": job.get("map_payload") or {},
+        "results": job.get("results") or [],
+        "job_id": job_id,
+        "viewer_url": f"{base_url}/api/viewer/{job_id}",
+        "txt_download_url": f"{base_url}/api/download/{job_id}/txt",
+        "xlsx_download_url": f"{base_url}/api/download/{job_id}/xlsx",
+    }
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "doo-extractor-web"}
@@ -155,6 +242,7 @@ async def convert_kml(request: Request, file: UploadFile = File(...)):
         text_output = format_text(results, project_name, mode)
         job_id = uuid4().hex
         base_url = str(request.base_url).rstrip("/")
+        user_id, user_email = _request_user_identity(request)
 
         job_data = {
             "job_id": job_id,
@@ -165,23 +253,14 @@ async def convert_kml(request: Request, file: UploadFile = File(...)):
             "text_output": text_output,
             "map_payload": map_payload,
             "results": results,
+            "created_at": _utc_now_iso(),
+            "user_id": user_id,
+            "user_email": user_email,
         }
         _save_json(_job_path(job_id), job_data)
+        _record_user_history(job_data)
 
-        return {
-            "ok": True,
-            "filename": file.filename,
-            "project_name": project_name,
-            "mode": mode,
-            "result_count": len(results),
-            "text_output": text_output,
-            "map_payload": map_payload,
-            "results": results,
-            "job_id": job_id,
-            "viewer_url": f"{base_url}/api/viewer/{job_id}",
-            "txt_download_url": f"{base_url}/api/download/{job_id}/txt",
-            "xlsx_download_url": f"{base_url}/api/download/{job_id}/xlsx",
-        }
+        return _job_response(job_data, base_url)
     finally:
         temp_path.unlink(missing_ok=True)
 
@@ -255,6 +334,21 @@ def get_layers(job_id: str):
     return JSONResponse(_load_map_layers())
 
 
+@app.get("/api/history")
+def get_history(request: Request):
+    user_id, _user_email = _request_user_identity(request, required=True)
+    return JSONResponse({"items": _load_user_history(user_id)})
+
+
+@app.get("/api/history/{job_id}")
+def get_history_item(job_id: str, request: Request):
+    user_id, _user_email = _request_user_identity(request, required=True)
+    job = _load_job(job_id)
+    if _normalize_user_identity(str(job.get("user_id") or "")) != user_id:
+        raise HTTPException(status_code=404, detail="history item not found")
+    return JSONResponse(_job_response(job, str(request.base_url).rstrip("/")))
+
+
 @app.get("/api/assets/html2canvas.min.js")
 def get_html2canvas():
     if not HTML2CANVAS_PATH.exists():
@@ -267,3 +361,46 @@ def get_banner():
     if not BANNER_PATH.exists():
         raise HTTPException(status_code=404, detail="배너 이미지를 찾을 수 없습니다.")
     return FileResponse(BANNER_PATH, media_type="image/png")
+
+
+@app.get("/api/weather/config")
+def get_weather_config():
+    try:
+        return JSONResponse(build_weather_config())
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"weather config unavailable: {error}") from error
+
+
+@app.get("/api/weather/grid")
+def get_weather_grid(request: Request):
+    try:
+        bbox = parse_bbox_param(request.query_params.get("bbox"))
+        rows = int(request.query_params.get("rows", "4"))
+        cols = int(request.query_params.get("cols", "5"))
+        return JSONResponse(build_weather_grid(bbox, rows=rows, cols=cols))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"weather grid unavailable: {error}") from error
+
+
+@app.get("/api/weather/aviation")
+def get_weather_aviation(request: Request):
+    try:
+        bbox = parse_bbox_param(request.query_params.get("bbox"))
+        return JSONResponse(build_aviation_overlay(bbox))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"aviation weather unavailable: {error}") from error
+
+
+@app.get("/api/weather/advisories")
+def get_weather_advisories(request: Request):
+    try:
+        bbox = parse_bbox_param(request.query_params.get("bbox"))
+        return JSONResponse(build_advisory_overlay(bbox))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"advisory weather unavailable: {error}") from error

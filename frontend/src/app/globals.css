@@ -197,6 +197,82 @@ textarea {
   padding-bottom: 62px;
 }
 
+.doo-history-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  background: rgba(18, 34, 48, 0.72);
+  padding: 14px;
+}
+
+.doo-history-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.doo-history-clear {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.16);
+  color: #9cc8f0;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doo-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doo-history-item {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(13, 21, 31, 0.88);
+  color: #c9d1d9;
+  padding: 12px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-item strong {
+  color: #e6edf3;
+  font-size: 13px;
+}
+
+.doo-history-item span {
+  color: #8b949e;
+  font-size: 12px;
+}
+
+.doo-history-item:hover {
+  transform: translateY(-1px);
+  border-color: rgba(121, 192, 255, 0.26);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.18);
+}
+
+.doo-history-empty {
+  margin: 0;
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .doo-auth-state {
   display: inline-flex;
   width: fit-content;
@@ -411,6 +487,60 @@ textarea {
   font-size: 13px;
 }
 
+.doo-result-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 0 14px 10px;
+}
+
+.doo-result-column,
+.doo-history-panel {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  border-radius: 20px;
+  background: rgba(18, 34, 48, 0.72);
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  overflow: hidden;
+}
+
+.doo-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid rgba(121, 192, 255, 0.1);
+}
+
+.doo-panel-title {
+  color: #e6edf3;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.doo-panel-subtitle {
+  margin-top: 4px;
+  color: #8b949e;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.doo-panel-count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.16);
+  color: #9cc8f0;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .doo-gate-banner {
   margin: 0 14px 10px;
   border: 1px solid rgba(251, 191, 36, 0.28);
@@ -426,9 +556,8 @@ textarea {
 .doo-text-panel {
   display: flex;
   flex: 1 1 auto;
-  flex: 1;
   min-height: 0;
-  padding: 0 14px 10px;
+  padding: 0;
   overflow: hidden;
 }
 
@@ -561,6 +690,90 @@ textarea {
   background: #1a5276;
 }
 
+.doo-history-list-main {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 14px;
+}
+
+.doo-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(13, 21, 31, 0.88);
+  color: #c9d1d9;
+  padding: 12px;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-row + .doo-history-row {
+  margin-top: 8px;
+}
+
+.doo-history-row:hover {
+  transform: translateY(-1px);
+  border-color: rgba(121, 192, 255, 0.26);
+  filter: brightness(1.05);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.18);
+}
+
+.doo-history-row.is-current {
+  border-color: rgba(121, 192, 255, 0.34);
+  box-shadow: 0 0 0 1px rgba(121, 192, 255, 0.18) inset;
+}
+
+.doo-history-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.doo-history-body strong {
+  color: #e6edf3;
+  font-size: 13px;
+}
+
+.doo-history-body span {
+  color: #8b949e;
+  font-size: 12px;
+  word-break: break-word;
+}
+
+.doo-history-open {
+  border: 0;
+  border-radius: 12px;
+  background: #24384d;
+  color: #e6edf3;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-open:hover:enabled {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 18px rgba(121, 192, 255, 0.16);
+}
+
+.doo-history-open:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .leaflet-container {
   height: 100%;
   width: 100%;
@@ -624,6 +837,10 @@ textarea {
   .doo-bottom-bar {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .doo-result-grid {
+    grid-template-columns: 1fr;
   }
 
   .doo-main-meta {

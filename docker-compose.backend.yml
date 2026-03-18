@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: dooext-backend
+    restart: unless-stopped
+    env_file:
+      - backend/.env.production
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - ./backend/runtime:/app/backend/runtime

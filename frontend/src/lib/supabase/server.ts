@@ -1,17 +1,19 @@
 import { createServerClient } from "@supabase/ssr";
+import type { User } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { getSupabaseConfig } from "./config";
+
+export { isSupabaseConfigured } from "./config";
 
 
 export async function createClient() {
   const cookieStore = await cookies();
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error("Supabase environment variables are not configured.");
+  const config = getSupabaseConfig();
+  if (!config) {
+    return null;
   }
 
-  return createServerClient(url, anonKey, {
+  return createServerClient(config.url, config.anonKey, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -25,4 +27,20 @@ export async function createClient() {
       },
     },
   });
+}
+
+export async function getUser(): Promise<User | null> {
+  const supabase = await createClient();
+  if (!supabase) {
+    return null;
+  }
+
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    return user;
+  } catch {
+    return null;
+  }
 }

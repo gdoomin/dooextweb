@@ -4,14 +4,21 @@ import Image from "next/image";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
 import { LoginForm } from "@/components/LoginForm";
-import { type ConvertResponse, loadLastConvert, saveLastConvert } from "@/lib/convert";
+import {
+  API_BASE_URL,
+  type ConvertResponse,
+  type ServerHistoryItem,
+  buildUserHeaders,
+  fetchUserHistory,
+  loadLastConvert,
+  reopenHistoryItem,
+  saveLastConvert,
+} from "@/lib/convert";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://127.0.0.1:8000";
 
 const modeLabel: Record<ConvertResponse["mode"], string> = {
   linestring: "LineString 모드 | Flight Line 좌표 추출",
-  polygon: "Polygon 모드 | 시작점과 끝점이 없는 도형 파일",
+  polygon: "Polygon 모드 | 시작점과 끝점이 없는 폴리곤 파일",
 };
 
 const modeBadgeLabel: Record<ConvertResponse["mode"], string> = {
@@ -21,34 +28,59 @@ const modeBadgeLabel: Record<ConvertResponse["mode"], string> = {
 
 type HomeScreenProps = {
   initialUserEmail?: string;
+  initialUserId?: string;
+  authAvailable?: boolean;
 };
 
-export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
+export function HomeScreen({
+  initialUserEmail = "",
+  initialUserId = "",
+  authAvailable = true,
+}: HomeScreenProps) {
   const restored = loadLastConvert();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [response, setResponse] = useState<ConvertResponse | null>(restored);
+  const [historyItems, setHistoryItems] = useState<ServerHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState("");
   const [statusMessage, setStatusMessage] = useState(
-    restored ? "이전 작업 결과를 복원했습니다." : "KML 파일을 불러와 주세요.",
+    restored ? "이전 변환 결과를 복원했습니다." : "KML 파일을 불러와 주세요.",
   );
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
   const [isLoading, setIsLoading] = useState(false);
+  const [historyOpeningId, setHistoryOpeningId] = useState("");
   const [userEmail, setUserEmail] = useState(initialUserEmail);
+  const [userId, setUserId] = useState(initialUserId);
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMessage, setAuthMessage] = useState("전체 기능을 사용하려면 회원가입하세요.");
+  const [authMessage, setAuthMessage] = useState("전체 기능을 사용하려면 회원가입이 필요합니다.");
 
-  const isAuthenticated = Boolean(userEmail);
+  const isAuthenticated = Boolean(userId);
+  const pathLabel = useMemo(() => response?.filename || "", [response]);
+  const modeText = response ? modeLabel[response.mode] : "KML을 업로드하면 변환 결과가 표시됩니다.";
 
   useEffect(() => {
+    if (!authAvailable) {
+      setUserId("");
+      setUserEmail("");
+      return;
+    }
+
     let mounted = true;
     let unsubscribe: (() => void) | undefined;
 
     try {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        setUserId("");
+        setUserEmail("");
+        return;
+      }
 
       supabase.auth.getUser().then(({ data }) => {
         if (!mounted) {
           return;
         }
+        setUserId(data.user?.id || "");
         setUserEmail(data.user?.email || "");
       });
 
@@ -58,11 +90,13 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
         if (!mounted) {
           return;
         }
+        setUserId(session?.user?.id || "");
         setUserEmail(session?.user?.email || "");
       });
 
       unsubscribe = () => subscription.unsubscribe();
     } catch {
+      setUserId("");
       setUserEmail("");
     }
 
@@ -70,52 +104,42 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
       mounted = false;
       unsubscribe?.();
     };
-  }, []);
+  }, [authAvailable]);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      return;
-    }
+    let cancelled = false;
 
-    setShowAuthModal(false);
-    setStatusTone("success");
-    setStatusMessage("로그인되었습니다. 전체 기능을 사용할 수 있습니다.");
-  }, [isAuthenticated]);
-
-  useEffect(() => {
-    if (!response || isAuthenticated) {
-      return;
-    }
-
-    const handleWheel = (event: WheelEvent) => {
-      if (event.deltaY <= 0) {
+    async function run() {
+      if (!userId) {
+        setHistoryItems([]);
+        setHistoryError("");
         return;
       }
-      event.preventDefault();
-      setAuthMessage("전체 기능을 사용하려면 회원가입하세요.");
-      setShowAuthModal(true);
-    };
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!["PageDown", "ArrowDown", "Space"].includes(event.code)) {
-        return;
+      setHistoryLoading(true);
+      setHistoryError("");
+      try {
+        const items = await fetchUserHistory(userId, userEmail);
+        if (!cancelled) {
+          setHistoryItems(items);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setHistoryError(error instanceof Error ? error.message : "히스토리를 불러오지 못했습니다.");
+        }
+      } finally {
+        if (!cancelled) {
+          setHistoryLoading(false);
+        }
       }
-      event.preventDefault();
-      setAuthMessage("전체 기능을 사용하려면 회원가입하세요.");
-      setShowAuthModal(true);
-    };
+    }
 
-    window.addEventListener("wheel", handleWheel, { passive: false });
-    window.addEventListener("keydown", handleKeyDown);
+    run();
 
     return () => {
-      window.removeEventListener("wheel", handleWheel);
-      window.removeEventListener("keydown", handleKeyDown);
+      cancelled = true;
     };
-  }, [response, isAuthenticated]);
-
-  const pathLabel = useMemo(() => response?.filename || "", [response]);
-  const modeText = response ? modeLabel[response.mode] : "";
+  }, [userId, userEmail]);
 
   function openAuthModal(message: string) {
     setAuthMessage(message);
@@ -127,10 +151,52 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
       return true;
     }
 
-    openAuthModal(message);
+    if (!authAvailable) {
+      setStatusTone("error");
+      setStatusMessage("Supabase 인증 설정이 필요합니다. frontend/.env.local의 URL과 anon key를 확인해 주세요.");
+      openAuthModal("Supabase 인증 설정이 필요합니다. 실제 URL과 anon key를 넣고 다시 시도해 주세요.");
+      return false;
+    }
+
     setStatusTone("idle");
-    setStatusMessage("좌표 미리보기는 무료입니다. 저장과 도식화 같은 전체 기능은 회원가입 후 사용할 수 있습니다.");
+    setStatusMessage("좌표 결과 미리보기는 사용할 수 있지만, 저장과 다시열기는 로그인 후 사용할 수 있습니다.");
+    openAuthModal(message);
     return false;
+  }
+
+  function formatHistorySavedAt(savedAt: string) {
+    const date = new Date(savedAt);
+    if (Number.isNaN(date.getTime())) {
+      return savedAt;
+    }
+
+    return new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
+
+  async function refreshHistory() {
+    if (!userId) {
+      setHistoryItems([]);
+      setHistoryError("");
+      return;
+    }
+
+    setHistoryLoading(true);
+    setHistoryError("");
+    try {
+      const items = await fetchUserHistory(userId, userEmail);
+      setHistoryItems(items);
+    } catch (error) {
+      setHistoryError(error instanceof Error ? error.message : "히스토리를 불러오지 못했습니다.");
+    } finally {
+      setHistoryLoading(false);
+    }
   }
 
   async function handleFilePicked(event: ChangeEvent<HTMLInputElement>) {
@@ -144,12 +210,14 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
 
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage("파일 처리 중..");
+    setStatusMessage("파일을 변환하고 있습니다...");
 
     try {
+      const responseHeaders = isAuthenticated ? buildUserHeaders(userId, userEmail) : undefined;
       const res = await fetch(`${API_BASE_URL}/api/convert`, {
         method: "POST",
         body: formData,
+        headers: responseHeaders,
       });
 
       const payload = (await res.json()) as ConvertResponse | { detail?: string };
@@ -161,15 +229,20 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
       const converted = payload as ConvertResponse;
       setResponse(converted);
       saveLastConvert(converted);
+
+      if (isAuthenticated) {
+        await refreshHistory();
+      }
+
       setStatusTone("success");
       setStatusMessage(
         isAuthenticated
-          ? `${converted.result_count}개 결과를 불러왔습니다.`
-          : `${converted.result_count}개 좌표를 먼저 보여줍니다. 저장과 도식화는 회원가입 후 사용할 수 있습니다.`,
+          ? `${converted.result_count}개 결과를 변환했고, 내 히스토리에 저장했습니다.`
+          : `${converted.result_count}개 결과를 불러왔습니다. 로그인하면 개인 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
-    } catch (caught) {
+    } catch (error) {
       setStatusTone("error");
-      setStatusMessage(caught instanceof Error ? caught.message : "변환에 실패했습니다.");
+      setStatusMessage(error instanceof Error ? error.message : "변환에 실패했습니다.");
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -182,13 +255,36 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
     fileInputRef.current?.click();
   }
 
+  async function handleHistoryOpen(item: ServerHistoryItem) {
+    if (!requireAuth("개인 히스토리를 다시 열려면 로그인해 주세요.")) {
+      return;
+    }
+
+    setHistoryOpeningId(item.job_id);
+    setStatusTone("loading");
+    setStatusMessage(`${item.project_name || item.filename} 결과를 다시 불러오는 중입니다...`);
+
+    try {
+      const reopened = await reopenHistoryItem(item.job_id, userId, userEmail);
+      setResponse(reopened);
+      saveLastConvert(reopened);
+      setStatusTone("success");
+      setStatusMessage(`${reopened.project_name || reopened.filename} 결과를 다시 열었습니다.`);
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(error instanceof Error ? error.message : "히스토리 항목을 다시 열지 못했습니다.");
+    } finally {
+      setHistoryOpeningId("");
+    }
+  }
+
   async function copyClipboard() {
     if (!response?.text_output) {
       setStatusTone("error");
       setStatusMessage("먼저 KML 파일을 불러와 주세요.");
       return;
     }
-    if (!requireAuth("클립보드 복사와 전체 기능을 사용하려면 회원가입하세요.")) {
+    if (!requireAuth("클립보드 복사는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
 
@@ -214,9 +310,10 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
       const gatedViewerUrl = `${response.viewer_url}?preview_gate=1&signup_url=${encodeURIComponent(signupUrl)}`;
       window.open(gatedViewerUrl, "_blank", "noopener,noreferrer");
       setStatusTone("idle");
-      setStatusMessage("도식화 보기는 실제 화면으로 열고, 비회원은 화면 위에서 회원가입 안내를 표시합니다.");
+      setStatusMessage("비회원은 미리보기만 사용할 수 있습니다. 전체 기능은 로그인 후 열립니다.");
       return;
     }
+
     window.open(response.viewer_url, "_blank", "noopener,noreferrer");
   }
 
@@ -226,7 +323,7 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
       setStatusMessage("먼저 KML 파일을 불러와 주세요.");
       return;
     }
-    if (!requireAuth("텍스트 저장과 전체 기능을 사용하려면 회원가입하세요.")) {
+    if (!requireAuth("텍스트 다운로드는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
 
@@ -243,10 +340,10 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
     }
     if (response.mode === "polygon") {
       setStatusTone("error");
-      setStatusMessage("시작점과 끝점이 없는 도형 파일은 엑셀 저장을 지원하지 않습니다.");
+      setStatusMessage("폴리곤 파일은 아직 Excel 다운로드를 지원하지 않습니다.");
       return;
     }
-    if (!requireAuth("엑셀 저장과 전체 기능을 사용하려면 회원가입하세요.")) {
+    if (!requireAuth("엑셀 다운로드는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
 
@@ -256,16 +353,28 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
   }
 
   async function handleAuthButton() {
+    if (!authAvailable) {
+      openAuthModal("Supabase 인증 설정이 필요합니다. frontend/.env.local의 URL과 anon key를 확인해 주세요.");
+      return;
+    }
+
     if (!isAuthenticated) {
-      openAuthModal("전체 기능을 사용하려면 회원가입하세요.");
+      openAuthModal("내 히스토리와 다시열기를 사용하려면 로그인해 주세요.");
       return;
     }
 
     try {
       const supabase = createSupabaseClient();
+      if (!supabase) {
+        throw new Error("Supabase 인증 설정이 필요합니다.");
+      }
       await supabase.auth.signOut();
+      setUserId("");
+      setUserEmail("");
+      setHistoryItems([]);
+      setHistoryError("");
       setStatusTone("idle");
-      setStatusMessage("로그아웃되었습니다.");
+      setStatusMessage("로그아웃했습니다.");
     } catch {
       setStatusTone("error");
       setStatusMessage("로그아웃에 실패했습니다.");
@@ -281,12 +390,12 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
               <button
                 type="button"
                 className="doo-info-button"
-                title="앱 정보"
+                title="정보"
                 onClick={() =>
                   window.alert("DOO Extractor\n\n버전: 2.3 Web MVP\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
                 }
               >
-                ☰
+                i
               </button>
               <div>
                 <h1>DOO Extractor</h1>
@@ -306,12 +415,6 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
                   priority
                 />
               </div>
-              {!isAuthenticated ? (
-                <div className="doo-sidebar-copy">
-                  <strong>좌표 추출은 바로 체험</strong>
-                  <span>파일을 열면 좌표 추출 결과까지 바로 볼 수 있습니다. 저장과 도식화 보기 같은 전체 기능은 회원가입 후 사용할 수 있습니다.</span>
-                </div>
-              ) : null}
             </div>
 
             <div className="doo-sidebar-footer">
@@ -332,7 +435,7 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
               <div className="doo-path-row">
                 <input className="doo-path-input" value={pathLabel} readOnly placeholder="선택된 파일이 없습니다." />
                 <button type="button" className="doo-open-button" onClick={openFileDialog} disabled={isLoading}>
-                  {isLoading ? "불러오는 중.." : "파일 열기"}
+                  {isLoading ? "불러오는 중..." : "파일 열기"}
                 </button>
                 <input ref={fileInputRef} type="file" accept=".kml" className="doo-hidden-input" onChange={handleFilePicked} />
               </div>
@@ -345,14 +448,67 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
 
             {!isAuthenticated && response ? (
               <div className="doo-gate-banner" role="status">
-                좌표는 먼저 확인할 수 있습니다. 아래로 더 내리거나 저장, 도식화 보기 등 전체 기능을 사용하려면 회원가입하세요.
+                지금은 결과 미리보기 상태입니다. 로그인하면 업로드 이력이 개인별로 저장되고, 히스토리에서 다시열기를 사용할 수 있습니다.
               </div>
             ) : null}
 
-            <div className="doo-result-label">변환 결과</div>
+            <div className="doo-result-grid">
+              <section className="doo-result-column">
+                <div className="doo-panel-head">
+                  <div>
+                    <div className="doo-panel-title">변환 결과</div>
+                    <div className="doo-panel-subtitle">{response ? `${response.result_count}개 결과를 표시 중입니다.` : "KML 업로드를 기다리고 있습니다."}</div>
+                  </div>
+                </div>
+                <div className="doo-text-panel">
+                  <pre className="doo-text-viewer">{response?.text_output || ""}</pre>
+                </div>
+              </section>
 
-            <div className="doo-text-panel">
-              <pre className="doo-text-viewer">{response?.text_output || ""}</pre>
+              <aside className="doo-history-panel">
+                <div className="doo-panel-head">
+                  <div>
+                    <div className="doo-panel-title">히스토리</div>
+                  </div>
+                  {isAuthenticated ? <span className="doo-panel-count">{historyItems.length}건</span> : null}
+                </div>
+
+                {!isAuthenticated ? (
+                  <p className="doo-history-empty">로그인하면 업로드 시점이 서버에 저장되고, 이곳에서 다시열기로 현재 결과를 덮어쓸 수 있습니다.</p>
+                ) : historyLoading ? (
+                  <p className="doo-history-empty">히스토리를 불러오는 중입니다...</p>
+                ) : historyError ? (
+                  <p className="doo-history-empty">{historyError}</p>
+                ) : historyItems.length ? (
+                  <div className="doo-history-list doo-history-list-main">
+                    {historyItems.map((item) => {
+                      const isCurrent = response?.job_id === item.job_id;
+                      const isOpening = historyOpeningId === item.job_id;
+                      return (
+                        <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
+                          <div className="doo-history-body">
+                            <strong>{item.project_name || item.filename}</strong>
+                            <span>{item.filename}</span>
+                            <span>
+                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 · {formatHistorySavedAt(item.uploaded_at)}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            className="doo-history-open"
+                            onClick={() => handleHistoryOpen(item)}
+                            disabled={isOpening}
+                          >
+                            {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <p className="doo-history-empty">아직 저장된 KML 업로드 기록이 없습니다. 로그인한 상태에서 파일을 열면 여기에 쌓입니다.</p>
+                )}
+              </aside>
             </div>
 
             <div className="doo-main-meta">
@@ -389,11 +545,11 @@ export function HomeScreen({ initialUserEmail = "" }: HomeScreenProps) {
             <div className="auth-modal-copy">
               <span className="auth-badge">Membership</span>
               <h2>{authMessage}</h2>
-              <p>좌표 추출 결과는 먼저 보여주고, 저장과 도식화 보기 같은 전체 기능은 회원가입 후 이어서 사용할 수 있게 구성했습니다.</p>
+              <p>좌표 추출은 바로 확인할 수 있지만, 개인 히스토리 저장과 다시열기 같은 기능은 로그인 후 사용할 수 있습니다.</p>
             </div>
-            <LoginForm nextPath="/" />
+            <LoginForm nextPath="/" authAvailable={authAvailable} />
             <button type="button" className="auth-modal-close" onClick={() => setShowAuthModal(false)}>
-              나중에 하기
+              닫기
             </button>
           </section>
         </div>

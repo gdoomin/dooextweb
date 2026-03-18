@@ -7,11 +7,14 @@ venv/
 # Node
 node_modules/
 .next/
+.open-next/
 dist/
 
 # Env
 .env
 .env.local
+*.env.production
+*.env.production.local
 
 # OS
 Thumbs.db
@@ -20,4 +23,6 @@ Thumbs.db
 # Uploads / temp
 tmp/
 uploads/
+backend/runtime/
+frontend/*.log
 

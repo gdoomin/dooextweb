@@ -1,13 +1,14 @@
 import { redirect } from "next/navigation";
 
 import { PreviewScreen } from "@/components/PreviewScreen";
-import { createClient } from "@/lib/supabase/server";
+import { getUser, isSupabaseConfigured } from "@/lib/supabase/server";
 
 export default async function PreviewPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  if (!isSupabaseConfigured()) {
+    redirect("/login?next=/preview");
+  }
+
+  const user = await getUser();
 
   if (!user) {
     redirect("/login?next=/preview");
