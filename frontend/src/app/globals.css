@@ -1,0 +1,827 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0f1923;
+  --foreground: #d0d7de;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-width: 320px;
+  background: #0f1923;
+  color: var(--foreground);
+  font-family: "Malgun Gothic", "Segoe UI", Arial, Helvetica, sans-serif;
+}
+
+body {
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+.doo-shell {
+  min-height: 100vh;
+  background: linear-gradient(180deg, #0f1923 0%, #132131 100%);
+}
+
+.doo-layout {
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.doo-sidebar {
+  width: 320px;
+  flex: 0 0 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-height: 0;
+  padding: 12px 12px 28px;
+  background: #0f1923;
+  border-right: 1px solid #30363d;
+  overflow-y: auto;
+}
+
+.doo-title-block {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 4px 4px 0;
+}
+
+.doo-title-block h1 {
+  margin: 0;
+  color: #4a90d9;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.doo-title-block p {
+  margin: 4px 0 0;
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.doo-info-button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 12px;
+  background: #162230;
+  color: #79c0ff;
+  font-size: 20px;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease;
+}
+
+.doo-info-button:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(121, 192, 255, 0.24) inset,
+    0 0 18px rgba(121, 192, 255, 0.24);
+}
+
+.doo-info-button:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.doo-sidebar-card {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(121, 192, 255, 0.14);
+  background: linear-gradient(180deg, rgba(20, 30, 42, 0.94) 0%, rgba(13, 21, 31, 0.98) 100%);
+  padding: 18px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
+}
+
+.doo-sidebar-badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.16);
+  color: #9cc8f0;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.doo-sidebar-image-wrap {
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1px solid rgba(121, 192, 255, 0.18);
+  background: linear-gradient(180deg, rgba(239, 247, 255, 0.96) 0%, rgba(214, 234, 255, 0.92) 100%);
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
+}
+
+.doo-sidebar-image {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.doo-sidebar-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.doo-sidebar-copy strong {
+  color: #e6edf3;
+  font-size: 18px;
+}
+
+.doo-sidebar-copy span {
+  color: #9fb3c8;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.doo-sidebar-note {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  border-radius: 18px;
+  background: rgba(18, 34, 48, 0.8);
+  padding: 14px;
+  color: #8b949e;
+}
+
+.doo-note-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.doo-sidebar-note code {
+  word-break: break-all;
+  color: #c9d1d9;
+  font-size: 12px;
+}
+
+.doo-sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-bottom: 62px;
+}
+
+.doo-auth-state {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(39, 174, 96, 0.14);
+  color: #7ee2a8;
+  padding: 5px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.doo-auth-button {
+  margin-top: 4px;
+  border: 0;
+  border-radius: 10px;
+  background: #24384d;
+  color: #e6edf3;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-auth-button:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 18px rgba(121, 192, 255, 0.16);
+}
+
+.doo-auth-button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
+.doo-main {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  background: #161b22;
+  height: 100vh;
+  overflow: hidden;
+  padding-bottom: 28px;
+}
+
+.doo-top-panel {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 8px;
+  background: #1c2333;
+  padding: 14px;
+}
+
+.doo-top-label {
+  color: #79c0ff;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.doo-path-row {
+  display: flex;
+  gap: 10px;
+}
+
+.doo-path-input {
+  min-width: 0;
+  flex: 1;
+  height: 66px;
+  border: 1px solid #30363d;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 0 21px;
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.doo-open-button {
+  position: relative;
+  height: 66px;
+  border: 2px solid #111111;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #ffe066 0%, #ffd43b 100%);
+  color: #111111;
+  padding: 0 38px;
+  font-size: 30px;
+  font-weight: 800;
+  cursor: pointer;
+  overflow: hidden;
+  isolation: isolate;
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 208, 0.34) inset,
+    0 0 20px rgba(255, 212, 59, 0.42),
+    0 0 42px rgba(255, 212, 59, 0.18);
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease;
+}
+
+.doo-open-button::after {
+  content: "";
+  position: absolute;
+  top: -30%;
+  left: -38%;
+  width: 34%;
+  height: 160%;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 18%,
+    rgba(255, 255, 255, 0.88) 50%,
+    rgba(255, 255, 255, 0.12) 82%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-24deg);
+  opacity: 0.95;
+  pointer-events: none;
+  animation: doo-open-button-shimmer 2.2s ease-in-out infinite;
+}
+
+.doo-open-button:disabled {
+  cursor: default;
+  opacity: 0.65;
+}
+
+.doo-open-button:disabled::after {
+  animation: none;
+  opacity: 0;
+}
+
+.doo-open-button:hover:not(:disabled) {
+  filter: brightness(1.04);
+  box-shadow:
+    0 0 0 1px rgba(255, 248, 208, 0.32) inset,
+    0 0 28px rgba(255, 212, 59, 0.54),
+    0 0 52px rgba(255, 212, 59, 0.22);
+}
+
+.doo-open-button:active:not(:disabled) {
+  transform: translateY(1px) scale(0.985);
+}
+
+@keyframes doo-open-button-shimmer {
+  0% {
+    left: -42%;
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.98;
+  }
+  48% {
+    left: 112%;
+    opacity: 0.98;
+  }
+  62% {
+    left: 118%;
+    opacity: 0;
+  }
+  100% {
+    left: 118%;
+    opacity: 0;
+  }
+}
+
+.doo-hidden-input {
+  display: none;
+}
+
+.doo-mode-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 14px;
+  min-height: 34px;
+}
+
+.doo-mode-active {
+  color: #27ae60;
+  font-size: 12px;
+}
+
+.doo-mode-idle {
+  color: #8b949e;
+  font-size: 12px;
+}
+
+.doo-mode-chip {
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.16);
+  color: #9cc8f0;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.doo-result-label {
+  flex: 0 0 auto;
+  padding: 0 14px 10px;
+  color: #8b949e;
+  font-size: 13px;
+}
+
+.doo-gate-banner {
+  margin: 0 14px 10px;
+  border: 1px solid rgba(251, 191, 36, 0.28);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(98, 55, 5, 0.34) 0%, rgba(58, 34, 4, 0.28) 100%);
+  color: #f9d27c;
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+}
+
+.doo-text-panel {
+  display: flex;
+  flex: 1 1 auto;
+  flex: 1;
+  min-height: 0;
+  padding: 0 14px 10px;
+  overflow: hidden;
+}
+
+.doo-text-viewer {
+  flex: 1 1 auto;
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  border-radius: 16px;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 12px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre;
+}
+
+.doo-main-meta {
+  display: flex;
+  flex: 0 0 auto;
+  justify-content: flex-start;
+  padding: 0 14px 10px;
+}
+
+.doo-connection-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 260px;
+  max-width: 440px;
+  border-radius: 18px;
+  background: rgba(18, 34, 48, 0.8);
+  padding: 14px;
+  color: #8b949e;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+}
+
+.doo-connection-card code {
+  word-break: break-all;
+  color: #c9d1d9;
+  font-size: 12px;
+}
+
+.doo-bottom-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 12px;
+  margin: 0 14px 62px;
+  padding: 10px 14px;
+  background: #1c2333;
+  border-radius: 16px;
+  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.doo-status {
+  min-width: 0;
+  flex: 1;
+  font-size: 13px;
+}
+
+.doo-status-idle {
+  color: #8b949e;
+}
+
+.doo-status-loading {
+  color: #e67e22;
+}
+
+.doo-status-success {
+  color: #27ae60;
+}
+
+.doo-status-error {
+  color: #e74c3c;
+}
+
+.doo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.doo-action {
+  border: 0;
+  border-radius: 10px;
+  color: #fff;
+  padding: 15px 21px;
+  font-size: 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease,
+    background 180ms ease;
+}
+
+.doo-action:hover {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.14) inset,
+    0 0 18px rgba(255, 255, 255, 0.12);
+}
+
+.doo-action:active {
+  transform: translateY(1px) scale(0.985);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.18) inset,
+    0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.doo-action-copy {
+  background: #8e44ad;
+}
+
+.doo-action-xlsx {
+  background: #e67e22;
+}
+
+.doo-action-txt {
+  background: #27ae60;
+}
+
+.doo-action-map {
+  background: #1a5276;
+}
+
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  border-radius: 26px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.doo-map-label {
+  background: transparent;
+  border: 0;
+}
+
+.doo-map-label span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.84);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
+}
+
+@media (max-width: 1080px) {
+  .doo-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .doo-sidebar {
+    width: 100%;
+    flex-basis: auto;
+    padding-bottom: 12px;
+    border-right: 0;
+    border-bottom: 1px solid #30363d;
+    overflow: visible;
+  }
+
+  .doo-sidebar-footer {
+    margin-top: 0;
+    padding-bottom: 0;
+  }
+
+  .doo-sidebar-card {
+    min-height: 240px;
+  }
+
+  .doo-main {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .doo-bottom-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .doo-main-meta {
+    padding-bottom: 12px;
+  }
+
+  .doo-connection-card {
+    max-width: none;
+  }
+
+  .doo-actions {
+    justify-content: stretch;
+  }
+
+  .doo-action {
+    flex: 1 1 180px;
+  }
+}
+
+@media (max-width: 720px) {
+  .doo-path-row {
+    flex-direction: column;
+  }
+}
+
+.auth-shell {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at top left, rgba(74, 144, 217, 0.18), transparent 32%),
+    linear-gradient(180deg, #0f1923 0%, #132131 100%);
+}
+
+.auth-card {
+  width: min(100%, 480px);
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(22, 27, 34, 0.96);
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.3);
+}
+
+.auth-copy h1 {
+  margin: 10px 0 8px;
+  color: #e6edf3;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.auth-copy p {
+  margin: 0;
+  color: #9fb3c8;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  background: rgba(74, 144, 217, 0.16);
+  color: #9cc8f0;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.auth-tab {
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  border-radius: 14px;
+  background: #111b27;
+  color: #c9d1d9;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-tab.is-active {
+  background: #4a90d9;
+  color: #fff;
+  border-color: transparent;
+}
+
+.auth-form {
+  display: grid;
+  gap: 14px;
+}
+
+.auth-field {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-field span {
+  color: #9fb3c8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.auth-field input {
+  height: 46px;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  background: #0d1117;
+  color: #e6edf3;
+  padding: 0 14px;
+}
+
+.auth-submit {
+  height: 48px;
+  border: 0;
+  border-radius: 14px;
+  background: #4a90d9;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-submit:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
+
+.auth-message {
+  min-height: 24px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.auth-message-idle {
+  color: #9fb3c8;
+}
+
+.auth-message-success {
+  color: #27ae60;
+}
+
+.auth-message-error {
+  color: #e74c3c;
+}
+
+.auth-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(4, 10, 18, 0.72);
+  backdrop-filter: blur(8px);
+}
+
+.auth-modal-card {
+  width: min(100%, 520px);
+  display: grid;
+  gap: 18px;
+  padding: 28px;
+  border-radius: 28px;
+  background: rgba(22, 27, 34, 0.98);
+  border: 1px solid rgba(121, 192, 255, 0.18);
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
+}
+
+.auth-modal-copy h2 {
+  margin: 10px 0 8px;
+  color: #e6edf3;
+  font-size: 28px;
+  line-height: 1.2;
+}
+
+.auth-modal-copy p {
+  margin: 0;
+  color: #9fb3c8;
+  font-size: 14px;
+  line-height: 1.7;
+}
+
+.auth-modal-close {
+  height: 46px;
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  border-radius: 14px;
+  background: #111b27;
+  color: #c9d1d9;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}

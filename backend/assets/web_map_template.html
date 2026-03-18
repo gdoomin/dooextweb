@@ -1,0 +1,3609 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DOO Extractor Web Map</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <style>
+    html, body, #map { height: 100%; margin: 0; }
+    body {
+      background: #0d1117;
+      color: #e6edf3;
+      font-family: "Malgun Gothic", "Segoe UI", sans-serif;
+      overflow: hidden;
+    }
+    #map {
+      background:
+        radial-gradient(circle at top, rgba(72, 119, 181, 0.20), transparent 35%),
+        linear-gradient(180deg, #d6dde7 0%, #c8d0db 100%);
+    }
+    body.preview-gated #map,
+    body.preview-gated .panel,
+    body.preview-gated .capture-modal,
+    body.preview-gated .layer-panel {
+      filter: blur(3px) saturate(0.88);
+      pointer-events: none;
+      user-select: none;
+    }
+    .preview-gate-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 5000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(4, 10, 18, 0.18);
+    }
+    body.preview-gated .preview-gate-overlay {
+      display: flex;
+    }
+    .preview-gate-card {
+      width: min(92vw, 520px);
+      padding: 26px 28px;
+      border-radius: 22px;
+      background: rgba(15, 25, 35, 0.94);
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.34);
+      text-align: center;
+    }
+    .preview-gate-card h2 {
+      margin: 0 0 10px;
+      color: #79c0ff;
+      font-size: 28px;
+      line-height: 1.2;
+    }
+    .preview-gate-card p {
+      margin: 0;
+      color: #d0d7de;
+      font-size: 15px;
+      line-height: 1.7;
+    }
+    .preview-gate-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+    .preview-gate-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 150px;
+      padding: 11px 18px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #4a90d9 0%, #2f81f7 100%);
+      color: #ffffff;
+      font-size: 14px;
+      font-weight: 800;
+      text-decoration: none;
+      box-shadow: 0 14px 32px rgba(47, 129, 247, 0.26);
+    }
+    .preview-gate-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 130px;
+      padding: 11px 18px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      border-radius: 999px;
+      background: rgba(29, 44, 58, 0.92);
+      color: #e6edf3;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .panel {
+      position: absolute;
+      z-index: 1000;
+      backdrop-filter: blur(14px);
+      background: rgba(15, 25, 35, 0.85);
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      box-shadow: 0 14px 50px rgba(0, 0, 0, 0.28);
+      border-radius: 16px;
+    }
+    .titlebar {
+      top: 16px;
+      left: 16px;
+      padding: 14px 16px 12px;
+      min-width: 260px;
+    }
+    .titlebar h1 {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 18px;
+      line-height: 1.2;
+    }
+    .titlebar p {
+      margin: 6px 0 0;
+      color: #c9d1d9;
+      font-size: 12px;
+    }
+    .toolbar {
+      --tool-card-width: clamp(62px, 4.1vw, 74px);
+      --tool-card-height: clamp(46px, 3.1vw, 56px);
+      --tool-banner-height: var(--tool-card-height);
+      top: 16px;
+      right: 16px;
+      padding: 8px 14px;
+      display: grid;
+      gap: 5px;
+      width: min(96vw, 980px);
+      max-width: calc(100vw - 32px);
+      box-sizing: border-box;
+    }
+    .toolbar.is-collapsed {
+      width: auto;
+      max-width: none;
+      padding: 7px 11px;
+      justify-items: end;
+    }
+    .toolbar.is-collapsed .toolbar-collapse-hide {
+      display: none !important;
+    }
+    .toolbar.is-collapsed .toolbar-row {
+      justify-content: flex-end;
+    }
+    .panel.is-hidden {
+      display: none !important;
+    }
+    .toolbar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      min-width: 0;
+    }
+    .toolbar > .toolbar-row:first-child {
+      flex-wrap: nowrap;
+    }
+    .toolbar-banner {
+      margin-left: auto;
+      display: inline-flex;
+      align-items: center;
+      min-width: 0;
+      text-decoration: none;
+      flex: 0 0 auto;
+    }
+    .toolbar-banner img {
+      display: block;
+      width: auto;
+      max-width: 200px;
+      height: var(--tool-banner-height);
+      border-radius: 12px;
+      border: 1px solid rgba(121, 192, 255, 0.28);
+      box-shadow: 0 10px 26px rgba(0, 0, 0, 0.24);
+      object-fit: contain;
+      object-position: center center;
+      background: rgba(236, 244, 255, 0.94);
+      transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .toolbar-banner:hover img {
+      transform: translateY(-1px);
+      border-color: rgba(121, 192, 255, 0.52);
+      box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    }
+    .toolbar label {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      color: #d0d7de;
+      font-size: 14px;
+      white-space: nowrap;
+    }
+    .toolbar input[type="checkbox"] {
+      accent-color: #2f81f7;
+    }
+    .toolbar input[type="number"] {
+      width: 72px;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+    }
+    .toolbar input[type="number"]:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+    }
+    .toolbar select {
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+    }
+    .toolbar select:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+    }
+    .toolbar input[type="color"] {
+      width: 31px;
+      height: 31px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .force-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      flex-wrap: wrap;
+    }
+    .force-controls span {
+      color: #9fb3c8;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .mini-button {
+      appearance: none;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(29, 44, 58, 0.92);
+      color: #e6edf3;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 140ms ease, border-color 140ms ease, box-shadow 140ms ease;
+    }
+    .mini-button:hover {
+      border-color: rgba(121, 192, 255, 0.44);
+      background: rgba(39, 58, 76, 0.96);
+    }
+    .mini-button.is-active {
+      background: rgba(47, 129, 247, 0.2);
+      border-color: rgba(88, 166, 255, 0.72);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.18) inset;
+    }
+    .tool-symbols {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .control-status {
+      min-width: 102px;
+      color: #e6edf3;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .control-status.is-pending {
+      color: #ffe88c;
+      text-shadow: 0 0 12px rgba(255, 214, 77, 0.52);
+    }
+    .tool-button {
+      appearance: none;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(29, 44, 58, 0.92);
+      color: #e6edf3;
+      border-radius: 999px;
+      padding: 8px 15px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 160ms ease, background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+    }
+    .tool-button:hover {
+      transform: translateY(-1px);
+      border-color: rgba(121, 192, 255, 0.44);
+      background: rgba(39, 58, 76, 0.96);
+    }
+    .tool-button.is-active {
+      background: rgba(47, 129, 247, 0.2);
+      border-color: rgba(88, 166, 255, 0.72);
+      box-shadow: 0 0 0 1px rgba(88, 166, 255, 0.18) inset;
+    }
+    .tool-button.measure-active {
+      color: #3a2800;
+      background: linear-gradient(180deg, #ffe88c 0%, #ffd54d 100%);
+      border-color: rgba(255, 224, 138, 0.95);
+      box-shadow:
+        0 0 0 1px rgba(255, 248, 208, 0.78) inset,
+        0 0 0 2px rgba(255, 214, 77, 0.20),
+        0 0 18px rgba(255, 214, 77, 0.68),
+        0 0 32px rgba(255, 214, 77, 0.36);
+      animation: measurePulse 1.05s ease-in-out infinite;
+    }
+    .tool-button.measure-active:hover {
+      background: linear-gradient(180deg, #ffef9d 0%, #ffd84d 100%);
+      border-color: rgba(255, 236, 179, 0.98);
+      transform: translateY(-1px);
+    }
+    .tool-button--art {
+      position: relative;
+      width: var(--tool-card-width);
+      height: var(--tool-card-height);
+      padding: 0;
+      border: 0;
+      border-radius: 18px;
+      background: transparent;
+      overflow: hidden;
+      box-shadow: none;
+      isolation: isolate;
+    }
+    .tool-button--art,
+    .tool-button--art.is-active,
+    .tool-button--art.measure-active,
+    .tool-button--art:hover,
+    .tool-button--art.measure-active:hover {
+      background: transparent;
+      border-color: transparent;
+      box-shadow: none;
+      animation: none;
+      color: inherit;
+    }
+    .tool-button--art::after {
+      content: "";
+      position: absolute;
+      inset: -18% auto -18% -44%;
+      width: 42%;
+      background: linear-gradient(110deg, transparent 0%, rgba(255, 255, 255, 0.12) 28%, rgba(255, 255, 255, 0.78) 50%, rgba(255, 255, 255, 0.14) 72%, transparent 100%);
+      transform: translateX(-170%) skewX(-22deg);
+      animation: toolShimmer 3.5s ease-in-out infinite;
+      pointer-events: none;
+      z-index: 2;
+      mix-blend-mode: screen;
+    }
+    .tool-button--art .tool-card {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 18px;
+      border: 1px solid rgba(104, 170, 230, 0.34);
+      background:
+        radial-gradient(circle at 22% 18%, rgba(255, 255, 255, 0.92), rgba(214, 233, 248, 0.98) 42%, rgba(192, 214, 235, 0.98) 100%),
+        linear-gradient(180deg, #edf7ff 0%, #d7e7f7 100%);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.85),
+        inset 0 -10px 18px rgba(34, 74, 112, 0.08),
+        0 12px 24px rgba(0, 0, 0, 0.22);
+      transition: transform 160ms ease, filter 160ms ease, box-shadow 160ms ease, border-color 160ms ease;
+    }
+    .tool-button--art .tool-art {
+      display: block;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .tool-button--art:hover {
+      transform: none;
+      background: transparent;
+      border-color: transparent;
+    }
+    .tool-button--art:hover .tool-card {
+      transform: translateY(-1px);
+      border-color: rgba(104, 170, 230, 0.54);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.92),
+        inset 0 -10px 18px rgba(34, 74, 112, 0.10),
+        0 16px 30px rgba(0, 0, 0, 0.26);
+    }
+    .tool-button--art:active .tool-card {
+      transform: translateY(1px) scale(0.985);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.82),
+        inset 0 -6px 14px rgba(34, 74, 112, 0.10),
+        0 7px 16px rgba(0, 0, 0, 0.22);
+    }
+    .tool-button--art.is-active .tool-card,
+    .tool-button--art.measure-active .tool-card {
+      filter: invert(1) sepia(0.9) saturate(2.4) hue-rotate(332deg) brightness(1.05) contrast(1.02);
+      border-color: rgba(255, 232, 140, 0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 252, 226, 0.92),
+        inset 0 -8px 16px rgba(110, 64, 0, 0.12),
+        0 0 0 1px rgba(255, 240, 190, 0.26),
+        0 0 20px rgba(255, 214, 77, 0.46),
+        0 14px 28px rgba(0, 0, 0, 0.28);
+      animation: activeToolPulse 1.08s ease-in-out infinite;
+    }
+    .tool-button--art.is-active:hover .tool-card,
+    .tool-button--art.measure-active:hover .tool-card {
+      transform: translateY(-1px);
+    }
+    .tool-button--art:disabled::after {
+      display: none;
+    }
+    .tool-button--art:disabled .tool-card {
+      opacity: 0.6;
+      filter: grayscale(0.28) saturate(0.8);
+    }
+    .tool-button:disabled,
+    .mini-button:disabled {
+      opacity: 0.55;
+      cursor: default;
+      transform: none;
+      box-shadow: none;
+    }
+    #expandToolbarButton {
+      display: none;
+    }
+    .toolbar.is-collapsed #expandToolbarButton {
+      display: inline-flex;
+    }
+    @keyframes toolShimmer {
+      0% {
+        transform: translateX(-170%) skewX(-22deg);
+      }
+      56%,
+      100% {
+        transform: translateX(340%) skewX(-22deg);
+      }
+    }
+    @keyframes activeToolPulse {
+      0%,
+      100% {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 252, 226, 0.92),
+          inset 0 -8px 16px rgba(110, 64, 0, 0.12),
+          0 0 0 1px rgba(255, 240, 190, 0.26),
+          0 0 18px rgba(255, 214, 77, 0.42),
+          0 14px 28px rgba(0, 0, 0, 0.28);
+      }
+      50% {
+        box-shadow:
+          inset 0 1px 0 rgba(255, 252, 226, 0.96),
+          inset 0 -8px 16px rgba(110, 64, 0, 0.18),
+          0 0 0 1px rgba(255, 240, 190, 0.36),
+          0 0 24px rgba(255, 214, 77, 0.62),
+          0 16px 32px rgba(0, 0, 0, 0.30);
+      }
+    }
+    .layer-panel {
+      top: 88px;
+      right: 16px;
+      width: min(92vw, 340px);
+      padding: 12px;
+      display: none;
+    }
+    .layer-panel.is-visible {
+      display: block;
+    }
+    .layer-title {
+      margin: 0 0 10px;
+      font-size: 13px;
+      color: #79c0ff;
+      font-weight: 700;
+    }
+    .layer-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 8px 6px;
+      border-radius: 12px;
+    }
+    .layer-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .layer-row label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #e6edf3;
+      font-size: 12px;
+    }
+    .layer-count {
+      color: #8b949e;
+      font-size: 11px;
+    }
+    .layer-color {
+      width: 28px;
+      height: 28px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .hint {
+      left: 16px;
+      bottom: 16px;
+      padding: 10px 14px;
+      color: #9fb3c8;
+      font-size: 12px;
+      max-width: min(90vw, 720px);
+    }
+    .capture-modal {
+      position: absolute;
+      inset: 0;
+      z-index: 2200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 22px;
+      background: rgba(4, 10, 16, 0.48);
+      backdrop-filter: blur(10px);
+      box-sizing: border-box;
+    }
+    .capture-modal.is-visible {
+      display: flex;
+    }
+    .capture-card {
+      width: min(94vw, 1040px);
+      max-height: min(88vh, 920px);
+      overflow: auto;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(15, 25, 35, 0.94);
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      box-shadow: 0 20px 54px rgba(0, 0, 0, 0.34);
+    }
+    .capture-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .capture-head h2 {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 18px;
+    }
+    .capture-head p {
+      margin: 6px 0 0;
+      color: #c9d1d9;
+      font-size: 12px;
+    }
+    .capture-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 290px;
+      gap: 16px;
+      align-items: start;
+    }
+    .capture-stage {
+      position: relative;
+      min-height: 320px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(121, 192, 255, 0.14);
+      background:
+        linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.05) 75%),
+        linear-gradient(45deg, rgba(255,255,255,0.05) 25%, transparent 25%, transparent 75%, rgba(255,255,255,0.05) 75%);
+      background-position: 0 0, 10px 10px;
+      background-size: 20px 20px;
+      overflow: hidden;
+    }
+    .capture-paper-viewport {
+      position: relative;
+      width: 100%;
+      min-height: 320px;
+      height: min(62vh, 680px);
+      overflow: hidden;
+      border-radius: 12px;
+      cursor: grab;
+    }
+    .capture-paper-viewport.is-dragging {
+      cursor: grabbing;
+    }
+    .capture-paper-inner {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform-origin: center center;
+      will-change: transform;
+    }
+    .capture-paper-frame {
+      display: inline-block;
+      border-radius: 12px;
+      background: #ffffff;
+      box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.26),
+        0 0 0 1px rgba(0,0,0,0.06);
+    }
+    .capture-paper-frame canvas {
+      display: block;
+      cursor: move;
+    }
+    #capturePreviewCanvas {
+      display: block;
+      border-radius: 12px;
+      background: #ffffff;
+      max-width: none;
+      max-height: none;
+    }
+    .capture-controls {
+      display: grid;
+      gap: 10px;
+    }
+    .capture-group {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(121, 192, 255, 0.12);
+    }
+    .capture-group h3 {
+      margin: 0 0 10px;
+      color: #79c0ff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .capture-fields {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .capture-field {
+      display: grid;
+      gap: 4px;
+      color: #d0d7de;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .capture-modal input[type="number"] {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 12px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .capture-modal input[type="number"]:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+    }
+    .capture-modal select {
+      width: 100%;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 12px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .capture-modal select:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+    }
+    .capture-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 10px;
+      color: #d0d7de;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .capture-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .capture-note {
+      margin: 0;
+      color: #9fb3c8;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+    .text-marker-shell {
+      pointer-events: auto;
+      cursor: move;
+      user-select: none;
+      touch-action: none;
+      position: relative;
+      display: inline-flex;
+      align-items: stretch;
+      filter: drop-shadow(0 8px 18px rgba(0, 0, 0, 0.26));
+    }
+    .text-marker-shell.is-hover {
+      filter:
+        drop-shadow(0 0 16px rgba(255, 214, 77, 0.46))
+        drop-shadow(0 10px 18px rgba(0, 0, 0, 0.26));
+    }
+    .text-marker-shell.is-selected {
+      outline: 2px solid rgba(255, 214, 77, 0.95);
+      outline-offset: 6px;
+      border-radius: 8px;
+    }
+    .map-text-label {
+      color: #131722;
+      font-size: 45pt;
+      font-weight: 800;
+      line-height: 1.05;
+      white-space: nowrap;
+      text-shadow:
+        -2px 0 rgba(255,255,255,0.96),
+         2px 0 rgba(255,255,255,0.96),
+         0 -2px rgba(255,255,255,0.96),
+         0  2px rgba(255,255,255,0.96),
+         0  0 16px rgba(255,255,255,0.28);
+    }
+    .text-resize-handle {
+      position: absolute;
+      right: -14px;
+      bottom: -14px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #ffe88c 0%, #ffd54d 100%);
+      border: 2px solid rgba(15, 25, 35, 0.92);
+      box-shadow:
+        0 0 0 1px rgba(255, 248, 208, 0.78) inset,
+        0 0 0 2px rgba(255, 214, 77, 0.16),
+        0 0 16px rgba(255, 214, 77, 0.36);
+      cursor: nwse-resize;
+      display: none;
+    }
+    .text-marker-shell.is-selected .text-resize-handle {
+      display: block;
+    }
+    @media (max-width: 920px) {
+      .capture-grid {
+        grid-template-columns: 1fr;
+      }
+      .capture-card {
+        width: min(96vw, 760px);
+      }
+    }
+    .line-label {
+      transform: translate(-105%, -50%);
+      pointer-events: none;
+      white-space: nowrap;
+      text-shadow:
+        -1px 0 rgba(255,255,255,0.96),
+         1px 0 rgba(255,255,255,0.96),
+         0 -1px rgba(255,255,255,0.96),
+         0  1px rgba(255,255,255,0.96);
+    }
+    .line-label.kml {
+      color: #1a1a2e;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .line-label.force {
+      color: #cc2200;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .leaflet-tooltip.doo-tooltip {
+      background: rgba(15, 25, 35, 0.92);
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      color: #e6edf3;
+      border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
+      padding: 8px 10px;
+    }
+    .leaflet-tooltip.doo-tooltip::before {
+      border-top-color: rgba(15, 25, 35, 0.92);
+    }
+    .leaflet-control-zoom a {
+      background: rgba(15, 25, 35, 0.86);
+      color: #e6edf3;
+      border-bottom-color: rgba(255,255,255,0.08);
+    }
+    .leaflet-control-attribution {
+      background: rgba(255, 255, 255, 0.74);
+      backdrop-filter: blur(10px);
+    }
+    .leaflet-tile-pane {
+      transition: filter 160ms ease, opacity 160ms ease;
+      will-change: filter;
+    }
+    .distance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(15, 25, 35, 0.88);
+      border: 1px solid rgba(154, 114, 248, 0.34);
+      box-shadow: 0 10px 24px rgba(14, 20, 30, 0.26);
+      white-space: nowrap;
+    }
+    .distance-unit {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 5px 10px;
+      background: transparent;
+      color: #c9d1d9;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
+    }
+    .distance-unit.is-active {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+    }
+    .distance-chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      background: rgba(122, 54, 255, 0.92);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+      box-shadow: 0 10px 24px rgba(72, 29, 136, 0.28);
+      white-space: nowrap;
+    }
+    .flag-pin {
+      position: relative;
+      width: 24px;
+      height: 34px;
+      pointer-events: none;
+      filter: drop-shadow(0 8px 14px rgba(0, 0, 0, 0.28));
+    }
+    .flag-pin .pole {
+      position: absolute;
+      left: 6px;
+      bottom: 0;
+      width: 2px;
+      height: 28px;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #f8fafc 0%, #d0d7de 100%);
+    }
+    .flag-pin .flag {
+      position: absolute;
+      left: 8px;
+      top: 5px;
+      width: 15px;
+      height: 11px;
+      background: linear-gradient(135deg, #ff6b6b 0%, #d90429 100%);
+      clip-path: polygon(0 0, 100% 18%, 78% 50%, 100% 82%, 0 100%);
+      transform-origin: left center;
+      animation: flagWave 0.9s ease-in-out infinite;
+      border-radius: 0 2px 2px 0;
+    }
+    .text-input-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 4200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: rgba(4, 10, 18, 0.52);
+      backdrop-filter: blur(8px);
+    }
+    .text-input-modal.is-visible {
+      display: flex;
+    }
+    .text-input-card {
+      width: min(92vw, 460px);
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(15, 25, 35, 0.96);
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      box-shadow: 0 22px 72px rgba(0, 0, 0, 0.34);
+    }
+    .text-input-card h3 {
+      margin: 0 0 8px;
+      color: #79c0ff;
+      font-size: 20px;
+    }
+    .text-input-card p {
+      margin: 0 0 14px;
+      color: #c9d1d9;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .text-input-field {
+      width: 100%;
+      min-height: 112px;
+      resize: vertical;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.86);
+      color: #e6edf3;
+      font-size: 15px;
+      line-height: 1.5;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .text-input-field:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
+    }
+    .text-input-check {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+      color: #e6edf3;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .text-input-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    @keyframes flagWave {
+      0%, 100% { transform: skewY(0deg) rotate(0deg) scaleX(1); }
+      50% { transform: skewY(7deg) rotate(2deg) scaleX(0.9); }
+    }
+    @keyframes measurePulse {
+      0%, 100% {
+        box-shadow:
+          0 0 0 1px rgba(255, 248, 208, 0.78) inset,
+          0 0 0 2px rgba(255, 214, 77, 0.20),
+          0 0 18px rgba(255, 214, 77, 0.68),
+          0 0 32px rgba(255, 214, 77, 0.36);
+      }
+      50% {
+        box-shadow:
+          0 0 0 1px rgba(255, 248, 208, 0.88) inset,
+          0 0 0 4px rgba(255, 214, 77, 0.28),
+          0 0 26px rgba(255, 214, 77, 0.82),
+          0 0 44px rgba(255, 214, 77, 0.48);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <svg class="tool-symbols" aria-hidden="true" focusable="false">
+    <symbol id="toolIconLayer" viewBox="0 0 96 72">
+      <g fill="none" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round" stroke-linecap="round">
+        <path fill="#edf7ff" d="M48 11 77 22 48 33 19 22Z"></path>
+        <path fill="#cae0f4" d="M48 23 74 33 48 44 22 33Z"></path>
+        <path fill="#a9cae8" d="M48 35 69 44 48 54 27 44Z"></path>
+      </g>
+      <path d="M26 58h44" stroke="#61a5e8" stroke-width="3.2" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="toolIconMeasure" viewBox="0 0 96 72">
+      <g transform="rotate(-32 49 36)">
+        <rect x="27" y="20" width="44" height="32" rx="8" fill="#f7fbff" stroke="#17324b" stroke-width="3"></rect>
+        <path d="M37 24v8M44 24v13M51 24v8M58 24v13M65 24v8" stroke="#3c7bb7" stroke-width="2.6" stroke-linecap="round"></path>
+        <path d="M37 40v8M44 40v12M51 40v8M58 40v12M65 40v8" stroke="#17324b" stroke-width="2.2" stroke-linecap="round"></path>
+      </g>
+    </symbol>
+    <symbol id="toolIconText" viewBox="0 0 96 72">
+      <path d="M22 16h36M40 16v38M30 54h20" stroke="#17324b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
+      <path d="m58 20 14 22-8 1 4 11-6 3-4-11-7 5Z" fill="#5aa0e5" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
+      <circle cx="76" cy="19" r="4" fill="#ffd86d"></circle>
+    </symbol>
+    <symbol id="toolIconDone" viewBox="0 0 96 72">
+      <rect x="18" y="14" width="36" height="44" rx="8" fill="#f6fbff" stroke="#17324b" stroke-width="2.6"></rect>
+      <path d="M26 26h20M26 34h17M26 42h15" stroke="#8eb2d4" stroke-width="2.4" stroke-linecap="round"></path>
+      <path d="M52 49 69 20l10 6-17 29-11 2z" fill="#ffe26f" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round"></path>
+      <path d="M49 52 60 50 55 60Z" fill="#1b2630"></path>
+      <path d="M53 47 73 36" stroke="#b8ff67" stroke-width="10" stroke-linecap="round" opacity="0.72"></path>
+    </symbol>
+    <symbol id="toolIconForce" viewBox="0 0 96 72">
+      <path d="M28 55c0-7 6-12 13-12h15c7 0 13 5 13 12v3H28z" fill="#b5804f" stroke="#17324b" stroke-width="2.6" stroke-linejoin="round"></path>
+      <path d="M48 43v15" stroke="#8b5e34" stroke-width="3.2" stroke-linecap="round"></path>
+      <path d="M53 17 69 34l-6 6-18-15z" fill="#9ed0ff" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round"></path>
+      <path d="M43 10 58 25" stroke="#5f4326" stroke-width="5.2" stroke-linecap="round"></path>
+      <path d="M44 32 50 38" stroke="#ffcc58" stroke-width="3" stroke-linecap="round"></path>
+      <path d="M54 29 61 35" stroke="#ffcc58" stroke-width="3" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="toolIconCamera" viewBox="0 0 96 72">
+      <rect x="18" y="24" width="60" height="28" rx="9" fill="#d7e8f9" stroke="#17324b" stroke-width="2.8"></rect>
+      <path d="M30 24 36 16h18l4 8" fill="#eef7ff" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round"></path>
+      <circle cx="48" cy="38" r="11" fill="#7fb5ea" stroke="#17324b" stroke-width="3"></circle>
+      <circle cx="48" cy="38" r="5" fill="#17324b"></circle>
+      <circle cx="69" cy="30" r="3.2" fill="#ffd96e"></circle>
+      <path d="M77 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff1b3" stroke="#17324b" stroke-width="1.8" stroke-linejoin="round"></path>
+    </symbol>
+    <symbol id="toolIconHide" viewBox="0 0 96 72">
+      <path d="M70 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
+      <path d="M76 21c4-5 8-2 8 3" stroke="#17324b" stroke-width="2.6" stroke-linecap="round"></path>
+      <path d="M66 34c5-4 14-4 18 1l-3 4 4 9-6 2-3-7-6 5-4-4 5-5-6-3z" fill="#17324b" stroke="#17324b" stroke-width="2" stroke-linejoin="round"></path>
+      <path d="M61 49 53 57M77 48 83 56" stroke="#17324b" stroke-width="3.4" stroke-linecap="round"></path>
+      <ellipse cx="46" cy="39" rx="9" ry="13" fill="#61a5e8" opacity="0.28"></ellipse>
+      <ellipse cx="33" cy="39" rx="9" ry="13" fill="#61a5e8" opacity="0.17"></ellipse>
+      <path d="M62 27h11" stroke="#f6fbff" stroke-width="2.4" stroke-linecap="round"></path>
+    </symbol>
+    <symbol id="toolIconReveal" viewBox="0 0 96 72">
+      <path d="M16 15c14 3 17 18 16 39-10-5-16-16-16-32z" fill="#e97886" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
+      <path d="M80 15c-14 3-17 18-16 39 10-5 16-16 16-32z" fill="#e97886" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
+      <path d="M48 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
+      <path d="M54 20c4-4 8-2 8 3" stroke="#17324b" stroke-width="2.4" stroke-linecap="round"></path>
+      <path d="M40 34c4-3 13-3 16 1l-4 5 8 8-5 4-7-8-6 8-5-4 7-8-4-5z" fill="#17324b" stroke="#17324b" stroke-width="2" stroke-linejoin="round"></path>
+      <path d="M36 32 28 22M60 32 68 22" stroke="#ffe08f" stroke-width="3" stroke-linecap="round"></path>
+    </symbol>
+  </svg>
+  <div id="previewGateOverlay" class="preview-gate-overlay">
+    <div class="preview-gate-card">
+      <h2>회원가입 후 전체 사용</h2>
+      <p>도식화 보기는 실제 화면으로 먼저 보여드립니다. 전체 기능을 계속 사용하려면 회원가입 또는 로그인해 주세요.</p>
+      <div class="preview-gate-actions">
+        <a id="previewGateLink" class="preview-gate-link" href="http://127.0.0.1:3000/login?next=/" target="_blank" rel="noreferrer noopener">회원가입 / 로그인</a>
+        <button id="previewGateBackButton" class="preview-gate-secondary" type="button">뒤로가기</button>
+      </div>
+    </div>
+  </div>
+  <div id="titlebar" class="panel titlebar">
+    <h1 id="projectName"></h1>
+    <p id="projectMeta"></p>
+  </div>
+  <div class="panel toolbar">
+    <div class="toolbar-row">
+      <button id="layerButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="겹" title="겹">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconLayer"></use></svg></span>
+      </button>
+      <button id="measureButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="측정" title="측정">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconMeasure"></use></svg></span>
+      </button>
+      <button id="textButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="글자 입력" title="글자 입력">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconText"></use></svg></span>
+      </button>
+      <button id="doneButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="완료" title="완료">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconDone"></use></svg></span>
+      </button>
+      <button id="forceButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="강제번호" title="강제번호">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconForce"></use></svg></span>
+      </button>
+      <button id="captureButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="카메라" title="카메라">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconCamera"></use></svg></span>
+      </button>
+      <label class="toolbar-collapse-hide"><input id="grayToggle" type="checkbox">GRAY</label>
+      <label id="numWrap" class="toolbar-collapse-hide"><input id="numToggle" type="checkbox">번호</label>
+      <button id="collapseToolbarButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="은둔" title="은둔">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconHide"></use></svg></span>
+      </button>
+      <a class="toolbar-banner toolbar-collapse-hide" href="https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581" target="_blank" rel="noreferrer noopener" title="DOO GPX 앱스토어 열기">
+        <img src="/doogpx.png" alt="DOO GPX banner">
+      </a>
+      <button id="expandToolbarButton" class="tool-button tool-button--art" type="button" aria-label="출현" title="출현">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconReveal"></use></svg></span>
+      </button>
+    </div>
+    <div class="toolbar-row toolbar-collapse-hide">
+      <div id="forceControls" class="force-controls">
+        <span>시작</span>
+        <input id="forceStartInput" type="number" value="1" step="1">
+        <span id="forceStatus" class="control-status">다음 1</span>
+        <span>크기</span>
+        <input id="forceSizeInput" type="number" value="22" min="10" max="48" step="1">
+        <span>색상</span>
+        <input id="forceColorInput" type="color" value="#cc2200">
+      </div>
+      <div id="numControls" class="force-controls">
+        <span>크기</span>
+        <input id="numSizeInput" type="number" value="12" min="8" max="48" step="1">
+        <span>색상</span>
+        <input id="numColorInput" type="color" value="#1a1a2e">
+      </div>
+    </div>
+  </div>
+  <div id="layerPanel" class="panel layer-panel">
+    <p class="layer-title">겹</p>
+    <div id="layerRows"></div>
+  </div>
+  <div id="hintPanel" class="panel hint">휠 또는 트랙패드로 부드럽게 확대/축소 · 드래그 이동 · 겹 토글/색상 변경 · 측정 또는 T 글자 입력 가능</div>
+  <div id="captureModal" class="capture-modal">
+    <div id="captureCard" class="capture-card">
+      <div class="capture-head">
+        <div>
+          <h2>이미지 저장</h2>
+          <p id="captureStatus">현재 지도 화면을 용지 크기에 맞춰 저장하거나 출력합니다.</p>
+        </div>
+        <button id="captureCloseButton" class="mini-button" type="button">닫기</button>
+      </div>
+      <div class="capture-grid">
+        <div class="capture-stage">
+          <div id="captureViewport" class="capture-paper-viewport">
+            <div id="capturePreviewInner" class="capture-paper-inner">
+              <div class="capture-paper-frame">
+                <canvas id="capturePreviewCanvas"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="capture-controls">
+          <div class="capture-group">
+            <h3>용지</h3>
+            <div class="capture-fields">
+              <label class="capture-field">크기
+                <select id="capturePaperSelect">
+                  <option value="A4">A4</option>
+                  <option value="A3">A3</option>
+                  <option value="B5">B5</option>
+                  <option value="A5">A5</option>
+                  <option value="LETTER">Letter</option>
+                  <option value="CUSTOM">Custom</option>
+                </select>
+              </label>
+            </div>
+            <div class="capture-actions">
+              <button id="capturePrintButton" class="tool-button" type="button">출력</button>
+            </div>
+          </div>
+          <div class="capture-group">
+            <h3>저장 크기</h3>
+            <div class="capture-fields">
+              <label class="capture-field">너비<input id="captureOutputWidth" type="number" value="0" min="1" step="1"></label>
+              <label class="capture-field">높이<input id="captureOutputHeight" type="number" value="0" min="1" step="1"></label>
+            </div>
+            <label class="capture-check"><input id="captureLockRatio" type="checkbox" checked>비율 고정</label>
+          </div>
+          <div class="capture-actions">
+            <button id="captureSaveButton" class="tool-button" type="button">PNG 저장</button>
+          </div>
+          <p class="capture-note">상단 메뉴와 패널은 제외하고 현재 지도 부분만 저장하거나 출력합니다. 출력 버튼은 브라우저의 기본 프린터 창을 엽니다.</p>
+          <p class="capture-note">미리보기 안에서 휠로 확대/축소하고 드래그로 이동할 수 있습니다. 기본 용지는 A4 세로입니다.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div id="textInputModal" class="text-input-modal">
+    <div id="textInputCard" class="text-input-card">
+      <h3 id="textInputTitle">글자 입력</h3>
+      <p>지도에 표시할 글자를 입력하고, 제목이면 체크하세요.</p>
+      <textarea id="textInputField" class="text-input-field" placeholder="지도에 표시할 글자를 입력하세요."></textarea>
+      <label class="text-input-check"><input id="textTitleCheckbox" type="checkbox">제목으로 사용</label>
+      <div class="text-input-actions">
+        <button id="textInputCancelButton" class="mini-button" type="button">취소</button>
+        <button id="textInputSaveButton" class="tool-button" type="button">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="/html2canvas.min.js"></script>
+  <script>
+    const payload = __PAYLOAD_JSON__;
+    const previewGateEnabled = !!payload.preview_gate;
+    const lineColor = '#1A3FCC';
+    const hoverColor = '#4488FF';
+    const measureColor = '#7A36FF';
+    const isPolygonMode = payload.mode === 'polygon';
+    const layerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
+    const renderer = L.canvas({ padding: 0.5 });
+    const map = L.map('map', {
+      preferCanvas: true,
+      zoomAnimation: true,
+      fadeAnimation: true,
+      markerZoomAnimation: true,
+      zoomSnap: 0,
+      zoomDelta: 0.25,
+      wheelDebounceTime: 10,
+      wheelPxPerZoomLevel: 90,
+      inertia: true,
+      inertiaDeceleration: 2200,
+      zoomControl: false
+    });
+    map.createPane('completionPane');
+    map.getPane('completionPane').style.zIndex = '360';
+
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      minZoom: 3,
+      keepBuffer: 16,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      detectRetina: true,
+      crossOrigin: true,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    const resultLineGroup = L.layerGroup().addTo(map);
+    const resultPolygonGroup = L.layerGroup().addTo(map);
+    const endpointGroup = L.layerGroup().addTo(map);
+    const completedHaloGroup = L.layerGroup().addTo(map);
+    const forceLabelGroup = L.layerGroup();
+    const kmlLabelGroup = L.layerGroup();
+    const measureGroup = L.layerGroup().addTo(map);
+    const textGroup = L.layerGroup().addTo(map);
+    const bounds = L.latLngBounds([]);
+    const tilePane = map.getPane('tilePane');
+    const toolbar = document.querySelector('.toolbar');
+    const titlebar = document.getElementById('titlebar');
+    const hintPanel = document.getElementById('hintPanel');
+    const layerButton = document.getElementById('layerButton');
+    const measureButton = document.getElementById('measureButton');
+    const textButton = document.getElementById('textButton');
+    const doneButton = document.getElementById('doneButton');
+    const forceButton = document.getElementById('forceButton');
+    const captureButton = document.getElementById('captureButton');
+    const collapseToolbarButton = document.getElementById('collapseToolbarButton');
+    const expandToolbarButton = document.getElementById('expandToolbarButton');
+    const layerPanel = document.getElementById('layerPanel');
+    const layerRows = document.getElementById('layerRows');
+    const forceControls = document.getElementById('forceControls');
+    const forceStartInput = document.getElementById('forceStartInput');
+    const forceStatus = document.getElementById('forceStatus');
+    const forceSizeInput = document.getElementById('forceSizeInput');
+    const forceColorInput = document.getElementById('forceColorInput');
+    const grayToggle = document.getElementById('grayToggle');
+    const numToggle = document.getElementById('numToggle');
+    const numControls = document.getElementById('numControls');
+    const numSizeInput = document.getElementById('numSizeInput');
+    const numColorInput = document.getElementById('numColorInput');
+    const numWrap = document.getElementById('numWrap');
+    const captureModal = document.getElementById('captureModal');
+    const captureCard = document.getElementById('captureCard');
+    const captureStatus = document.getElementById('captureStatus');
+    const captureViewport = document.getElementById('captureViewport');
+    const capturePreviewInner = document.getElementById('capturePreviewInner');
+    const capturePreviewCanvas = document.getElementById('capturePreviewCanvas');
+    const capturePaperSelect = document.getElementById('capturePaperSelect');
+    const captureOutputWidth = document.getElementById('captureOutputWidth');
+    const captureOutputHeight = document.getElementById('captureOutputHeight');
+    const captureLockRatio = document.getElementById('captureLockRatio');
+    const capturePrintButton = document.getElementById('capturePrintButton');
+    const captureSaveButton = document.getElementById('captureSaveButton');
+    const captureCloseButton = document.getElementById('captureCloseButton');
+    const textInputModal = document.getElementById('textInputModal');
+    const textInputCard = document.getElementById('textInputCard');
+    const textInputTitle = document.getElementById('textInputTitle');
+    const textInputField = document.getElementById('textInputField');
+    const textTitleCheckbox = document.getElementById('textTitleCheckbox');
+    const textInputCancelButton = document.getElementById('textInputCancelButton');
+    const textInputSaveButton = document.getElementById('textInputSaveButton');
+    const previewGateLink = document.getElementById('previewGateLink');
+    const previewGateBackButton = document.getElementById('previewGateBackButton');
+
+    document.getElementById('projectName').textContent = payload.project_name;
+    document.getElementById('projectMeta').textContent = payload.meta_text || '';
+    if (previewGateEnabled) {
+      document.body.classList.add('preview-gated');
+      if (payload.signup_url) {
+        previewGateLink.href = payload.signup_url;
+      }
+    }
+    previewGateBackButton.addEventListener('click', () => {
+      if (window.history.length > 1) {
+        window.history.back();
+        return;
+      }
+      window.close();
+    });
+
+    const layerControls = new Map();
+    const layerBundles = new Map();
+    const resultLineEntries = [];
+    let layerDataMap = null;
+    let layerDataPromise = null;
+
+    const measureState = {
+      active: false,
+      unit: 'km',
+      points: [],
+      markers: [],
+      line: null,
+      label: null,
+    };
+    const textState = {
+      active: false,
+      markers: [],
+      selectedMarker: null,
+      resizing: null,
+      dialogResolver: null,
+    };
+    const doneState = {
+      active: false,
+    };
+    const forceState = {
+      active: false,
+      nextNumber: 1,
+    };
+    const captureState = {
+      sourceCanvas: null,
+      titleAnchor: null,
+      aspectRatio: 1,
+      paperKey: 'A4',
+      viewScale: 1,
+      viewX: 0,
+      viewY: 0,
+      panning: null,
+      imageOffsetX: 0,
+      imageOffsetY: 0,
+      imageDrag: null,
+    };
+    const PAPER_PRESETS = {
+      A4: { label: 'A4', width: 2480, height: 3508 },
+      A3: { label: 'A3', width: 3508, height: 4961 },
+      B5: { label: 'B5', width: 2079, height: 2953 },
+      A5: { label: 'A5', width: 1748, height: 2480 },
+      LETTER: { label: 'Letter', width: 2550, height: 3300 },
+    };
+    const VIEWER_STATE_VERSION = 1;
+    const UNDO_LIMIT = 10;
+    let viewerStateSaveTimer = null;
+    let viewerStateRestoring = false;
+    const undoHistory = [];
+    let undoApplying = false;
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function clamp(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function wait(ms) {
+      return new Promise((resolve) => window.setTimeout(resolve, ms));
+    }
+
+    function nextFrame() {
+      return new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+    }
+
+    function labelIcon(text, kind, inlineStyle = '') {
+      return L.divIcon({
+        className: '',
+        html: `<div class="line-label ${kind}" style="${inlineStyle}">${escapeHtml(text)}</div>`,
+        iconSize: null
+      });
+    }
+
+    function flagIcon() {
+      return L.divIcon({
+        className: '',
+        html: '<div class="flag-pin"><div class="pole"></div><div class="flag"></div></div>',
+        iconSize: [24, 34],
+        iconAnchor: [6, 32]
+      });
+    }
+
+    function textIcon(text, size = 45, isTitle = false) {
+      const htmlText = escapeHtml(String(text || '').trim()).replace(/\n/g, '<br>');
+      const titleAttr = isTitle ? ' data-title="1"' : ' data-title="0"';
+      const titleClass = isTitle ? ' is-title' : '';
+      return L.divIcon({
+        className: '',
+        html: `<div class="text-marker-shell${titleClass}"${titleAttr}><div class="map-text-label" style="font-size:${size}pt">${htmlText}</div><div class="text-resize-handle" data-text-resize="1"></div></div>`,
+        iconSize: null,
+      });
+    }
+
+    function getTextMarkerSize(marker) {
+      const value = Number(marker.options.textSize || 45);
+      return clamp(Number.isFinite(value) ? value : 45, 8, 240);
+    }
+
+    function updateTextMarkerElement(marker) {
+      const element = marker.getElement();
+      if (!element) {
+        return;
+      }
+      const shell = element.querySelector('.text-marker-shell');
+      if (shell) {
+        shell.dataset.title = marker.options.isTitle ? '1' : '0';
+        shell.classList.toggle('is-title', !!marker.options.isTitle);
+      }
+      const label = element.querySelector('.map-text-label');
+      if (label) {
+        label.style.fontSize = `${getTextMarkerSize(marker)}pt`;
+      }
+    }
+
+    function setTextHover(marker, hovered) {
+      const element = marker.getElement();
+      if (!element) {
+        return;
+      }
+      const shell = element.querySelector('.text-marker-shell');
+      if (!shell) {
+        return;
+      }
+      shell.classList.toggle('is-hover', hovered);
+    }
+
+    function syncTextMarkerSelection(marker) {
+      const element = marker.getElement();
+      if (!element) {
+        return;
+      }
+      const shell = element.querySelector('.text-marker-shell');
+      if (!shell) {
+        return;
+      }
+      shell.classList.toggle('is-selected', textState.selectedMarker === marker);
+    }
+
+    function deselectTextMarker() {
+      if (!textState.selectedMarker) {
+        return;
+      }
+      const previous = textState.selectedMarker;
+      textState.selectedMarker = null;
+      syncTextMarkerSelection(previous);
+    }
+
+    function selectTextMarker(marker) {
+      if (textState.selectedMarker === marker) {
+        syncTextMarkerSelection(marker);
+        return;
+      }
+      const previous = textState.selectedMarker;
+      textState.selectedMarker = marker;
+      if (previous) {
+        syncTextMarkerSelection(previous);
+      }
+      syncTextMarkerSelection(marker);
+      if (marker.bringToFront) {
+        marker.bringToFront();
+      }
+    }
+
+    function setTextInputModalVisible(visible) {
+      textInputModal.classList.toggle('is-visible', visible);
+    }
+
+    function resolveTextInput(result) {
+      if (!textState.dialogResolver) {
+        return;
+      }
+      const resolver = textState.dialogResolver;
+      textState.dialogResolver = null;
+      setTextInputModalVisible(false);
+      resolver(result);
+    }
+
+    function promptForText(initialValue = '', initialTitle = false) {
+      return new Promise((resolve) => {
+        textState.dialogResolver = resolve;
+        textInputTitle.textContent = initialValue ? '글자 수정' : '글자 입력';
+        textInputField.value = initialValue;
+        textTitleCheckbox.checked = !!initialTitle;
+        setTextInputModalVisible(true);
+        window.setTimeout(() => {
+          textInputField.focus();
+          textInputField.select();
+        }, 20);
+      });
+    }
+
+    function removeTextMarker(marker) {
+      textGroup.removeLayer(marker);
+      textState.markers = textState.markers.filter((item) => item !== marker);
+      if (textState.selectedMarker === marker) {
+        textState.selectedMarker = null;
+      }
+      scheduleViewerStateSave();
+    }
+
+    function deleteSelectedTextMarker() {
+      if (!textState.selectedMarker) {
+        return false;
+      }
+      removeTextMarker(textState.selectedMarker);
+      return true;
+    }
+
+    function stopTextResize() {
+      if (!textState.resizing) {
+        return;
+      }
+      if (map.dragging) {
+        map.dragging.enable();
+      }
+      if (textState.resizing.marker && textState.resizing.marker.dragging) {
+        textState.resizing.marker.dragging.enable();
+      }
+      window.removeEventListener('pointermove', handleTextResizeMove);
+      window.removeEventListener('pointerup', stopTextResize);
+      textState.resizing = null;
+      scheduleViewerStateSave();
+    }
+
+    function handleTextResizeMove(event) {
+      if (!textState.resizing) {
+        return;
+      }
+      const info = textState.resizing;
+      const deltaX = event.clientX - info.startX;
+      const deltaY = event.clientY - info.startY;
+      const nextWidth = Math.max(24, info.startWidth + deltaX);
+      const nextHeight = Math.max(24, info.startHeight + deltaY);
+      const scaleX = nextWidth / Math.max(1, info.startWidth);
+      const scaleY = nextHeight / Math.max(1, info.startHeight);
+      const nextScale = Math.max(0.2, Math.max(scaleX, scaleY));
+      info.marker.options.textSize = clamp(info.startSize * nextScale, 8, 240);
+      updateTextMarkerElement(info.marker);
+      syncTextMarkerSelection(info.marker);
+      setTextHover(info.marker, true);
+    }
+
+    function beginTextResize(marker, event) {
+      event.preventDefault();
+      event.stopPropagation();
+      selectTextMarker(marker);
+      const element = marker.getElement();
+      if (!element) {
+        return;
+      }
+      const shell = element.querySelector('.text-marker-shell');
+      if (!shell) {
+        return;
+      }
+      const rect = shell.getBoundingClientRect();
+      textState.resizing = {
+        marker,
+        startX: event.clientX,
+        startY: event.clientY,
+        startWidth: rect.width,
+        startHeight: rect.height,
+        startSize: getTextMarkerSize(marker),
+      };
+      if (map.dragging) {
+        map.dragging.disable();
+      }
+      if (marker.dragging) {
+        marker.dragging.disable();
+      }
+      window.addEventListener('pointermove', handleTextResizeMove);
+      window.addEventListener('pointerup', stopTextResize);
+    }
+
+    function bindTextMarkerDom(marker) {
+      const element = marker.getElement();
+      if (!element) {
+        window.requestAnimationFrame(() => bindTextMarkerDom(marker));
+        return;
+      }
+      updateTextMarkerElement(marker);
+      syncTextMarkerSelection(marker);
+      const handle = element.querySelector('[data-text-resize]');
+      if (handle && !handle.dataset.boundResize) {
+        handle.dataset.boundResize = '1';
+        handle.addEventListener('pointerdown', (event) => {
+          beginTextResize(marker, event);
+        });
+      }
+    }
+
+    function attachTextMarkerEvents(marker) {
+      marker.on('mouseover', () => {
+        setTextHover(marker, true);
+        if (marker.bringToFront) {
+          marker.bringToFront();
+        }
+      });
+      marker.on('mouseout', () => {
+        if (textState.selectedMarker !== marker && textState.resizing?.marker !== marker) {
+          setTextHover(marker, false);
+        }
+      });
+      marker.on('dragstart', () => {
+        selectTextMarker(marker);
+        setTextHover(marker, true);
+        if (marker.bringToFront) {
+          marker.bringToFront();
+        }
+      });
+      marker.on('dragend', () => {
+        if (textState.selectedMarker !== marker) {
+          setTextHover(marker, false);
+        }
+        scheduleViewerStateSave();
+      });
+      marker.on('click', (event) => {
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        selectTextMarker(marker);
+      });
+      marker.on('dblclick', async (event) => {
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        const currentText = marker.options.textValue || '';
+        const nextValue = await promptForText(currentText, !!marker.options.isTitle);
+        if (nextValue === null) {
+          return;
+        }
+        if (!nextValue.text) {
+          removeTextMarker(marker);
+          return;
+        }
+        marker.options.textValue = nextValue.text;
+        marker.options.isTitle = !!nextValue.isTitle;
+        marker.setIcon(textIcon(nextValue.text, getTextMarkerSize(marker), !!nextValue.isTitle));
+        window.requestAnimationFrame(() => {
+          bindTextMarkerDom(marker);
+          selectTextMarker(marker);
+          setTextHover(marker, true);
+        });
+        scheduleViewerStateSave();
+      });
+    }
+
+    function addTextMarker(latlng, textValue, isTitle = false) {
+      const marker = L.marker(latlng, {
+        icon: textIcon(textValue, 45, isTitle),
+        draggable: true,
+        keyboard: false,
+        autoPan: true,
+        riseOnHover: true,
+        textValue,
+        textSize: 45,
+        isTitle: !!isTitle,
+      }).addTo(textGroup);
+      textState.markers.push(marker);
+      attachTextMarkerEvents(marker);
+      bindTextMarkerDom(marker);
+      selectTextMarker(marker);
+      if (marker.bringToFront) {
+        marker.bringToFront();
+      }
+      scheduleViewerStateSave();
+      return marker;
+    }
+
+    function setTextActive(active, fromOtherTool = false) {
+      textState.active = active;
+      textButton.classList.toggle('is-active', active);
+      textButton.classList.toggle('measure-active', active);
+      if (active && measureState.active) {
+        setMeasureActive(false, true);
+      }
+      if (active && !fromOtherTool && doneState.active) {
+        setDoneActive(false, true);
+      }
+      if (active && !fromOtherTool && forceState.active) {
+        setForceActive(false, true);
+      }
+      scheduleViewerStateSave();
+    }
+
+    function setDoneActive(active, fromOtherTool = false) {
+      doneState.active = active;
+      doneButton.classList.toggle('is-active', active);
+      doneButton.classList.toggle('measure-active', active);
+      if (active && !fromOtherTool) {
+        if (measureState.active) {
+          setMeasureActive(false, true);
+        }
+        if (textState.active) {
+          setTextActive(false, true);
+        }
+        if (forceState.active) {
+          setForceActive(false, true);
+        }
+      }
+      scheduleViewerStateSave();
+    }
+
+    function distanceIcon(text, unit) {
+      const currentUnit = unit === 'nm' ? 'nm' : 'km';
+      return L.divIcon({
+        className: '',
+        html: `
+          <div class="distance-badge">
+            <button class="distance-unit ${currentUnit === 'km' ? 'is-active' : ''}" type="button" data-measure-unit="km">KM</button>
+            <button class="distance-unit ${currentUnit === 'nm' ? 'is-active' : ''}" type="button" data-measure-unit="nm">NM</button>
+            <div class="distance-chip">${escapeHtml(text)}</div>
+          </div>
+        `,
+        iconSize: null
+      });
+    }
+
+    function lineLabelPoint(row) {
+      return row.s_lon <= row.e_lon ? [row.s_lat, row.s_lon] : [row.e_lat, row.e_lon];
+    }
+
+    function getForceStartNumber() {
+      const value = parseInt(forceStartInput.value, 10);
+      return Number.isFinite(value) ? value : 1;
+    }
+
+    function getForceFontSize() {
+      const value = parseInt(forceSizeInput.value, 10);
+      return Number.isFinite(value) ? Math.min(48, Math.max(10, value)) : 22;
+    }
+
+    function getForceColor() {
+      return forceColorInput.value || '#cc2200';
+    }
+
+    function getKmlFontSize() {
+      const value = parseInt(numSizeInput.value, 10);
+      return Number.isFinite(value) ? Math.min(48, Math.max(8, value)) : 12;
+    }
+
+    function getKmlColor() {
+      return numColorInput.value || '#1a1a2e';
+    }
+
+    function getKmlLabelStyle() {
+      return `color:${getKmlColor()};font-size:${getKmlFontSize()}px;`;
+    }
+
+    function getForceLabelText(row) {
+      return row.force_assigned != null ? String(row.force_assigned) : '';
+    }
+
+    function getForceLabelStyle() {
+      return `color:${getForceColor()};font-size:${getForceFontSize()}px;`;
+    }
+
+    function updateForceStatus() {
+      forceStatus.textContent = forceState.active ? `다음 ${forceState.nextNumber}` : `시작 ${getForceStartNumber()}`;
+    }
+
+    function setForceActive(active, fromOtherTool = false) {
+      forceState.active = active;
+      if (active) {
+        forceState.nextNumber = getForceStartNumber();
+      }
+      forceButton.classList.toggle('is-active', active);
+      forceButton.classList.toggle('measure-active', active);
+      if (active && !fromOtherTool) {
+        if (measureState.active) {
+          setMeasureActive(false, true);
+        }
+        if (textState.active) {
+          setTextActive(false, true);
+        }
+        if (doneState.active) {
+          setDoneActive(false, true);
+        }
+      }
+      updateForceStatus();
+      scheduleViewerStateSave();
+    }
+
+    function assignForceNumber(entry) {
+      if (entry.row.force_assigned == null) {
+        entry.row.force_assigned = forceState.nextNumber;
+        forceState.nextNumber += 1;
+      }
+      updateForceStatus();
+      refreshForceLabels();
+      scheduleViewerStateSave();
+    }
+
+    function extendBounds(points) {
+      points.forEach((point) => bounds.extend(point));
+    }
+
+    function syncGroup(toggle, group, visible) {
+      toggle.checked = visible;
+      const apply = () => {
+        if (toggle.checked) {
+          map.addLayer(group);
+        } else {
+          map.removeLayer(group);
+        }
+      };
+      toggle.addEventListener('change', apply);
+      apply();
+    }
+
+    function buildLineTooltipHtml(row) {
+      const forceText = getForceLabelText(row);
+      const labelText = forceText
+        ? (row.num ? `${row.num} (${forceText})` : forceText)
+        : (row.num || 'Line');
+      return `<strong>Line ${escapeHtml(labelText)}</strong><br>시작 ${escapeHtml(row.s_text)}<br>끝 ${escapeHtml(row.e_text)}`;
+    }
+
+    function refreshForceLabels() {
+      forceLabelGroup.clearLayers();
+      const inlineStyle = getForceLabelStyle();
+      resultLineEntries.forEach((entry) => {
+        const labelText = getForceLabelText(entry.row);
+        if (!labelText) {
+          entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row));
+          return;
+        }
+        L.marker(entry.labelPoint, {
+          icon: labelIcon(labelText, 'force', inlineStyle),
+          keyboard: false,
+          interactive: false
+        }).addTo(forceLabelGroup);
+        entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row));
+      });
+    }
+
+    function refreshKmlLabels() {
+      kmlLabelGroup.clearLayers();
+      if (!payload.has_kml_num) {
+        return;
+      }
+
+      const inlineStyle = getKmlLabelStyle();
+      resultLineEntries.forEach((entry) => {
+        if (!entry.row.num) {
+          return;
+        }
+        L.marker(entry.labelPoint, {
+          icon: labelIcon(entry.row.num, 'kml', inlineStyle),
+          keyboard: false,
+          interactive: false
+        }).addTo(kmlLabelGroup);
+      });
+    }
+
+    function applyLineVisual(entry, hovered = false) {
+      const isDone = !!entry.completed;
+      const lineWeight = isDone ? 2.4 : 3;
+      const lineColorValue = isDone ? '#96addd' : lineColor;
+      const hoverColorValue = isDone ? '#b8c7ef' : hoverColor;
+      entry.line.setStyle({
+        color: hovered ? hoverColorValue : lineColorValue,
+        weight: hovered ? (isDone ? 3.1 : 5) : lineWeight,
+        opacity: isDone ? 0.9 : 1,
+      });
+      if (entry.halo) {
+        entry.halo.setStyle({
+          color: '#b7ff3c',
+          opacity: isDone ? (hovered ? 0.64 : 0.5) : 0,
+          weight: isDone ? 9.6 : 0.1,
+        });
+      }
+    }
+
+    function setLineCompleted(entry, completed) {
+      entry.completed = !!completed;
+      applyLineVisual(entry, false);
+      scheduleViewerStateSave();
+    }
+
+    function renderResults() {
+      if (isPolygonMode) {
+        payload.polygons.forEach((row) => {
+          const polygon = L.polygon(row.points, {
+            color: lineColor,
+            weight: 3,
+            fillColor: hoverColor,
+            fillOpacity: 0.16,
+            renderer: renderer,
+            smoothFactor: 0.2
+          }).addTo(resultPolygonGroup);
+
+          polygon.on('mouseover', () => {
+            polygon.setStyle({ color: hoverColor, weight: 4, fillOpacity: 0.24 });
+          });
+
+          polygon.on('mouseout', () => {
+            polygon.setStyle({ color: lineColor, weight: 3, fillOpacity: 0.16 });
+          });
+
+          polygon.bindTooltip(
+            `<strong>${escapeHtml(row.label)}</strong><br>시작점과 끝점이 없는 도형입니다.`,
+            { sticky: true, className: 'doo-tooltip', direction: 'top', opacity: 0.98 }
+          );
+
+          extendBounds(row.points);
+        });
+        forceButton.style.display = 'none';
+        forceControls.style.display = 'none';
+        numWrap.style.display = 'none';
+        numControls.style.display = 'none';
+        return;
+      }
+
+      payload.results.forEach((row, index) => {
+        const start = [row.s_lat, row.s_lon];
+        const end = [row.e_lat, row.e_lon];
+        const halo = L.polyline([start, end], {
+          pane: 'completionPane',
+          color: '#b7ff3c',
+          weight: 0.1,
+          opacity: 0,
+          lineCap: 'round',
+          interactive: false,
+          smoothFactor: 1,
+        }).addTo(completedHaloGroup);
+        const line = L.polyline([start, end], {
+          color: lineColor,
+          weight: 3,
+          lineCap: 'butt',
+          interactive: false,
+          renderer: renderer,
+          smoothFactor: 1
+        }).addTo(resultLineGroup);
+        const hitLine = L.polyline([start, end], {
+          color: '#ffffff',
+          weight: 18,
+          opacity: 0.01,
+          lineCap: 'round',
+          renderer: renderer,
+          smoothFactor: 1
+        }).addTo(resultLineGroup);
+
+        L.circleMarker(start, {
+          renderer: renderer,
+          radius: 4,
+          color: '#ffffff',
+          weight: 1,
+          fillColor: lineColor,
+          fillOpacity: 1
+        }).addTo(endpointGroup);
+
+        L.circleMarker(end, {
+          renderer: renderer,
+          radius: 4,
+          color: '#ffffff',
+          weight: 1,
+          fillColor: lineColor,
+          fillOpacity: 1
+        }).addTo(endpointGroup);
+
+        const entry = {
+          id: index,
+          row,
+          line,
+          hitLine,
+          halo,
+          labelPoint: lineLabelPoint(row),
+          completed: false,
+        };
+
+        hitLine.on('mouseover', () => {
+          applyLineVisual(entry, true);
+        });
+
+        hitLine.on('mouseout', () => {
+          applyLineVisual(entry, false);
+        });
+
+        hitLine.on('click', (event) => {
+          if (event && event.originalEvent) {
+            L.DomEvent.stop(event.originalEvent);
+          }
+          if (doneState.active) {
+            setLineCompleted(entry, !entry.completed);
+            return;
+          }
+          if (forceState.active) {
+            assignForceNumber(entry);
+            return;
+          }
+        });
+
+        resultLineEntries.push(entry);
+
+        hitLine.bindTooltip(
+          buildLineTooltipHtml(row),
+          { sticky: true, className: 'doo-tooltip', direction: 'top', opacity: 0.98 }
+        );
+
+        bounds.extend(start);
+        bounds.extend(end);
+      });
+
+      map.addLayer(forceLabelGroup);
+      setForceControlsEnabled(true);
+      if (payload.has_kml_num) {
+        syncGroup(numToggle, kmlLabelGroup, payload.default_show_num);
+        setNumControlsEnabled(numToggle.checked);
+      } else {
+        numWrap.style.display = 'none';
+        numControls.style.display = 'none';
+      }
+      refreshKmlLabels();
+      refreshForceLabels();
+    }
+
+    function applyBaseMapTone() {
+      tilePane.style.filter = grayToggle.checked
+        ? 'grayscale(1) saturate(0.05) contrast(1.08) brightness(1.02)'
+        : 'none';
+    }
+
+    function collectViewerState() {
+      return {
+        version: VIEWER_STATE_VERSION,
+        gray: grayToggle.checked,
+        numVisible: payload.has_kml_num ? numToggle.checked : false,
+        numSize: getKmlFontSize(),
+        numColor: getKmlColor(),
+        forceStart: getForceStartNumber(),
+        forceSize: getForceFontSize(),
+        forceColor: getForceColor(),
+        forceNextNumber: forceState.nextNumber,
+        activeTool: measureState.active
+          ? 'measure'
+          : textState.active
+            ? 'text'
+            : doneState.active
+              ? 'done'
+              : forceState.active
+                ? 'force'
+                : '',
+        toolbarCollapsed: toolbar.classList.contains('is-collapsed'),
+        view: {
+          center: [map.getCenter().lat, map.getCenter().lng],
+          zoom: map.getZoom(),
+        },
+        layers: Array.from(layerControls.entries()).map(([key, controls]) => ({
+          key,
+          visible: !!controls.toggle.checked,
+          color: controls.color.value,
+        })),
+        completedLineIds: resultLineEntries
+          .filter((entry) => entry.completed)
+          .map((entry) => entry.id),
+        forceAssignments: resultLineEntries
+          .filter((entry) => entry.row.force_assigned != null)
+          .map((entry) => ({ id: entry.id, value: entry.row.force_assigned })),
+        textMarkers: textState.markers.map((marker) => {
+          const latlng = marker.getLatLng();
+          return {
+            lat: latlng.lat,
+            lng: latlng.lng,
+            text: marker.options.textValue || '',
+            size: getTextMarkerSize(marker),
+            isTitle: !!marker.options.isTitle,
+          };
+        }),
+        measure: {
+          active: measureState.active,
+          unit: measureState.unit,
+          points: measureState.points.map((point) => [point.lat, point.lng]),
+        },
+      };
+    }
+
+    function recordUndoState(force = false) {
+      if (viewerStateRestoring || undoApplying) {
+        return;
+      }
+      const snapshot = collectViewerState();
+      const serialized = JSON.stringify(snapshot);
+      const latest = undoHistory.length ? undoHistory[undoHistory.length - 1].serialized : '';
+      if (!force && latest === serialized) {
+        return;
+      }
+      undoHistory.push({ serialized, state: snapshot });
+      while (undoHistory.length > UNDO_LIMIT + 1) {
+        undoHistory.shift();
+      }
+    }
+
+    async function saveViewerStateNow() {
+      if (viewerStateRestoring) {
+        return;
+      }
+      try {
+        await fetch('/viewer-state', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(collectViewerState()),
+        });
+      } catch (error) {
+        // Ignore transient save failures; a later interaction can retry.
+      }
+    }
+
+    function scheduleViewerStateSave() {
+      if (viewerStateRestoring || undoApplying) {
+        return;
+      }
+      window.clearTimeout(viewerStateSaveTimer);
+      viewerStateSaveTimer = window.setTimeout(() => {
+        recordUndoState();
+        saveViewerStateNow();
+      }, 260);
+    }
+
+    async function loadViewerState() {
+      try {
+        const response = await fetch('/viewer-state', { cache: 'no-store' });
+        if (!response.ok) {
+          return null;
+        }
+        const data = await response.json();
+        if (!data || typeof data !== 'object') {
+          return null;
+        }
+        return Object.keys(data).length ? data : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function applySavedLayerState(savedLayers) {
+      if (!Array.isArray(savedLayers)) {
+        return;
+      }
+      for (const layerState of savedLayers) {
+        if (!layerState || !layerControls.has(layerState.key)) {
+          continue;
+        }
+        const controls = layerControls.get(layerState.key);
+        if (typeof layerState.color === 'string' && /^#[0-9a-f]{6}$/i.test(layerState.color)) {
+          controls.color.value = layerState.color;
+        }
+        controls.toggle.checked = !!layerState.visible;
+        if (controls.toggle.checked) {
+          await syncLayer(layerState.key);
+        } else {
+          const bundle = layerBundles.get(layerState.key);
+          if (bundle) {
+            map.removeLayer(bundle.group);
+          }
+        }
+        applyLayerColor(layerState.key);
+      }
+    }
+
+    async function applyViewerStateSnapshot(saved) {
+      if (!saved || typeof saved !== 'object') {
+        return false;
+      }
+      const hasSavedView = !!(
+        saved.view &&
+        Array.isArray(saved.view.center) &&
+        saved.view.center.length === 2 &&
+        Number.isFinite(saved.view.zoom)
+      );
+
+      viewerStateRestoring = true;
+      try {
+        setMeasureActive(false, true);
+        setTextActive(false, true);
+        setDoneActive(false, true);
+        setForceActive(false, true);
+
+        if (typeof saved.gray === 'boolean') {
+          grayToggle.checked = saved.gray;
+        }
+        applyBaseMapTone();
+
+        if (payload.has_kml_num) {
+          if (typeof saved.numVisible === 'boolean') {
+            numToggle.checked = saved.numVisible;
+          }
+          if (Number.isFinite(saved.numSize)) {
+            numSizeInput.value = String(clamp(saved.numSize, 8, 48));
+          }
+          if (typeof saved.numColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.numColor)) {
+            numColorInput.value = saved.numColor;
+          }
+          setNumControlsEnabled(numToggle.checked);
+          if (numToggle.checked) {
+            map.addLayer(kmlLabelGroup);
+          } else {
+            map.removeLayer(kmlLabelGroup);
+          }
+          refreshKmlLabels();
+        }
+
+        if (Number.isFinite(saved.forceStart)) {
+          forceStartInput.value = String(saved.forceStart);
+        }
+        if (Number.isFinite(saved.forceSize)) {
+          forceSizeInput.value = String(clamp(saved.forceSize, 10, 48));
+        }
+        if (typeof saved.forceColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.forceColor)) {
+          forceColorInput.value = saved.forceColor;
+        }
+
+        resultLineEntries.forEach((entry) => {
+          entry.completed = false;
+          entry.row.force_assigned = null;
+          applyLineVisual(entry, false);
+        });
+
+        const completedIds = new Set(Array.isArray(saved.completedLineIds) ? saved.completedLineIds : []);
+        resultLineEntries.forEach((entry) => {
+          if (completedIds.has(entry.id)) {
+            setLineCompleted(entry, true);
+          }
+        });
+
+        if (Array.isArray(saved.forceAssignments)) {
+          const assignedMap = new Map();
+          saved.forceAssignments.forEach((item) => {
+            if (item && Number.isFinite(item.value)) {
+              assignedMap.set(item.id, item.value);
+            }
+          });
+          resultLineEntries.forEach((entry) => {
+            if (assignedMap.has(entry.id)) {
+              entry.row.force_assigned = assignedMap.get(entry.id);
+            }
+          });
+        }
+
+        refreshForceSettings();
+        if (Number.isFinite(saved.forceNextNumber)) {
+          forceState.nextNumber = Math.max(1, Math.round(saved.forceNextNumber));
+          updateForceStatus();
+        }
+        refreshForceLabels();
+
+        textState.markers.slice().forEach((marker) => removeTextMarker(marker));
+        if (Array.isArray(saved.textMarkers)) {
+          saved.textMarkers.forEach((item) => {
+            if (!item || !item.text || !Number.isFinite(item.lat) || !Number.isFinite(item.lng)) {
+              return;
+            }
+            const marker = addTextMarker(L.latLng(item.lat, item.lng), item.text, !!item.isTitle);
+            marker.options.textSize = clamp(Number(item.size) || 45, 8, 240);
+            updateTextMarkerElement(marker);
+            setTextHover(marker, false);
+          });
+          deselectTextMarker();
+        }
+
+        await applySavedLayerState(saved.layers);
+
+        applyInterfaceCollapseState(!!saved.toolbarCollapsed);
+
+        if (hasSavedView) {
+          map.setView(saved.view.center, saved.view.zoom, { animate: false });
+        }
+
+        clearMeasurement();
+        measureState.unit = saved.measure && saved.measure.unit === 'nm' ? 'nm' : 'km';
+        if (saved.activeTool === 'measure') {
+          setMeasureActive(true, true);
+        } else if (saved.activeTool === 'text') {
+          setTextActive(true, true);
+        } else if (saved.activeTool === 'done') {
+          setDoneActive(true, true);
+        } else if (saved.activeTool === 'force') {
+          setForceActive(true, true);
+        }
+
+        if (saved.measure && Array.isArray(saved.measure.points)) {
+          saved.measure.points.slice(0, 2).forEach((point) => {
+            if (!Array.isArray(point) || point.length !== 2) {
+              return;
+            }
+            const latlng = L.latLng(point[0], point[1]);
+            measureState.points.push(latlng);
+            const marker = L.marker(latlng, {
+              icon: flagIcon(),
+              interactive: false,
+              keyboard: false
+            }).addTo(measureGroup);
+            measureState.markers.push(marker);
+          });
+          if (measureState.points.length === 2) {
+            finalizeMeasurement();
+          }
+        }
+
+        return hasSavedView;
+      } finally {
+        viewerStateRestoring = false;
+      }
+    }
+
+    async function restoreViewerState() {
+      const saved = await loadViewerState();
+      if (!saved || typeof saved !== 'object') {
+        return false;
+      }
+      return applyViewerStateSnapshot(saved);
+    }
+
+    async function undoLastAction() {
+      if (undoHistory.length <= 1) {
+        return;
+      }
+      undoHistory.pop();
+      const previous = undoHistory[undoHistory.length - 1];
+      if (!previous || !previous.state) {
+        return;
+      }
+      undoApplying = true;
+      try {
+        await applyViewerStateSnapshot(previous.state);
+        saveViewerStateNow();
+      } finally {
+        undoApplying = false;
+      }
+    }
+
+    grayToggle.checked = !!payload.default_gray_map;
+    grayToggle.addEventListener('change', () => {
+      applyBaseMapTone();
+      scheduleViewerStateSave();
+    });
+    applyBaseMapTone();
+
+    function buildLayerRows() {
+      if (!payload.has_layers || !layerCatalog.length) {
+        layerButton.style.display = 'none';
+        layerPanel.style.display = 'none';
+        return;
+      }
+
+      layerCatalog.forEach((layer) => {
+        const row = document.createElement('div');
+        row.className = 'layer-row';
+        row.dataset.layerKey = layer.key;
+
+        const label = document.createElement('label');
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.checked = false;
+
+        const text = document.createElement('span');
+        text.textContent = layer.label;
+
+        label.append(toggle, text);
+
+        const count = document.createElement('span');
+        count.className = 'layer-count';
+        count.textContent = `${layer.count || 0}개`;
+
+        const color = document.createElement('input');
+        color.className = 'layer-color';
+        color.type = 'color';
+        color.value = layer.default_color || '#4466CC';
+
+        row.append(label, count, color);
+        layerRows.appendChild(row);
+        layerControls.set(layer.key, { toggle, color });
+
+        toggle.addEventListener('change', async () => {
+          await syncLayer(layer.key);
+          scheduleViewerStateSave();
+        });
+
+        color.addEventListener('input', () => {
+          applyLayerColor(layer.key);
+          scheduleViewerStateSave();
+        });
+      });
+    }
+
+    function layerStyle(featureType, color, hovered = false) {
+      if (featureType === 'polygon') {
+        return {
+          color,
+          weight: hovered ? 3.4 : 2.3,
+          fillColor: color,
+          fillOpacity: hovered ? 0.16 : 0.09,
+          renderer: renderer,
+          smoothFactor: 0.4
+        };
+      }
+
+      return {
+        color,
+        weight: hovered ? 4.1 : 2.8,
+        opacity: hovered ? 1 : 0.9,
+        renderer: renderer,
+        smoothFactor: 0.8
+      };
+    }
+
+    async function ensureLayerData() {
+      if (layerDataMap) {
+        return layerDataMap;
+      }
+      if (layerDataPromise) {
+        return layerDataPromise;
+      }
+
+      layerDataPromise = fetch('/layers.json')
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`Layer fetch failed: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          const mapData = new Map();
+          const layers = Array.isArray(data.layers) ? data.layers : [];
+          layers.forEach((layer) => {
+            if (layer && layer.key) {
+              mapData.set(layer.key, layer);
+            }
+          });
+          layerDataMap = mapData;
+          return mapData;
+        })
+        .finally(() => {
+          layerDataPromise = null;
+        });
+
+      return layerDataPromise;
+    }
+
+    function buildLayerTooltip(feature, fallbackLabel) {
+      const name = feature.name || fallbackLabel;
+      const desc = feature.description ? `<br>${escapeHtml(feature.description)}` : '';
+      return `<strong>${escapeHtml(name)}</strong>${desc}`;
+    }
+
+    async function ensureLayerBundle(layerKey) {
+      if (layerBundles.has(layerKey)) {
+        return layerBundles.get(layerKey);
+      }
+
+      const controls = layerControls.get(layerKey);
+      const data = await ensureLayerData();
+      const layerDef = data.get(layerKey);
+      if (!layerDef) {
+        return null;
+      }
+
+      const group = L.layerGroup();
+      const entries = [];
+      const color = controls ? controls.color.value : (layerDef.default_color || '#4466CC');
+
+      (Array.isArray(layerDef.features) ? layerDef.features : []).forEach((feature, index) => {
+        if (!feature || !Array.isArray(feature.points)) {
+          return;
+        }
+
+        let shape = null;
+        if (feature.type === 'polygon') {
+          shape = L.polygon(feature.points, layerStyle('polygon', color));
+        } else if (feature.type === 'line') {
+          shape = L.polyline(feature.points, layerStyle('line', color));
+        }
+
+        if (!shape) {
+          return;
+        }
+
+        const fallbackLabel = `${layerDef.label} ${index + 1}`;
+        shape.on('mouseover', () => {
+          const currentColor = controls ? controls.color.value : color;
+          shape.setStyle(layerStyle(feature.type, currentColor, true));
+        });
+        shape.on('mouseout', () => {
+          const currentColor = controls ? controls.color.value : color;
+          shape.setStyle(layerStyle(feature.type, currentColor, false));
+        });
+        shape.bindTooltip(buildLayerTooltip(feature, fallbackLabel), {
+          sticky: true,
+          className: 'doo-tooltip',
+          direction: 'top',
+          opacity: 0.96
+        });
+
+        group.addLayer(shape);
+        entries.push({ shape, featureType: feature.type });
+      });
+
+      const bundle = { group, entries };
+      layerBundles.set(layerKey, bundle);
+      return bundle;
+    }
+
+    function applyLayerColor(layerKey) {
+      const controls = layerControls.get(layerKey);
+      const bundle = layerBundles.get(layerKey);
+      if (!controls || !bundle) {
+        return;
+      }
+      bundle.entries.forEach(({ shape, featureType }) => {
+        shape.setStyle(layerStyle(featureType, controls.color.value, false));
+      });
+    }
+
+    async function syncLayer(layerKey) {
+      const controls = layerControls.get(layerKey);
+      if (!controls) {
+        return;
+      }
+
+      if (!controls.toggle.checked) {
+        const bundle = layerBundles.get(layerKey);
+        if (bundle) {
+          map.removeLayer(bundle.group);
+        }
+        return;
+      }
+
+      try {
+        layerButton.disabled = true;
+        const bundle = await ensureLayerBundle(layerKey);
+        if (bundle) {
+          applyLayerColor(layerKey);
+          map.addLayer(bundle.group);
+        }
+      } catch (error) {
+        controls.toggle.checked = false;
+        window.alert('겹 데이터를 불러오지 못했습니다.');
+      } finally {
+        layerButton.disabled = false;
+      }
+    }
+
+    function setLayerPanelVisible(visible) {
+      if (!payload.has_layers || !layerCatalog.length) {
+        return;
+      }
+      layerPanel.classList.toggle('is-visible', visible);
+      layerButton.classList.toggle('is-active', visible);
+    }
+
+    function applyInterfaceCollapseState(collapsed) {
+      toolbar.classList.toggle('is-collapsed', collapsed);
+      titlebar.classList.toggle('is-hidden', collapsed);
+      hintPanel.classList.toggle('is-hidden', collapsed);
+      if (collapsed) {
+        setLayerPanelVisible(false);
+      }
+    }
+
+    function refreshForceSettings() {
+      forceStartInput.value = String(getForceStartNumber());
+      forceSizeInput.value = String(getForceFontSize());
+      if (forceState.active) {
+        forceState.nextNumber = getForceStartNumber();
+      }
+      updateForceStatus();
+      refreshForceLabels();
+      scheduleViewerStateSave();
+    }
+
+    function setForceControlsEnabled(enabled) {
+      forceControls.style.opacity = enabled ? '1' : '0.46';
+      [forceStartInput, forceSizeInput, forceColorInput].forEach((input) => {
+        input.disabled = !enabled;
+      });
+      updateForceStatus();
+    }
+
+    function refreshNumberSettings() {
+      numSizeInput.value = String(getKmlFontSize());
+      refreshKmlLabels();
+      scheduleViewerStateSave();
+    }
+
+    function setNumControlsEnabled(enabled) {
+      numControls.style.opacity = enabled ? '1' : '0.46';
+      [numSizeInput, numColorInput].forEach((input) => {
+        input.disabled = !enabled;
+      });
+    }
+
+    function setCaptureModalVisible(visible) {
+      captureModal.classList.toggle('is-visible', visible);
+    }
+
+    function getCurrentPaperPreset() {
+      return PAPER_PRESETS[captureState.paperKey] || null;
+    }
+
+    function markCapturePaperCustom() {
+      captureState.paperKey = 'CUSTOM';
+      capturePaperSelect.value = 'CUSTOM';
+    }
+
+    function setCapturePaper(paperKey) {
+      const preset = PAPER_PRESETS[paperKey];
+      if (!preset) {
+        markCapturePaperCustom();
+        return;
+      }
+      captureState.paperKey = paperKey;
+      capturePaperSelect.value = paperKey;
+      captureState.aspectRatio = preset.width / preset.height;
+      captureLockRatio.checked = true;
+      captureOutputWidth.value = String(preset.width);
+      captureOutputHeight.value = String(preset.height);
+    }
+
+    function applyCapturePreviewTransform() {
+      capturePreviewInner.style.transform = `translate(calc(-50% + ${captureState.viewX}px), calc(-50% + ${captureState.viewY}px)) scale(${captureState.viewScale})`;
+    }
+
+    function fitCapturePreview() {
+      const viewportWidth = Math.max(120, captureViewport.clientWidth - 18);
+      const viewportHeight = Math.max(120, captureViewport.clientHeight - 18);
+      const canvasWidth = Math.max(1, capturePreviewCanvas.width);
+      const canvasHeight = Math.max(1, capturePreviewCanvas.height);
+      const scale = Math.min(viewportWidth / canvasWidth, viewportHeight / canvasHeight);
+      captureState.viewScale = clamp(scale, 0.04, 2);
+      captureState.viewX = 0;
+      captureState.viewY = 0;
+      applyCapturePreviewTransform();
+    }
+
+    function getPrimaryTitleMarker() {
+      for (let index = textState.markers.length - 1; index >= 0; index -= 1) {
+        const marker = textState.markers[index];
+        if (marker && marker.options && marker.options.isTitle && String(marker.options.textValue || '').trim()) {
+          return marker;
+        }
+      }
+      return null;
+    }
+
+    function getCaptureImageLayout(rect, width, height, titleAnchor = null) {
+      const margin = Math.max(16, Math.round(Math.min(width, height) * 0.022));
+      const availableWidth = Math.max(1, width - margin * 2);
+      const availableHeight = Math.max(1, height - margin * 2);
+      const fitScale = Math.min(availableWidth / rect.width, availableHeight / rect.height);
+      let drawScale = fitScale;
+      let drawX = 0;
+      let drawY = 0;
+
+      if (titleAnchor) {
+        const targetX = Math.round(width / 2);
+        const targetY = Math.max(margin + 10, Math.round(height * 0.085));
+        const scaleCandidates = [fitScale];
+        if (titleAnchor.x > 1) {
+          scaleCandidates.push((targetX - margin) / titleAnchor.x);
+        }
+        if ((rect.width - titleAnchor.x) > 1) {
+          scaleCandidates.push((width - margin - targetX) / (rect.width - titleAnchor.x));
+        }
+        if ((rect.height - titleAnchor.y) > 1) {
+          scaleCandidates.push((height - margin - targetY) / (rect.height - titleAnchor.y));
+        }
+        drawScale = Math.max(...scaleCandidates.filter((value) => Number.isFinite(value) && value > 0));
+        const drawWidth = Math.max(1, Math.round(rect.width * drawScale));
+        const drawHeight = Math.max(1, Math.round(rect.height * drawScale));
+        drawX = Math.round(targetX - (titleAnchor.x * drawScale));
+        drawY = Math.round(targetY - (titleAnchor.y * drawScale));
+        return {
+          margin,
+          drawWidth,
+          drawHeight,
+          drawX: Math.round(drawX + captureState.imageOffsetX),
+          drawY: Math.round(drawY + captureState.imageOffsetY),
+        };
+      }
+
+      const drawWidth = Math.max(1, Math.round(rect.width * drawScale));
+      const drawHeight = Math.max(1, Math.round(rect.height * drawScale));
+      drawX = Math.round((width - drawWidth) / 2);
+      drawY = Math.round((height - drawHeight) / 2);
+      return {
+        margin,
+        drawWidth,
+        drawHeight,
+        drawX: Math.round(drawX + captureState.imageOffsetX),
+        drawY: Math.round(drawY + captureState.imageOffsetY),
+      };
+    }
+
+    function captureCropRect() {
+      if (!captureState.sourceCanvas) {
+        return null;
+      }
+      return {
+        x: 0,
+        y: 0,
+        width: Math.max(1, captureState.sourceCanvas.width),
+        height: Math.max(1, captureState.sourceCanvas.height),
+      };
+    }
+
+    function captureOutputSize(changedField = '') {
+      const rect = captureCropRect();
+      if (!rect) {
+        return null;
+      }
+
+      const preset = getCurrentPaperPreset();
+      if (preset) {
+        captureState.aspectRatio = preset.width / preset.height;
+      }
+      const ratio = captureState.aspectRatio || 1;
+      let width = parseInt(captureOutputWidth.value, 10);
+      let height = parseInt(captureOutputHeight.value, 10);
+
+      width = Number.isFinite(width) && width > 0 ? width : (preset ? preset.width : rect.width);
+      height = Number.isFinite(height) && height > 0 ? height : (preset ? preset.height : rect.height);
+
+      if (captureLockRatio.checked) {
+        if (changedField === 'width') {
+          height = Math.max(1, Math.round(width / ratio));
+        } else if (changedField === 'height') {
+          width = Math.max(1, Math.round(height * ratio));
+        } else {
+          if (preset) {
+            width = preset.width;
+            height = preset.height;
+          }
+        }
+      }
+
+      width = clamp(width, 1, 8192);
+      height = clamp(height, 1, 8192);
+      captureOutputWidth.value = String(width);
+      captureOutputHeight.value = String(height);
+
+      return { rect, width, height };
+    }
+
+    function getCaptureRenderSize() {
+      const output = captureOutputSize();
+      if (!output) {
+        return { width: 1200, height: 1700 };
+      }
+      const aspect = output.width / Math.max(1, output.height);
+      let width = Math.round(Math.min(1800, Math.max(900, output.width / 2)));
+      let height = Math.round(width / Math.max(0.1, aspect));
+      if (height > 2200) {
+        height = 2200;
+        width = Math.round(height * aspect);
+      }
+      return {
+        width: Math.max(640, width),
+        height: Math.max(640, height),
+      };
+    }
+
+    async function waitForMapIdle(timeout = 1200) {
+      await nextFrame();
+      await nextFrame();
+      await new Promise((resolve) => {
+        let settled = false;
+        const finish = () => {
+          if (settled) {
+            return;
+          }
+          settled = true;
+          window.clearTimeout(timer);
+          map.off('idle', finish);
+          map.off('load', finish);
+          resolve();
+        };
+        const timer = window.setTimeout(finish, timeout);
+        map.once('idle', finish);
+        map.once('load', finish);
+      });
+      await wait(120);
+    }
+
+    function drawCapturePreview(changedField = '') {
+      if (!captureState.sourceCanvas) {
+        return;
+      }
+
+      const output = captureOutputSize(changedField);
+      if (!output) {
+        return;
+      }
+
+      const { rect, width, height } = output;
+      capturePreviewCanvas.width = width;
+      capturePreviewCanvas.height = height;
+
+      const ctx = capturePreviewCanvas.getContext('2d');
+      ctx.clearRect(0, 0, width, height);
+      ctx.imageSmoothingEnabled = true;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, width, height);
+      const layout = getCaptureImageLayout(rect, width, height, captureState.titleAnchor);
+      ctx.drawImage(
+        captureState.sourceCanvas,
+        rect.x,
+        rect.y,
+        rect.width,
+        rect.height,
+        layout.drawX,
+        layout.drawY,
+        layout.drawWidth,
+        layout.drawHeight
+      );
+      captureStatus.textContent = `${capturePaperSelect.value === 'CUSTOM' ? 'Custom' : capturePaperSelect.value} · 원비율 유지 · 종이 ${width} x ${height} · 지도 ${layout.drawWidth} x ${layout.drawHeight}${captureState.titleAnchor ? ' · 제목 기준 상단 배치' : ''}`;
+      if (changedField !== '__keep_view__') {
+        applyCapturePreviewTransform();
+      }
+    }
+
+    function resetCaptureEditor() {
+      if (!captureState.sourceCanvas) {
+        return;
+      }
+
+      captureState.imageOffsetX = 0;
+      captureState.imageOffsetY = 0;
+      setCapturePaper('A4');
+      drawCapturePreview();
+      window.requestAnimationFrame(() => {
+        fitCapturePreview();
+      });
+    }
+
+    function startCapturePan(event) {
+      if (!captureState.sourceCanvas) {
+        return;
+      }
+      if (event.button !== 0) {
+        return;
+      }
+      event.preventDefault();
+      captureState.panning = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: captureState.viewX,
+        originY: captureState.viewY,
+      };
+      captureViewport.classList.add('is-dragging');
+    }
+
+    function moveCapturePan(event) {
+      if (!captureState.panning) {
+        return;
+      }
+      const deltaX = event.clientX - captureState.panning.startX;
+      const deltaY = event.clientY - captureState.panning.startY;
+      captureState.viewX = captureState.panning.originX + deltaX;
+      captureState.viewY = captureState.panning.originY + deltaY;
+      applyCapturePreviewTransform();
+    }
+
+    function stopCapturePan() {
+      captureState.panning = null;
+      captureViewport.classList.remove('is-dragging');
+    }
+
+    function startCaptureImageDrag(event) {
+      if (!captureState.sourceCanvas || event.button !== 0) {
+        return;
+      }
+      event.preventDefault();
+      event.stopPropagation();
+      captureState.imageDrag = {
+        startX: event.clientX,
+        startY: event.clientY,
+        originX: captureState.imageOffsetX,
+        originY: captureState.imageOffsetY,
+      };
+    }
+
+    function moveCaptureImageDrag(event) {
+      if (!captureState.imageDrag) {
+        return;
+      }
+      const scale = Math.max(0.01, captureState.viewScale || 1);
+      captureState.imageOffsetX = captureState.imageDrag.originX + ((event.clientX - captureState.imageDrag.startX) / scale);
+      captureState.imageOffsetY = captureState.imageDrag.originY + ((event.clientY - captureState.imageDrag.startY) / scale);
+      drawCapturePreview('__keep_view__');
+    }
+
+    function stopCaptureImageDrag() {
+      captureState.imageDrag = null;
+    }
+
+    function buildCaptureFileName() {
+      const safeName = String(payload.project_name || 'DOO_Extractor_Map')
+        .replace(/[\\/:*?"<>|]+/g, '_')
+        .trim() || 'DOO_Extractor_Map';
+      const now = new Date();
+      const pad = (value) => String(value).padStart(2, '0');
+      const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+      return `${safeName}_${stamp}.png`;
+    }
+
+    async function canvasToBlob(canvas) {
+      return new Promise((resolve, reject) => {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            resolve(blob);
+            return;
+          }
+          reject(new Error('PNG blob generation failed'));
+        }, 'image/png');
+      });
+    }
+
+    function createCanvas(width, height) {
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.max(1, Math.round(width));
+      canvas.height = Math.max(1, Math.round(height));
+      return canvas;
+    }
+
+    function renderTileLayerCanvas(liveMap, renderSize, grayMode) {
+      const canvas = createCanvas(renderSize.width, renderSize.height);
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#d6dde7';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      const mapRect = liveMap.getBoundingClientRect();
+      const tileImages = Array.from(
+        liveMap.querySelectorAll('.leaflet-tile-pane img.leaflet-tile, .leaflet-tile-pane .leaflet-tile')
+      );
+
+      tileImages.forEach((tile) => {
+        if (!(tile instanceof HTMLImageElement) || !tile.complete || !tile.naturalWidth) {
+          return;
+        }
+        const rect = tile.getBoundingClientRect();
+        const x = rect.left - mapRect.left;
+        const y = rect.top - mapRect.top;
+        const w = rect.width;
+        const h = rect.height;
+        if (w <= 0 || h <= 0) {
+          return;
+        }
+        ctx.save();
+        if (grayMode) {
+          ctx.filter = 'grayscale(1) saturate(0.05) contrast(1.08) brightness(1.02)';
+        } else {
+          ctx.filter = 'none';
+        }
+        ctx.drawImage(tile, x, y, w, h);
+        ctx.restore();
+      });
+
+      return canvas;
+    }
+
+    async function captureOverlayCanvas(liveMap) {
+      return html2canvas(liveMap, {
+        useCORS: true,
+        backgroundColor: null,
+        logging: false,
+        scale: Math.min(2, Math.max(1, window.devicePixelRatio || 1)),
+        ignoreElements: (element) => {
+          if (!element) {
+            return false;
+          }
+          if (element.id === 'captureModal') {
+            return true;
+          }
+          if (element.classList && element.classList.contains('leaflet-control-container')) {
+            return true;
+          }
+          if (element.classList && element.classList.contains('leaflet-tile-pane')) {
+            return true;
+          }
+          return typeof element.closest === 'function' && (
+            !!element.closest('.leaflet-control-container') ||
+            !!element.closest('.leaflet-tile-pane')
+          );
+        },
+        onclone: (doc) => {
+          const modal = doc.getElementById('captureModal');
+          if (modal) {
+            modal.style.display = 'none';
+          }
+          const clonedMap = doc.getElementById('map');
+          if (clonedMap) {
+            clonedMap.style.background = 'transparent';
+          }
+          doc.querySelectorAll('.text-marker-shell').forEach((shell) => {
+            shell.classList.remove('is-selected', 'is-hover');
+          });
+          doc.querySelectorAll('.text-resize-handle').forEach((handle) => {
+            handle.style.display = 'none';
+          });
+        },
+      });
+    }
+
+    function getCaptureTitleAnchor(liveMap, finalCanvas, renderSize) {
+      const marker = getPrimaryTitleMarker();
+      if (!marker) {
+        return null;
+      }
+
+      const element = marker.getElement();
+      const mapRect = liveMap.getBoundingClientRect();
+      const scaleX = finalCanvas.width / Math.max(1, renderSize.width);
+      const scaleY = finalCanvas.height / Math.max(1, renderSize.height);
+
+      if (element) {
+        const shell = element.querySelector('.text-marker-shell') || element;
+        const rect = shell.getBoundingClientRect();
+        return {
+          x: clamp((rect.left - mapRect.left + (rect.width / 2)) * scaleX, 0, finalCanvas.width),
+          y: clamp((rect.top - mapRect.top) * scaleY, 0, finalCanvas.height),
+        };
+      }
+
+      const point = map.latLngToContainerPoint(marker.getLatLng());
+      return {
+        x: clamp(point.x * scaleX, 0, finalCanvas.width),
+        y: clamp(point.y * scaleY, 0, finalCanvas.height),
+      };
+    }
+
+    async function captureCompositedMapCanvas(liveMap, renderSize) {
+      const baseCanvas = renderTileLayerCanvas(liveMap, renderSize, grayToggle.checked);
+      const overlayCanvas = await captureOverlayCanvas(liveMap);
+      const finalCanvas = createCanvas(overlayCanvas.width, overlayCanvas.height);
+      const ctx = finalCanvas.getContext('2d');
+      ctx.fillStyle = '#d6dde7';
+      ctx.fillRect(0, 0, finalCanvas.width, finalCanvas.height);
+      ctx.drawImage(baseCanvas, 0, 0, finalCanvas.width, finalCanvas.height);
+      ctx.drawImage(overlayCanvas, 0, 0);
+      return finalCanvas;
+    }
+
+    async function captureCurrentMapForPaper() {
+      const liveMap = document.getElementById('map');
+      if (!liveMap) {
+        throw new Error('map element not found');
+      }
+
+      const originalCenter = map.getCenter();
+      const originalZoom = map.getZoom();
+      const originalBounds = map.getBounds();
+      const originalStyle = {
+        width: liveMap.style.width,
+        height: liveMap.style.height,
+        position: liveMap.style.position,
+        left: liveMap.style.left,
+        top: liveMap.style.top,
+        zIndex: liveMap.style.zIndex,
+        pointerEvents: liveMap.style.pointerEvents,
+      };
+      const renderSize = getCaptureRenderSize();
+
+      try {
+        liveMap.style.width = `${renderSize.width}px`;
+        liveMap.style.height = `${renderSize.height}px`;
+        liveMap.style.position = 'fixed';
+        liveMap.style.left = '-20000px';
+        liveMap.style.top = '0';
+        liveMap.style.zIndex = '-1';
+        liveMap.style.pointerEvents = 'none';
+        map.invalidateSize({ pan: false, animate: false });
+        map.fitBounds(originalBounds, { animate: false, padding: [0, 0] });
+        applyBaseMapTone();
+        await waitForMapIdle();
+        const finalCanvas = await captureCompositedMapCanvas(liveMap, renderSize);
+        return {
+          canvas: finalCanvas,
+          titleAnchor: getCaptureTitleAnchor(liveMap, finalCanvas, renderSize),
+        };
+      } finally {
+        liveMap.style.width = originalStyle.width;
+        liveMap.style.height = originalStyle.height;
+        liveMap.style.position = originalStyle.position;
+        liveMap.style.left = originalStyle.left;
+        liveMap.style.top = originalStyle.top;
+        liveMap.style.zIndex = originalStyle.zIndex;
+        liveMap.style.pointerEvents = originalStyle.pointerEvents;
+        map.invalidateSize({ pan: false, animate: false });
+        map.setView(originalCenter, originalZoom, { animate: false });
+        applyBaseMapTone();
+        await waitForMapIdle(700);
+      }
+    }
+
+    async function updateCaptureSource(showModalAfter = false) {
+      captureStatus.textContent = '용지 비율에 맞춰 현재 지도를 다시 불러오는 중입니다...';
+      const captureData = await captureCurrentMapForPaper();
+      captureState.sourceCanvas = captureData.canvas;
+      captureState.titleAnchor = captureData.titleAnchor;
+      if (showModalAfter) {
+        setCaptureModalVisible(true);
+      }
+      resetCaptureEditor();
+    }
+
+    async function openCaptureEditor() {
+      if (typeof html2canvas !== 'function') {
+        window.alert('캡처 모듈을 불러오지 못했습니다.');
+        return;
+      }
+
+      setLayerPanelVisible(false);
+      captureButton.disabled = true;
+      captureStatus.textContent = '현재 지도를 캡처하는 중입니다...';
+
+      try {
+        await updateCaptureSource(true);
+      } catch (error) {
+        captureStatus.textContent = '캡처에 실패했습니다.';
+        window.alert('화면 캡처에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+      } finally {
+        captureButton.disabled = false;
+      }
+    }
+
+    async function saveCaptureImage() {
+      if (!captureState.sourceCanvas) {
+        return;
+      }
+
+      drawCapturePreview();
+      captureSaveButton.disabled = true;
+
+      try {
+        const blob = await canvasToBlob(capturePreviewCanvas);
+        const fileName = buildCaptureFileName();
+
+        if (typeof window.showSaveFilePicker === 'function') {
+          try {
+            const handle = await window.showSaveFilePicker({
+              suggestedName: fileName,
+              types: [{
+                description: 'PNG 이미지',
+                accept: { 'image/png': ['.png'] },
+              }],
+            });
+            const writable = await handle.createWritable();
+            await writable.write(blob);
+            await writable.close();
+            captureStatus.textContent = 'PNG 파일을 저장했습니다.';
+            return;
+          } catch (error) {
+            if (error && error.name === 'AbortError') {
+              captureStatus.textContent = '저장이 취소되었습니다.';
+              return;
+            }
+          }
+        }
+
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+        captureStatus.textContent = 'PNG 다운로드를 시작했습니다.';
+      } catch (error) {
+        captureStatus.textContent = '저장에 실패했습니다.';
+        window.alert('이미지 저장에 실패했습니다.');
+      } finally {
+        captureSaveButton.disabled = false;
+      }
+    }
+
+    function getCapturePrintPageRule() {
+      const preset = getCurrentPaperPreset();
+      if (!preset) {
+        return '@page { size: auto; margin: 10mm; }';
+      }
+      const pageNameMap = {
+        A4: 'A4',
+        A3: 'A3',
+        B5: 'B5',
+        A5: 'A5',
+        LETTER: 'letter',
+      };
+      const pageName = pageNameMap[captureState.paperKey] || preset.label || 'auto';
+      return `@page { size: ${pageName} portrait; margin: 10mm; }`;
+    }
+
+    function printCaptureImage() {
+      if (!captureState.sourceCanvas) {
+        return;
+      }
+
+      drawCapturePreview();
+      capturePrintButton.disabled = true;
+
+      try {
+        const dataUrl = capturePreviewCanvas.toDataURL('image/png');
+        const printFrame = document.createElement('iframe');
+        printFrame.style.position = 'fixed';
+        printFrame.style.right = '0';
+        printFrame.style.bottom = '0';
+        printFrame.style.width = '0';
+        printFrame.style.height = '0';
+        printFrame.style.border = '0';
+        printFrame.setAttribute('aria-hidden', 'true');
+        document.body.appendChild(printFrame);
+
+        const frameWindow = printFrame.contentWindow;
+        if (!frameWindow) {
+          throw new Error('print frame unavailable');
+        }
+
+        const cleanup = () => {
+          window.setTimeout(() => {
+            if (printFrame.parentNode) {
+              printFrame.parentNode.removeChild(printFrame);
+            }
+          }, 500);
+        };
+
+        frameWindow.onafterprint = cleanup;
+        const doc = frameWindow.document;
+        doc.open();
+        doc.write(`<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>DOO Extractor Print</title>
+    <style>
+      ${getCapturePrintPageRule()}
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: #ffffff;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      img {
+        display: block;
+        width: 100%;
+        height: auto;
+        max-width: 100%;
+        object-fit: contain;
+      }
+      .page {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <img id="printImage" src="${dataUrl}" alt="map capture">
+    </div>
+    <script>
+      const triggerPrint = () => {
+        window.focus();
+        window.print();
+      };
+      const image = document.getElementById('printImage');
+      if (image.complete) {
+        setTimeout(triggerPrint, 80);
+      } else {
+        image.addEventListener('load', () => setTimeout(triggerPrint, 80), { once: true });
+      }
+    <\/script>
+  </body>
+</html>`);
+        doc.close();
+        captureStatus.textContent = '출력 창을 열었습니다.';
+      } catch (error) {
+        captureStatus.textContent = '출력에 실패했습니다.';
+        window.alert('출력 창을 열지 못했습니다.');
+      } finally {
+        capturePrintButton.disabled = false;
+      }
+    }
+
+    layerButton.addEventListener('click', (event) => {
+      event.stopPropagation();
+      setLayerPanelVisible(!layerPanel.classList.contains('is-visible'));
+    });
+
+    layerPanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+
+    document.addEventListener('click', () => {
+      setLayerPanelVisible(false);
+    });
+    captureCard.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    captureModal.addEventListener('click', () => {
+      setCaptureModalVisible(false);
+    });
+    textInputCard.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    textInputModal.addEventListener('click', () => {
+      resolveTextInput(null);
+    });
+    textInputCancelButton.addEventListener('click', () => {
+      resolveTextInput(null);
+    });
+    textInputSaveButton.addEventListener('click', () => {
+      const text = String(textInputField.value || '').trim();
+      resolveTextInput({ text, isTitle: !!textTitleCheckbox.checked });
+    });
+    textInputField.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        resolveTextInput(null);
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+        event.preventDefault();
+        const text = String(textInputField.value || '').trim();
+        resolveTextInput({ text, isTitle: !!textTitleCheckbox.checked });
+      }
+    });
+    capturePreviewCanvas.addEventListener('pointerdown', (event) => {
+      startCaptureImageDrag(event);
+    });
+    captureViewport.addEventListener('pointerdown', (event) => {
+      startCapturePan(event);
+    });
+    window.addEventListener('pointermove', (event) => {
+      moveCaptureImageDrag(event);
+      moveCapturePan(event);
+    });
+    window.addEventListener('pointerup', () => {
+      stopCaptureImageDrag();
+      stopCapturePan();
+    });
+    captureViewport.addEventListener('wheel', (event) => {
+      event.preventDefault();
+      const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
+      captureState.viewScale = clamp(captureState.viewScale * factor, 0.03, 6);
+      applyCapturePreviewTransform();
+    }, { passive: false });
+
+    collapseToolbarButton.addEventListener('click', () => {
+      applyInterfaceCollapseState(true);
+      scheduleViewerStateSave();
+    });
+    expandToolbarButton.addEventListener('click', () => {
+      applyInterfaceCollapseState(false);
+      scheduleViewerStateSave();
+    });
+    forceStartInput.addEventListener('input', refreshForceSettings);
+    forceSizeInput.addEventListener('input', refreshForceSettings);
+    forceColorInput.addEventListener('input', refreshForceSettings);
+    capturePaperSelect.addEventListener('change', async () => {
+      if (capturePaperSelect.value === 'CUSTOM') {
+        markCapturePaperCustom();
+      } else {
+        setCapturePaper(capturePaperSelect.value);
+      }
+      if (!captureModal.classList.contains('is-visible')) {
+        drawCapturePreview();
+        window.requestAnimationFrame(() => {
+          fitCapturePreview();
+        });
+        return;
+      }
+      capturePrintButton.disabled = true;
+      captureSaveButton.disabled = true;
+      try {
+        await updateCaptureSource(false);
+      } catch (error) {
+        captureStatus.textContent = '용지 비율 변경에 실패했습니다.';
+      } finally {
+        capturePrintButton.disabled = false;
+        captureSaveButton.disabled = false;
+      }
+    });
+    numSizeInput.addEventListener('input', refreshNumberSettings);
+    numColorInput.addEventListener('input', refreshNumberSettings);
+    numToggle.addEventListener('change', () => {
+      setNumControlsEnabled(numToggle.checked);
+      if (numToggle.checked) {
+        map.addLayer(kmlLabelGroup);
+      } else {
+        map.removeLayer(kmlLabelGroup);
+      }
+      scheduleViewerStateSave();
+    });
+    captureButton.addEventListener('click', () => {
+      openCaptureEditor();
+    });
+    capturePrintButton.addEventListener('click', () => {
+      printCaptureImage();
+    });
+    captureSaveButton.addEventListener('click', () => {
+      saveCaptureImage();
+    });
+    captureCloseButton.addEventListener('click', () => {
+      setCaptureModalVisible(false);
+    });
+    captureOutputWidth.addEventListener('input', () => {
+      markCapturePaperCustom();
+      const width = parseInt(captureOutputWidth.value, 10);
+      const height = parseInt(captureOutputHeight.value, 10);
+      if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+        captureState.aspectRatio = width / height;
+      }
+      drawCapturePreview('width');
+    });
+    captureOutputHeight.addEventListener('input', () => {
+      markCapturePaperCustom();
+      const width = parseInt(captureOutputWidth.value, 10);
+      const height = parseInt(captureOutputHeight.value, 10);
+      if (Number.isFinite(width) && Number.isFinite(height) && width > 0 && height > 0) {
+        captureState.aspectRatio = width / height;
+      }
+      drawCapturePreview('height');
+    });
+    captureLockRatio.addEventListener('change', () => {
+      drawCapturePreview();
+    });
+    map.on('moveend zoomend', () => {
+      scheduleViewerStateSave();
+    });
+    window.addEventListener('beforeunload', () => {
+      saveViewerStateNow();
+    });
+    document.addEventListener('keydown', (event) => {
+      if ((event.ctrlKey || event.metaKey) && !event.shiftKey && String(event.key).toLowerCase() === 'z') {
+        event.preventDefault();
+        undoLastAction();
+        return;
+      }
+      if ((event.key === 'Delete' || event.key === 'Del') && !textInputModal.classList.contains('is-visible')) {
+        const activeTag = document.activeElement ? String(document.activeElement.tagName || '').toUpperCase() : '';
+        const isTypingField = activeTag === 'INPUT' || activeTag === 'TEXTAREA' || document.activeElement?.isContentEditable;
+        if (!isTypingField && deleteSelectedTextMarker()) {
+          event.preventDefault();
+          return;
+        }
+      }
+      if (event.key === 'Escape' && captureModal.classList.contains('is-visible')) {
+        setCaptureModalVisible(false);
+      }
+    });
+
+    function formatDistance(meters, unit = measureState.unit) {
+      if (unit === 'nm') {
+        const nm = meters / 1852;
+        return `${nm >= 10 ? nm.toFixed(1) : nm.toFixed(2)} NM`;
+      }
+      const km = meters / 1000;
+      return `${km >= 10 ? km.toFixed(1) : km.toFixed(2)} KM`;
+    }
+
+    function clearMeasurement() {
+      measureState.points = [];
+      measureState.markers.forEach((marker) => measureGroup.removeLayer(marker));
+      measureState.markers = [];
+      if (measureState.line) {
+        measureGroup.removeLayer(measureState.line);
+        measureState.line = null;
+      }
+      if (measureState.label) {
+        measureGroup.removeLayer(measureState.label);
+        measureState.label = null;
+      }
+    }
+
+    function setMeasureActive(active, fromOtherTool = false) {
+      measureState.active = active;
+      measureButton.classList.toggle('is-active', active);
+      measureButton.classList.toggle('measure-active', active);
+      clearMeasurement();
+      if (active && !fromOtherTool && textState.active) {
+        setTextActive(false);
+      }
+      if (active && !fromOtherTool && doneState.active) {
+        setDoneActive(false, true);
+      }
+      if (active && !fromOtherTool && forceState.active) {
+        setForceActive(false, true);
+      }
+      scheduleViewerStateSave();
+    }
+
+    function bindMeasureLabelControls() {
+      if (!measureState.label) {
+        return;
+      }
+
+      const element = measureState.label.getElement();
+      if (!element) {
+        requestAnimationFrame(bindMeasureLabelControls);
+        return;
+      }
+
+      element.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+
+      element.querySelectorAll('[data-measure-unit]').forEach((button) => {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          updateMeasureUnit(button.dataset.measureUnit);
+        });
+      });
+    }
+
+    function updateMeasureUnit(unit) {
+      if (unit !== 'km' && unit !== 'nm') {
+        return;
+      }
+      measureState.unit = unit;
+      if (!measureState.label || measureState.points.length < 2) {
+        return;
+      }
+
+      const distanceMeters = map.distance(measureState.points[0], measureState.points[1]);
+      measureState.label.setIcon(distanceIcon(formatDistance(distanceMeters, unit), unit));
+      bindMeasureLabelControls();
+      scheduleViewerStateSave();
+    }
+
+    function finalizeMeasurement() {
+      if (measureState.points.length < 2) {
+        return;
+      }
+      const [start, end] = measureState.points;
+      measureState.line = L.polyline([start, end], {
+        color: measureColor,
+        weight: 6.3,
+        opacity: 0.94,
+        lineCap: 'round',
+        renderer: renderer
+      }).addTo(measureGroup);
+
+      const distanceText = formatDistance(map.distance(start, end), measureState.unit);
+      const mid = L.latLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2);
+      measureState.label = L.marker(mid, {
+        icon: distanceIcon(distanceText, measureState.unit),
+        interactive: true,
+        keyboard: false
+      }).addTo(measureGroup);
+      bindMeasureLabelControls();
+
+      if (measureState.line.bringToFront) {
+        measureState.line.bringToFront();
+      }
+    }
+
+    measureButton.addEventListener('click', () => {
+      setMeasureActive(!measureState.active);
+    });
+    textButton.addEventListener('click', () => {
+      setTextActive(!textState.active);
+    });
+    doneButton.addEventListener('click', () => {
+      setDoneActive(!doneState.active);
+    });
+    forceButton.addEventListener('click', () => {
+      setForceActive(!forceState.active);
+    });
+
+    map.on('click', async (event) => {
+      if (!textState.active) {
+        deselectTextMarker();
+      }
+
+      if (textState.active) {
+        const textValue = await promptForText('', false);
+        if (!textValue || !textValue.text) {
+          return;
+        }
+        addTextMarker(event.latlng, textValue.text, !!textValue.isTitle);
+        return;
+      }
+
+      if (!measureState.active) {
+        return;
+      }
+
+      if (measureState.points.length >= 2) {
+        clearMeasurement();
+      }
+
+      measureState.points.push(event.latlng);
+      const marker = L.marker(event.latlng, {
+        icon: flagIcon(),
+        interactive: false,
+        keyboard: false
+      }).addTo(measureGroup);
+      measureState.markers.push(marker);
+
+      if (measureState.points.length === 2) {
+        finalizeMeasurement();
+      }
+      scheduleViewerStateSave();
+    });
+
+    async function initializeViewer() {
+      buildLayerRows();
+      renderResults();
+
+      const restored = await restoreViewerState();
+      if (!restored) {
+        if (bounds.isValid()) {
+          map.fitBounds(bounds.pad(0.12), { animate: false });
+        } else {
+          map.setView([36.4, 127.8], 7);
+        }
+      }
+      recordUndoState(true);
+    }
+
+    initializeViewer();
+  </script>
+</body>
+</html>
