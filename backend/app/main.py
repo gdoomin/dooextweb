@@ -6,12 +6,13 @@ from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
 from tempfile import NamedTemporaryFile
+from typing import Literal
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlparse
 from urllib.request import Request as UrlRequest, urlopen
 from uuid import uuid4
 
-from fastapi import FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
@@ -21,7 +22,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
-from shared.python_core import POLYGON_ONLY_MESSAGE, build_web_map_html, build_web_map_payload, format_text, parse_kml, save_excel
+from shared.python_core import POLYGON_ONLY_MESSAGE, build_web_map_html, build_web_map_payload, save_excel
 from .weather import (
     WeatherProviderError,
     build_advisory_overlay,
@@ -43,6 +44,7 @@ MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
+FONTS_DIR = ASSETS_DIR / "fonts"
 
 USER_HISTORY_LIMIT = 50
 SUPABASE_HTTP_TIMEOUT_SECONDS = 10
@@ -53,8 +55,20 @@ class PasswordResetRequest(BaseModel):
     email: str
     redirect_to: str | None = None
 
+
+class ClientConvertPayload(BaseModel):
+    filename: str
+    project_name: str
+    mode: Literal["linestring", "polygon"]
+    result_count: int
+    text_output: str
+    map_payload: dict
+    results: list[dict]
+
 for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
+
+FONTS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _allowed_origins() -> list[str]:
@@ -334,46 +348,63 @@ def health():
 
 
 @app.post("/api/convert")
-async def convert_kml(request: Request, file: UploadFile = File(...)):
-    suffix = Path(file.filename or "upload.kml").suffix.lower() or ".kml"
-    if suffix != ".kml":
-        raise HTTPException(status_code=400, detail="현재 MVP는 KML 파일만 지원합니다.")
+async def convert_kml(request: Request, payload: ClientConvertPayload):
+    project_name = Path(payload.project_name or payload.filename or "upload").stem
+    mode = payload.mode
+    results = payload.results if isinstance(payload.results, list) else []
+    text_output = str(payload.text_output or "").strip()
+    map_payload = payload.map_payload if isinstance(payload.map_payload, dict) else {}
 
-    with NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
-        temp_path = Path(temp_file.name)
-        temp_file.write(await file.read())
+    if mode == "linestring" and not results:
+        raise HTTPException(status_code=400, detail="Converted results are empty.")
 
-    try:
-        results, error, mode = parse_kml(str(temp_path))
-        if error or not results or not mode:
-            raise HTTPException(status_code=400, detail=error or "변환에 실패했습니다.")
-
-        project_name = Path(file.filename or temp_path.name).stem
+    if not map_payload or map_payload.get("mode") != mode:
         map_payload = build_web_map_payload(results, project_name, mode, _build_map_layer_catalog())
-        text_output = format_text(results, project_name, mode)
-        job_id = uuid4().hex
-        base_url = _external_base_url(request)
-        user_id, user_email = _request_user_identity(request)
+    else:
+        map_payload = dict(map_payload)
+        map_payload.setdefault("project_name", project_name)
+        map_payload.setdefault("mode", mode)
+        if mode == "linestring":
+            map_payload.setdefault("results", results)
+            map_payload.setdefault("polygons", [])
+        else:
+            map_payload.setdefault("results", [])
+            map_payload.setdefault("polygons", [])
+        layer_catalog = _build_map_layer_catalog()
+        map_payload["layer_catalog"] = layer_catalog
+        map_payload["has_layers"] = bool(layer_catalog)
+        map_payload.setdefault("default_gray_map", False)
 
-        job_data = {
-            "job_id": job_id,
-            "filename": file.filename,
-            "project_name": project_name,
-            "mode": mode,
-            "result_count": len(results),
-            "text_output": text_output,
-            "map_payload": map_payload,
-            "results": results,
-            "created_at": _utc_now_iso(),
-            "user_id": user_id,
-            "user_email": user_email,
-        }
-        _save_json(_job_path(job_id), job_data)
-        _record_user_history(job_data)
+    if not text_output:
+        text_output = POLYGON_ONLY_MESSAGE if mode == "polygon" else "No formatted text was provided."
 
-        return _job_response(job_data, base_url)
-    finally:
-        temp_path.unlink(missing_ok=True)
+    if mode == "polygon":
+        polygons = map_payload.get("polygons", [])
+        result_count = len(polygons) if isinstance(polygons, list) else len(results)
+    else:
+        result_count = max(int(payload.result_count or 0), len(results))
+
+    job_id = uuid4().hex
+    base_url = _external_base_url(request)
+    user_id, user_email = _request_user_identity(request)
+
+    job_data = {
+        "job_id": job_id,
+        "filename": payload.filename,
+        "project_name": project_name,
+        "mode": mode,
+        "result_count": result_count,
+        "text_output": text_output,
+        "map_payload": map_payload,
+        "results": results,
+        "created_at": _utc_now_iso(),
+        "user_id": user_id,
+        "user_email": user_email,
+    }
+    _save_json(_job_path(job_id), job_data)
+    _record_user_history(job_data)
+
+    return _job_response(job_data, base_url)
 
 
 @app.post("/api/auth/password-reset/request")
@@ -490,6 +521,32 @@ def get_banner():
     if not BANNER_PATH.exists():
         raise HTTPException(status_code=404, detail="배너 이미지를 찾을 수 없습니다.")
     return FileResponse(BANNER_PATH, media_type="image/png")
+
+
+@app.get("/api/assets/fonts/{font_file:path}")
+def get_font_asset(font_file: str):
+    requested = Path(font_file)
+    if requested.is_absolute() or any(part in {"..", ""} for part in requested.parts):
+        raise HTTPException(status_code=404, detail="font not found")
+
+    try:
+        font_path = (FONTS_DIR / requested).resolve(strict=True)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="font not found")
+
+    try:
+        font_path.relative_to(FONTS_DIR.resolve())
+    except ValueError:
+        raise HTTPException(status_code=404, detail="font not found")
+
+    media_type = {
+        ".ttf": "font/ttf",
+        ".otf": "font/otf",
+        ".woff": "font/woff",
+        ".woff2": "font/woff2",
+    }.get(font_path.suffix.lower(), "application/octet-stream")
+
+    return FileResponse(font_path, media_type=media_type)
 
 
 @app.get("/api/weather/config")

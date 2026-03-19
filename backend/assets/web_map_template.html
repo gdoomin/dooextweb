@@ -1043,6 +1043,41 @@
       font-size: 11px;
       line-height: 1.5;
     }
+    @font-face {
+      font-family: "MaruBuriCustom";
+      src: url("/api/assets/fonts/MaruBuri-Regular.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "NanumMyeongjoCustom";
+      src: url("/api/assets/fonts/NanumMyeongjo.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "NanumSquareCustom";
+      src: url("/api/assets/fonts/NanumSquareR.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "NanumSquareAcCustom";
+      src: url("/api/assets/fonts/NanumSquare_acR.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "NanumDaSiSiJagHaeCustom";
+      src: url("/api/assets/fonts/NanumDaSiSiJagHae.ttf") format("truetype");
+      font-weight: 400;
+      font-style: normal;
+      font-display: swap;
+    }
     .text-marker-shell {
       pointer-events: auto;
       cursor: move;
@@ -1068,6 +1103,7 @@
       font-size: 45pt;
       font-weight: 800;
       line-height: 1.05;
+      font-family: "NanumSquareCustom", "Apple SD Gothic Neo", sans-serif;
       text-align: center;
       white-space: nowrap;
       text-shadow:
@@ -1290,6 +1326,34 @@
       color: #e6edf3;
       font-size: 14px;
       font-weight: 700;
+    }
+    .text-input-grid {
+      margin-top: 12px;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .text-input-field-wrap {
+      display: grid;
+      gap: 6px;
+      color: #e6edf3;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .text-input-select {
+      width: 100%;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.86);
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .text-input-select:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
     }
     .text-input-actions {
       display: flex;
@@ -1567,6 +1631,24 @@
       <h3 id="textInputTitle">글자 입력</h3>
       <p>지도에 표시할 글자를 입력하고, 제목이면 체크하세요.</p>
       <textarea id="textInputField" class="text-input-field" placeholder="지도에 표시할 글자를 입력하세요."></textarea>
+      <div class="text-input-grid">
+        <label class="text-input-field-wrap">폰트
+          <select id="textFontSelect" class="text-input-select">
+            <option value="nanum_square">나눔스퀘어</option>
+            <option value="nanum_square_ac">나눔스퀘어 라운드</option>
+            <option value="maruburi">마루부리</option>
+            <option value="nanum_myeongjo">나눔명조</option>
+            <option value="nanum_dasisijakhae">나눔다시시작해</option>
+          </select>
+        </label>
+        <label class="text-input-field-wrap">정렬
+          <select id="textAlignSelect" class="text-input-select">
+            <option value="center">중앙</option>
+            <option value="left">왼쪽</option>
+            <option value="right">오른쪽</option>
+          </select>
+        </label>
+      </div>
       <label class="text-input-check"><input id="textTitleCheckbox" type="checkbox">제목으로 사용</label>
       <div class="text-input-actions">
         <button id="textInputCancelButton" class="mini-button" type="button">취소</button>
@@ -1589,6 +1671,15 @@
     const measureMinLabelSize = 10;
     const measureMaxLabelSize = 36;
     const measureDefaultLabelSize = 12;
+    const TEXT_DEFAULT_FONT = 'nanum_square';
+    const TEXT_DEFAULT_ALIGN = 'center';
+    const TEXT_FONT_FAMILIES = {
+      nanum_square: '"NanumSquareCustom", "Apple SD Gothic Neo", sans-serif',
+      nanum_square_ac: '"NanumSquareAcCustom", "Apple SD Gothic Neo", sans-serif',
+      maruburi: '"MaruBuriCustom", "Apple SD Gothic Neo", sans-serif',
+      nanum_myeongjo: '"NanumMyeongjoCustom", "Batang", serif',
+      nanum_dasisijakhae: '"NanumDaSiSiJagHaeCustom", "Apple SD Gothic Neo", sans-serif',
+    };
     const doneHighlightDefaultColor = '#b7ff3c';
     const doneHighlightMinWeight = 6;
     const doneHighlightMaxWeight = 10;
@@ -1697,6 +1788,8 @@
     const textInputCard = document.getElementById('textInputCard');
     const textInputTitle = document.getElementById('textInputTitle');
     const textInputField = document.getElementById('textInputField');
+    const textFontSelect = document.getElementById('textFontSelect');
+    const textAlignSelect = document.getElementById('textAlignSelect');
     const textTitleCheckbox = document.getElementById('textTitleCheckbox');
     const textInputCancelButton = document.getElementById('textInputCancelButton');
     const textInputSaveButton = document.getElementById('textInputSaveButton');
@@ -2222,13 +2315,29 @@
       });
     }
 
-    function textIcon(text, size = 45, isTitle = false) {
+    function normalizeTextFont(value) {
+      const key = String(value || '').trim();
+      return Object.prototype.hasOwnProperty.call(TEXT_FONT_FAMILIES, key) ? key : TEXT_DEFAULT_FONT;
+    }
+
+    function normalizeTextAlign(value) {
+      return value === 'left' || value === 'right' || value === 'center' ? value : TEXT_DEFAULT_ALIGN;
+    }
+
+    function getTextFontFamily(fontKey) {
+      return TEXT_FONT_FAMILIES[normalizeTextFont(fontKey)] || TEXT_FONT_FAMILIES[TEXT_DEFAULT_FONT];
+    }
+
+    function textIcon(text, size = 45, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
       const htmlText = escapeHtml(String(text || '').trim()).replace(/\n/g, '<br>');
       const titleAttr = isTitle ? ' data-title="1"' : ' data-title="0"';
       const titleClass = isTitle ? ' is-title' : '';
+      const fontKey = normalizeTextFont(textFont);
+      const align = normalizeTextAlign(textAlign);
+      const fontFamily = getTextFontFamily(fontKey);
       return L.divIcon({
         className: '',
-        html: `<div class="text-marker-shell${titleClass}"${titleAttr}><div class="map-text-label" style="font-size:${size}pt">${htmlText}</div><div class="text-resize-handle" data-text-resize="1"></div></div>`,
+        html: `<div class="text-marker-shell${titleClass}"${titleAttr}><div class="map-text-label" style="font-size:${size}pt;font-family:${fontFamily};text-align:${align};">${htmlText}</div><div class="text-resize-handle" data-text-resize="1"></div></div>`,
         iconSize: null,
       });
     }
@@ -2251,6 +2360,8 @@
       const label = element.querySelector('.map-text-label');
       if (label) {
         label.style.fontSize = `${getTextMarkerSize(marker)}pt`;
+        label.style.fontFamily = getTextFontFamily(marker.options.textFont);
+        label.style.textAlign = normalizeTextAlign(marker.options.textAlign);
       }
     }
 
@@ -2318,12 +2429,14 @@
       resolver(result);
     }
 
-    function promptForText(initialValue = '', initialTitle = false) {
+    function promptForText(initialValue = '', initialTitle = false, initialFont = TEXT_DEFAULT_FONT, initialAlign = TEXT_DEFAULT_ALIGN) {
       return new Promise((resolve) => {
         textState.dialogResolver = resolve;
         textInputTitle.textContent = initialValue ? '글자 수정' : '글자 입력';
         textInputField.value = initialValue;
         textTitleCheckbox.checked = !!initialTitle;
+        textFontSelect.value = normalizeTextFont(initialFont);
+        textAlignSelect.value = normalizeTextAlign(initialAlign);
         setTextInputModalVisible(true);
         window.setTimeout(() => {
           textInputField.focus();
@@ -2467,7 +2580,12 @@
           L.DomEvent.stop(event.originalEvent);
         }
         const currentText = marker.options.textValue || '';
-        const nextValue = await promptForText(currentText, !!marker.options.isTitle);
+        const nextValue = await promptForText(
+          currentText,
+          !!marker.options.isTitle,
+          marker.options.textFont || TEXT_DEFAULT_FONT,
+          marker.options.textAlign || TEXT_DEFAULT_ALIGN,
+        );
         if (nextValue === null) {
           return;
         }
@@ -2477,7 +2595,15 @@
         }
         marker.options.textValue = nextValue.text;
         marker.options.isTitle = !!nextValue.isTitle;
-        marker.setIcon(textIcon(nextValue.text, getTextMarkerSize(marker), !!nextValue.isTitle));
+        marker.options.textFont = normalizeTextFont(nextValue.textFont);
+        marker.options.textAlign = normalizeTextAlign(nextValue.textAlign);
+        marker.setIcon(textIcon(
+          nextValue.text,
+          getTextMarkerSize(marker),
+          !!nextValue.isTitle,
+          marker.options.textFont,
+          marker.options.textAlign,
+        ));
         window.requestAnimationFrame(() => {
           bindTextMarkerDom(marker);
           selectTextMarker(marker);
@@ -2487,9 +2613,11 @@
       });
     }
 
-    function addTextMarker(latlng, textValue, isTitle = false) {
+    function addTextMarker(latlng, textValue, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
+      const normalizedFont = normalizeTextFont(textFont);
+      const normalizedAlign = normalizeTextAlign(textAlign);
       const marker = L.marker(latlng, {
-        icon: textIcon(textValue, 45, isTitle),
+        icon: textIcon(textValue, 45, isTitle, normalizedFont, normalizedAlign),
         draggable: true,
         keyboard: false,
         autoPan: true,
@@ -2497,6 +2625,8 @@
         textValue,
         textSize: 45,
         isTitle: !!isTitle,
+        textFont: normalizedFont,
+        textAlign: normalizedAlign,
       }).addTo(textGroup);
       textState.markers.push(marker);
       attachTextMarkerEvents(marker);
@@ -3222,6 +3352,8 @@
             text: marker.options.textValue || '',
             size: getTextMarkerSize(marker),
             isTitle: !!marker.options.isTitle,
+            font: normalizeTextFont(marker.options.textFont),
+            align: normalizeTextAlign(marker.options.textAlign),
           };
         }),
         measure: {
@@ -3456,7 +3588,13 @@
             if (!item || !item.text || !Number.isFinite(item.lat) || !Number.isFinite(item.lng)) {
               return;
             }
-            const marker = addTextMarker(L.latLng(item.lat, item.lng), item.text, !!item.isTitle);
+            const marker = addTextMarker(
+              L.latLng(item.lat, item.lng),
+              item.text,
+              !!item.isTitle,
+              item.font || TEXT_DEFAULT_FONT,
+              item.align || TEXT_DEFAULT_ALIGN,
+            );
             marker.options.textSize = clamp(Number(item.size) || 45, 8, 240);
             updateTextMarkerElement(marker);
             setTextHover(marker, false);
@@ -4820,7 +4958,12 @@
     });
     textInputSaveButton.addEventListener('click', () => {
       const text = String(textInputField.value || '').trim();
-      resolveTextInput({ text, isTitle: !!textTitleCheckbox.checked });
+      resolveTextInput({
+        text,
+        isTitle: !!textTitleCheckbox.checked,
+        textFont: normalizeTextFont(textFontSelect.value),
+        textAlign: normalizeTextAlign(textAlignSelect.value),
+      });
     });
     textInputField.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
@@ -4831,7 +4974,12 @@
       if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
         event.preventDefault();
         const text = String(textInputField.value || '').trim();
-        resolveTextInput({ text, isTitle: !!textTitleCheckbox.checked });
+        resolveTextInput({
+          text,
+          isTitle: !!textTitleCheckbox.checked,
+          textFont: normalizeTextFont(textFontSelect.value),
+          textAlign: normalizeTextAlign(textAlignSelect.value),
+        });
       }
     });
     capturePreviewCanvas.addEventListener('pointerdown', (event) => {
@@ -5210,11 +5358,17 @@
       }
 
       if (textState.active) {
-        const textValue = await promptForText('', false);
+        const textValue = await promptForText('', false, TEXT_DEFAULT_FONT, TEXT_DEFAULT_ALIGN);
         if (!textValue || !textValue.text) {
           return;
         }
-        addTextMarker(event.latlng, textValue.text, !!textValue.isTitle);
+        addTextMarker(
+          event.latlng,
+          textValue.text,
+          !!textValue.isTitle,
+          textValue.textFont || TEXT_DEFAULT_FONT,
+          textValue.textAlign || TEXT_DEFAULT_ALIGN,
+        );
         return;
       }
 
