@@ -93,6 +93,7 @@ MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
+ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
 FONTS_DIR = ASSETS_DIR / "fonts"
 POPUP_NOTICE_PATH = RUNTIME_DIR / "popup_notice.json"
 
@@ -2247,6 +2248,16 @@ def cancel_subscription(payload: BillingCancelPayload, request: Request):
         active=False,
     )
     return JSONResponse({"ok": True, "message": "정기결제가 해지되었습니다.", "reason": payload.reason})
+
+
+@app.get("/ads.txt")
+def get_ads_txt():
+    if ADS_TXT_PATH.exists():
+        return FileResponse(ADS_TXT_PATH, media_type="text/plain; charset=utf-8")
+    return PlainTextResponse(
+        "google.com, pub-7599505823176898, DIRECT, f08c47fec0942fa0",
+        media_type="text/plain; charset=utf-8",
+    )
 
 
 @app.get("/api/assets/html2canvas.min.js")
