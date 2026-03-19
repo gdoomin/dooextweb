@@ -551,6 +551,10 @@ export function HomeScreen({
         viewerUrl = `${viewerPath}?${queryString}`;
       }
     }
+    const tokenForViewer = accessToken.trim();
+    if (tokenForViewer) {
+      viewerUrl = `${viewerUrl}#doo_access_token=${encodeURIComponent(tokenForViewer)}`;
+    }
 
     const opened = window.open(viewerUrl, "_blank", "noopener,noreferrer");
     if (!opened) {

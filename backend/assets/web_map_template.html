@@ -225,7 +225,9 @@
       box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
     }
     .inline-text-font-wrap,
-    .inline-measure-unit-wrap {
+    .inline-text-color-wrap,
+    .inline-measure-unit-wrap,
+    .inline-number-size-wrap {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -239,11 +241,14 @@
       white-space: nowrap;
     }
     .inline-text-font-wrap.is-hidden,
-    .inline-measure-unit-wrap.is-hidden {
+    .inline-text-color-wrap.is-hidden,
+    .inline-measure-unit-wrap.is-hidden,
+    .inline-number-size-wrap.is-hidden {
       display: none;
     }
     .inline-text-font-select,
-    .inline-measure-unit-select {
+    .inline-measure-unit-select,
+    .inline-number-size-input {
       min-width: 120px;
       padding: 4px 8px;
       border-radius: 8px;
@@ -253,8 +258,14 @@
       font-size: 12px;
       outline: none;
     }
+    .inline-number-size-input {
+      min-width: 66px;
+      width: 66px;
+      text-align: center;
+    }
     .inline-text-font-select:focus,
-    .inline-measure-unit-select:focus {
+    .inline-measure-unit-select:focus,
+    .inline-number-size-input:focus {
       border-color: rgba(88, 166, 255, 0.78);
       box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.15);
     }
@@ -2094,6 +2105,10 @@
       <button id="planInfoButton" class="mini-button plan-info-button toolbar-collapse-hide" type="button" aria-label="요금제 안내" title="요금제 안내">요금제</button>
       <label class="toolbar-collapse-hide"><input id="grayToggle" type="checkbox">GRAY</label>
       <label id="numWrap" class="toolbar-collapse-hide"><input id="numToggle" type="checkbox">번호</label>
+      <label id="inlineNumberSizeWrap" class="toolbar-collapse-hide inline-number-size-wrap">
+        번호크기
+        <input id="inlineNumberSizeInput" class="inline-number-size-input" type="number" value="16" min="10" max="40" step="1" aria-label="번호 글자 크기">
+      </label>
       <button id="collapseToolbarButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="은둔" title="은둔">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconHide"></use></svg></span>
       </button>
@@ -2106,6 +2121,10 @@
           <option value="nanum_myeongjo">나눔명조</option>
           <option value="nanum_dasisijakhae">나눔다시시작해</option>
         </select>
+      </label>
+      <label id="inlineTextColorWrap" class="toolbar-collapse-hide inline-text-color-wrap is-hidden">
+        색상
+        <input id="inlineTextColorInput" type="color" value="#131722" aria-label="선택 글자 색상">
       </label>
       <label id="inlineMeasureUnitWrap" class="toolbar-collapse-hide inline-measure-unit-wrap is-hidden">
         거리 단위
@@ -2174,7 +2193,7 @@
       </label>
       <span id="forceStatus" class="control-status">다음 1</span>
       <label class="force-field">크기
-        <input id="forceSizeInput" type="number" value="22" min="10" max="48" step="1">
+        <input id="forceSizeInput" type="number" value="16" min="10" max="40" step="1">
       </label>
       <label class="force-field">색상
         <input id="forceColorInput" type="color" value="#cc2200">
@@ -2182,7 +2201,7 @@
     </div>
     <div id="numControls" class="force-controls is-hidden">
       <label class="force-field">크기
-        <input id="numSizeInput" type="number" value="22" min="10" max="48" step="1">
+        <input id="numSizeInput" type="number" value="16" min="10" max="40" step="1">
       </label>
       <label class="force-field">색상
         <input id="numColorInput" type="color" value="#cc2200">
@@ -2410,6 +2429,12 @@
     const measureLabelDragCooldownMs = 260;
     const TEXT_DEFAULT_FONT = 'nanum_square';
     const TEXT_DEFAULT_ALIGN = 'center';
+    const TEXT_DEFAULT_COLOR = '#131722';
+    const TEXT_MIN_SIZE = 8;
+    const TEXT_MAX_SIZE = 240;
+    const NUMBER_LABEL_SIZE_MIN = 10;
+    const NUMBER_LABEL_SIZE_MAX = 40;
+    const NUMBER_LABEL_SIZE_DEFAULT = 16;
     const TEXT_FONT_FAMILIES = {
       nanum_square: '"NanumSquareCustom", "Apple SD Gothic Neo", sans-serif',
       nanum_square_ac: '"NanumSquareAcCustom", "Apple SD Gothic Neo", sans-serif',
@@ -2442,6 +2467,7 @@
     }
     const viewerAccess = {
       textTool: resolveViewerFlag('text_tool', true),
+      textColorCustomize: resolveViewerFlag('text_color_customize', true),
       doneTool: resolveViewerFlag('done_tool', true),
       forceTool: resolveViewerFlag('force_tool', true),
       measureTool: resolveViewerFlag('measure_tool', true),
@@ -2459,10 +2485,35 @@
       doneTool: '현재 요금제에서 완료(형광펜) 기능을 사용할 수 없습니다.',
       forceTool: '현재 요금제에서 강제번호 기능을 사용할 수 없습니다.',
       measureTool: '현재 요금제에서 측정 기능을 사용할 수 없습니다.',
+      textColorCustomize: '텍스트 색상 변경은 프로 요금제 전용 기능입니다.',
       weather: '현재 요금제에서 기상 기능을 사용할 수 없습니다.',
       collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
       notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
     };
+    function viewerStateAccessTokenFromHash() {
+      const rawHash = String(window.location.hash || '').replace(/^#/, '');
+      if (!rawHash) {
+        return '';
+      }
+      const params = new URLSearchParams(rawHash);
+      const token = String(params.get('doo_access_token') || '').trim();
+      if (!token) {
+        return '';
+      }
+      params.delete('doo_access_token');
+      const nextHash = params.toString();
+      const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ''}`;
+      window.history.replaceState(null, '', nextUrl);
+      return token;
+    }
+    const viewerStateAccessToken = viewerStateAccessTokenFromHash();
+    function viewerStateHeaders(extraHeaders = {}) {
+      const headers = { ...extraHeaders };
+      if (viewerStateAccessToken) {
+        headers.Authorization = `Bearer ${viewerStateAccessToken}`;
+      }
+      return headers;
+    }
     const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     function normalizeLayerKey(value) {
       return String(value || '').trim().toLowerCase();
@@ -2574,8 +2625,12 @@
     const planInfoButton = document.getElementById('planInfoButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
     const expandToolbarButton = document.getElementById('expandToolbarButton');
+    const inlineNumberSizeWrap = document.getElementById('inlineNumberSizeWrap');
+    const inlineNumberSizeInput = document.getElementById('inlineNumberSizeInput');
     const inlineTextFontWrap = document.getElementById('inlineTextFontWrap');
     const inlineTextFontSelect = document.getElementById('inlineTextFontSelect');
+    const inlineTextColorWrap = document.getElementById('inlineTextColorWrap');
+    const inlineTextColorInput = document.getElementById('inlineTextColorInput');
     const inlineMeasureUnitWrap = document.getElementById('inlineMeasureUnitWrap');
     const inlineMeasureUnitSelect = document.getElementById('inlineMeasureUnitSelect');
     const layerPanel = document.getElementById('layerPanel');
@@ -2730,7 +2785,7 @@
       A5: { label: 'A5', width: 1748, height: 2480 },
       LETTER: { label: 'Letter', width: 2550, height: 3300 },
     };
-    const VIEWER_STATE_VERSION = 3;
+    const VIEWER_STATE_VERSION = 4;
     const UNDO_LIMIT = 10;
     let viewerStateSaveTimer = null;
     let viewerStateRestoring = false;
@@ -4287,8 +4342,20 @@
       return value === 'left' || value === 'right' || value === 'center' ? value : TEXT_DEFAULT_ALIGN;
     }
 
+    function normalizeTextColor(value) {
+      const normalized = String(value || '').trim();
+      return /^#[0-9a-f]{6}$/i.test(normalized) ? normalized.toLowerCase() : TEXT_DEFAULT_COLOR;
+    }
+
     function getTextFontFamily(fontKey) {
       return TEXT_FONT_FAMILIES[normalizeTextFont(fontKey)] || TEXT_FONT_FAMILIES[TEXT_DEFAULT_FONT];
+    }
+
+    function getTextMarkerColor(marker) {
+      if (!marker || !marker.options) {
+        return TEXT_DEFAULT_COLOR;
+      }
+      return normalizeTextColor(marker.options.textColor);
     }
 
     function syncInlineTextFontControl() {
@@ -4298,10 +4365,17 @@
       const selected = textState.selectedMarker;
       if (!selected) {
         inlineTextFontWrap.classList.add('is-hidden');
+        if (inlineTextColorWrap) {
+          inlineTextColorWrap.classList.add('is-hidden');
+        }
         return;
       }
       inlineTextFontWrap.classList.remove('is-hidden');
       inlineTextFontSelect.value = normalizeTextFont(selected.options.textFont || TEXT_DEFAULT_FONT);
+      if (inlineTextColorWrap && inlineTextColorInput) {
+        inlineTextColorWrap.classList.remove('is-hidden');
+        inlineTextColorInput.value = getTextMarkerColor(selected);
+      }
     }
 
     function syncInlineMeasureUnitControl() {
@@ -4317,23 +4391,56 @@
       inlineMeasureUnitSelect.value = measureState.unit === 'nm' ? 'nm' : 'km';
     }
 
-    function textIcon(text, size = 45, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
+    function textIcon(
+      text,
+      size = 45,
+      isTitle = false,
+      textFont = TEXT_DEFAULT_FONT,
+      textAlign = TEXT_DEFAULT_ALIGN,
+      textColor = TEXT_DEFAULT_COLOR,
+    ) {
       const htmlText = escapeHtml(String(text || '').trim()).replace(/\n/g, '<br>');
       const titleAttr = isTitle ? ' data-title="1"' : ' data-title="0"';
       const titleClass = isTitle ? ' is-title' : '';
       const fontKey = normalizeTextFont(textFont);
       const align = normalizeTextAlign(textAlign);
       const fontFamily = getTextFontFamily(fontKey);
+      const color = normalizeTextColor(textColor);
       return L.divIcon({
         className: '',
-        html: `<div class="text-marker-shell${titleClass}"${titleAttr}><div class="map-text-label" style="font-size:${size}pt;font-family:${fontFamily};text-align:${align};">${htmlText}</div><div class="text-resize-handle" data-text-resize="1"></div></div>`,
+        html: `<div class="text-marker-shell${titleClass}"${titleAttr}><div class="map-text-label" style="font-size:${size}pt;font-family:${fontFamily};text-align:${align};color:${color};">${htmlText}</div><div class="text-resize-handle" data-text-resize="1"></div></div>`,
         iconSize: null,
       });
     }
 
-    function getTextMarkerSize(marker) {
+    function getTextMarkerBaseSize(marker) {
       const value = Number(marker.options.textSize || 45);
-      return clamp(Number.isFinite(value) ? value : 45, 8, 240);
+      return clamp(Number.isFinite(value) ? value : 45, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
+    }
+
+    function getTextMarkerBaseZoom(marker) {
+      const value = Number(marker.options.textBaseZoom);
+      const fallback = map.getZoom();
+      return clamp(Number.isFinite(value) ? value : fallback, 3, 19);
+    }
+
+    function getTextMarkerZoomScale(marker, zoomLevel = map.getZoom()) {
+      const safeZoom = clamp(Number(zoomLevel), 3, 19);
+      return Math.pow(2, safeZoom - getTextMarkerBaseZoom(marker));
+    }
+
+    function getTextMarkerRenderSize(marker, zoomLevel = map.getZoom()) {
+      const scaled = getTextMarkerBaseSize(marker) * getTextMarkerZoomScale(marker, zoomLevel);
+      return clamp(scaled, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
+    }
+
+    function setTextMarkerBaseSizeFromRendered(marker, renderedSize, zoomLevel = map.getZoom()) {
+      const scale = getTextMarkerZoomScale(marker, zoomLevel);
+      if (!(scale > 0)) {
+        marker.options.textSize = clamp(renderedSize, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
+        return;
+      }
+      marker.options.textSize = clamp(renderedSize / scale, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
     }
 
     function updateTextMarkerElement(marker) {
@@ -4348,9 +4455,10 @@
       }
       const label = element.querySelector('.map-text-label');
       if (label) {
-        label.style.fontSize = `${getTextMarkerSize(marker)}pt`;
+        label.style.fontSize = `${getTextMarkerRenderSize(marker)}pt`;
         label.style.fontFamily = getTextFontFamily(marker.options.textFont);
         label.style.textAlign = normalizeTextAlign(marker.options.textAlign);
+        label.style.color = getTextMarkerColor(marker);
       }
     }
 
@@ -4488,7 +4596,8 @@
       const scaleX = nextWidth / Math.max(1, info.startWidth);
       const scaleY = nextHeight / Math.max(1, info.startHeight);
       const nextScale = Math.max(0.2, Math.max(scaleX, scaleY));
-      info.marker.options.textSize = clamp(info.startSize * nextScale, 8, 240);
+      const nextRenderedSize = clamp(info.startSize * nextScale, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
+      setTextMarkerBaseSizeFromRendered(info.marker, nextRenderedSize);
       updateTextMarkerElement(info.marker);
       syncTextMarkerSelection(info.marker);
       setTextHover(info.marker, true);
@@ -4513,7 +4622,7 @@
         startY: event.clientY,
         startWidth: rect.width,
         startHeight: rect.height,
-        startSize: getTextMarkerSize(marker),
+        startSize: getTextMarkerRenderSize(marker),
       };
       if (map.dragging) {
         map.dragging.disable();
@@ -4595,12 +4704,14 @@
         marker.options.isTitle = !!nextValue.isTitle;
         marker.options.textFont = normalizeTextFont(nextValue.textFont);
         marker.options.textAlign = normalizeTextAlign(nextValue.textAlign);
+        marker.options.textColor = getTextMarkerColor(marker);
         marker.setIcon(textIcon(
           nextValue.text,
-          getTextMarkerSize(marker),
+          getTextMarkerRenderSize(marker),
           !!nextValue.isTitle,
           marker.options.textFont,
           marker.options.textAlign,
+          marker.options.textColor,
         ));
         window.requestAnimationFrame(() => {
           bindTextMarkerDom(marker);
@@ -4611,20 +4722,40 @@
       });
     }
 
-    function addTextMarker(latlng, textValue, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
+    function addTextMarker(
+      latlng,
+      textValue,
+      isTitle = false,
+      textFont = TEXT_DEFAULT_FONT,
+      textAlign = TEXT_DEFAULT_ALIGN,
+      textSize = 45,
+      textBaseZoom = map.getZoom(),
+      textColor = TEXT_DEFAULT_COLOR,
+    ) {
       const normalizedFont = normalizeTextFont(textFont);
       const normalizedAlign = normalizeTextAlign(textAlign);
+      const normalizedColor = normalizeTextColor(textColor);
+      const parsedBaseZoom = Number(textBaseZoom);
+      const normalizedBaseZoom = clamp(Number.isFinite(parsedBaseZoom) ? parsedBaseZoom : map.getZoom(), 3, 19);
+      const normalizedBaseSize = clamp(Number(textSize) || 45, TEXT_MIN_SIZE, TEXT_MAX_SIZE);
+      const initialRenderSize = clamp(
+        normalizedBaseSize * Math.pow(2, map.getZoom() - normalizedBaseZoom),
+        TEXT_MIN_SIZE,
+        TEXT_MAX_SIZE,
+      );
       const marker = L.marker(latlng, {
-        icon: textIcon(textValue, 45, isTitle, normalizedFont, normalizedAlign),
+        icon: textIcon(textValue, initialRenderSize, isTitle, normalizedFont, normalizedAlign, normalizedColor),
         draggable: true,
         keyboard: false,
         autoPan: true,
         riseOnHover: true,
         textValue,
-        textSize: 45,
+        textSize: normalizedBaseSize,
+        textBaseZoom: normalizedBaseZoom,
         isTitle: !!isTitle,
         textFont: normalizedFont,
         textAlign: normalizedAlign,
+        textColor: normalizedColor,
       }).addTo(textGroup);
       textState.markers.push(marker);
       attachTextMarkerEvents(marker);
@@ -4635,6 +4766,15 @@
       }
       scheduleViewerStateSave();
       return marker;
+    }
+
+    function refreshTextMarkerZoomStyles() {
+      textState.markers.forEach((marker) => {
+        updateTextMarkerElement(marker);
+        if (textState.selectedMarker === marker) {
+          syncTextMarkerSelection(marker);
+        }
+      });
     }
 
     function setTextActive(active, fromOtherTool = false) {
@@ -4897,9 +5037,31 @@
       return Number.isFinite(value) ? value : 1;
     }
 
+    function normalizeNumberLabelSize(value, fallbackValue = NUMBER_LABEL_SIZE_DEFAULT) {
+      const numeric = parseInt(value, 10);
+      if (!Number.isFinite(numeric)) {
+        return fallbackValue;
+      }
+      return clamp(Math.round(numeric), NUMBER_LABEL_SIZE_MIN, NUMBER_LABEL_SIZE_MAX);
+    }
+
+    function applySharedNumberLabelSize(value, persist = false) {
+      const normalized = normalizeNumberLabelSize(value);
+      if (inlineNumberSizeInput) {
+        inlineNumberSizeInput.value = String(normalized);
+      }
+      forceSizeInput.value = String(normalized);
+      numSizeInput.value = String(normalized);
+      if (persist) {
+        refreshKmlLabels();
+        refreshForceLabels();
+        scheduleViewerStateSave();
+      }
+      return normalized;
+    }
+
     function getForceFontSize() {
-      const value = parseInt(forceSizeInput.value, 10);
-      return Number.isFinite(value) ? Math.min(48, Math.max(10, value)) : 22;
+      return normalizeNumberLabelSize(forceSizeInput.value);
     }
 
     function getForceColor() {
@@ -4907,8 +5069,7 @@
     }
 
     function getKmlFontSize() {
-      const value = parseInt(numSizeInput.value, 10);
-      return Number.isFinite(value) ? Math.min(48, Math.max(10, value)) : 22;
+      return normalizeNumberLabelSize(numSizeInput.value);
     }
 
     function getKmlColor() {
@@ -5403,6 +5564,7 @@
         version: VIEWER_STATE_VERSION,
         gray: grayToggle.checked,
         numVisible: numToggle.checked,
+        numberLabelSize: getKmlFontSize(),
         numSize: getKmlFontSize(),
         numColor: getKmlColor(),
         forceStart: getForceStartNumber(),
@@ -5457,10 +5619,12 @@
             lat: latlng.lat,
             lng: latlng.lng,
             text: marker.options.textValue || '',
-            size: getTextMarkerSize(marker),
+            size: getTextMarkerBaseSize(marker),
+            baseZoom: getTextMarkerBaseZoom(marker),
             isTitle: !!marker.options.isTitle,
             font: normalizeTextFont(marker.options.textFont),
             align: normalizeTextAlign(marker.options.textAlign),
+            color: getTextMarkerColor(marker),
           };
         }),
         measure: {
@@ -5506,7 +5670,7 @@
       try {
         await fetch('/viewer-state', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: viewerStateHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify(collectViewerState()),
         });
       } catch (error) {
@@ -5527,7 +5691,10 @@
 
     async function loadViewerState() {
       try {
-        const response = await fetch('/viewer-state', { cache: 'no-store' });
+        const response = await fetch('/viewer-state', {
+          cache: 'no-store',
+          headers: viewerStateHeaders(),
+        });
         if (!response.ok) {
           return null;
         }
@@ -5676,8 +5843,13 @@
         if (forceState.mode === 'existing') {
           numToggle.checked = false;
         }
-        if (Number.isFinite(saved.numSize)) {
-          numSizeInput.value = String(clamp(saved.numSize, 8, 48));
+        const savedNumberSize = Number.isFinite(saved.numberLabelSize)
+          ? saved.numberLabelSize
+          : (Number.isFinite(saved.numSize) ? saved.numSize : saved.forceSize);
+        if (Number.isFinite(savedNumberSize)) {
+          applySharedNumberLabelSize(savedNumberSize, false);
+        } else {
+          applySharedNumberLabelSize(NUMBER_LABEL_SIZE_DEFAULT, false);
         }
         if (typeof saved.numColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.numColor)) {
           numColorInput.value = saved.numColor;
@@ -5688,9 +5860,6 @@
 
         if (Number.isFinite(saved.forceStart)) {
           forceStartInput.value = String(saved.forceStart);
-        }
-        if (Number.isFinite(saved.forceSize)) {
-          forceSizeInput.value = String(clamp(saved.forceSize, 10, 48));
         }
         if (typeof saved.forceColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.forceColor)) {
           forceColorInput.value = saved.forceColor;
@@ -5749,8 +5918,10 @@
               !!item.isTitle,
               item.font || TEXT_DEFAULT_FONT,
               item.align || TEXT_DEFAULT_ALIGN,
+              Number(item.size) || 45,
+              Number(item.baseZoom),
+              item.color || TEXT_DEFAULT_COLOR,
             );
-            marker.options.textSize = clamp(Number(item.size) || 45, 8, 240);
             updateTextMarkerElement(marker);
             setTextHover(marker, false);
           });
@@ -6832,12 +7003,13 @@
 
     function refreshForceSettings() {
       forceStartInput.value = String(getForceStartNumber());
-      forceSizeInput.value = String(getForceFontSize());
+      applySharedNumberLabelSize(forceSizeInput.value, false);
       if (forceState.active) {
         forceState.nextNumber = getForceStartNumber();
       }
       updateForceStatus();
       refreshForceLabels();
+      refreshKmlLabels();
       scheduleViewerStateSave();
     }
 
@@ -6847,12 +7019,16 @@
       forceStartInput.disabled = !isEnabled;
       forceSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
       forceColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      if (inlineNumberSizeInput) {
+        inlineNumberSizeInput.disabled = !viewerAccess.forceStyleCustomize;
+      }
       updateForceStatus();
     }
 
     function refreshNumberSettings() {
-      numSizeInput.value = String(getKmlFontSize());
+      applySharedNumberLabelSize(numSizeInput.value, false);
       refreshKmlLabels();
+      refreshForceLabels();
       scheduleViewerStateSave();
     }
 
@@ -6861,6 +7037,9 @@
       numControls.style.opacity = isEnabled ? '1' : '0.46';
       numSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
       numColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      if (inlineNumberSizeInput) {
+        inlineNumberSizeInput.disabled = !viewerAccess.forceStyleCustomize;
+      }
     }
 
     function setCaptureModalVisible(visible) {
@@ -7711,6 +7890,28 @@
       }
       scheduleViewerStateSave();
     });
+    if (inlineTextColorInput) {
+      inlineTextColorInput.addEventListener('input', () => {
+        const selected = textState.selectedMarker;
+        if (!selected) {
+          syncInlineTextFontControl();
+          return;
+        }
+        if (!viewerAccess.textColorCustomize) {
+          notifyPlanRestriction(viewerRestrictionMessage.textColorCustomize);
+          inlineTextColorInput.value = getTextMarkerColor(selected);
+          return;
+        }
+        selected.options.textColor = normalizeTextColor(inlineTextColorInput.value);
+        updateTextMarkerElement(selected);
+        syncTextMarkerSelection(selected);
+        setTextHover(selected, true);
+        if (selected.bringToFront) {
+          selected.bringToFront();
+        }
+        scheduleViewerStateSave();
+      });
+    }
     inlineMeasureUnitSelect.addEventListener('change', () => {
       updateMeasureUnit(inlineMeasureUnitSelect.value === 'nm' ? 'nm' : 'km');
     });
@@ -7746,6 +7947,11 @@
     forceStartInput.addEventListener('input', refreshForceSettings);
     forceSizeInput.addEventListener('input', refreshForceSettings);
     forceColorInput.addEventListener('input', refreshForceSettings);
+    if (inlineNumberSizeInput) {
+      inlineNumberSizeInput.addEventListener('input', () => {
+        applySharedNumberLabelSize(inlineNumberSizeInput.value, true);
+      });
+    }
     forceModeNewButton.addEventListener('click', () => {
       setForceMode('new');
     });
@@ -7769,6 +7975,7 @@
     });
     syncInlineTextFontControl();
     syncInlineMeasureUnitControl();
+    applySharedNumberLabelSize(NUMBER_LABEL_SIZE_DEFAULT, false);
     refreshMeasureSettings(false);
     refreshDoneSettings(false);
     capturePaperSelect.addEventListener('change', async () => {
@@ -7838,6 +8045,9 @@
     });
     captureLockRatio.addEventListener('change', () => {
       drawCapturePreview();
+    });
+    map.on('zoom', () => {
+      refreshTextMarkerZoomStyles();
     });
     map.on('moveend zoomend', () => {
       scheduleViewerStateSave();

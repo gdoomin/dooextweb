@@ -505,6 +505,129 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict, access_
         return False
 
 
+def _viewer_state_supabase_config() -> dict[str, str] | None:
+    supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
+    service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    anon_key = str(os.getenv("SUPABASE_ANON_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or "").strip()
+    table_name = str(os.getenv("DOO_VIEWER_STATE_SUPABASE_TABLE") or "doo_viewer_state").strip()
+    if not supabase_url or not table_name:
+        return None
+    if not service_role_key and not anon_key:
+        return None
+    if not _is_http_url(supabase_url):
+        return None
+    return {
+        "supabase_url": supabase_url,
+        "service_role_key": service_role_key,
+        "anon_key": anon_key,
+        "table_name": table_name,
+    }
+
+
+def _normalize_viewer_state_payload(value: Any) -> dict | None:
+    if isinstance(value, dict):
+        return value
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            return None
+        return parsed if isinstance(parsed, dict) else None
+    return None
+
+
+def _viewer_state_supabase_fetch(job: dict, access_token: str = "") -> dict | None:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return None
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return None
+
+    job_id = str(job.get("job_id") or "").strip()
+    if not job_id:
+        return None
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    query_items: list[tuple[str, str]] = [
+        ("select", "state_json,state,payload"),
+        ("job_id", f"eq.{quote(job_id, safe='-_')}"),
+        ("limit", "1"),
+    ]
+    url = f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}"
+    request = UrlRequest(url=url, method="GET", headers=headers)
+
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return None
+
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else []
+    except Exception:
+        return None
+
+    rows: list[dict] = []
+    if isinstance(payload, list):
+        rows = [item for item in payload if isinstance(item, dict)]
+    elif isinstance(payload, dict):
+        rows = [payload]
+    if not rows:
+        return None
+
+    first_row = rows[0]
+    for key in ("state_json", "state", "payload"):
+        normalized = _normalize_viewer_state_payload(first_row.get(key))
+        if normalized is not None:
+            return normalized
+    return None
+
+
+def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = "") -> bool:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return False
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    job_id = str(job.get("job_id") or "").strip()
+    if not job_id:
+        return False
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    row = {
+        "job_id": job_id,
+        "user_id": _normalize_user_identity(str(job.get("user_id") or "")),
+        "user_email": _normalize_user_email(str(job.get("user_email") or "")),
+        "state_json": payload,
+        "updated_at": _utc_now_iso(),
+    }
+    body = json.dumps([row]).encode("utf-8")
+    url = f"{supabase_url}/rest/v1/{table_name}?on_conflict=job_id"
+    request = UrlRequest(
+        url=url,
+        method="POST",
+        data=body,
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except Exception:
+        return False
+
+
 def _load_json(path: Path, default):
     if not path.exists():
         return default
@@ -1212,6 +1335,7 @@ def _viewer_billing_payload(billing_status: dict[str, Any]) -> dict[str, Any]:
         "is_new_pricing_user": bool(billing_status.get("is_new_pricing_user")),
         "flags": {
             "text_tool": not is_free,
+            "text_color_customize": is_pro_like,
             "done_tool": not is_free,
             "force_tool": not is_free,
             "measure_tool": not is_free,
@@ -2005,11 +2129,14 @@ def get_default_viewer_layers():
 
 
 @app.get("/api/viewer/{job_id}/viewer-state")
-def get_viewer_state(job_id: str):
+def get_viewer_state(job_id: str, request: Request):
     job = _load_job(job_id)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
         return JSONResponse({})
+    remote_state = _viewer_state_supabase_fetch(job, access_token=_extract_bearer_token(request))
+    if isinstance(remote_state, dict):
+        return JSONResponse(remote_state)
     data = _load_json(_viewer_state_path(job_id), {})
     return JSONResponse(data if isinstance(data, dict) else {})
 
@@ -2024,6 +2151,7 @@ async def save_viewer_state(job_id: str, request: Request):
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="viewer state??揶쏆빘猿??鍮???몃빍??")
     _save_json(_viewer_state_path(job_id), payload)
+    _viewer_state_supabase_upsert(job, payload, access_token=_extract_bearer_token(request))
     return {"ok": True}
 
 
