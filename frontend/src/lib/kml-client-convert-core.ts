@@ -19,6 +19,7 @@ const EARTH_RADIUS_KM = 6371.0088;
 const AIRCRAFT_SPEED_KNOTS = 130;
 const KNOT_TO_KMH = 1.852;
 const TURN_MINUTES_PER_LINE = 3;
+const GENERIC_LINE_NAMES = new Set(["line", "linestring", "flight line"]);
 
 export type KmlWorkerRequest = {
   type: "parse";
@@ -56,12 +57,12 @@ type ParsedPolygon = {
   pointsLonLat: [number, number][];
 };
 
-type GeoCollection = FeatureCollection<Geometry | null>;
 type GeometryFeature = Feature<Geometry>;
 
 export function buildClientConvertRequestFromKmlText(kmlText: string, fileName: string): ClientConvertRequestBody {
   const projectName = extractProjectName(fileName);
-  const sourceCollection = parseKmlString(kmlText);
+  const xmlDoc = parseKmlXml(kmlText);
+  const sourceCollection = toGeoJsonKml(xmlDoc, { skipNullGeometry: true });
   const features = sourceCollection.features
     .map((feature) => normalizeFeature(feature))
     .filter((feature): feature is GeometryFeature => feature !== null);
@@ -70,7 +71,7 @@ export function buildClientConvertRequestFromKmlText(kmlText: string, fileName: 
     throw new Error("KML에서 LineString 또는 Polygon 데이터를 찾지 못했습니다.");
   }
 
-  const lineRows = extractLineRows(features);
+  const lineRows = extractLineRowsWithFolderContext(features, xmlDoc);
   if (lineRows.length > 0) {
     return buildLineModePayload(projectName, fileName, features, lineRows);
   }
@@ -200,13 +201,13 @@ function buildPolygonModePayload(
   };
 }
 
-function parseKmlString(kmlText: string): GeoCollection {
+function parseKmlXml(kmlText: string): XMLDocument {
   const parser = new DOMParser();
   const xmlDoc = parser.parseFromString(kmlText, "application/xml");
   if (xmlDoc.querySelector("parsererror")) {
     throw new Error("KML XML을 파싱하지 못했습니다.");
   }
-  return toGeoJsonKml(xmlDoc, { skipNullGeometry: true });
+  return xmlDoc;
 }
 
 function normalizeFeature(feature: Feature<Geometry | null>): GeometryFeature | null {
@@ -263,6 +264,195 @@ function extractLineRows(features: GeometryFeature[]): LineStorageRow[] {
     });
   });
   return rows;
+}
+
+type PlacemarkContext = {
+  placemark: Element;
+  folderNames: string[];
+};
+
+function extractLineRowsWithFolderContext(features: GeometryFeature[], xmlDoc: XMLDocument): LineStorageRow[] {
+  const rowsFromDom = extractLineRowsFromKmlDom(xmlDoc);
+  if (rowsFromDom.length > 0) {
+    return rowsFromDom;
+  }
+  return extractLineRows(features);
+}
+
+function extractLineRowsFromKmlDom(xmlDoc: XMLDocument): LineStorageRow[] {
+  const root = xmlDoc.documentElement;
+  if (!root) {
+    return [];
+  }
+
+  const rows: LineStorageRow[] = [];
+  const placemarkContexts = collectPlacemarksWithContext(root);
+  placemarkContexts.forEach(({ placemark, folderNames }) => {
+    const rawName = findDirectChildText(placemark, "name");
+    const resolvedName = resolveLineName(rawName, folderNames);
+    const lineStrings = findDescendantsByLocalName(placemark, "LineString");
+
+    lineStrings.forEach((lineString) => {
+      const coordinateText = findDescendantText(lineString, "coordinates");
+      if (!coordinateText) {
+        return;
+      }
+
+      const points = parseKmlCoordinateText(coordinateText);
+      if (points.length < 2) {
+        return;
+      }
+
+      const [startLon, startLat] = points[0];
+      const [endLon, endLat] = points[points.length - 1];
+      rows.push({
+        num: resolvedName,
+        s_lat: startLat,
+        s_lon: startLon,
+        e_lat: endLat,
+        e_lon: endLon,
+      });
+    });
+  });
+
+  return rows;
+}
+
+function collectPlacemarksWithContext(root: Element): PlacemarkContext[] {
+  const collected: PlacemarkContext[] = [];
+
+  const visit = (node: Element, folderNames: string[]) => {
+    const tagName = localNameOf(node);
+    let nextFolderNames = folderNames;
+
+    if (tagName === "Folder") {
+      const folderName = findDirectChildText(node, "name");
+      if (folderName) {
+        nextFolderNames = [...folderNames, folderName];
+      }
+    }
+
+    if (tagName === "Placemark") {
+      collected.push({
+        placemark: node,
+        folderNames: nextFolderNames,
+      });
+      return;
+    }
+
+    Array.from(node.children).forEach((child) => visit(child, nextFolderNames));
+  };
+
+  visit(root, []);
+  return collected;
+}
+
+function resolveLineName(rawName: string, folderNames: string[]): string {
+  const cleaned = rawName.trim();
+  const normalized = cleaned.replace(/\s+/g, " ").toLowerCase();
+  if (cleaned && !GENERIC_LINE_NAMES.has(normalized)) {
+    return cleaned;
+  }
+
+  const contextName = extractContextLineName(folderNames);
+  return contextName || cleaned;
+}
+
+function extractContextLineName(folderNames: string[]): string {
+  for (let index = folderNames.length - 1; index >= 0; index -= 1) {
+    const candidate = folderNames[index].trim();
+    if (!candidate) {
+      continue;
+    }
+
+    const lineTagged = candidate.match(/(?:flight\s*line|line)\s*\[([^\]]+)\]/i);
+    if (lineTagged?.[1]) {
+      return lineTagged[1].trim();
+    }
+
+    const bracketed = candidate.match(/\[([^\]]+)\]/);
+    if (bracketed?.[1]) {
+      return bracketed[1].trim();
+    }
+
+    if (/^[A-Za-z]?\d+[A-Za-z]?$/.test(candidate)) {
+      return candidate;
+    }
+  }
+  return "";
+}
+
+function parseKmlCoordinateText(raw: string): [number, number][] {
+  const points: [number, number][] = [];
+  raw
+    .trim()
+    .split(/\s+/)
+    .forEach((token) => {
+      const parts = token.split(",");
+      if (parts.length < 2) {
+        return;
+      }
+
+      const lon = Number(parts[0]);
+      const lat = Number(parts[1]);
+      if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+        return;
+      }
+
+      points.push([lon, lat]);
+    });
+  return points;
+}
+
+function findDescendantsByLocalName(root: Element, target: string): Element[] {
+  const wanted = target.toLowerCase();
+  const found: Element[] = [];
+
+  const walk = (node: Element) => {
+    if (localNameOf(node).toLowerCase() === wanted) {
+      found.push(node);
+    }
+    Array.from(node.children).forEach((child) => walk(child));
+  };
+
+  walk(root);
+  return found;
+}
+
+function findDescendantText(root: Element, target: string): string {
+  const wanted = target.toLowerCase();
+  const queue = [...Array.from(root.children)];
+
+  while (queue.length > 0) {
+    const node = queue.shift();
+    if (!node) {
+      continue;
+    }
+
+    if (localNameOf(node).toLowerCase() === wanted) {
+      return (node.textContent || "").trim();
+    }
+
+    queue.push(...Array.from(node.children));
+  }
+
+  return "";
+}
+
+function findDirectChildText(parent: Element, target: string): string {
+  const wanted = target.toLowerCase();
+  for (const child of Array.from(parent.children)) {
+    if (localNameOf(child).toLowerCase() === wanted) {
+      return (child.textContent || "").trim();
+    }
+  }
+  return "";
+}
+
+function localNameOf(element: Element): string {
+  const raw = element.localName || element.tagName || "";
+  const parts = raw.split(":");
+  return parts[parts.length - 1];
 }
 
 function extractPolygons(features: GeometryFeature[]): ParsedPolygon[] {
