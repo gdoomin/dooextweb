@@ -1469,6 +1469,148 @@
       gap: 10px;
       margin-top: 16px;
     }
+    .notam-info-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 4300;
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 10px 14px 22px;
+      background: rgba(4, 10, 18, 0.52);
+      backdrop-filter: blur(8px);
+      overflow: auto;
+      box-sizing: border-box;
+    }
+    .notam-info-modal.is-visible {
+      display: flex;
+    }
+    .notam-info-card {
+      width: min(96vw, 1080px);
+      max-height: calc(100vh - 24px);
+      border-radius: 16px;
+      background: rgba(15, 25, 35, 0.98);
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.44);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .notam-info-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(121, 192, 255, 0.2);
+      background: rgba(10, 19, 29, 0.95);
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+    .notam-info-head h3 {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+    .notam-info-content {
+      padding: 12px 14px 16px;
+      overflow: auto;
+      color: #e6edf3;
+      display: grid;
+      gap: 12px;
+    }
+    .notam-info-entry {
+      border: 1px solid rgba(121, 192, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(8, 16, 26, 0.9);
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+    .notam-info-entry-title {
+      margin: 0;
+      color: #f0f6fc;
+      font-size: 15px;
+      font-weight: 800;
+      line-height: 1.25;
+    }
+    .notam-info-table-wrap {
+      overflow-x: auto;
+      border-radius: 10px;
+      border: 1px solid rgba(121, 192, 255, 0.16);
+      background: rgba(13, 20, 31, 0.9);
+    }
+    .notam-info-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 520px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .notam-info-table thead th {
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      text-align: left;
+      padding: 8px 10px;
+      color: #c9e6ff;
+      background: rgba(20, 40, 63, 0.95);
+      border-bottom: 1px solid rgba(121, 192, 255, 0.2);
+      font-weight: 800;
+    }
+    .notam-info-table tbody td {
+      vertical-align: top;
+      padding: 7px 10px;
+      border-bottom: 1px solid rgba(121, 192, 255, 0.12);
+      color: #e6edf3;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .notam-info-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .notam-info-table tbody td:first-child {
+      width: 190px;
+      min-width: 190px;
+      color: #9fd2ff;
+      font-weight: 700;
+    }
+    .notam-info-raw-label {
+      margin: 2px 0 0;
+      color: #9fd2ff;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .notam-info-raw {
+      margin: 0;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(121, 192, 255, 0.16);
+      background: rgba(10, 16, 24, 0.94);
+      color: #c9d1d9;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      max-height: 260px;
+      overflow: auto;
+    }
+    @media (max-width: 860px) {
+      .notam-info-modal {
+        padding: 8px 10px 14px;
+      }
+      .notam-info-card {
+        width: min(98vw, 980px);
+        max-height: calc(100vh - 16px);
+      }
+      .notam-info-table tbody td:first-child {
+        width: 144px;
+        min-width: 144px;
+      }
+    }
     @keyframes flagWave {
       0%, 100% { transform: skewY(0deg) rotate(0deg) scaleX(1); }
       50% { transform: skewY(7deg) rotate(2deg) scaleX(0.9); }
@@ -1781,6 +1923,15 @@
       </div>
     </div>
   </div>
+  <div id="notamInfoModal" class="notam-info-modal">
+    <div id="notamInfoCard" class="notam-info-card">
+      <div class="notam-info-head">
+        <h3 id="notamInfoTitle">NOTAM 상세</h3>
+        <button id="notamInfoCloseButton" class="mini-button" type="button">닫기</button>
+      </div>
+      <div id="notamInfoContent" class="notam-info-content"></div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="/html2canvas.min.js"></script>
@@ -1825,6 +1976,14 @@
     ];
     const NOTAM_SERIES_DE = new Set(['D', 'E']);
     const NOTAM_SERIES_ACGZ = new Set(['A', 'C', 'G', 'Z']);
+    const NOTAM_FIR_MAP = {
+      RKRR: '인천비행정보구역(RKRR)',
+    };
+    const NOTAM_QCODE_KR_MAP = {
+      QRPCA: '금지 구역 활성화(QRPCA)',
+      QRDCA: '위험 구역 활성화(QRDCA)',
+      QRTCA: '제한 구역 활성화(QRTCA)',
+    };
     const weatherPopupSnapMinDistance = 36;
     const weatherPopupSnapMaxDistance = 120;
     const weatherPopupSnapDefaultDistance = 72;
@@ -1938,6 +2097,11 @@
     const textTitleCheckbox = document.getElementById('textTitleCheckbox');
     const textInputCancelButton = document.getElementById('textInputCancelButton');
     const textInputSaveButton = document.getElementById('textInputSaveButton');
+    const notamInfoModal = document.getElementById('notamInfoModal');
+    const notamInfoCard = document.getElementById('notamInfoCard');
+    const notamInfoTitle = document.getElementById('notamInfoTitle');
+    const notamInfoContent = document.getElementById('notamInfoContent');
+    const notamInfoCloseButton = document.getElementById('notamInfoCloseButton');
     const previewGateLink = document.getElementById('previewGateLink');
     const previewGateBackButton = document.getElementById('previewGateBackButton');
 
@@ -2733,39 +2897,340 @@
       };
     }
 
-    function buildNotamPopupHtml(item) {
-      const notamId = item && item.notam_id ? String(item.notam_id) : '';
-      const series = normalizeNotamSeries(item && item.series, notamId);
-      const airport = String((item && item.airport) || '').trim();
-      const startText = formatNotamDate(item && item.start_date);
-      const endText = formatNotamDate(item && item.end_date);
-      const rows = [
-        ['번호', notamId],
-        ['시리즈', series],
-        ['공항', airport],
-        ['시작', startText],
-        ['종료', endText],
-      ];
-      const title = `${notamId || 'NOTAM'}${series ? ` (${series})` : ''}`;
-      const detail = sanitizeNotamContent((item && item.content) || '');
-      return buildWeatherPopupHtml(title, rows, detail);
+    function trimNumberString(value, precision = 2) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return '';
+      }
+      return numeric
+        .toFixed(precision)
+        .replace(/\.0+$/, '')
+        .replace(/(\.\d*?)0+$/, '$1');
     }
 
-    function buildNotamGroupPopupHtml(items) {
-      const list = Array.isArray(items) ? items : [];
-      const seriesSet = new Set();
-      list.forEach((item) => {
-        seriesSet.add(getNotamSeriesLabel(item.notamId, item.series));
-      });
-      const rows = [
-        ['개수', `${list.length}건`],
-        ['시리즈', Array.from(seriesSet.values()).join(', ') || '-'],
+    function normalizeNotamFirName(value) {
+      const code = String(value || '').trim().toUpperCase();
+      if (!code) {
+        return '-';
+      }
+      return NOTAM_FIR_MAP[code] || code;
+    }
+
+    function mapNotamQcode(qcode) {
+      const code = String(qcode || '').trim().toUpperCase();
+      if (!code) {
+        return '-';
+      }
+      return NOTAM_QCODE_KR_MAP[code] || code;
+    }
+
+    function mapNotamTraffic(traffic) {
+      const code = String(traffic || '').trim().toUpperCase();
+      if (!code) {
+        return '-';
+      }
+      if (code === 'IV') {
+        return '계기비행(IFR) 및 시계비행(VFR)';
+      }
+      if (code === 'I') {
+        return '계기비행(IFR)';
+      }
+      if (code === 'V') {
+        return '시계비행(VFR)';
+      }
+      return code;
+    }
+
+    function mapNotamPurpose(purpose) {
+      const code = String(purpose || '').trim().toUpperCase();
+      if (!code) {
+        return '-';
+      }
+      const labels = [];
+      if (code.includes('N')) {
+        labels.push('즉각주의필요');
+      }
+      if (code.includes('B')) {
+        labels.push('PIB포함');
+      }
+      if (code.includes('O')) {
+        labels.push('항공기운항');
+      }
+      if (code.includes('M')) {
+        labels.push('군용');
+      }
+      return labels.length ? labels.join(', ') : code;
+    }
+
+    function mapNotamScope(scope) {
+      const code = String(scope || '').trim().toUpperCase();
+      if (!code) {
+        return '-';
+      }
+      const labels = [];
+      if (code.includes('W')) {
+        labels.push('항행경고');
+      }
+      if (code.includes('A')) {
+        labels.push('공항');
+      }
+      if (code.includes('E')) {
+        labels.push('항로');
+      }
+      return labels.length ? labels.join(', ') : code;
+    }
+
+    function formatNotamQAltitudeToken(token) {
+      const text = String(token || '').trim().toUpperCase();
+      if (!text) {
+        return '-';
+      }
+      if (text === '000') {
+        return '지표면';
+      }
+      if (text === '999') {
+        return 'UNL';
+      }
+      if (/^\d{3}$/.test(text)) {
+        return `${Number(text) * 100}FT`;
+      }
+      return text;
+    }
+
+    function formatNotamFieldAltitude(text) {
+      const raw = String(text || '').trim();
+      if (!raw) {
+        return '-';
+      }
+      if (/\bSFC\b/i.test(raw)) {
+        return raw.replace(/\bSFC\b/i, '지표면(SFC)');
+      }
+      if (/\bGND\b/i.test(raw)) {
+        return raw.replace(/\bGND\b/i, '지표면(GND)');
+      }
+      return raw;
+    }
+
+    function parseNotamCoordTokenParts(token, isLat) {
+      const raw = String(token || '').trim().toUpperCase();
+      const hemi = raw.slice(-1);
+      const numeric = raw.slice(0, -1);
+      if (!numeric || !/[NSEW]/.test(hemi)) {
+        return null;
+      }
+      const digits = numeric.split('.')[0].replace(/\D/g, '');
+      if (!digits) {
+        return null;
+      }
+      let degreeText = '';
+      let minuteText = '';
+      if (isLat) {
+        if (digits.length <= 4) {
+          degreeText = digits.slice(0, 2);
+          minuteText = digits.slice(2);
+        } else {
+          degreeText = digits.slice(0, 2);
+          minuteText = digits.slice(2, 4);
+        }
+      } else if (digits.length <= 5) {
+        degreeText = digits.slice(0, 3);
+        minuteText = digits.slice(3);
+      } else {
+        degreeText = digits.slice(0, 3);
+        minuteText = digits.slice(3, 5);
+      }
+      const degree = Number(degreeText);
+      const minute = Number(minuteText);
+      if (!Number.isFinite(degree) || !Number.isFinite(minute)) {
+        return null;
+      }
+      return {
+        hemi,
+        degree,
+        minute,
+      };
+    }
+
+    function formatNotamKoreanCoord(latToken, lonToken) {
+      const lat = parseNotamCoordTokenParts(latToken, true);
+      const lon = parseNotamCoordTokenParts(lonToken, false);
+      if (!lat || !lon) {
+        return '-';
+      }
+      const latHemi = lat.hemi === 'S' ? '남위' : '북위';
+      const lonHemi = lon.hemi === 'W' ? '서경' : '동경';
+      return `[${latHemi}]${lat.degree}도${trimNumberString(lat.minute, 2)}분  [${lonHemi}]${lon.degree}도${trimNumberString(lon.minute, 2)}분`;
+    }
+
+    function formatNotamUtcKstLong(value) {
+      const token = String(value || '').trim();
+      if (!/^\d{10}$/.test(token)) {
+        return token || '-';
+      }
+      const year = Number(token.slice(0, 2));
+      const month = Number(token.slice(2, 4));
+      const day = Number(token.slice(4, 6));
+      const hour = Number(token.slice(6, 8));
+      const minute = Number(token.slice(8, 10));
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hour) || !Number.isFinite(minute)) {
+        return token;
+      }
+      const utcMs = Date.UTC(2000 + year, month - 1, day, hour, minute, 0, 0);
+      const kst = new Date(utcMs + (9 * 60 * 60 * 1000));
+      const kstY = String(kst.getUTCFullYear() % 100).padStart(2, '0');
+      const kstM = String(kst.getUTCMonth() + 1).padStart(2, '0');
+      const kstD = String(kst.getUTCDate()).padStart(2, '0');
+      const kstH = String(kst.getUTCHours()).padStart(2, '0');
+      const kstMin = String(kst.getUTCMinutes()).padStart(2, '0');
+      return `국제표준시 ${String(year).padStart(2, '0')}년${String(month).padStart(2, '0')}월${String(day).padStart(2, '0')}일${String(hour).padStart(2, '0')}시${String(minute).padStart(2, '0')}분(한국표준시 ${kstY}년${kstM}월${kstD}일${kstH}시${kstMin}분)`;
+    }
+
+    function parseNotamOperationSuffix(content) {
+      const text = String(content || '');
+      const match = text.match(/\(\s*[A-Z]\d+\/\d{2}\s+NOTAM([A-Z])/i);
+      const operation = match ? String(match[1] || '').toUpperCase() : '';
+      if (operation === 'N') {
+        return '신규';
+      }
+      if (operation === 'R') {
+        return '대체';
+      }
+      if (operation === 'C') {
+        return '취소';
+      }
+      return '';
+    }
+
+    function buildNotamKoreanRows(item) {
+      const notamId = item && item.notam_id != null ? String(item.notam_id) : '';
+      const contentRaw = item && item.content != null ? String(item.content) : '';
+      const content = sanitizeNotamContent(contentRaw);
+      const qRaw = extractNotamSectionValue(content, 'Q');
+      const aRaw = extractNotamSectionValue(content, 'A');
+      const bRaw = extractNotamSectionValue(content, 'B');
+      const cRaw = extractNotamSectionValue(content, 'C');
+      const dRaw = extractNotamSectionValue(content, 'D');
+      const eRaw = extractNotamSectionValue(content, 'E');
+      const fRaw = extractNotamSectionValue(content, 'F');
+      const gRaw = extractNotamSectionValue(content, 'G');
+      const qTokens = qRaw
+        .split('/')
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+
+      const fir = qTokens[0] || '';
+      const qcode = qTokens[1] || '';
+      const traffic = qTokens[2] || '';
+      const purpose = qTokens[3] || '';
+      const scope = qTokens[4] || '';
+      const lower = qTokens[5] || '';
+      const upper = qTokens[6] || '';
+      const centerRadius = qTokens[7] || '';
+      const centerMatch = centerRadius.match(/^(\d{4,6}(?:\.\d+)?[NS])(\d{5,7}(?:\.\d+)?[EW])(\d{3})$/i);
+      const centerText = centerMatch ? formatNotamKoreanCoord(centerMatch[1], centerMatch[2]) : '-';
+      const centerRadiusNm = centerMatch ? Number(centerMatch[3]) : null;
+      const radiusNm = extractNotamRadiusNm(content);
+      const finalRadiusNm = Number.isFinite(radiusNm) && radiusNm > 0
+        ? radiusNm
+        : (Number.isFinite(centerRadiusNm) && centerRadiusNm > 0 ? centerRadiusNm : null);
+      const radiusText = Number.isFinite(finalRadiusNm) ? `${trimNumberString(finalRadiusNm, 2)}마일` : '-';
+      const operationSuffix = parseNotamOperationSuffix(contentRaw);
+      const numberText = `${notamId || '-'}${operationSuffix || ''}`;
+      const altitudeRangeText = `${formatNotamQAltitudeToken(lower)} ~ ${formatNotamQAltitudeToken(upper)}`;
+
+      return [
+        ['NOTAM번호', numberText],
+        ['비행정보구역', normalizeNotamFirName(fir)],
+        ['QCODE', mapNotamQcode(qcode)],
+        ['비행방식', mapNotamTraffic(traffic)],
+        ['목적', mapNotamPurpose(purpose)],
+        ['적용범위', mapNotamScope(scope)],
+        ['고도', altitudeRangeText],
+        ['지리참조기준점\n(위치)', centerText],
+        ['반경', radiusText],
+        ['A항목(지명)', normalizeNotamFirName(aRaw)],
+        ['B항목(발효일시)', formatNotamUtcKstLong(bRaw)],
+        ['C항목(종료일시)', formatNotamUtcKstLong(cRaw)],
+        ['D항목(일정)', dRaw || '-'],
+        ['E항목\n(NOTAM 본문)', eRaw || '-'],
+        ['F항목(하한)', formatNotamFieldAltitude(fRaw)],
+        ['G항목(상한)', formatNotamFieldAltitude(gRaw)],
       ];
-      const detail = list
-        .slice(0, 18)
-        .map((item) => `${item.notamId || 'NOTAM'} ${item.airport || ''}`.trim())
-        .join('\n');
-      return buildWeatherPopupHtml('NOTAM 그룹', rows, detail, '같은 좌표의 NOTAM이 묶여 있습니다.');
+    }
+
+    function buildNotamRowsTableHtml(rows) {
+      const list = Array.isArray(rows) ? rows : [];
+      const rowHtml = list
+        .map(([label, value]) => {
+          const safeLabel = escapeHtml(label == null ? '-' : label).replace(/\n/g, '<br>');
+          const safeValue = escapeHtml(value == null ? '-' : value).replace(/\n/g, '<br>');
+          return `<tr><td>${safeLabel}</td><td>${safeValue}</td></tr>`;
+        })
+        .join('');
+      return `
+        <div class="notam-info-table-wrap">
+          <table class="notam-info-table">
+            <thead>
+              <tr><th>항목</th><th>내용</th></tr>
+            </thead>
+            <tbody>${rowHtml}</tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    function buildNotamEntryHtml(parsedItem, index) {
+      const raw = parsedItem && parsedItem.raw ? parsedItem.raw : {};
+      const rows = buildNotamKoreanRows(raw);
+      const notamId = String(raw.notam_id || parsedItem.notamId || '').trim();
+      const airport = String(raw.airport || parsedItem.airport || '').trim();
+      const title = `${notamId || `NOTAM ${index + 1}`}${airport ? ` · ${airport}` : ''}`;
+      const rawText = String(raw.content || '').trim() || '-';
+      return `
+        <article class="notam-info-entry">
+          <h4 class="notam-info-entry-title">${escapeHtml(title)}</h4>
+          ${buildNotamRowsTableHtml(rows)}
+          <p class="notam-info-raw-label">원문</p>
+          <pre class="notam-info-raw">${escapeHtml(rawText)}</pre>
+        </article>
+      `;
+    }
+
+    function setNotamInfoModalVisible(visible) {
+      const isVisible = !!visible;
+      if (!notamInfoModal) {
+        return;
+      }
+      notamInfoModal.classList.toggle('is-visible', isVisible);
+      if (isVisible && notamInfoModal.scrollTo) {
+        notamInfoModal.scrollTo(0, 0);
+      }
+      if (isVisible && notamInfoCard && notamInfoCard.scrollTo) {
+        notamInfoCard.scrollTo(0, 0);
+      }
+      if (isVisible && notamInfoContent && notamInfoContent.scrollTo) {
+        notamInfoContent.scrollTo(0, 0);
+      }
+    }
+
+    function openNotamInfoModal(items, titleText = 'NOTAM 상세') {
+      const list = Array.isArray(items) ? items.filter(Boolean) : [];
+      if (!list.length || !notamInfoModal || !notamInfoContent) {
+        return;
+      }
+      const header = list.length > 1 ? `${titleText} (${list.length}건)` : titleText;
+      if (notamInfoTitle) {
+        notamInfoTitle.textContent = header;
+      }
+      notamInfoContent.innerHTML = list
+        .map((entry, index) => buildNotamEntryHtml(entry, index))
+        .join('');
+      setNotamInfoModalVisible(true);
+      window.requestAnimationFrame(() => {
+        if (notamInfoModal && notamInfoModal.scrollTo) {
+          notamInfoModal.scrollTo(0, 0);
+        }
+      });
     }
 
     function weatherTileLayer(url, options) {
@@ -5342,6 +5807,7 @@
         group.clearLayers();
         map.removeLayer(group);
       });
+      setNotamInfoModalVisible(false);
     }
 
     function applyNotamColor(groupKey) {
@@ -5385,7 +5851,7 @@
         .join('|');
     }
 
-    function bindNotamLayerInteractions(layer, popupHtml, tooltipText = '') {
+    function bindNotamLayerInteractions(layer, detailItems, tooltipText = '') {
       if (!layer) {
         return;
       }
@@ -5397,10 +5863,15 @@
           opacity: 0.97,
         });
       }
-      if (popupHtml && typeof layer.bindPopup === 'function') {
-        layer.bindPopup(popupHtml, {
-          className: 'doo-popup',
-          maxWidth: 460,
+      if (typeof layer.on === 'function') {
+        layer.on('click', (event) => {
+          if (event && event.originalEvent) {
+            L.DomEvent.stop(event.originalEvent);
+          }
+          openNotamInfoModal(
+            Array.isArray(detailItems) ? detailItems : [],
+            String(tooltipText || 'NOTAM 상세')
+          );
         });
       }
     }
@@ -5487,9 +5958,7 @@
             }
           });
 
-          const popupHtml = groupItem.items.length === 1
-            ? buildNotamPopupHtml(groupItem.items[0].raw)
-            : buildNotamGroupPopupHtml(groupItem.items);
+          const detailItems = groupItem.items;
           const tooltipTitle = groupItem.items.length === 1
             ? (groupItem.items[0].notamId || 'NOTAM')
             : `NOTAM ${groupItem.items.length}건`;
@@ -5502,7 +5971,7 @@
                 notamGeometryType: 'corridor-polygon',
               }
             );
-            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
             group.addLayer(layer);
           });
           uniqueCorridorCenterlines.forEach((coords) => {
@@ -5513,7 +5982,7 @@
                 notamGeometryType: 'corridor-centerline',
               }
             );
-            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
             group.addLayer(layer);
           });
           uniquePolygons.forEach((coords) => {
@@ -5524,7 +5993,7 @@
                 notamGeometryType: 'polygon',
               }
             );
-            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
             group.addLayer(layer);
           });
           Array.from(uniqueRadii.values()).forEach((radiusMeters) => {
@@ -5533,7 +6002,7 @@
               radius: radiusMeters,
               notamGeometryType: 'circle',
             });
-            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
             group.addLayer(layer);
           });
 
@@ -5566,7 +6035,7 @@
                 riseOnHover: true,
               }
             );
-            bindNotamLayerInteractions(labelMarker, popupHtml, tooltipTitle);
+            bindNotamLayerInteractions(labelMarker, detailItems, tooltipTitle);
             group.addLayer(labelMarker);
           }
         });
@@ -6129,7 +6598,7 @@
           if (!element) {
             return false;
           }
-          if (element.id === 'captureModal') {
+          if (element.id === 'captureModal' || element.id === 'notamInfoModal') {
             return true;
           }
           if (element.classList && element.classList.contains('leaflet-control-container')) {
@@ -6151,6 +6620,10 @@
           const modal = doc.getElementById('captureModal');
           if (modal) {
             modal.style.display = 'none';
+          }
+          const notamModal = doc.getElementById('notamInfoModal');
+          if (notamModal) {
+            notamModal.style.display = 'none';
           }
           if (doc.body) {
             doc.body.classList.add('capture-render');
@@ -6516,6 +6989,15 @@
         textAlign: normalizeTextAlign(textAlignSelect.value),
       });
     });
+    notamInfoCard.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
+    notamInfoModal.addEventListener('click', () => {
+      setNotamInfoModalVisible(false);
+    });
+    notamInfoCloseButton.addEventListener('click', () => {
+      setNotamInfoModalVisible(false);
+    });
     textInputField.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -6699,6 +7181,10 @@
           event.preventDefault();
           return;
         }
+      }
+      if (event.key === 'Escape' && notamInfoModal.classList.contains('is-visible')) {
+        setNotamInfoModalVisible(false);
+        return;
       }
       if (event.key === 'Escape' && captureModal.classList.contains('is-visible')) {
         setCaptureModalVisible(false);
