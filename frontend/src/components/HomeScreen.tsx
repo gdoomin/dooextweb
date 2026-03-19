@@ -3,17 +3,19 @@
 import Image from "next/image";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 
+import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { LoginForm } from "@/components/LoginForm";
 import {
   API_BASE_URL,
   type ConvertResponse,
   type ServerHistoryItem,
-  buildUserHeaders,
   fetchUserHistory,
   loadLastConvert,
+  persistConvertedJob,
   reopenHistoryItem,
   saveLastConvert,
 } from "@/lib/convert";
+import { convertKmlFileInBrowser } from "@/lib/kml-client-convert";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 const modeLabel: Record<ConvertResponse["mode"], string> = {
@@ -31,6 +33,11 @@ type HomeScreenProps = {
   initialUserId?: string;
   authAvailable?: boolean;
 };
+
+const DOOGPX_APPSTORE_URL =
+  "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
+const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
+const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 
 export function HomeScreen({
   initialUserEmail = "",
@@ -235,30 +242,17 @@ export function HomeScreen({
       return;
     }
 
-    const formData = new FormData();
-    formData.append("file", file);
-
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage("파일을 변환하고 있습니다...");
+    setStatusMessage("Converting KML in your browser...");
 
     try {
+      const convertedForUpload = await convertKmlFileInBrowser(file);
+      setStatusMessage("Local conversion complete. Saving to server...");
+
       const identity = await resolveCurrentIdentity();
       const uploadAuthenticated = Boolean(identity.id);
-      const responseHeaders = uploadAuthenticated ? buildUserHeaders(identity.id, identity.email) : undefined;
-      const res = await fetch(`${API_BASE_URL}/api/convert`, {
-        method: "POST",
-        body: formData,
-        headers: responseHeaders,
-      });
-
-      const payload = (await res.json()) as ConvertResponse | { detail?: string };
-      if (!res.ok) {
-        const detail = "detail" in payload ? payload.detail || "변환에 실패했습니다." : "변환에 실패했습니다.";
-        throw new Error(detail);
-      }
-
-      const converted = payload as ConvertResponse;
+      const converted = await persistConvertedJob(convertedForUpload, identity.id, identity.email);
       setResponse(converted);
       saveLastConvert(converted);
 
@@ -269,12 +263,12 @@ export function HomeScreen({
       setStatusTone("success");
       setStatusMessage(
         uploadAuthenticated
-          ? `${converted.result_count}개 결과를 변환했고, 내 히스토리에 저장했습니다.`
-          : `${converted.result_count}개 결과를 불러왔습니다. 로그인하면 개인 히스토리와 다시열기를 사용할 수 있습니다.`,
+          ? `${converted.result_count} results converted and saved to your history.`
+          : `${converted.result_count} results converted. Log in to use history and reopen.`,
       );
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(error instanceof Error ? error.message : "변환에 실패했습니다.");
+      setStatusMessage(error instanceof Error ? error.message : "Conversion failed.");
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -331,22 +325,18 @@ export function HomeScreen({
   }
 
   function openViewer() {
-    if (!response?.viewer_url) {
+    if (!response?.job_id) {
       setStatusTone("error");
-      setStatusMessage("먼저 KML 파일을 불러와 주세요.");
+      setStatusMessage("Load a KML file first.");
       return;
     }
 
-    if (!isAuthenticated) {
-      const signupUrl = `${window.location.origin}/login?next=/`;
-      const gatedViewerUrl = `${response.viewer_url}?preview_gate=1&signup_url=${encodeURIComponent(signupUrl)}`;
-      window.open(gatedViewerUrl, "_blank", "noopener,noreferrer");
-      setStatusTone("idle");
-      setStatusMessage("비회원은 미리보기만 사용할 수 있습니다. 전체 기능은 로그인 후 열립니다.");
-      return;
-    }
+    const viewerPath = `${API_BASE_URL}/api/viewer/${response.job_id}`;
+    const viewerUrl = response.viewer_url || viewerPath;
 
-    window.open(response.viewer_url, "_blank", "noopener,noreferrer");
+    window.open(viewerUrl, "_blank", "noopener,noreferrer");
+    setStatusTone("success");
+    setStatusMessage("Opened detailed web viewer.");
   }
 
   function downloadText() {
@@ -438,14 +428,21 @@ export function HomeScreen({
             <div className="doo-sidebar-card">
               <div className="doo-sidebar-badge">Desktop Style Web</div>
               <div className="doo-sidebar-image-wrap">
-                <Image
-                  src="/banner.png"
-                  alt="DOO Extractor banner"
-                  width={300}
-                  height={180}
-                  className="doo-sidebar-image"
-                  priority
-                />
+                <a
+                  href={DOOGPX_APPSTORE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="doo-sidebar-image-link"
+                >
+                  <Image
+                    src="/banner.png"
+                    alt="DOO Extractor banner"
+                    width={300}
+                    height={180}
+                    className="doo-sidebar-image"
+                    priority
+                  />
+                </a>
               </div>
             </div>
 
@@ -562,7 +559,17 @@ export function HomeScreen({
                 </button>
               </div>
             </div>
+
+            <div className="doo-bottom-ad-wrap">
+              <AdSenseSlot slot={BOTTOM_AD_SLOT} className="doo-ad-unit doo-ad-unit-bottom" minHeight={120} />
+            </div>
           </section>
+
+          <aside className="doo-ad-rail" aria-label="Google AdSense">
+            <div className="doo-ad-rail-inner">
+              <AdSenseSlot slot={RIGHT_AD_SLOT} className="doo-ad-unit doo-ad-unit-right" minHeight={600} />
+            </div>
+          </aside>
         </div>
       </main>
 

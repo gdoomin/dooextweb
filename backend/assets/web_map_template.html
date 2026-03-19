@@ -471,9 +471,63 @@
       padding: 12px;
       display: none;
     }
+    .done-panel {
+      top: 88px;
+      right: 16px;
+      width: min(86vw, 320px);
+      padding: 12px;
+      display: none;
+      gap: 10px;
+    }
     .layer-panel.is-visible,
     .weather-panel.is-visible {
       display: block;
+    }
+    .done-panel.is-visible {
+      display: grid;
+    }
+    .done-title {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .done-help {
+      margin: 0;
+      color: #9fb3c8;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .done-row {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 10px;
+      color: #e6edf3;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .done-row input[type="color"] {
+      width: 30px;
+      height: 30px;
+      border: 0;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+      justify-self: end;
+    }
+    .done-row input[type="range"] {
+      width: 100%;
+      accent-color: #b7ff3c;
+      cursor: pointer;
+    }
+    .done-thickness-value {
+      min-width: 52px;
+      text-align: right;
+      color: #c9d1d9;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
     }
     .layer-title,
     .weather-title {
@@ -924,6 +978,7 @@
       font-size: 45pt;
       font-weight: 800;
       line-height: 1.05;
+      text-align: center;
       white-space: nowrap;
       text-shadow:
         -2px 0 rgba(255,255,255,0.96),
@@ -957,6 +1012,10 @@
       }
       .capture-card {
         width: min(96vw, 760px);
+      }
+      .done-panel {
+        top: 126px;
+        right: 10px;
       }
     }
     .line-label {
@@ -1305,6 +1364,19 @@
     <p class="weather-help">실험용 실황/준실황 오버레이입니다. 체크하면 현재 지도 범위 기준으로 외부 기상 정보를 겹쳐 보여줍니다.</p>
     <div id="weatherRows"></div>
   </div>
+  <div id="donePanel" class="panel done-panel">
+    <p class="done-title">형광펜을 긋습니다</p>
+    <p class="done-help">완료 강조선 색상과 굵기를 선택하세요. 굵기는 다른 선 간섭을 줄이기 위해 6~10px로 제한됩니다.</p>
+    <label class="done-row">
+      <span>색상</span>
+      <input id="doneColorInput" type="color" value="#b7ff3c" aria-label="형광펜 색상">
+    </label>
+    <label class="done-row">
+      <span>굵기</span>
+      <input id="doneThicknessInput" type="range" min="6" max="10" step="0.2" value="9.6" aria-label="형광펜 굵기">
+      <output id="doneThicknessValue" class="done-thickness-value">9.6px</output>
+    </label>
+  </div>
   <div id="hintPanel" class="panel hint">휠 또는 트랙패드로 부드럽게 확대/축소 · 드래그 이동 · 겹 토글/색상 변경 · 측정 또는 T 글자 입력 가능</div>
   <div id="captureModal" class="capture-modal">
     <div id="captureCard" class="capture-card">
@@ -1382,6 +1454,10 @@
     const lineColor = '#1A3FCC';
     const hoverColor = '#4488FF';
     const measureColor = '#7A36FF';
+    const doneHighlightDefaultColor = '#b7ff3c';
+    const doneHighlightMinWeight = 6;
+    const doneHighlightMaxWeight = 10;
+    const doneHighlightDefaultWeight = 9.6;
     const isPolygonMode = payload.mode === 'polygon';
     const layerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     const WEATHER_LAYER_DEFS = [
@@ -1438,6 +1514,10 @@
     const measureButton = document.getElementById('measureButton');
     const textButton = document.getElementById('textButton');
     const doneButton = document.getElementById('doneButton');
+    const donePanel = document.getElementById('donePanel');
+    const doneColorInput = document.getElementById('doneColorInput');
+    const doneThicknessInput = document.getElementById('doneThicknessInput');
+    const doneThicknessValue = document.getElementById('doneThicknessValue');
     const forceButton = document.getElementById('forceButton');
     const captureButton = document.getElementById('captureButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
@@ -1533,6 +1613,8 @@
     };
     const doneState = {
       active: false,
+      highlightColor: doneHighlightDefaultColor,
+      highlightWeight: doneHighlightDefaultWeight,
     };
     const forceState = {
       active: false,
@@ -2287,10 +2369,51 @@
       scheduleViewerStateSave();
     }
 
+    function setDonePanelVisible(visible) {
+      donePanel.classList.toggle('is-visible', !!visible);
+    }
+
+    function getDoneHighlightColor() {
+      const value = String(doneColorInput.value || '').trim();
+      return /^#[0-9a-f]{6}$/i.test(value) ? value : doneHighlightDefaultColor;
+    }
+
+    function getDoneHighlightWeight() {
+      const value = parseFloat(doneThicknessInput.value);
+      if (!Number.isFinite(value)) {
+        return doneHighlightDefaultWeight;
+      }
+      return clamp(value, doneHighlightMinWeight, doneHighlightMaxWeight);
+    }
+
+    function refreshDoneSettings(persist = true) {
+      doneState.highlightColor = getDoneHighlightColor();
+      doneState.highlightWeight = getDoneHighlightWeight();
+
+      doneColorInput.value = doneState.highlightColor;
+      doneThicknessInput.value = doneState.highlightWeight.toFixed(1);
+      doneThicknessValue.textContent = `${doneState.highlightWeight.toFixed(1)}px`;
+
+      resultLineEntries.forEach((entry) => {
+        if (entry.completed) {
+          applyLineVisual(entry, false);
+        }
+      });
+
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
     function setDoneActive(active, fromOtherTool = false) {
       doneState.active = active;
       doneButton.classList.toggle('is-active', active);
       doneButton.classList.toggle('measure-active', active);
+      if (!active) {
+        setDonePanelVisible(false);
+      } else if (!fromOtherTool) {
+        setDonePanelVisible(true);
+      }
       if (active && !fromOtherTool) {
         if (measureState.active) {
           setMeasureActive(false, true);
@@ -2469,9 +2592,9 @@
       });
       if (entry.halo) {
         entry.halo.setStyle({
-          color: '#b7ff3c',
+          color: doneState.highlightColor,
           opacity: isDone ? (hovered ? 0.64 : 0.5) : 0,
-          weight: isDone ? 9.6 : 0.1,
+          weight: isDone ? doneState.highlightWeight : 0.1,
         });
       }
     }
@@ -2635,6 +2758,8 @@
         forceStart: getForceStartNumber(),
         forceSize: getForceFontSize(),
         forceColor: getForceColor(),
+        doneColor: doneState.highlightColor,
+        doneThickness: doneState.highlightWeight,
         forceNextNumber: forceState.nextNumber,
         activeTool: measureState.active
           ? 'measure'
@@ -2835,6 +2960,13 @@
         if (typeof saved.forceColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.forceColor)) {
           forceColorInput.value = saved.forceColor;
         }
+        if (typeof saved.doneColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.doneColor)) {
+          doneColorInput.value = saved.doneColor;
+        }
+        if (Number.isFinite(saved.doneThickness)) {
+          doneThicknessInput.value = String(clamp(saved.doneThickness, doneHighlightMinWeight, doneHighlightMaxWeight));
+        }
+        refreshDoneSettings(false);
 
         resultLineEntries.forEach((entry) => {
           entry.completed = false;
@@ -4166,6 +4298,9 @@
     weatherPanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
+    donePanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
 
     document.addEventListener('click', () => {
       setLayerPanelVisible(false);
@@ -4234,6 +4369,13 @@
     forceStartInput.addEventListener('input', refreshForceSettings);
     forceSizeInput.addEventListener('input', refreshForceSettings);
     forceColorInput.addEventListener('input', refreshForceSettings);
+    doneColorInput.addEventListener('input', () => {
+      refreshDoneSettings();
+    });
+    doneThicknessInput.addEventListener('input', () => {
+      refreshDoneSettings();
+    });
+    refreshDoneSettings(false);
     capturePaperSelect.addEventListener('change', async () => {
       if (capturePaperSelect.value === 'CUSTOM') {
         markCapturePaperCustom();
