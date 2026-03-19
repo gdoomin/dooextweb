@@ -1703,6 +1703,7 @@
     const forceLabelMarkers = new Map();
     const kmlLabelMarkers = new Map();
     const hiddenKmlLabelIds = new Set();
+    const selectedKmlLabelIds = new Set();
     const numberLabelState = {
       kind: '',
       entryId: null,
@@ -2521,7 +2522,12 @@
     }
 
     function setForceMode(mode, persist = true) {
+      const previousMode = forceState.mode;
       forceState.mode = mode === 'existing' ? 'existing' : 'new';
+      if (forceState.mode === 'existing' && previousMode !== 'existing') {
+        // Entering 기존번호 표시: always start from global 번호 OFF.
+        numToggle.checked = false;
+      }
       forceModeNewButton.classList.toggle('is-active', forceState.mode === 'new');
       forceModeExistingButton.classList.toggle('is-active', forceState.mode === 'existing');
       forceControls.classList.toggle('is-hidden', forceState.mode !== 'new');
@@ -2531,6 +2537,7 @@
       refreshForceLabels();
       refreshKmlLabels();
       syncKmlLabelVisibility();
+      deselectNumberLabel();
       if (persist) {
         scheduleViewerStateSave();
       }
@@ -2594,8 +2601,29 @@
       return forceState.active && forceState.mode === 'existing' ? 'force' : 'kml';
     }
 
+    function shouldRenderKmlLabel(entryId) {
+      if (hiddenKmlLabelIds.has(entryId)) {
+        return false;
+      }
+      if (numToggle.checked) {
+        return true;
+      }
+      return forceState.active && forceState.mode === 'existing' && selectedKmlLabelIds.has(entryId);
+    }
+
     function shouldShowKmlLabels() {
-      return !!numToggle.checked || (forceState.active && forceState.mode === 'existing');
+      if (numToggle.checked) {
+        return true;
+      }
+      if (!(forceState.active && forceState.mode === 'existing')) {
+        return false;
+      }
+      for (const entryId of selectedKmlLabelIds) {
+        if (!hiddenKmlLabelIds.has(entryId)) {
+          return true;
+        }
+      }
+      return false;
     }
 
     function syncKmlLabelVisibility() {
@@ -2714,6 +2742,7 @@
 
       if (selectedKind === 'kml') {
         hiddenKmlLabelIds.add(selectedEntryId);
+        selectedKmlLabelIds.delete(selectedEntryId);
         refreshKmlLabels();
         syncKmlLabelVisibility();
         scheduleViewerStateSave();
@@ -2769,6 +2798,17 @@
       }
       updateForceStatus();
       refreshForceLabels();
+      scheduleViewerStateSave();
+    }
+
+    function revealExistingNumberLabel(entry) {
+      if (!entry) {
+        return;
+      }
+      hiddenKmlLabelIds.delete(entry.id);
+      selectedKmlLabelIds.add(entry.id);
+      refreshKmlLabels();
+      syncKmlLabelVisibility();
       scheduleViewerStateSave();
     }
 
@@ -2831,7 +2871,7 @@
       const kind = getKmlLabelKind();
       const inlineStyle = getKmlLabelStyle();
       resultLineEntries.forEach((entry, index) => {
-        if (hiddenKmlLabelIds.has(entry.id)) {
+        if (!shouldRenderKmlLabel(entry.id)) {
           return;
         }
         const labelText = getKmlLabelText(entry, index);
@@ -2986,6 +3026,10 @@
             assignForceNumber(entry);
             return;
           }
+          if (forceState.active && forceState.mode === 'existing') {
+            revealExistingNumberLabel(entry);
+            return;
+          }
         });
 
         resultLineEntries.push(entry);
@@ -3058,6 +3102,7 @@
           .filter((entry) => entry.row.force_assigned != null)
           .map((entry) => ({ id: entry.id, value: entry.row.force_assigned })),
         hiddenKmlLabelIds: Array.from(hiddenKmlLabelIds.values()),
+        selectedKmlLabelIds: Array.from(selectedKmlLabelIds.values()),
         textMarkers: textState.markers.map((marker) => {
           const latlng = marker.getLatLng();
           return {
@@ -3196,10 +3241,18 @@
         setForceActive(false, true);
         deselectNumberLabel();
         hiddenKmlLabelIds.clear();
+        selectedKmlLabelIds.clear();
         if (Array.isArray(saved.hiddenKmlLabelIds)) {
           saved.hiddenKmlLabelIds.forEach((item) => {
             if (Number.isFinite(item)) {
               hiddenKmlLabelIds.add(item);
+            }
+          });
+        }
+        if (Array.isArray(saved.selectedKmlLabelIds)) {
+          saved.selectedKmlLabelIds.forEach((item) => {
+            if (Number.isFinite(item)) {
+              selectedKmlLabelIds.add(item);
             }
           });
         }
@@ -3212,6 +3265,9 @@
 
         if (typeof saved.numVisible === 'boolean') {
           numToggle.checked = saved.numVisible;
+        }
+        if (forceState.mode === 'existing') {
+          numToggle.checked = false;
         }
         if (Number.isFinite(saved.numSize)) {
           numSizeInput.value = String(clamp(saved.numSize, 8, 48));
@@ -4691,6 +4747,7 @@
     numColorInput.addEventListener('input', refreshNumberSettings);
     numToggle.addEventListener('change', () => {
       setNumControlsEnabled(numToggle.checked);
+      refreshKmlLabels();
       syncKmlLabelVisibility();
       scheduleViewerStateSave();
     });
