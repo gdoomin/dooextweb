@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import shutil
 import sys
 from datetime import datetime, timezone
 from io import BytesIO
@@ -36,7 +37,31 @@ from .weather import (
 APP_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = APP_DIR.parent
 ASSETS_DIR = BACKEND_DIR / "assets"
-RUNTIME_DIR = BACKEND_DIR / "runtime"
+LEGACY_RUNTIME_DIR = BACKEND_DIR / "runtime"
+
+
+def _resolve_runtime_dir() -> Path:
+    configured = str(os.getenv("DOO_DATA_DIR") or "").strip()
+    if not configured:
+        return LEGACY_RUNTIME_DIR
+
+    candidate = Path(configured).expanduser()
+    if not candidate.is_absolute():
+        candidate = (BACKEND_DIR / candidate).resolve()
+
+    try:
+        candidate.mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        print(
+            f"[warn] DOO_DATA_DIR={candidate} is not writable ({error}); "
+            f"falling back to {LEGACY_RUNTIME_DIR}",
+            file=sys.stderr,
+        )
+        return LEGACY_RUNTIME_DIR
+    return candidate
+
+
+RUNTIME_DIR = _resolve_runtime_dir()
 JOBS_DIR = RUNTIME_DIR / "jobs"
 VIEWER_STATE_DIR = RUNTIME_DIR / "viewer_states"
 USER_HISTORY_DIR = RUNTIME_DIR / "user_history"
@@ -69,6 +94,37 @@ for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
 
 FONTS_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _same_path(a: Path, b: Path) -> bool:
+    try:
+        return a.resolve() == b.resolve()
+    except Exception:
+        return str(a) == str(b)
+
+
+def _migrate_legacy_runtime_data() -> None:
+    if _same_path(RUNTIME_DIR, LEGACY_RUNTIME_DIR):
+        return
+
+    buckets = ("jobs", "viewer_states", "user_history")
+    for bucket in buckets:
+        src_dir = LEGACY_RUNTIME_DIR / bucket
+        dst_dir = RUNTIME_DIR / bucket
+        if not src_dir.exists() or not src_dir.is_dir():
+            continue
+        dst_dir.mkdir(parents=True, exist_ok=True)
+        for src_file in src_dir.glob("*.json"):
+            dst_file = dst_dir / src_file.name
+            if dst_file.exists():
+                continue
+            try:
+                shutil.copy2(src_file, dst_file)
+            except OSError:
+                continue
+
+
+_migrate_legacy_runtime_data()
 
 
 def _allowed_origins() -> list[str]:
