@@ -512,6 +512,14 @@
       display: none;
       gap: 10px;
     }
+    .measure-panel {
+      top: 88px;
+      right: 16px;
+      width: min(86vw, 340px);
+      padding: 12px;
+      display: none;
+      gap: 10px;
+    }
     .force-panel {
       top: 88px;
       right: 16px;
@@ -525,6 +533,9 @@
       display: block;
     }
     .done-panel.is-visible {
+      display: grid;
+    }
+    .measure-panel.is-visible {
       display: grid;
     }
     .force-panel.is-visible {
@@ -548,7 +559,19 @@
       font-size: 13px;
       font-weight: 700;
     }
+    .measure-title {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
     .force-help {
+      margin: 0;
+      color: #9fb3c8;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .measure-help {
       margin: 0;
       color: #9fb3c8;
       font-size: 11px;
@@ -584,6 +607,17 @@
       font-size: 11px;
       font-weight: 700;
       letter-spacing: 0.01em;
+    }
+    .measure-size-input {
+      width: 100%;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
     }
     .layer-title,
     .weather-title {
@@ -1070,6 +1104,7 @@
         width: min(96vw, 760px);
       }
       .done-panel,
+      .measure-panel,
       .force-panel {
         top: 126px;
         right: 10px;
@@ -1133,18 +1168,18 @@
       gap: 6px;
       padding: 4px;
       border-radius: 999px;
-      background: rgba(15, 25, 35, 0.88);
-      border: 1px solid rgba(154, 114, 248, 0.34);
-      box-shadow: 0 10px 24px rgba(14, 20, 30, 0.26);
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(28, 35, 46, 0.28);
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
       white-space: nowrap;
     }
     .distance-unit {
       appearance: none;
-      border: 0;
+      border: 1px solid rgba(28, 35, 46, 0.24);
       border-radius: 999px;
       padding: 5px 10px;
-      background: transparent;
-      color: #c9d1d9;
+      background: rgba(255, 255, 255, 0.72);
+      color: #1a1a1a;
       font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.04em;
@@ -1152,19 +1187,20 @@
       transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
     }
     .distance-unit.is-active {
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(18, 24, 33, 0.92);
       color: #ffffff;
-      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12) inset;
+      box-shadow: 0 0 0 1px rgba(18, 24, 33, 0.2) inset;
     }
     .distance-chip {
       padding: 5px 10px;
       border-radius: 999px;
-      background: rgba(122, 54, 255, 0.92);
-      color: #ffffff;
+      background: rgba(255, 255, 255, 0.98);
+      color: #111111;
+      border: 1px solid rgba(28, 35, 46, 0.24);
       font-size: 12px;
       font-weight: 800;
       letter-spacing: 0.02em;
-      box-shadow: 0 10px 24px rgba(72, 29, 136, 0.28);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
       white-space: nowrap;
     }
     .flag-pin {
@@ -1425,6 +1461,23 @@
       <output id="doneThicknessValue" class="done-thickness-value">9.6px</output>
     </label>
   </div>
+  <div id="measurePanel" class="panel measure-panel">
+    <p class="measure-title">거리 측정 설정</p>
+    <p class="measure-help">측정 결과는 버튼이 켜진 동안 계속 누적됩니다. 생성된 선/거리 라벨을 클릭하면 즉시 삭제됩니다.</p>
+    <label class="done-row">
+      <span>선 색상</span>
+      <input id="measureColorInput" type="color" value="#7a36ff" aria-label="측정 선 색상">
+    </label>
+    <label class="done-row">
+      <span>선 굵기</span>
+      <input id="measureWeightInput" type="range" min="2" max="12" step="0.2" value="6.3" aria-label="측정 선 굵기">
+      <output id="measureWeightValue" class="done-thickness-value">6.3px</output>
+    </label>
+    <label class="done-row">
+      <span>글자 크기</span>
+      <input id="measureLabelSizeInput" class="measure-size-input" type="number" min="10" max="36" step="1" value="12" aria-label="측정 라벨 글자 크기">
+    </label>
+  </div>
   <div id="forcePanel" class="panel force-panel">
     <p class="force-title">강제번호 옵션</p>
     <p class="force-help">번호 라벨을 클릭해 선택한 뒤 Delete 키를 누르면 지워집니다.</p>
@@ -1529,7 +1582,13 @@
     const previewGateEnabled = !!payload.preview_gate;
     const lineColor = '#1A3FCC';
     const hoverColor = '#4488FF';
-    const measureColor = '#7A36FF';
+    const measureDefaultColor = '#7A36FF';
+    const measureMinWeight = 2;
+    const measureMaxWeight = 12;
+    const measureDefaultWeight = 6.3;
+    const measureMinLabelSize = 10;
+    const measureMaxLabelSize = 36;
+    const measureDefaultLabelSize = 12;
     const doneHighlightDefaultColor = '#b7ff3c';
     const doneHighlightMinWeight = 6;
     const doneHighlightMaxWeight = 10;
@@ -1591,6 +1650,11 @@
     const textButton = document.getElementById('textButton');
     const doneButton = document.getElementById('doneButton');
     const donePanel = document.getElementById('donePanel');
+    const measurePanel = document.getElementById('measurePanel');
+    const measureColorInput = document.getElementById('measureColorInput');
+    const measureWeightInput = document.getElementById('measureWeightInput');
+    const measureWeightValue = document.getElementById('measureWeightValue');
+    const measureLabelSizeInput = document.getElementById('measureLabelSizeInput');
     const doneColorInput = document.getElementById('doneColorInput');
     const doneThicknessInput = document.getElementById('doneThicknessInput');
     const doneThicknessValue = document.getElementById('doneThicknessValue');
@@ -1678,10 +1742,13 @@
     const measureState = {
       active: false,
       unit: 'km',
-      points: [],
-      markers: [],
-      line: null,
-      label: null,
+      color: measureDefaultColor,
+      weight: measureDefaultWeight,
+      labelSize: measureDefaultLabelSize,
+      pendingPoints: [],
+      pendingMarkers: [],
+      items: [],
+      nextId: 1,
     };
     const textState = {
       active: false,
@@ -1728,7 +1795,7 @@
       A5: { label: 'A5', width: 1748, height: 2480 },
       LETTER: { label: 'Letter', width: 2550, height: 3300 },
     };
-    const VIEWER_STATE_VERSION = 2;
+    const VIEWER_STATE_VERSION = 3;
     const UNDO_LIMIT = 10;
     let viewerStateSaveTimer = null;
     let viewerStateRestoring = false;
@@ -2462,6 +2529,10 @@
       donePanel.classList.toggle('is-visible', !!visible);
     }
 
+    function setMeasurePanelVisible(visible) {
+      measurePanel.classList.toggle('is-visible', !!visible);
+    }
+
     function setForcePanelVisible(visible) {
       forcePanel.classList.toggle('is-visible', !!visible);
     }
@@ -2543,19 +2614,59 @@
       }
     }
 
-    function distanceIcon(text, unit) {
+    function getMeasureColor() {
+      const value = String(measureColorInput.value || '').trim();
+      return /^#[0-9a-f]{6}$/i.test(value) ? value : measureDefaultColor;
+    }
+
+    function getMeasureWeight() {
+      const value = parseFloat(measureWeightInput.value);
+      if (!Number.isFinite(value)) {
+        return measureDefaultWeight;
+      }
+      return clamp(value, measureMinWeight, measureMaxWeight);
+    }
+
+    function getMeasureLabelSize() {
+      const value = parseInt(measureLabelSizeInput.value, 10);
+      if (!Number.isFinite(value)) {
+        return measureDefaultLabelSize;
+      }
+      return Math.round(clamp(value, measureMinLabelSize, measureMaxLabelSize));
+    }
+
+    function distanceIcon(text, unit, fontSize = measureState.labelSize) {
       const currentUnit = unit === 'nm' ? 'nm' : 'km';
+      const safeFontSize = Math.round(clamp(fontSize, measureMinLabelSize, measureMaxLabelSize));
       return L.divIcon({
         className: '',
         html: `
           <div class="distance-badge">
             <button class="distance-unit ${currentUnit === 'km' ? 'is-active' : ''}" type="button" data-measure-unit="km">KM</button>
             <button class="distance-unit ${currentUnit === 'nm' ? 'is-active' : ''}" type="button" data-measure-unit="nm">NM</button>
-            <div class="distance-chip">${escapeHtml(text)}</div>
+            <div class="distance-chip" style="font-size:${safeFontSize}px">${escapeHtml(text)}</div>
           </div>
         `,
         iconSize: null
       });
+    }
+
+    function applyMeasureItemStyle(item) {
+      if (!item) {
+        return;
+      }
+      if (item.line) {
+        item.line.setStyle({
+          color: measureState.color,
+          weight: measureState.weight,
+          opacity: 0.94,
+          lineCap: 'round',
+        });
+      }
+      if (item.label) {
+        const distanceMeters = map.distance(item.start, item.end);
+        item.label.setIcon(distanceIcon(formatDistance(distanceMeters, measureState.unit), measureState.unit, measureState.labelSize));
+      }
     }
 
     function lineLabelPoint(row) {
@@ -3116,7 +3227,16 @@
         measure: {
           active: measureState.active,
           unit: measureState.unit,
-          points: measureState.points.map((point) => [point.lat, point.lng]),
+          color: measureState.color,
+          weight: measureState.weight,
+          labelSize: measureState.labelSize,
+          nextId: measureState.nextId,
+          pendingPoints: measureState.pendingPoints.map((point) => [point.lat, point.lng]),
+          items: measureState.items.map((item) => ({
+            id: item.id,
+            start: [item.start.lat, item.start.lng],
+            end: [item.end.lat, item.end.lng],
+          })),
         },
       };
     }
@@ -3354,8 +3474,62 @@
 
         await applySavedWeatherState(saved.weather);
 
-        clearMeasurement();
+        clearAllMeasurements(false);
         measureState.unit = saved.measure && saved.measure.unit === 'nm' ? 'nm' : 'km';
+        if (saved.measure && typeof saved.measure === 'object') {
+          if (typeof saved.measure.color === 'string' && /^#[0-9a-f]{6}$/i.test(saved.measure.color)) {
+            measureColorInput.value = saved.measure.color;
+          }
+          if (Number.isFinite(saved.measure.weight)) {
+            measureWeightInput.value = String(clamp(saved.measure.weight, measureMinWeight, measureMaxWeight));
+          }
+          if (Number.isFinite(saved.measure.labelSize)) {
+            measureLabelSizeInput.value = String(clamp(saved.measure.labelSize, measureMinLabelSize, measureMaxLabelSize));
+          }
+          measureState.nextId = 1;
+        } else {
+          measureState.nextId = 1;
+        }
+        refreshMeasureSettings(false);
+
+        if (saved.measure && Array.isArray(saved.measure.items)) {
+          saved.measure.items.forEach((item) => {
+            if (
+              !item ||
+              !Array.isArray(item.start) ||
+              item.start.length !== 2 ||
+              !Array.isArray(item.end) ||
+              item.end.length !== 2
+            ) {
+              return;
+            }
+            if (!Number.isFinite(item.start[0]) || !Number.isFinite(item.start[1]) || !Number.isFinite(item.end[0]) || !Number.isFinite(item.end[1])) {
+              return;
+            }
+            const start = L.latLng(item.start[0], item.start[1]);
+            const end = L.latLng(item.end[0], item.end[1]);
+            createMeasurementItem(start, end, []);
+          });
+        }
+        if (saved.measure && Number.isFinite(saved.measure.nextId)) {
+          measureState.nextId = Math.max(measureState.nextId, Math.round(saved.measure.nextId), 1);
+        }
+        if (saved.measure && Array.isArray(saved.measure.pendingPoints)) {
+          saved.measure.pendingPoints.slice(0, 1).forEach((point) => {
+            if (!Array.isArray(point) || point.length !== 2 || !Number.isFinite(point[0]) || !Number.isFinite(point[1])) {
+              return;
+            }
+            const latlng = L.latLng(point[0], point[1]);
+            measureState.pendingPoints.push(latlng);
+            const marker = L.marker(latlng, {
+              icon: flagIcon(),
+              interactive: false,
+              keyboard: false
+            }).addTo(measureGroup);
+            measureState.pendingMarkers.push(marker);
+          });
+        }
+
         if (saved.activeTool === 'measure') {
           setMeasureActive(true, true);
         } else if (saved.activeTool === 'text') {
@@ -3367,25 +3541,6 @@
         }
         syncKmlLabelVisibility();
         refreshKmlLabels();
-
-        if (saved.measure && Array.isArray(saved.measure.points)) {
-          saved.measure.points.slice(0, 2).forEach((point) => {
-            if (!Array.isArray(point) || point.length !== 2) {
-              return;
-            }
-            const latlng = L.latLng(point[0], point[1]);
-            measureState.points.push(latlng);
-            const marker = L.marker(latlng, {
-              icon: flagIcon(),
-              interactive: false,
-              keyboard: false
-            }).addTo(measureGroup);
-            measureState.markers.push(marker);
-          });
-          if (measureState.points.length === 2) {
-            finalizeMeasurement();
-          }
-        }
 
         return hasSavedView;
       } finally {
@@ -3425,6 +3580,8 @@
       scheduleViewerStateSave();
     });
     applyBaseMapTone();
+    refreshMeasureSettings(false);
+    setMeasurePanelVisible(false);
     setForceMode(forceState.mode, false);
     setForcePanelVisible(false);
 
@@ -4632,6 +4789,9 @@
     weatherPanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
+    measurePanel.addEventListener('click', (event) => {
+      event.stopPropagation();
+    });
     donePanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
@@ -4712,12 +4872,22 @@
     forceModeExistingButton.addEventListener('click', () => {
       setForceMode('existing');
     });
+    measureColorInput.addEventListener('input', () => {
+      refreshMeasureSettings();
+    });
+    measureWeightInput.addEventListener('input', () => {
+      refreshMeasureSettings();
+    });
+    measureLabelSizeInput.addEventListener('input', () => {
+      refreshMeasureSettings();
+    });
     doneColorInput.addEventListener('input', () => {
       refreshDoneSettings();
     });
     doneThicknessInput.addEventListener('input', () => {
       refreshDoneSettings();
     });
+    refreshMeasureSettings(false);
     refreshDoneSettings(false);
     capturePaperSelect.addEventListener('change', async () => {
       if (capturePaperSelect.value === 'CUSTOM') {
@@ -4822,50 +4992,71 @@
       return `${km >= 10 ? km.toFixed(1) : km.toFixed(2)} KM`;
     }
 
-    function clearMeasurement() {
-      measureState.points = [];
-      measureState.markers.forEach((marker) => measureGroup.removeLayer(marker));
-      measureState.markers = [];
-      if (measureState.line) {
-        measureGroup.removeLayer(measureState.line);
-        measureState.line = null;
-      }
-      if (measureState.label) {
-        measureGroup.removeLayer(measureState.label);
-        measureState.label = null;
+    function clearMeasurePending() {
+      measureState.pendingPoints = [];
+      measureState.pendingMarkers.forEach((marker) => measureGroup.removeLayer(marker));
+      measureState.pendingMarkers = [];
+    }
+
+    function clearAllMeasurements(persist = true) {
+      clearMeasurePending();
+      measureState.items.forEach((item) => {
+        if (item.line) {
+          measureGroup.removeLayer(item.line);
+        }
+        if (item.label) {
+          measureGroup.removeLayer(item.label);
+        }
+        (item.markers || []).forEach((marker) => {
+          measureGroup.removeLayer(marker);
+        });
+      });
+      measureState.items = [];
+      if (persist) {
+        scheduleViewerStateSave();
       }
     }
 
-    function setMeasureActive(active, fromOtherTool = false) {
-      measureState.active = active;
-      measureButton.classList.toggle('is-active', active);
-      measureButton.classList.toggle('measure-active', active);
-      clearMeasurement();
-      if (active && !fromOtherTool && textState.active) {
-        setTextActive(false);
+    function removeMeasurementItem(itemId, persist = true) {
+      const index = measureState.items.findIndex((item) => item.id === itemId);
+      if (index < 0) {
+        return false;
       }
-      if (active && !fromOtherTool && doneState.active) {
-        setDoneActive(false, true);
+      const [item] = measureState.items.splice(index, 1);
+      if (item.line) {
+        measureGroup.removeLayer(item.line);
       }
-      if (active && !fromOtherTool && forceState.active) {
-        setForceActive(false, true);
+      if (item.label) {
+        measureGroup.removeLayer(item.label);
       }
-      scheduleViewerStateSave();
+      (item.markers || []).forEach((marker) => {
+        measureGroup.removeLayer(marker);
+      });
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+      return true;
     }
 
-    function bindMeasureLabelControls() {
-      if (!measureState.label) {
+    function bindMeasureLabelControls(item) {
+      if (!item || !item.label) {
         return;
       }
 
-      const element = measureState.label.getElement();
+      const element = item.label.getElement();
       if (!element) {
-        requestAnimationFrame(bindMeasureLabelControls);
+        requestAnimationFrame(() => bindMeasureLabelControls(item));
         return;
       }
 
       element.addEventListener('click', (event) => {
+        const target = event.target;
+        if (target && target.closest && target.closest('[data-measure-unit]')) {
+          return;
+        }
+        event.preventDefault();
         event.stopPropagation();
+        removeMeasurementItem(item.id, true);
       });
 
       element.querySelectorAll('[data-measure-unit]').forEach((button) => {
@@ -4877,46 +5068,126 @@
       });
     }
 
+    function refreshMeasureSettings(persist = true) {
+      measureState.color = getMeasureColor();
+      measureState.weight = getMeasureWeight();
+      measureState.labelSize = getMeasureLabelSize();
+
+      measureColorInput.value = measureState.color;
+      measureWeightInput.value = measureState.weight.toFixed(1);
+      measureWeightValue.textContent = `${measureState.weight.toFixed(1)}px`;
+      measureLabelSizeInput.value = String(measureState.labelSize);
+
+      measureState.items.forEach((item) => {
+        applyMeasureItemStyle(item);
+        bindMeasureLabelControls(item);
+      });
+
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
     function updateMeasureUnit(unit) {
       if (unit !== 'km' && unit !== 'nm') {
         return;
       }
       measureState.unit = unit;
-      if (!measureState.label || measureState.points.length < 2) {
-        return;
-      }
-
-      const distanceMeters = map.distance(measureState.points[0], measureState.points[1]);
-      measureState.label.setIcon(distanceIcon(formatDistance(distanceMeters, unit), unit));
-      bindMeasureLabelControls();
+      measureState.items.forEach((item) => {
+        applyMeasureItemStyle(item);
+        bindMeasureLabelControls(item);
+      });
       scheduleViewerStateSave();
     }
 
-    function finalizeMeasurement() {
-      if (measureState.points.length < 2) {
-        return;
-      }
-      const [start, end] = measureState.points;
-      measureState.line = L.polyline([start, end], {
-        color: measureColor,
-        weight: 6.3,
+    function createMeasurementItem(start, end, markers = []) {
+      const itemId = measureState.nextId++;
+      const itemStart = L.latLng(start.lat, start.lng);
+      const itemEnd = L.latLng(end.lat, end.lng);
+      const line = L.polyline([itemStart, itemEnd], {
+        color: measureState.color,
+        weight: measureState.weight,
         opacity: 0.94,
         lineCap: 'round',
         renderer: renderer
       }).addTo(measureGroup);
 
-      const distanceText = formatDistance(map.distance(start, end), measureState.unit);
-      const mid = L.latLng((start.lat + end.lat) / 2, (start.lng + end.lng) / 2);
-      measureState.label = L.marker(mid, {
-        icon: distanceIcon(distanceText, measureState.unit),
+      const distanceText = formatDistance(map.distance(itemStart, itemEnd), measureState.unit);
+      const mid = L.latLng((itemStart.lat + itemEnd.lat) / 2, (itemStart.lng + itemEnd.lng) / 2);
+      const label = L.marker(mid, {
+        icon: distanceIcon(distanceText, measureState.unit, measureState.labelSize),
         interactive: true,
-        keyboard: false
+        keyboard: false,
+        riseOnHover: true
       }).addTo(measureGroup);
-      bindMeasureLabelControls();
 
-      if (measureState.line.bringToFront) {
-        measureState.line.bringToFront();
+      const item = {
+        id: itemId,
+        start: itemStart,
+        end: itemEnd,
+        line,
+        label,
+        markers: Array.isArray(markers) ? markers.slice() : [],
+      };
+
+      line.on('click', (event) => {
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        removeMeasurementItem(itemId, true);
+      });
+
+      label.on('click', (event) => {
+        const target = event && event.originalEvent ? event.originalEvent.target : null;
+        if (target && target.closest && target.closest('[data-measure-unit]')) {
+          return;
+        }
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        removeMeasurementItem(itemId, true);
+      });
+
+      measureState.items.push(item);
+      bindMeasureLabelControls(item);
+
+      if (line.bringToFront) {
+        line.bringToFront();
       }
+    }
+
+    function finalizeMeasurement() {
+      if (measureState.pendingPoints.length < 2) {
+        return;
+      }
+      const [start, end] = measureState.pendingPoints;
+      const markers = measureState.pendingMarkers.slice();
+      measureState.pendingPoints = [];
+      measureState.pendingMarkers = [];
+      createMeasurementItem(start, end, markers);
+      scheduleViewerStateSave();
+    }
+
+    function setMeasureActive(active, fromOtherTool = false) {
+      measureState.active = active;
+      measureButton.classList.toggle('is-active', active);
+      measureButton.classList.toggle('measure-active', active);
+      if (!active) {
+        clearMeasurePending();
+        setMeasurePanelVisible(false);
+      } else if (!fromOtherTool) {
+        setMeasurePanelVisible(true);
+      }
+      if (active && !fromOtherTool && textState.active) {
+        setTextActive(false);
+      }
+      if (active && !fromOtherTool && doneState.active) {
+        setDoneActive(false, true);
+      }
+      if (active && !fromOtherTool && forceState.active) {
+        setForceActive(false, true);
+      }
+      scheduleViewerStateSave();
     }
 
     measureButton.addEventListener('click', () => {
@@ -4951,20 +5222,21 @@
         return;
       }
 
-      if (measureState.points.length >= 2) {
-        clearMeasurement();
+      if (measureState.pendingPoints.length >= 2) {
+        clearMeasurePending();
       }
 
-      measureState.points.push(event.latlng);
+      measureState.pendingPoints.push(event.latlng);
       const marker = L.marker(event.latlng, {
         icon: flagIcon(),
         interactive: false,
         keyboard: false
       }).addTo(measureGroup);
-      measureState.markers.push(marker);
+      measureState.pendingMarkers.push(marker);
 
-      if (measureState.points.length === 2) {
+      if (measureState.pendingPoints.length === 2) {
         finalizeMeasurement();
+        return;
       }
       scheduleViewerStateSave();
     });
