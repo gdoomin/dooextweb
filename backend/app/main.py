@@ -985,6 +985,37 @@ def _job_owner_billing_status(job: dict) -> dict[str, Any]:
     )
 
 
+def _viewer_billing_payload(billing_status: dict[str, Any]) -> dict[str, Any]:
+    plan_code = _normalize_plan_code(str(billing_status.get("plan_code") or ""), fallback=DEFAULT_PLAN_CODE)
+    features = billing_status.get("features", {})
+    if not isinstance(features, dict):
+        features = {}
+
+    is_free = plan_code == DEFAULT_PLAN_CODE
+    is_pro_like = plan_code in {PRO_PLAN_CODE, LEGACY_PLAN_CODE}
+
+    return {
+        "plan_code": plan_code,
+        "billing_enabled": bool(billing_status.get("billing_enabled")),
+        "is_new_pricing_user": bool(billing_status.get("is_new_pricing_user")),
+        "flags": {
+            "text_tool": not is_free,
+            "done_tool": not is_free,
+            "force_tool": not is_free,
+            "measure_tool": not is_free,
+            "done_style_customize": is_pro_like,
+            "force_style_customize": is_pro_like,
+            "measure_style_customize": is_pro_like,
+            "collapse_toolbar": not is_free,
+            "weather_metar_taf": bool(features.get("weather_metar_taf")),
+            "weather_satellite": bool(features.get("weather_satellite")),
+            "notam_detail": bool(features.get("notam_detail")),
+            "all_layers": not is_free,
+        },
+        "allowed_layer_keys": [] if not is_free else ["moa"],
+    }
+
+
 def _public_plan_rows() -> list[dict[str, Any]]:
     return [
         {
@@ -1652,6 +1683,7 @@ def download_xlsx(job_id: str):
 def get_viewer(job_id: str, request: Request):
     job = _load_job(job_id)
     payload = dict(job["map_payload"])
+    payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
 
     preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
     if preview_gate:

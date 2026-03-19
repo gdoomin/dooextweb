@@ -1964,8 +1964,66 @@
     const doneHighlightMinWeight = 6;
     const doneHighlightMaxWeight = 10;
     const doneHighlightDefaultWeight = 9.6;
+    const viewerBilling = payload && payload.viewer_billing && typeof payload.viewer_billing === 'object'
+      ? payload.viewer_billing
+      : null;
+    const viewerBillingFlags = viewerBilling && viewerBilling.flags && typeof viewerBilling.flags === 'object'
+      ? viewerBilling.flags
+      : {};
+    const viewerAllowedLayerKeys = new Set(
+      Array.isArray(viewerBilling && viewerBilling.allowed_layer_keys)
+        ? viewerBilling.allowed_layer_keys.map((item) => String(item || '').trim().toLowerCase()).filter(Boolean)
+        : []
+    );
+    const viewerPlanCode = String(viewerBilling && viewerBilling.plan_code ? viewerBilling.plan_code : '').trim().toLowerCase();
+    function resolveViewerFlag(flagKey, fallbackValue = true) {
+      if (Object.prototype.hasOwnProperty.call(viewerBillingFlags, flagKey)) {
+        return !!viewerBillingFlags[flagKey];
+      }
+      return !!fallbackValue;
+    }
+    const viewerAccess = {
+      textTool: resolveViewerFlag('text_tool', true),
+      doneTool: resolveViewerFlag('done_tool', true),
+      forceTool: resolveViewerFlag('force_tool', true),
+      measureTool: resolveViewerFlag('measure_tool', true),
+      doneStyleCustomize: resolveViewerFlag('done_style_customize', true),
+      forceStyleCustomize: resolveViewerFlag('force_style_customize', true),
+      measureStyleCustomize: resolveViewerFlag('measure_style_customize', true),
+      collapseToolbar: resolveViewerFlag('collapse_toolbar', true),
+      weatherMetarTaf: resolveViewerFlag('weather_metar_taf', true),
+      weatherSatellite: resolveViewerFlag('weather_satellite', true),
+      notamDetail: resolveViewerFlag('notam_detail', true),
+      allLayers: resolveViewerFlag('all_layers', true),
+    };
+    const viewerRestrictionMessage = {
+      textTool: '현재 요금제에서 글자 입력 기능을 사용할 수 없습니다.',
+      doneTool: '현재 요금제에서 완료(형광펜) 기능을 사용할 수 없습니다.',
+      forceTool: '현재 요금제에서 강제번호 기능을 사용할 수 없습니다.',
+      measureTool: '현재 요금제에서 측정 기능을 사용할 수 없습니다.',
+      weather: '현재 요금제에서 기상 기능을 사용할 수 없습니다.',
+      collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
+      notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
+    };
+    const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
+    function normalizeLayerKey(value) {
+      return String(value || '').trim().toLowerCase();
+    }
+    function isLayerAllowedByPlan(layer) {
+      if (!layer || typeof layer !== 'object') {
+        return false;
+      }
+      if (viewerAccess.allLayers) {
+        return true;
+      }
+      const layerKey = normalizeLayerKey(layer.key);
+      if (viewerAllowedLayerKeys.size > 0) {
+        return viewerAllowedLayerKeys.has(layerKey);
+      }
+      return layerKey === 'moa';
+    }
     const isPolygonMode = payload.mode === 'polygon';
-    const layerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
+    const layerCatalog = rawLayerCatalog.filter((layer) => isLayerAllowedByPlan(layer));
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'satellite', label: '위성영상', note: 'NASA GIBS True Color', badge: 'SAT' },
@@ -2228,6 +2286,40 @@
       notam: notamButton,
     };
 
+    function applyViewerPlanRestrictions() {
+      if (!viewerAccess.textTool) {
+        textButton.disabled = true;
+        setTextActive(false, true);
+      }
+      if (!viewerAccess.doneTool) {
+        doneButton.disabled = true;
+        setDoneActive(false, true);
+      }
+      if (!viewerAccess.forceTool) {
+        forceButton.disabled = true;
+        setForceActive(false, true);
+      }
+      if (!viewerAccess.measureTool) {
+        measureButton.disabled = true;
+        clearAllMeasurements(false);
+        setMeasureActive(false, true);
+      }
+      if (!viewerAccess.collapseToolbar) {
+        collapseToolbarButton.disabled = true;
+        expandToolbarButton.disabled = true;
+        applyInterfaceCollapseState(false, true);
+      }
+      if (!weatherControls.size) {
+        weatherButton.disabled = true;
+        weatherPanel.classList.remove('is-visible');
+      }
+      refreshDoneSettings(false);
+      refreshMeasureSettings(false);
+      setForceControlsEnabled(true);
+      setNumControlsEnabled(numToggle.checked);
+      syncMenuButtonActiveState();
+    }
+
     function applyMenuButtonActiveState(activeKey = '') {
       Object.values(menuButtonsByKey).forEach((button) => {
         if (!button) {
@@ -2291,6 +2383,30 @@
       if (except !== 'force' && forceState.active) {
         setForceActive(false, true);
       }
+    }
+
+    let planRestrictionAlertAt = 0;
+    function notifyPlanRestriction(message) {
+      const text = String(message || '').trim();
+      if (!text) {
+        return;
+      }
+      const now = Date.now();
+      if (now - planRestrictionAlertAt < 500) {
+        return;
+      }
+      planRestrictionAlertAt = now;
+      window.alert(text);
+    }
+
+    function isWeatherFeatureAllowed(key) {
+      if (key === 'satellite') {
+        return viewerAccess.weatherSatellite;
+      }
+      if (key === 'metar') {
+        return viewerAccess.weatherMetarTaf;
+      }
+      return false;
     }
 
     function escapeHtml(value) {
@@ -3214,6 +3330,10 @@
     }
 
     function openNotamInfoModal(items, titleText = 'NOTAM 상세') {
+      if (!viewerAccess.notamDetail) {
+        notifyPlanRestriction(viewerRestrictionMessage.notamDetail);
+        return;
+      }
       const list = Array.isArray(items) ? items.filter(Boolean) : [];
       if (!list.length || !notamInfoModal || !notamInfoContent) {
         return;
@@ -3824,6 +3944,10 @@
     }
 
     function promptForText(initialValue = '', initialTitle = false, initialFont = TEXT_DEFAULT_FONT, initialAlign = TEXT_DEFAULT_ALIGN) {
+      if (!viewerAccess.textTool) {
+        notifyPlanRestriction(viewerRestrictionMessage.textTool);
+        return Promise.resolve(null);
+      }
       return new Promise((resolve) => {
         textState.dialogResolver = resolve;
         textState.dialogFont = normalizeTextFont(initialFont);
@@ -4035,6 +4159,14 @@
     }
 
     function setTextActive(active, fromOtherTool = false) {
+      if (active && !viewerAccess.textTool) {
+        textState.active = false;
+        if (!fromOtherTool) {
+          notifyPlanRestriction(viewerRestrictionMessage.textTool);
+        }
+        syncMenuButtonActiveState();
+        return;
+      }
       textState.active = active;
       if (active && measureState.active) {
         setMeasureActive(false, true);
@@ -4085,6 +4217,8 @@
       doneColorInput.value = doneState.highlightColor;
       doneThicknessInput.value = doneState.highlightWeight.toFixed(1);
       doneThicknessValue.textContent = `${doneState.highlightWeight.toFixed(1)}px`;
+      doneColorInput.disabled = !viewerAccess.doneTool || !viewerAccess.doneStyleCustomize;
+      doneThicknessInput.disabled = !viewerAccess.doneTool || !viewerAccess.doneStyleCustomize;
 
       resultLineEntries.forEach((entry) => {
         if (entry.completed) {
@@ -4098,6 +4232,15 @@
     }
 
     function setDoneActive(active, fromOtherTool = false) {
+      if (active && !viewerAccess.doneTool) {
+        doneState.active = false;
+        setDonePanelVisible(false);
+        if (!fromOtherTool) {
+          notifyPlanRestriction(viewerRestrictionMessage.doneTool);
+        }
+        syncMenuButtonActiveState();
+        return;
+      }
       doneState.active = active;
       if (!active) {
         setDonePanelVisible(false);
@@ -4465,6 +4608,15 @@
     }
 
     function setForceActive(active, fromOtherTool = false) {
+      if (active && !viewerAccess.forceTool) {
+        forceState.active = false;
+        setForcePanelVisible(false);
+        if (!fromOtherTool) {
+          notifyPlanRestriction(viewerRestrictionMessage.forceTool);
+        }
+        syncMenuButtonActiveState();
+        return;
+      }
       forceState.active = active;
       if (active) {
         forceState.nextNumber = getForceStartNumber();
@@ -5126,7 +5278,7 @@
 
         await applySavedLayerState(saved.layers);
 
-        applyInterfaceCollapseState(!!saved.toolbarCollapsed);
+        applyInterfaceCollapseState(!!saved.toolbarCollapsed, true);
 
         if (hasSavedView) {
           map.setView(saved.view.center, saved.view.zoom, { animate: false });
@@ -5255,7 +5407,14 @@
     setForcePanelVisible(false);
 
     function buildWeatherRows() {
-      WEATHER_LAYER_DEFS.forEach((item) => {
+      const enabledDefs = WEATHER_LAYER_DEFS.filter((item) => isWeatherFeatureAllowed(item.key));
+      if (!enabledDefs.length) {
+        weatherButton.disabled = true;
+        weatherPanel.classList.remove('is-visible');
+        return;
+      }
+
+      enabledDefs.forEach((item) => {
         const row = document.createElement('div');
         row.className = 'weather-row';
         row.dataset.weatherKey = item.key;
@@ -6154,6 +6313,12 @@
     }
 
     function setWeatherPanelVisible(visible) {
+      if (!weatherControls.size) {
+        if (visible) {
+          notifyPlanRestriction(viewerRestrictionMessage.weather);
+        }
+        return;
+      }
       const isVisible = !!visible;
       if (isVisible) {
         deactivateToolModes();
@@ -6165,7 +6330,13 @@
       syncMenuButtonActiveState();
     }
 
-    function applyInterfaceCollapseState(collapsed) {
+    function applyInterfaceCollapseState(collapsed, silent = false) {
+      if (collapsed && !viewerAccess.collapseToolbar) {
+        if (!silent) {
+          notifyPlanRestriction(viewerRestrictionMessage.collapse);
+        }
+        collapsed = false;
+      }
       toolbar.classList.toggle('is-collapsed', collapsed);
       titlebar.classList.toggle('is-hidden', collapsed);
       hintPanel.classList.toggle('is-hidden', collapsed);
@@ -6189,9 +6360,9 @@
     function setForceControlsEnabled(enabled) {
       const isEnabled = !!enabled && forceState.mode === 'new';
       forceControls.style.opacity = isEnabled ? '1' : '0.46';
-      [forceStartInput, forceSizeInput, forceColorInput].forEach((input) => {
-        input.disabled = !isEnabled;
-      });
+      forceStartInput.disabled = !isEnabled;
+      forceSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      forceColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
       updateForceStatus();
     }
 
@@ -6204,9 +6375,8 @@
     function setNumControlsEnabled(enabled) {
       const isEnabled = !!enabled || (forceState.active && forceState.mode === 'existing');
       numControls.style.opacity = isEnabled ? '1' : '0.46';
-      [numSizeInput, numColorInput].forEach((input) => {
-        input.disabled = !isEnabled;
-      });
+      numSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      numColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
     }
 
     function setCaptureModalVisible(visible) {
@@ -7259,6 +7429,9 @@
       measureWeightInput.value = measureState.weight.toFixed(1);
       measureWeightValue.textContent = `${measureState.weight.toFixed(1)}px`;
       measureLabelSizeInput.value = String(measureState.labelSize);
+      measureColorInput.disabled = !viewerAccess.measureTool || !viewerAccess.measureStyleCustomize;
+      measureWeightInput.disabled = !viewerAccess.measureTool || !viewerAccess.measureStyleCustomize;
+      measureLabelSizeInput.disabled = !viewerAccess.measureTool;
 
       measureState.items.forEach((item) => {
         applyMeasureItemStyle(item);
@@ -7371,6 +7544,15 @@
     }
 
     function setMeasureActive(active, fromOtherTool = false) {
+      if (active && !viewerAccess.measureTool) {
+        measureState.active = false;
+        setMeasurePanelVisible(false);
+        if (!fromOtherTool) {
+          notifyPlanRestriction(viewerRestrictionMessage.measureTool);
+        }
+        syncMenuButtonActiveState();
+        return;
+      }
       measureState.active = active;
       if (!active) {
         clearMeasurePending();
@@ -7461,6 +7643,7 @@
       buildWeatherRows();
       buildLayerRows();
       renderResults();
+      applyViewerPlanRestrictions();
 
       const restored = await restoreViewerState();
       if (!restored) {
