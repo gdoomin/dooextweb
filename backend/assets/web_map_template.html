@@ -496,6 +496,130 @@
       transform: none;
       box-shadow: none;
     }
+    .plan-info-button {
+      padding: 7px 12px;
+      border-radius: 12px;
+      background: linear-gradient(180deg, rgba(255, 237, 168, 0.96), rgba(255, 214, 92, 0.96));
+      border-color: rgba(231, 182, 63, 0.92);
+      color: #342200;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: 0.02em;
+    }
+    .plan-info-button:hover {
+      filter: brightness(1.03);
+    }
+    .plan-guide-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 4250;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      box-sizing: border-box;
+      background: rgba(4, 10, 18, 0.52);
+      backdrop-filter: blur(8px);
+    }
+    .plan-guide-modal.is-visible {
+      display: flex;
+    }
+    .plan-guide-card {
+      width: min(96vw, 1040px);
+      max-height: calc(100vh - 30px);
+      border-radius: 16px;
+      border: 1px solid rgba(121, 192, 255, 0.18);
+      background: rgba(15, 25, 35, 0.98);
+      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-guide-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 12px 14px;
+      border-bottom: 1px solid rgba(121, 192, 255, 0.2);
+      background: rgba(10, 19, 29, 0.95);
+    }
+    .plan-guide-head h3 {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 18px;
+      line-height: 1.25;
+    }
+    .plan-guide-head p {
+      margin: 6px 0 0;
+      color: #c9d1d9;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .plan-guide-current {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(121, 192, 255, 0.28);
+      background: rgba(29, 44, 58, 0.92);
+      color: #e6edf3;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .plan-guide-table-wrap {
+      padding: 12px;
+      overflow: auto;
+    }
+    .plan-guide-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      font-size: 12px;
+      color: #d0d7de;
+    }
+    .plan-guide-table th,
+    .plan-guide-table td {
+      border-right: 1px solid rgba(121, 192, 255, 0.12);
+      border-bottom: 1px solid rgba(121, 192, 255, 0.12);
+      padding: 8px 10px;
+      text-align: left;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+    .plan-guide-table th:last-child,
+    .plan-guide-table td:last-child {
+      border-right: none;
+    }
+    .plan-guide-table thead th {
+      position: sticky;
+      top: 0;
+      background: rgba(20, 34, 48, 0.98);
+      color: #f7f9fb;
+      z-index: 1;
+      font-weight: 800;
+    }
+    .plan-guide-table td:first-child,
+    .plan-guide-table th:first-child {
+      width: 24%;
+      color: #f9d27c;
+      font-weight: 700;
+    }
+    .plan-guide-table tbody td:nth-child(2) {
+      background: rgba(255, 255, 255, 0.02);
+    }
+    .plan-guide-table tbody td:nth-child(3) {
+      background: rgba(255, 245, 164, 0.1);
+      color: #ffe898;
+    }
+    .plan-guide-table tbody td:nth-child(4) {
+      background: rgba(255, 216, 77, 0.12);
+      color: #ffe9a8;
+    }
+    .plan-guide-table tbody tr:last-child td {
+      border-bottom: none;
+    }
     #expandToolbarButton {
       display: none;
     }
@@ -1749,6 +1873,7 @@
       <button id="notamButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="NOTAM" title="NOTAM">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconNotam"></use></svg></span>
       </button>
+      <button id="planInfoButton" class="mini-button plan-info-button toolbar-collapse-hide" type="button" aria-label="요금제 안내" title="요금제 안내">요금제</button>
       <label class="toolbar-collapse-hide"><input id="grayToggle" type="checkbox">GRAY</label>
       <label id="numWrap" class="toolbar-collapse-hide"><input id="numToggle" type="checkbox">번호</label>
       <button id="collapseToolbarButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="은둔" title="은둔">
@@ -1923,6 +2048,44 @@
       </div>
     </div>
   </div>
+  <div id="planGuideModal" class="plan-guide-modal">
+    <div id="planGuideCard" class="plan-guide-card">
+      <div class="plan-guide-head">
+        <div>
+          <h3>DOO Extractor 요금제 안내</h3>
+          <p><span id="planGuideCurrentPlan" class="plan-guide-current">현재 플랜: FREE</span> · 기존 가입자 혜택 계정은 기존 기능 유지 / 새 이메일 재가입 시 신규 정책 적용</p>
+        </div>
+        <button id="planGuideCloseButton" class="mini-button" type="button">닫기</button>
+      </div>
+      <div class="plan-guide-table-wrap">
+        <table class="plan-guide-table">
+          <thead>
+            <tr>
+              <th>기능</th>
+              <th>무료</th>
+              <th>라이트</th>
+              <th>프로</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>월 요금</td><td>0원</td><td>3,900원</td><td>8,900원</td></tr>
+            <tr><td>월 KML 변환 횟수</td><td>5회</td><td>30회</td><td>무제한</td></tr>
+            <tr><td>1파일 최대용량</td><td>1MB</td><td>5MB</td><td>200MB</td></tr>
+            <tr><td>히스토리 보관</td><td>없음</td><td>30일 / 최대 10건</td><td>무기한 / 사실상 무제한</td></tr>
+            <tr><td>Viewer 설정 저장</td><td>없음</td><td>마지막 설정 저장</td><td>마지막 설정 저장</td></tr>
+            <tr><td>번호/텍스트/형광펜 편집</td><td>불가</td><td>가능 (색상·굵기 고정)</td><td>전체 사용 가능</td></tr>
+            <tr><td>측정 결과 객체화/편집</td><td>불가</td><td>가능 (선 색·굵기 고정)</td><td>전체 사용 가능</td></tr>
+            <tr><td>폰트/정렬 옵션</td><td>기본 폰트 1종</td><td>무제한</td><td>무제한</td></tr>
+            <tr><td>NOTAM</td><td>불러오기만</td><td>개별 조회 가능</td><td>개별 조회 가능</td></tr>
+            <tr><td>내보내기</td><td>클립보드</td><td>텍스트·엑셀</td><td>텍스트·엑셀</td></tr>
+            <tr><td>날씨</td><td>미지원</td><td>METAR/TAF</td><td>METAR/TAF + 위성영상</td></tr>
+            <tr><td>은둔/출현</td><td>불가</td><td>가능</td><td>가능</td></tr>
+            <tr><td>겹</td><td>MOA만</td><td>전체</td><td>전체</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
   <div id="notamInfoModal" class="notam-info-modal">
     <div id="notamInfoCard" class="notam-info-card">
       <div class="notam-info-head">
@@ -2005,6 +2168,19 @@
       collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
       notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
     };
+    function viewerPlanDisplayName(planCode) {
+      const normalized = String(planCode || '').trim().toLowerCase();
+      if (normalized === 'pro') {
+        return 'PRO';
+      }
+      if (normalized === 'lite') {
+        return 'LITE';
+      }
+      if (normalized === 'legacy') {
+        return 'LEGACY';
+      }
+      return 'FREE';
+    }
     const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     function normalizeLayerKey(value) {
       return String(value || '').trim().toLowerCase();
@@ -2113,6 +2289,7 @@
     const forceModeExistingButton = document.getElementById('forceModeExistingButton');
     const captureButton = document.getElementById('captureButton');
     const notamButton = document.getElementById('notamButton');
+    const planInfoButton = document.getElementById('planInfoButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
     const expandToolbarButton = document.getElementById('expandToolbarButton');
     const inlineTextFontWrap = document.getElementById('inlineTextFontWrap');
@@ -2155,6 +2332,10 @@
     const textTitleCheckbox = document.getElementById('textTitleCheckbox');
     const textInputCancelButton = document.getElementById('textInputCancelButton');
     const textInputSaveButton = document.getElementById('textInputSaveButton');
+    const planGuideModal = document.getElementById('planGuideModal');
+    const planGuideCard = document.getElementById('planGuideCard');
+    const planGuideCurrentPlan = document.getElementById('planGuideCurrentPlan');
+    const planGuideCloseButton = document.getElementById('planGuideCloseButton');
     const notamInfoModal = document.getElementById('notamInfoModal');
     const notamInfoCard = document.getElementById('notamInfoCard');
     const notamInfoTitle = document.getElementById('notamInfoTitle');
@@ -2170,6 +2351,9 @@
       if (payload.signup_url) {
         previewGateLink.href = payload.signup_url;
       }
+    }
+    if (planGuideCurrentPlan) {
+      planGuideCurrentPlan.textContent = `현재 플랜: ${viewerPlanDisplayName(viewerPlanCode)}`;
     }
     previewGateBackButton.addEventListener('click', () => {
       if (window.history.length > 1) {
@@ -3327,6 +3511,13 @@
       if (isVisible && notamInfoContent && notamInfoContent.scrollTo) {
         notamInfoContent.scrollTo(0, 0);
       }
+    }
+
+    function setPlanGuideModalVisible(visible) {
+      if (!planGuideModal) {
+        return;
+      }
+      planGuideModal.classList.toggle('is-visible', !!visible);
     }
 
     function openNotamInfoModal(items, titleText = 'NOTAM 상세') {
@@ -6768,7 +6959,7 @@
           if (!element) {
             return false;
           }
-          if (element.id === 'captureModal' || element.id === 'notamInfoModal') {
+          if (element.id === 'captureModal' || element.id === 'notamInfoModal' || element.id === 'planGuideModal') {
             return true;
           }
           if (element.classList && element.classList.contains('leaflet-control-container')) {
@@ -6794,6 +6985,10 @@
           const notamModal = doc.getElementById('notamInfoModal');
           if (notamModal) {
             notamModal.style.display = 'none';
+          }
+          const planModal = doc.getElementById('planGuideModal');
+          if (planModal) {
+            planModal.style.display = 'none';
           }
           if (doc.body) {
             doc.body.classList.add('capture-render');
@@ -7113,6 +7308,14 @@
       setWeatherPanelVisible(false);
       await toggleNotamOverlay();
     });
+    if (planInfoButton) {
+      planInfoButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
+        setPlanGuideModalVisible(true);
+      });
+    }
 
     layerPanel.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -7168,6 +7371,21 @@
     notamInfoCloseButton.addEventListener('click', () => {
       setNotamInfoModalVisible(false);
     });
+    if (planGuideCard) {
+      planGuideCard.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+    }
+    if (planGuideModal) {
+      planGuideModal.addEventListener('click', () => {
+        setPlanGuideModalVisible(false);
+      });
+    }
+    if (planGuideCloseButton) {
+      planGuideCloseButton.addEventListener('click', () => {
+        setPlanGuideModalVisible(false);
+      });
+    }
     textInputField.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
@@ -7354,6 +7572,10 @@
       }
       if (event.key === 'Escape' && notamInfoModal.classList.contains('is-visible')) {
         setNotamInfoModalVisible(false);
+        return;
+      }
+      if (event.key === 'Escape' && planGuideModal && planGuideModal.classList.contains('is-visible')) {
+        setPlanGuideModalVisible(false);
         return;
       }
       if (event.key === 'Escape' && captureModal.classList.contains('is-visible')) {

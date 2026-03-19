@@ -47,6 +47,22 @@ const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
+const PLAN_GUIDE_COLUMNS = ["무료", "라이트", "프로"] as const;
+const PLAN_GUIDE_ROWS: Array<{ item: string; free: string; lite: string; pro: string }> = [
+  { item: "월 요금", free: "0원", lite: "3,900원", pro: "8,900원" },
+  { item: "월 KML 변환 횟수", free: "5회", lite: "30회", pro: "무제한" },
+  { item: "1파일 최대용량", free: "1MB", lite: "5MB", pro: "200MB" },
+  { item: "히스토리 보관", free: "없음", lite: "30일 / 최대 10건", pro: "무기한 / 사실상 무제한" },
+  { item: "Viewer 설정 저장", free: "없음", lite: "마지막 설정 저장", pro: "마지막 설정 저장" },
+  { item: "번호/텍스트/형광펜 편집", free: "불가", lite: "가능 (색상·굵기 고정)", pro: "전체 사용 가능" },
+  { item: "측정 결과 객체화/편집", free: "불가", lite: "가능 (선 색·굵기 고정)", pro: "전체 사용 가능" },
+  { item: "폰트/정렬 옵션", free: "기본 폰트 1종", lite: "무제한", pro: "무제한" },
+  { item: "NOTAM", free: "불러오기만", lite: "개별 조회 가능", pro: "개별 조회 가능" },
+  { item: "내보내기", free: "클립보드", lite: "텍스트·엑셀", pro: "텍스트·엑셀" },
+  { item: "날씨", free: "미지원", lite: "METAR/TAF", pro: "METAR/TAF + 위성영상" },
+  { item: "은둔/출현", free: "불가", lite: "가능", pro: "가능" },
+  { item: "겹", free: "MOA만", lite: "전체", pro: "전체" },
+];
 
 function describeUnknownError(error: unknown, fallback: string): string {
   const isObjectObjectText = (value: string) => value.trim() === "[object Object]";
@@ -156,6 +172,7 @@ export function HomeScreen({
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingActionLoading, setBillingActionLoading] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [showPlanGuide, setShowPlanGuide] = useState(false);
 
   const isAuthenticated = Boolean(userId);
   const pathLabel = useMemo(() => response?.filename || "", [response]);
@@ -534,18 +551,12 @@ export function HomeScreen({
   }
 
   function openViewer() {
-    if (!response?.job_id) {
-      setStatusTone("error");
-      setStatusMessage("Load a KML file first.");
-      return;
-    }
-
-    const viewerPath = `${API_BASE_URL}/api/viewer/${response.job_id}`;
-    const viewerUrl = response.viewer_url || viewerPath;
+    const viewerPath = response?.job_id ? `${API_BASE_URL}/api/viewer/${response.job_id}` : `${API_BASE_URL}/api/viewer/default`;
+    const viewerUrl = response?.viewer_url || viewerPath;
 
     window.open(viewerUrl, "_blank", "noopener,noreferrer");
     setStatusTone("success");
-    setStatusMessage("Opened detailed web viewer.");
+    setStatusMessage(response?.job_id ? "도식화 Viewer를 열었습니다." : "기본 Viewer를 열었습니다.");
   }
 
   function downloadText() {
@@ -710,7 +721,6 @@ export function HomeScreen({
             </div>
 
             <div className="doo-sidebar-card">
-              <div className="doo-sidebar-badge">Desktop Style Web</div>
               <div className="doo-sidebar-image-wrap">
                 <a
                   href={DOOGPX_APPSTORE_URL}
@@ -731,6 +741,10 @@ export function HomeScreen({
             </div>
 
             <div className="doo-sidebar-footer">
+              <button type="button" className="doo-plan-guide-button" onClick={() => setShowPlanGuide(true)}>
+                요금제/기능 안내
+              </button>
+
               <div className="doo-sidebar-note">
                 <div className="doo-note-head">
                   <span className="doo-note-label">{isAuthenticated ? "로그인 계정" : "사용 상태"}</span>
@@ -772,7 +786,7 @@ export function HomeScreen({
                           <div className="doo-billing-buttons">
                             <button
                               type="button"
-                              className="doo-auth-button"
+                              className="doo-auth-button doo-plan-button-lite"
                               onClick={() => handleStartSubscription("lite")}
                               disabled={billingActionLoading}
                             >
@@ -780,7 +794,7 @@ export function HomeScreen({
                             </button>
                             <button
                               type="button"
-                              className="doo-auth-button"
+                              className="doo-auth-button doo-plan-button-pro"
                               onClick={() => handleStartSubscription("pro")}
                               disabled={billingActionLoading}
                             >
@@ -971,6 +985,45 @@ export function HomeScreen({
             </div>
             <button type="button" className="auth-modal-close" onClick={() => setShowUpdateNotice(false)}>
               확인
+            </button>
+          </section>
+        </div>
+      ) : null}
+
+      {showPlanGuide ? (
+        <div className="auth-modal-backdrop" onClick={() => setShowPlanGuide(false)}>
+          <section className="auth-modal-card doo-plan-modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="auth-modal-copy">
+              <span className="auth-badge">Pricing</span>
+              <h2>DOO Extractor 요금제 안내</h2>
+              <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다.</p>
+            </div>
+
+            <div className="doo-plan-table-wrap">
+              <table className="doo-plan-table">
+                <thead>
+                  <tr>
+                    <th>기능</th>
+                    {PLAN_GUIDE_COLUMNS.map((column) => (
+                      <th key={column}>{column}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {PLAN_GUIDE_ROWS.map((row) => (
+                    <tr key={row.item}>
+                      <td>{row.item}</td>
+                      <td>{row.free}</td>
+                      <td>{row.lite}</td>
+                      <td>{row.pro}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button type="button" className="auth-modal-close" onClick={() => setShowPlanGuide(false)}>
+              닫기
             </button>
           </section>
         </div>

@@ -468,17 +468,42 @@ def _load_job(job_id: str) -> dict:
     return data
 
 
-def _viewer_html(job_id: str, payload: dict) -> str:
+def _viewer_html_with_paths(payload: dict, viewer_state_path: str, layers_path: str) -> str:
     html = build_web_map_html(payload, str(MAP_TEMPLATE_PATH))
     replacements = {
         'src="/html2canvas.min.js"': 'src="/api/assets/html2canvas.min.js"',
         'src="/doogpx.png"': 'src="/api/assets/doogpx.png"',
-        "fetch('/viewer-state'": f"fetch('/api/viewer/{job_id}/viewer-state'",
-        "fetch('/layers.json'": f"fetch('/api/viewer/{job_id}/layers.json'",
+        "fetch('/viewer-state'": f"fetch('{viewer_state_path}'",
+        "fetch('/layers.json'": f"fetch('{layers_path}'",
     }
     for source, target in replacements.items():
         html = html.replace(source, target)
     return html
+
+
+def _viewer_html(job_id: str, payload: dict) -> str:
+    return _viewer_html_with_paths(
+        payload,
+        f"/api/viewer/{job_id}/viewer-state",
+        f"/api/viewer/{job_id}/layers.json",
+    )
+
+
+def _default_viewer_payload() -> dict[str, Any]:
+    layer_catalog = _build_map_layer_catalog()
+    return {
+        "project_name": "DOO Extractor Viewer",
+        "mode": "linestring",
+        "results": [],
+        "polygons": [],
+        "has_kml_num": False,
+        "default_force_num": False,
+        "default_show_num": False,
+        "has_layers": bool(layer_catalog),
+        "layer_catalog": layer_catalog,
+        "default_gray_map": False,
+        "meta_text": "KML 변환 없이도 Viewer를 열 수 있습니다.",
+    }
 
 
 def _download_filename(job: dict, suffix: str) -> str:
@@ -1691,6 +1716,40 @@ def get_viewer(job_id: str, request: Request):
         payload["signup_url"] = request.query_params.get("signup_url") or f"{_allowed_origins()[0]}/login?next=/"
 
     return HTMLResponse(_viewer_html(job_id, payload))
+
+
+@app.get("/api/viewer/default", response_class=HTMLResponse)
+def get_default_viewer(request: Request):
+    payload = _default_viewer_payload()
+    payload["viewer_billing"] = _viewer_billing_payload(_billing_status_for_user("", ""))
+
+    preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
+    if preview_gate:
+        payload["preview_gate"] = True
+        payload["signup_url"] = request.query_params.get("signup_url") or f"{_allowed_origins()[0]}/login?next=/"
+
+    return HTMLResponse(
+        _viewer_html_with_paths(
+            payload,
+            "/api/viewer-default/viewer-state",
+            "/api/viewer-default/layers.json",
+        )
+    )
+
+
+@app.get("/api/viewer-default/viewer-state")
+def get_default_viewer_state():
+    return JSONResponse({})
+
+
+@app.post("/api/viewer-default/viewer-state")
+async def save_default_viewer_state():
+    return {"ok": True, "saved": False, "reason": "default_viewer"}
+
+
+@app.get("/api/viewer-default/layers.json")
+def get_default_viewer_layers():
+    return JSONResponse(_load_map_layers())
 
 
 @app.get("/api/viewer/{job_id}/viewer-state")

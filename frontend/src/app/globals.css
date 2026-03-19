@@ -56,9 +56,9 @@ textarea {
   flex: 0 0 320px;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   min-height: 0;
-  padding: 12px 12px 28px;
+  padding: 10px 12px 18px;
   background: #0f1923;
   border-right: 1px solid #30363d;
   overflow-y: auto;
@@ -116,12 +116,11 @@ textarea {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: 14px;
-  margin-bottom: auto;
+  gap: 10px;
   border-radius: 24px;
   border: 1px solid rgba(121, 192, 255, 0.14);
   background: linear-gradient(180deg, rgba(20, 30, 42, 0.94) 0%, rgba(13, 21, 31, 0.98) 100%);
-  padding: 18px;
+  padding: 12px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
 }
 
@@ -220,8 +219,34 @@ textarea {
 .doo-sidebar-footer {
   display: flex;
   flex-direction: column;
-  gap: 18px;
-  padding-bottom: 62px;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+
+.doo-plan-guide-button {
+  border: 0;
+  border-radius: 12px;
+  background: #f2f5f8;
+  color: #111827;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-plan-guide-button:hover {
+  filter: brightness(1.02);
+  box-shadow:
+    0 0 0 1px rgba(17, 24, 39, 0.12) inset,
+    0 0 16px rgba(255, 224, 102, 0.26);
+}
+
+.doo-plan-guide-button:active {
+  transform: translateY(1px) scale(0.985);
 }
 
 .doo-billing-card {
@@ -229,10 +254,10 @@ textarea {
   flex-direction: column;
   gap: 10px;
   border-radius: 18px;
-  border: 1px solid rgba(121, 192, 255, 0.12);
-  background: rgba(18, 34, 48, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.14);
+  background: #ffffff;
   padding: 14px;
-  color: #c9d1d9;
+  color: #111827;
 }
 
 .doo-billing-head {
@@ -244,18 +269,18 @@ textarea {
 
 .doo-billing-head strong {
   font-size: 13px;
-  color: #e6edf3;
+  color: #111827;
 }
 
 .doo-billing-head span {
   font-size: 12px;
-  color: #9cc8f0;
+  color: #374151;
   text-transform: uppercase;
 }
 
 .doo-billing-meta {
   margin: 0;
-  color: #9fb3c8;
+  color: #374151;
   font-size: 12px;
 }
 
@@ -270,16 +295,16 @@ textarea {
 }
 
 .doo-billing-phone span {
-  color: #9fb3c8;
+  color: #374151;
   font-size: 12px;
 }
 
 .doo-billing-phone input {
   width: 100%;
-  border: 1px solid rgba(121, 192, 255, 0.2);
+  border: 1px solid rgba(15, 23, 42, 0.18);
   border-radius: 10px;
-  background: #0e1d2b;
-  color: #e6edf3;
+  background: #ffffff;
+  color: #111827;
   padding: 9px 10px;
   font-size: 13px;
 }
@@ -291,9 +316,19 @@ textarea {
 
 .doo-billing-help {
   margin: 0;
-  color: #8b949e;
+  color: #4b5563;
   font-size: 11px;
   line-height: 1.5;
+}
+
+.doo-plan-button-lite {
+  background: #fff6b5;
+  color: #3b2f00;
+}
+
+.doo-plan-button-pro {
+  background: #ffd84d;
+  color: #2d2200;
 }
 
 .doo-history-card {
@@ -422,7 +457,7 @@ textarea {
   background: #161b22;
   height: 100vh;
   overflow: hidden;
-  padding-bottom: 14px;
+  padding-bottom: 8px;
 }
 
 .doo-ad-rail {
@@ -1245,6 +1280,74 @@ textarea {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.doo-plan-modal-card {
+  width: min(96vw, 1020px);
+}
+
+.doo-plan-table-wrap {
+  max-height: 48vh;
+  overflow: auto;
+  border-radius: 14px;
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  background: rgba(12, 20, 30, 0.92);
+}
+
+.doo-plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 12px;
+  color: #d0d7de;
+}
+
+.doo-plan-table th,
+.doo-plan-table td {
+  border-bottom: 1px solid rgba(121, 192, 255, 0.12);
+  border-right: 1px solid rgba(121, 192, 255, 0.12);
+  padding: 8px 10px;
+  vertical-align: top;
+}
+
+.doo-plan-table th:last-child,
+.doo-plan-table td:last-child {
+  border-right: 0;
+}
+
+.doo-plan-table thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(22, 34, 48, 0.98);
+  color: #f7f9fb;
+  font-weight: 700;
+  z-index: 1;
+}
+
+.doo-plan-table td:first-child,
+.doo-plan-table th:first-child {
+  width: 25%;
+}
+
+.doo-plan-table tbody td:first-child {
+  color: #f9d27c;
+  font-weight: 700;
+}
+
+.doo-plan-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.doo-plan-table tbody td:nth-child(2) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.doo-plan-table tbody td:nth-child(3) {
+  background: rgba(255, 245, 164, 0.1);
+}
+
+.doo-plan-table tbody td:nth-child(4) {
+  background: rgba(255, 216, 77, 0.12);
 }
 
 .popup-admin-shell {
