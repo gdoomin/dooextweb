@@ -1015,11 +1015,17 @@
     }
     .layer-row {
       display: grid;
-      grid-template-columns: auto 1fr auto;
+      grid-template-columns: auto 1fr auto auto;
       gap: 10px;
       align-items: center;
       padding: 8px 6px;
       border-radius: 12px;
+    }
+    .layer-row.layer-row--locked {
+      opacity: 0.88;
+    }
+    .layer-row.layer-row--locked label {
+      color: #9fb2c8;
     }
     .layer-row.layer-row--sub {
       margin-left: 18px;
@@ -1054,6 +1060,23 @@
       padding: 0;
       background: transparent;
       cursor: pointer;
+    }
+    .layer-paid-button {
+      appearance: none;
+      border: 1px solid rgba(232, 174, 53, 0.52);
+      background: rgba(120, 82, 18, 0.24);
+      color: #ffcf74;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .layer-paid-button:hover {
+      border-color: rgba(255, 212, 128, 0.72);
+      background: rgba(168, 112, 20, 0.3);
     }
     .weather-help {
       margin: -4px 0 10px;
@@ -2489,6 +2512,7 @@
       weather: '현재 요금제에서 기상 기능을 사용할 수 없습니다.',
       collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
       notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
+      paidLayer: '이 겹 레이어는 유료 기능입니다.',
     };
     function viewerStateAccessTokenFromHash() {
       const rawHash = String(window.location.hash || '').replace(/^#/, '');
@@ -2537,7 +2561,7 @@
       return layerKey === 'moa';
     }
     const isPolygonMode = payload.mode === 'polygon';
-    const layerCatalog = rawLayerCatalog.filter((layer) => isLayerAllowedByPlan(layer));
+    const layerCatalog = rawLayerCatalog;
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'satellite', label: '위성영상', note: 'NASA GIBS True Color', badge: 'SAT' },
@@ -5936,6 +5960,14 @@
         if (typeof layerState.color === 'string' && /^#[0-9a-f]{6}$/i.test(layerState.color)) {
           controls.color.value = layerState.color;
         }
+        if (controls.allowed === false) {
+          controls.toggle.checked = false;
+          const bundle = layerBundles.get(layerState.key);
+          if (bundle) {
+            map.removeLayer(bundle.group);
+          }
+          continue;
+        }
         controls.toggle.checked = !!layerState.visible;
         if (controls.toggle.checked) {
           await syncLayer(layerState.key);
@@ -6473,6 +6505,7 @@
         const row = document.createElement('div');
         row.className = 'layer-row';
         row.dataset.layerKey = layer.key;
+        const allowed = isLayerAllowedByPlan(layer);
 
         const label = document.createElement('label');
         const toggle = document.createElement('input');
@@ -6493,9 +6526,27 @@
         color.type = 'color';
         color.value = layer.default_color || '#4466CC';
 
+        let paidButton = null;
+        if (!allowed) {
+          row.classList.add('layer-row--locked');
+          toggle.disabled = true;
+          color.disabled = true;
+          paidButton = document.createElement('button');
+          paidButton.type = 'button';
+          paidButton.className = 'layer-paid-button';
+          paidButton.textContent = '(유료기능)';
+          paidButton.addEventListener('click', () => {
+            notifyPlanRestriction(viewerRestrictionMessage.paidLayer);
+            setPlanGuideModalVisible(true);
+          });
+        }
+
         row.append(label, count, color);
+        if (paidButton) {
+          row.appendChild(paidButton);
+        }
         layerRows.appendChild(row);
-        layerControls.set(layer.key, { toggle, color });
+        layerControls.set(layer.key, { toggle, color, allowed, paidButton });
         if (layer.key === 'airport') {
           airportRow = row;
         }
@@ -6646,6 +6697,14 @@
     async function syncLayer(layerKey) {
       const controls = layerControls.get(layerKey);
       if (!controls) {
+        return;
+      }
+      if (controls.allowed === false) {
+        controls.toggle.checked = false;
+        const bundle = layerBundles.get(layerKey);
+        if (bundle) {
+          map.removeLayer(bundle.group);
+        }
         return;
       }
 
