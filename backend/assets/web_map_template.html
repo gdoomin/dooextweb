@@ -530,323 +530,308 @@
       justify-content: center;
       padding: 20px;
       box-sizing: border-box;
-      background: rgba(4, 10, 18, 0.72);
-      backdrop-filter: blur(8px);
     }
     .plan-guide-modal.is-visible {
       display: flex;
     }
-    .plan-guide-card {
-      --bg: #0a0c10;
-      --surface: #111418;
-      --border: #1e2530;
-      --border-glow: #2a3545;
-      --text-primary: #e8edf5;
-      --text-secondary: #8a99b0;
-      --text-muted: #4a5568;
-      --free-accent: #6b7a90;
-      --lite-accent: #3b9ede;
-      --lite-glow: rgba(59, 158, 222, 0.15);
-      --pro-accent: #f59e0b;
-      --pro-glow: rgba(245, 158, 11, 0.18);
-      width: min(96vw, 860px);
-      max-height: min(92vh, 980px);
+    .doo-pricing-backdrop {
+      background: rgba(5, 10, 18, 0.78);
+      backdrop-filter: blur(3px);
+    }
+    .doo-pricing-modal {
+      --panel-bg: #ecf0f6;
+      --surface: #ffffff;
+      --line: #d4dbe7;
+      --ink: #0f172a;
+      --muted: #5f6775;
+      --lite: #0ea5a6;
+      --pro: #d97706;
+      width: min(96vw, 1160px);
+      max-height: min(92vh, 960px);
       overflow: hidden;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--text-primary);
+      border-radius: 24px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      background: linear-gradient(180deg, #f4f7fb 0%, var(--panel-bg) 100%);
+      color: var(--ink);
       font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+      display: flex;
+      flex-direction: column;
       box-shadow:
-        0 40px 100px rgba(0, 0, 0, 0.6),
-        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-      animation: planGuideFadeUp 0.5s ease forwards;
+        0 28px 90px rgba(3, 10, 23, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.86);
+      animation: doo-pricing-fade-up 0.5s ease forwards;
     }
-    @keyframes planGuideFadeUp {
-      from { opacity: 0; transform: translateY(24px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes doo-pricing-fade-up {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
-    .plan-guide-header {
+    .doo-pricing-header {
       position: relative;
-      overflow: hidden;
-      padding: 36px 40px 28px;
-      border-bottom: 1px solid var(--border);
+      padding: 32px 34px 20px;
+      border-bottom: 1px solid rgba(15, 23, 42, 0.08);
     }
-    .plan-guide-header::before {
-      content: "PRICING";
+    .doo-pricing-header::before {
+      content: "";
       position: absolute;
-      top: 50%;
-      right: -10px;
-      transform: translateY(-50%);
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-weight: 800;
-      font-size: 100px;
-      color: rgba(255, 255, 255, 0.02);
-      letter-spacing: -4px;
+      inset: 0;
+      background:
+        radial-gradient(circle at 12% 18%, rgba(14, 165, 166, 0.12), transparent 40%),
+        radial-gradient(circle at 85% 18%, rgba(217, 119, 6, 0.16), transparent 42%);
       pointer-events: none;
-      user-select: none;
     }
-    .plan-guide-tag {
+    .doo-pricing-tag {
       display: inline-block;
-      background: rgba(59, 158, 222, 0.12);
-      border: 1px solid rgba(59, 158, 222, 0.3);
-      color: var(--lite-accent);
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 11px;
+      margin-bottom: 10px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(15, 23, 42, 0.14);
+      background: rgba(255, 255, 255, 0.85);
+      color: #0f172a;
+      font-size: 10px;
       font-weight: 700;
-      letter-spacing: 3px;
-      padding: 4px 12px;
-      border-radius: 4px;
-      margin-bottom: 16px;
-    }
-    .plan-guide-header h3 {
-      margin: 0;
-      color: var(--text-primary);
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 36px;
-      font-weight: 800;
-      letter-spacing: -1px;
-      line-height: 1.1;
-    }
-    .plan-guide-header h3 span {
-      color: var(--lite-accent);
-    }
-    .plan-guide-header p {
-      margin: 10px 0 0;
-      color: var(--text-secondary);
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    .plan-guide-plans {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 0;
-      padding: 28px 28px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .plan-guide-plan {
-      padding: 24px 20px;
-      border-radius: 14px;
-      text-align: center;
+      letter-spacing: 0.18em;
       position: relative;
-      transition: transform 0.2s ease;
+      z-index: 1;
     }
-    .plan-guide-plan:hover {
-      transform: translateY(-2px);
-    }
-    .plan-guide-plan-free {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid var(--border);
-    }
-    .plan-guide-plan-lite {
-      background: var(--lite-glow);
-      border: 1px solid rgba(59, 158, 222, 0.3);
-      box-shadow: 0 0 40px rgba(59, 158, 222, 0.08);
-    }
-    .plan-guide-plan-pro {
-      background: var(--pro-glow);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      box-shadow: 0 0 40px rgba(245, 158, 11, 0.08);
-    }
-    .plan-guide-badge {
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      padding: 3px 10px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-      display: inline-block;
-    }
-    .plan-guide-plan-free .plan-guide-badge {
-      background: rgba(255, 255, 255, 0.06);
-      color: var(--text-muted);
-    }
-    .plan-guide-plan-lite .plan-guide-badge {
-      background: rgba(59, 158, 222, 0.2);
-      color: var(--lite-accent);
-    }
-    .plan-guide-plan-pro .plan-guide-badge {
-      background: rgba(245, 158, 11, 0.2);
-      color: var(--pro-accent);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-    }
-    .plan-guide-name {
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 22px;
+    .doo-pricing-header h2 {
+      margin: 0;
+      color: var(--ink);
+      font-size: 34px;
       font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 6px;
+      letter-spacing: -0.02em;
+      line-height: 1.1;
+      position: relative;
+      z-index: 1;
     }
-    .plan-guide-plan-free .plan-guide-name {
-      color: var(--free-accent);
-    }
-    .plan-guide-plan-lite .plan-guide-name {
-      color: var(--lite-accent);
-    }
-    .plan-guide-plan-pro .plan-guide-name {
-      color: var(--pro-accent);
-    }
-    .plan-guide-price {
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 32px;
-      font-weight: 800;
-      line-height: 1;
-      margin-bottom: 2px;
-    }
-    .plan-guide-price span {
-      font-size: 16px;
-      font-weight: 400;
-    }
-    .plan-guide-plan-free .plan-guide-price {
-      color: var(--text-secondary);
-    }
-    .plan-guide-plan-lite .plan-guide-price {
-      color: #ffffff;
-    }
-    .plan-guide-plan-pro .plan-guide-price {
-      color: var(--pro-accent);
-    }
-    .plan-guide-period {
-      font-size: 12px;
-      color: var(--text-muted);
-      letter-spacing: 0.5px;
-    }
-    .plan-guide-table-wrap {
-      padding: 0 28px 28px;
-      overflow-x: auto;
-    }
-    .plan-guide-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    .plan-guide-category-row td {
-      padding: 18px 16px 6px;
-      font-family: "Syne", "Noto Sans KR", sans-serif;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2.5px;
-      color: var(--text-muted);
-      border-bottom: 1px solid var(--border);
-    }
-    .plan-guide-data-row {
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      transition: background 0.15s;
-    }
-    .plan-guide-data-row:hover {
-      background: rgba(255, 255, 255, 0.02);
-    }
-    .plan-guide-table td {
-      padding: 14px 16px;
-      vertical-align: middle;
-    }
-    .plan-guide-feat-label {
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--text-primary);
-      width: 30%;
-    }
-    .plan-guide-val-free,
-    .plan-guide-val-lite,
-    .plan-guide-val-pro {
-      text-align: center;
+    .doo-pricing-header p {
+      margin: 10px 0 0;
+      color: var(--muted);
       font-size: 14px;
-      font-weight: 400;
-      width: 23.3%;
+      line-height: 1.65;
+      position: relative;
+      z-index: 1;
     }
-    .plan-guide-val-free {
-      color: var(--text-secondary);
+    .doo-pricing-scroll {
+      padding: 16px 20px 12px;
+      overflow: auto;
     }
-    .plan-guide-val-lite {
-      color: #a8d8f5;
+    .doo-pricing-columns {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
     }
-    .plan-guide-val-pro {
-      color: #fcd68a;
+    .doo-pricing-column {
+      min-height: 100%;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: var(--surface);
+      padding: 18px 16px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 16px 26px rgba(15, 23, 42, 0.07);
     }
-    .plan-guide-no {
-      color: var(--text-muted);
-      font-size: 18px;
+    .doo-pricing-column-free {
+      border-top: 4px solid #a4adbb;
     }
-    .plan-guide-yes {
-      color: var(--pro-accent);
-      font-size: 18px;
+    .doo-pricing-column-lite {
+      border-top: 4px solid var(--lite);
     }
-    .plan-guide-sub-note {
-      display: block;
+    .doo-pricing-column-pro {
+      border-top: 4px solid var(--pro);
+    }
+    .doo-pricing-column-head h3 {
+      margin: 8px 0 4px;
+      color: var(--ink);
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+    .doo-pricing-column-head p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .doo-pricing-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      height: 28px;
+      padding: 0 10px;
+      border-radius: 999px;
       font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      border: 1px solid rgba(15, 23, 42, 0.1);
+      background: #f4f6fa;
+      color: #465066;
     }
-    .plan-guide-highlight-lite {
-      color: var(--lite-accent) !important;
-      font-weight: 700;
+    .doo-pricing-column-lite .doo-pricing-chip {
+      background: rgba(14, 165, 166, 0.12);
+      color: #0f766e;
+      border-color: rgba(14, 165, 166, 0.24);
     }
-    .plan-guide-highlight-pro {
-      color: var(--pro-accent) !important;
-      font-weight: 700;
+    .doo-pricing-column-pro .doo-pricing-chip {
+      background: rgba(217, 119, 6, 0.12);
+      color: #b45309;
+      border-color: rgba(217, 119, 6, 0.24);
     }
-    .plan-guide-footer {
-      padding: 20px 28px 24px;
+    .doo-pricing-rate {
+      min-height: 56px;
+      border-radius: 14px;
+      border: 1px solid #d5dce8;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid var(--border);
-      gap: 12px;
+      gap: 10px;
+      padding: 0 14px;
+      font-size: 14px;
     }
-    .plan-guide-footer-note {
+    .doo-pricing-rate span {
+      color: #5e6777;
+      font-weight: 700;
+    }
+    .doo-pricing-rate strong {
+      color: #111827;
+      font-size: 30px;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+    }
+    .doo-pricing-rate-free {
+      background: linear-gradient(180deg, #f8f9fc 0%, #eef2f8 100%);
+    }
+    .doo-pricing-rate-lite {
+      border-color: rgba(14, 165, 166, 0.32);
+      background: linear-gradient(180deg, rgba(14, 165, 166, 0.08) 0%, rgba(14, 165, 166, 0.02) 100%);
+    }
+    .doo-pricing-rate-pro {
+      border-color: rgba(217, 119, 6, 0.34);
+      background: linear-gradient(180deg, rgba(217, 119, 6, 0.11) 0%, rgba(217, 119, 6, 0.03) 100%);
+    }
+    .doo-pricing-group {
+      display: grid;
+      gap: 8px;
+    }
+    .doo-pricing-group h4 {
       margin: 0;
-      font-size: 12px;
-      color: var(--text-muted);
+      color: #111827;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .doo-pricing-list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: grid;
+      gap: 7px;
+    }
+    .doo-pricing-list li {
+      position: relative;
+      padding-left: 18px;
+      color: #1f2937;
+      font-size: 14px;
+      font-weight: 600;
       line-height: 1.5;
     }
-    .plan-guide-close {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--border-glow);
-      color: var(--text-secondary);
-      font-family: "Noto Sans KR", sans-serif;
-      font-size: 14px;
-      font-weight: 500;
-      padding: 10px 28px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.2s;
-      white-space: nowrap;
+    .doo-pricing-list li::before {
+      content: "v";
+      position: absolute;
+      left: 0;
+      top: 0;
+      color: #9ca3af;
+      font-weight: 800;
+    }
+    .doo-pricing-column-lite .doo-pricing-list li::before {
+      color: #0ea5a6;
+    }
+    .doo-pricing-column-pro .doo-pricing-list li::before {
+      color: #d97706;
+    }
+    .doo-pricing-list li.is-off {
+      color: #8b95a5;
+    }
+    .doo-pricing-list li.is-off::before {
+      content: "-";
+      color: #c36a6a;
+    }
+    .doo-pricing-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 20px 20px;
+      border-top: 1px solid rgba(15, 23, 42, 0.09);
+      background: rgba(245, 247, 251, 0.92);
+    }
+    .doo-pricing-footer-note {
+      margin: 0;
+      color: #687284;
+      font-size: 12px;
+      line-height: 1.5;
+    }
+    .doo-pricing-close {
       flex-shrink: 0;
+      white-space: nowrap;
+      min-width: 116px;
+      height: 42px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      background: linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+      color: #111827;
+      padding: 0 24px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.12s ease, filter 0.18s ease, box-shadow 0.18s ease;
     }
-    .plan-guide-close:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: var(--text-primary);
+    .doo-pricing-close:hover {
+      filter: brightness(1.02);
+      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     }
-    @media (max-width: 600px) {
-      .plan-guide-header {
-        padding: 24px 20px 20px;
+    @media (max-width: 1100px) {
+      .doo-pricing-columns {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
       }
-      .plan-guide-header h3 {
+    }
+    @media (max-width: 760px) {
+      .doo-pricing-header {
+        padding: 22px 20px 16px;
+      }
+      .doo-pricing-header h2 {
+        font-size: 28px;
+      }
+      .doo-pricing-scroll {
+        padding: 14px 14px 10px;
+      }
+      .doo-pricing-columns {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .doo-pricing-column {
+        padding: 16px 14px 14px;
+      }
+      .doo-pricing-column-head h3 {
+        font-size: 32px;
+      }
+      .doo-pricing-rate strong {
         font-size: 26px;
       }
-      .plan-guide-plans {
-        padding: 20px 16px 0;
-        gap: 8px;
-      }
-      .plan-guide-price {
-        font-size: 24px;
-      }
-      .plan-guide-table-wrap {
-        padding: 0 16px 20px;
-      }
-      .plan-guide-feat-label {
-        font-size: 13px;
-      }
-      .plan-guide-val-free,
-      .plan-guide-val-lite,
-      .plan-guide-val-pro {
-        font-size: 12px;
-      }
-      .plan-guide-footer {
+      .doo-pricing-footer {
         flex-direction: column;
         align-items: flex-start;
-        padding: 16px;
+        padding: 14px 14px 16px;
+      }
+      .doo-pricing-close {
+        width: 100%;
       }
     }
     #expandToolbarButton {
@@ -2308,119 +2293,125 @@
       </div>
     </div>
   </div>
-  <div id="planGuideModal" class="plan-guide-modal">
-    <div id="planGuideCard" class="plan-guide-card">
-      <div class="plan-guide-header">
-        <div class="plan-guide-tag">PRICING</div>
-        <h3>DOO <span>Extractor</span> 요금제</h3>
+  <div id="planGuideModal" class="plan-guide-modal doo-pricing-backdrop">
+    <section id="planGuideCard" class="doo-pricing-modal">
+      <div class="doo-pricing-header">
+        <div class="doo-pricing-tag">PLAN GUIDE</div>
+        <h2>DOO Extractor 요금제</h2>
         <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다.</p>
       </div>
-      <div class="plan-guide-plans">
-        <div class="plan-guide-plan plan-guide-plan-free">
-          <div class="plan-guide-badge">FREE</div>
-          <div class="plan-guide-name">무료</div>
-          <div class="plan-guide-price">0<span>원</span></div>
-          <div class="plan-guide-period">/ 월</div>
-        </div>
-        <div class="plan-guide-plan plan-guide-plan-lite">
-          <div class="plan-guide-badge">LITE</div>
-          <div class="plan-guide-name">라이트</div>
-          <div class="plan-guide-price">3,900<span>원</span></div>
-          <div class="plan-guide-period">/ 월</div>
-        </div>
-        <div class="plan-guide-plan plan-guide-plan-pro">
-          <div class="plan-guide-badge">★ PRO</div>
-          <div class="plan-guide-name">프로</div>
-          <div class="plan-guide-price">8,900<span>원</span></div>
-          <div class="plan-guide-period">/ 월</div>
+
+      <div class="doo-pricing-scroll">
+        <div class="doo-pricing-columns">
+          <article class="doo-pricing-column doo-pricing-column-free">
+            <div class="doo-pricing-column-head">
+              <span class="doo-pricing-chip">FREE</span>
+              <h3>무료</h3>
+              <p>필수 기능만 빠르게 체험</p>
+            </div>
+            <div class="doo-pricing-rate doo-pricing-rate-free">
+              <span>월간</span>
+              <strong>0원</strong>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>기본 사용량</h4>
+              <ul class="doo-pricing-list">
+                <li>월 KML 변환 5회</li>
+                <li>1파일 최대 1MB</li>
+                <li class="is-off">히스토리 보관 없음</li>
+                <li class="is-off">Viewer 설정 저장 없음</li>
+              </ul>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>기능 제한</h4>
+              <ul class="doo-pricing-list">
+                <li class="is-off">번호/텍스트/형광펜 편집 불가</li>
+                <li class="is-off">측정 결과 객체화/편집 불가</li>
+                <li>폰트 기본 1종</li>
+                <li>NOTAM 불러오기만</li>
+                <li>내보내기 클립보드</li>
+                <li class="is-off">날씨(METAR/TAF, 위성영상) 미지원</li>
+                <li class="is-off">은둔/출현 불가</li>
+                <li>겹 기능 MOA만</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="doo-pricing-column doo-pricing-column-lite">
+            <div class="doo-pricing-column-head">
+              <span class="doo-pricing-chip">LITE</span>
+              <h3>라이트</h3>
+              <p>자주 쓰는 기능 중심 실속 플랜</p>
+            </div>
+            <div class="doo-pricing-rate doo-pricing-rate-lite">
+              <span>월간</span>
+              <strong>3,900원</strong>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>기본 사용량</h4>
+              <ul class="doo-pricing-list">
+                <li>월 KML 변환 30회</li>
+                <li>1파일 최대 5MB</li>
+                <li>히스토리 30일 / 최대 10건</li>
+                <li>Viewer 마지막 설정 저장</li>
+              </ul>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>주요 기능</h4>
+              <ul class="doo-pricing-list">
+                <li>번호/텍스트/형광펜 편집(색상·굵기 고정)</li>
+                <li>측정 결과 객체화/편집(선 색·굵기 고정)</li>
+                <li>폰트/정렬 옵션 무제한</li>
+                <li>NOTAM 개별 조회 가능</li>
+                <li>내보내기 텍스트/엑셀</li>
+                <li>날씨 METAR/TAF</li>
+                <li>은둔/출현 가능</li>
+                <li>겹 기능 전체</li>
+              </ul>
+            </div>
+          </article>
+
+          <article class="doo-pricing-column doo-pricing-column-pro">
+            <div class="doo-pricing-column-head">
+              <span class="doo-pricing-chip">PRO</span>
+              <h3>프로</h3>
+              <p>대용량과 전체 편집을 위한 플랜</p>
+            </div>
+            <div class="doo-pricing-rate doo-pricing-rate-pro">
+              <span>월간</span>
+              <strong>8,900원</strong>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>기본 사용량</h4>
+              <ul class="doo-pricing-list">
+                <li>월 KML 변환 무제한</li>
+                <li>1파일 최대 200MB</li>
+                <li>히스토리 무기한 / 사실상 무제한</li>
+                <li>Viewer 마지막 설정 저장</li>
+              </ul>
+            </div>
+            <div class="doo-pricing-group">
+              <h4>주요 기능</h4>
+              <ul class="doo-pricing-list">
+                <li>번호/텍스트/형광펜 전체 편집 기능</li>
+                <li>측정 결과 객체화/편집 전체 기능</li>
+                <li>폰트/정렬 옵션 무제한</li>
+                <li>NOTAM 개별 조회 가능</li>
+                <li>내보내기 텍스트/엑셀</li>
+                <li>날씨 METAR/TAF + 위성영상</li>
+                <li>은둔/출현 가능</li>
+                <li>겹 기능 전체</li>
+              </ul>
+            </div>
+          </article>
         </div>
       </div>
-      <div class="plan-guide-table-wrap">
-        <table class="plan-guide-table">
-          <tbody>
-            <tr class="plan-guide-category-row"><td colspan="4">기본 사용량</td></tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">월 KML 변환 횟수</td>
-              <td class="plan-guide-val-free">5회</td>
-              <td class="plan-guide-val-lite"><span class="plan-guide-highlight-lite">30회</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무제한</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">1파일 최대용량</td>
-              <td class="plan-guide-val-free">1MB</td>
-              <td class="plan-guide-val-lite">5MB</td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">200MB</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">히스토리 보관</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">—</span></td>
-              <td class="plan-guide-val-lite">30일<span class="plan-guide-sub-note">최대 10건</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무기한</span><span class="plan-guide-sub-note">사실상 무제한</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">Viewer 설정 저장</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">—</span></td>
-              <td class="plan-guide-val-lite">마지막 설정 저장</td>
-              <td class="plan-guide-val-pro">마지막 설정 저장</td>
-            </tr>
-            <tr class="plan-guide-category-row"><td colspan="4">편집 기능</td></tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">번호 / 텍스트 / 형광펜 편집</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
-              <td class="plan-guide-val-lite">가능<span class="plan-guide-sub-note">색상·굵기 고정</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체 사용 가능</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">측정 결과 객체화 / 편집</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
-              <td class="plan-guide-val-lite">가능<span class="plan-guide-sub-note">선 색·굵기 고정</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체 사용 가능</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">폰트 / 정렬 옵션</td>
-              <td class="plan-guide-val-free">기본 폰트 1종</td>
-              <td class="plan-guide-val-lite"><span class="plan-guide-highlight-lite">무제한</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무제한</span></td>
-            </tr>
-            <tr class="plan-guide-category-row"><td colspan="4">고급 기능</td></tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">NOTAM</td>
-              <td class="plan-guide-val-free">불러오기만</td>
-              <td class="plan-guide-val-lite">개별 조회 가능</td>
-              <td class="plan-guide-val-pro">개별 조회 가능</td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">내보내기</td>
-              <td class="plan-guide-val-free">클립보드</td>
-              <td class="plan-guide-val-lite">텍스트·엑셀</td>
-              <td class="plan-guide-val-pro">텍스트·엑셀</td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">날씨</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">미지원</span></td>
-              <td class="plan-guide-val-lite">METAR / TAF</td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">METAR/TAF</span><span class="plan-guide-sub-note">+ 위성영상</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">은둔 / 출현</td>
-              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
-              <td class="plan-guide-val-lite"><span class="plan-guide-yes">✓</span></td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-yes">✓</span></td>
-            </tr>
-            <tr class="plan-guide-data-row">
-              <td class="plan-guide-feat-label">겹 MOA</td>
-              <td class="plan-guide-val-free">만</td>
-              <td class="plan-guide-val-lite">전체</td>
-              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체</span></td>
-            </tr>
-          </tbody>
-        </table>
+
+      <div class="doo-pricing-footer">
+        <p class="doo-pricing-footer-note">※ 요금제는 월 단위 자동 갱신되며, 언제든지 변경·해지 가능합니다.</p>
+        <button id="planGuideCloseButton" class="doo-pricing-close" type="button">닫기</button>
       </div>
-      <div class="plan-guide-footer">
-        <p class="plan-guide-footer-note">※ 요금제는 월 단위 자동 갱신되며, 언제든지 변경·해지 가능합니다.</p>
-        <button id="planGuideCloseButton" class="plan-guide-close" type="button">닫기</button>
-      </div>
-    </div>
+    </section>
   </div>
   <div id="notamInfoModal" class="notam-info-modal">
     <div id="notamInfoCard" class="notam-info-card">
