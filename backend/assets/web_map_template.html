@@ -1147,6 +1147,27 @@
       min-width: 68px;
       text-align: center;
     }
+    .satellite-time-control {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      z-index: 1150;
+      pointer-events: none;
+      margin: 0 !important;
+      padding: 5px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      background: rgba(0, 0, 0, 0.52);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 600;
+      line-height: 1.2;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+      display: none;
+    }
     .weather-wind-pin {
       display: flex;
       flex-direction: column;
@@ -2572,7 +2593,7 @@
     const layerCatalog = rawLayerCatalog;
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
-      { key: 'satellite', label: '위성영상', note: 'NASA GIBS True Color', badge: 'SAT' },
+      { key: 'satellite', label: '위성영상', note: '천리안2A 실시간(가시/적외 자동)', badge: 'SAT' },
     ];
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -2764,6 +2785,9 @@
     let weatherRefreshTimer = null;
     let weatherRefreshToken = 0;
     let notamRefreshTimer = null;
+    let satelliteRefreshTimer = null;
+    let satelliteTimeControl = null;
+    let satelliteTimeControlElement = null;
 
     const measureState = {
       active: false,
@@ -3980,6 +4004,213 @@
         crossOrigin: true,
         attribution: options.attribution || '',
       });
+    }
+
+    function floorUtcToEvenMinute(date) {
+      const year = date.getUTCFullYear();
+      const month = date.getUTCMonth();
+      const day = date.getUTCDate();
+      const hour = date.getUTCHours();
+      const minute = date.getUTCMinutes();
+      const roundedMinute = minute - (minute % 2);
+      return new Date(Date.UTC(year, month, day, hour, roundedMinute, 0, 0));
+    }
+
+    function parseSatelliteBounds(rawBounds) {
+      const fallback = [[15.0, 75.0], [60.0, 145.0]];
+      if (!Array.isArray(rawBounds) || rawBounds.length !== 2) {
+        return fallback;
+      }
+      const southWest = rawBounds[0];
+      const northEast = rawBounds[1];
+      if (!Array.isArray(southWest) || !Array.isArray(northEast) || southWest.length < 2 || northEast.length < 2) {
+        return fallback;
+      }
+      const south = Number(southWest[0]);
+      const west = Number(southWest[1]);
+      const north = Number(northEast[0]);
+      const east = Number(northEast[1]);
+      if (!Number.isFinite(south) || !Number.isFinite(west) || !Number.isFinite(north) || !Number.isFinite(east)) {
+        return fallback;
+      }
+      return [[south, west], [north, east]];
+    }
+
+    function formatKstTimestamp(utcDate) {
+      const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+      const year = kstDate.getUTCFullYear();
+      const month = String(kstDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(kstDate.getUTCDate()).padStart(2, '0');
+      const hour = String(kstDate.getUTCHours()).padStart(2, '0');
+      const minute = String(kstDate.getUTCMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hour}:${minute}`;
+    }
+
+    function getDayOfYearKst(utcDate) {
+      const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+      const year = kstDate.getUTCFullYear();
+      const start = Date.UTC(year, 0, 1);
+      const current = Date.UTC(year, kstDate.getUTCMonth(), kstDate.getUTCDate());
+      return Math.floor((current - start) / 86400000) + 1;
+    }
+
+    function isDaylightOverKorea(utcDate, bounds) {
+      const parsedBounds = parseSatelliteBounds(bounds);
+      const centerLat = (parsedBounds[0][0] + parsedBounds[1][0]) / 2;
+      const centerLng = (parsedBounds[0][1] + parsedBounds[1][1]) / 2;
+      const latitudeRad = centerLat * Math.PI / 180;
+      const dayOfYear = getDayOfYearKst(utcDate);
+      const declinationRad = (23.44 * Math.PI / 180) * Math.sin((2 * Math.PI / 365) * (dayOfYear - 81));
+      const b = (2 * Math.PI * (dayOfYear - 81)) / 364;
+      const equationOfTime = (9.87 * Math.sin(2 * b)) - (7.53 * Math.cos(b)) - (1.5 * Math.sin(b));
+      const sunriseZenith = 90.833 * Math.PI / 180;
+      const cosHourAngle = (Math.cos(sunriseZenith) / (Math.cos(latitudeRad) * Math.cos(declinationRad))) - (Math.tan(latitudeRad) * Math.tan(declinationRad));
+      if (cosHourAngle <= -1) {
+        return true;
+      }
+      if (cosHourAngle >= 1) {
+        return false;
+      }
+      const hourAngleDeg = Math.acos(cosHourAngle) * 180 / Math.PI;
+      const solarNoonMinutes = 720 - (4 * centerLng) - equationOfTime + (9 * 60);
+      const sunriseMinutes = solarNoonMinutes - (4 * hourAngleDeg);
+      const sunsetMinutes = solarNoonMinutes + (4 * hourAngleDeg);
+
+      const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
+      const nowMinutes = (kstDate.getUTCHours() * 60) + kstDate.getUTCMinutes();
+      return nowMinutes >= sunriseMinutes && nowMinutes < sunsetMinutes;
+    }
+
+    function buildGk2aImageUrl(channel, utcDate, baseUrl) {
+      const normalizedChannel = String(channel || 'ir105').trim().toLowerCase();
+      const root = String(baseUrl || 'https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko').replace(/\/+$/, '');
+      const year = utcDate.getUTCFullYear();
+      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getUTCDate()).padStart(2, '0');
+      const hour = String(utcDate.getUTCHours()).padStart(2, '0');
+      const minute = String(utcDate.getUTCMinutes()).padStart(2, '0');
+      const yyyymmdd = `${year}${month}${day}`;
+      const hhmm = `${hour}${minute}`;
+      return `${root}/${normalizedChannel}/${yyyymmdd}/${hhmm}/gk2a_ami_le1b_${normalizedChannel}_ko_${yyyymmdd}${hhmm}.srv.png`;
+    }
+
+    function probeImageUrl(url, timeoutMs = 12000) {
+      return new Promise((resolve) => {
+        let done = false;
+        const image = new Image();
+        const finish = (ok) => {
+          if (done) {
+            return;
+          }
+          done = true;
+          window.clearTimeout(timer);
+          image.onload = null;
+          image.onerror = null;
+          resolve(ok);
+        };
+        const timer = window.setTimeout(() => finish(false), timeoutMs);
+        image.onload = () => finish(true);
+        image.onerror = () => finish(false);
+        image.src = url;
+      });
+    }
+
+    function ensureSatelliteTimeControl() {
+      if (satelliteTimeControlElement) {
+        return satelliteTimeControlElement;
+      }
+      satelliteTimeControl = L.control({ position: 'bottomleft' });
+      satelliteTimeControl.onAdd = () => {
+        const element = L.DomUtil.create('div', 'satellite-time-control');
+        element.setAttribute('aria-live', 'polite');
+        return element;
+      };
+      satelliteTimeControl.addTo(map);
+      satelliteTimeControlElement = satelliteTimeControl.getContainer ? satelliteTimeControl.getContainer() : null;
+      if (satelliteTimeControlElement) {
+        map.getContainer().appendChild(satelliteTimeControlElement);
+      }
+      return satelliteTimeControlElement;
+    }
+
+    function setSatelliteTimeLabel(utcDate, channel) {
+      const element = ensureSatelliteTimeControl();
+      if (!element || !(utcDate instanceof Date) || Number.isNaN(utcDate.getTime())) {
+        return;
+      }
+      const channelLabel = String(channel || 'ir105').trim().toLowerCase();
+      element.textContent = `🛰️ 천리안2A  ${formatKstTimestamp(utcDate)} KST (${channelLabel})`;
+      element.style.display = '';
+    }
+
+    function hideSatelliteTimeLabel() {
+      if (satelliteTimeControlElement) {
+        satelliteTimeControlElement.style.display = 'none';
+      }
+    }
+
+    function stopSatelliteRefreshTimer() {
+      if (satelliteRefreshTimer) {
+        window.clearInterval(satelliteRefreshTimer);
+        satelliteRefreshTimer = null;
+      }
+    }
+
+    async function refreshGk2aSatelliteOverlay(layerConfig, paneName, key = 'satellite') {
+      const config = layerConfig && typeof layerConfig === 'object' ? layerConfig : {};
+      const bounds = parseSatelliteBounds(config.bounds);
+      const baseUrl = String(config.base_url || 'https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko').trim();
+      const delayMinutesRaw = Number(config.delay_minutes);
+      const delayMinutes = Number.isFinite(delayMinutesRaw) ? clamp(delayMinutesRaw, 0, 30) : 4;
+      const opacityRaw = Number(config.opacity);
+      const opacity = Number.isFinite(opacityRaw) ? clamp(opacityRaw, 0.05, 1) : 0.75;
+      const dayChannel = String(config.day_channel || 'vi006').trim().toLowerCase();
+      const nightChannel = String(config.night_channel || 'ir105').trim().toLowerCase();
+
+      const captureUtc = floorUtcToEvenMinute(new Date(Date.now() - (delayMinutes * 60 * 1000)));
+      const preferredChannel = isDaylightOverKorea(captureUtc, bounds) ? dayChannel : nightChannel;
+      const candidateChannels = [preferredChannel, nightChannel].filter((item, index, array) => item && array.indexOf(item) === index);
+
+      let selectedChannel = '';
+      let selectedUrl = '';
+      for (const candidate of candidateChannels) {
+        const candidateUrl = buildGk2aImageUrl(candidate, captureUtc, baseUrl);
+        const ok = await probeImageUrl(candidateUrl);
+        if (!ok) {
+          continue;
+        }
+        selectedChannel = candidate;
+        selectedUrl = candidateUrl;
+        break;
+      }
+      if (!selectedUrl) {
+        throw new Error('gk2a image unavailable');
+      }
+
+      const overlayOptions = {
+        pane: paneName,
+        opacity,
+        interactive: false,
+        attribution: String(config.attribution || ''),
+      };
+      if (!weatherTiles[key]) {
+        weatherTiles[key] = L.imageOverlay(selectedUrl, bounds, overlayOptions);
+      } else if (typeof weatherTiles[key].setUrl === 'function') {
+        weatherTiles[key].setUrl(selectedUrl);
+      } else {
+        map.removeLayer(weatherTiles[key]);
+        weatherTiles[key] = L.imageOverlay(selectedUrl, bounds, overlayOptions);
+      }
+      if (typeof weatherTiles[key].setOpacity === 'function') {
+        weatherTiles[key].setOpacity(opacity);
+      }
+      if (!map.hasLayer(weatherTiles[key])) {
+        weatherTiles[key].addTo(map);
+      }
+
+      setSatelliteTimeLabel(captureUtc, selectedChannel);
+      setWeatherBadge(key, selectedChannel.toUpperCase(), 'live');
+      return { captureUtc, channel: selectedChannel };
     }
 
     function aviationColor(props) {
@@ -6940,18 +7171,14 @@
         if (!weatherTiles[key]) {
           weatherTiles[key] = weatherTileLayer(layerConfig.tile_url, {
             pane: paneName,
-            opacity: key === 'satellite' ? 1 : (layerConfig.opacity || 0.6),
+            opacity: layerConfig.opacity || 0.6,
             attribution: layerConfig.attribution || '',
             maxZoom: layerConfig.max_zoom || 12,
           });
         } else if (typeof weatherTiles[key].setUrl === 'function') {
           weatherTiles[key].setUrl(layerConfig.tile_url);
-          if (typeof weatherTiles[key].setOpacity === 'function') {
-            if (key === 'satellite') {
-              weatherTiles[key].setOpacity(1);
-            } else if (Number.isFinite(layerConfig.opacity)) {
-              weatherTiles[key].setOpacity(layerConfig.opacity);
-            }
+          if (typeof weatherTiles[key].setOpacity === 'function' && Number.isFinite(layerConfig.opacity)) {
+            weatherTiles[key].setOpacity(layerConfig.opacity);
           }
         }
         if (!map.hasLayer(weatherTiles[key])) {
@@ -6972,6 +7199,70 @@
       }
     }
 
+    async function syncGk2aSatelliteLayer(key, configKey, paneName) {
+      const controls = weatherControls.get(key);
+      if (!controls) {
+        return;
+      }
+
+      if (!controls.toggle.checked) {
+        stopSatelliteRefreshTimer();
+        hideSatelliteTimeLabel();
+        if (weatherTiles[key]) {
+          map.removeLayer(weatherTiles[key]);
+        }
+        resetWeatherBadge(key);
+        syncBaseMapForSatelliteMode();
+        return;
+      }
+
+      setWeatherBadge(key, '로딩', 'loading');
+      try {
+        weatherButton.disabled = true;
+        const config = await ensureWeatherConfig();
+        if (!controls.toggle.checked) {
+          return;
+        }
+        const layerConfig = config && config[configKey] ? config[configKey] : {};
+        await refreshGk2aSatelliteOverlay(layerConfig, paneName, key);
+        syncBaseMapForSatelliteMode();
+
+        const refreshSecondsRaw = Number(layerConfig && layerConfig.refresh_seconds);
+        const refreshMs = Number.isFinite(refreshSecondsRaw) && refreshSecondsRaw >= 30
+          ? Math.round(refreshSecondsRaw * 1000)
+          : 120000;
+        stopSatelliteRefreshTimer();
+        satelliteRefreshTimer = window.setInterval(async () => {
+          const liveControls = weatherControls.get(key);
+          if (!liveControls || !liveControls.toggle.checked) {
+            return;
+          }
+          try {
+            const liveConfig = await ensureWeatherConfig();
+            const liveLayerConfig = liveConfig && liveConfig[configKey] ? liveConfig[configKey] : {};
+            await refreshGk2aSatelliteOverlay(liveLayerConfig, paneName, key);
+            syncBaseMapForSatelliteMode();
+          } catch (error) {
+            if (liveControls.toggle.checked) {
+              setWeatherBadge(key, '오류', 'error');
+            }
+          }
+        }, refreshMs);
+      } catch (error) {
+        controls.toggle.checked = false;
+        stopSatelliteRefreshTimer();
+        hideSatelliteTimeLabel();
+        if (weatherTiles[key]) {
+          map.removeLayer(weatherTiles[key]);
+        }
+        syncBaseMapForSatelliteMode();
+        setWeatherBadge(key, '오류', 'error');
+        throw error;
+      } finally {
+        weatherButton.disabled = false;
+      }
+    }
+
     async function syncWeatherLayer(layerKey) {
       if (!weatherControls.has(layerKey)) {
         return;
@@ -6979,8 +7270,12 @@
       const controls = weatherControls.get(layerKey);
       if (controls.allowed === false) {
         controls.toggle.checked = false;
-        if (layerKey === 'satellite' && weatherTiles.satellite) {
-          map.removeLayer(weatherTiles.satellite);
+        if (layerKey === 'satellite') {
+          stopSatelliteRefreshTimer();
+          hideSatelliteTimeLabel();
+          if (weatherTiles.satellite) {
+            map.removeLayer(weatherTiles.satellite);
+          }
           syncBaseMapForSatelliteMode();
         } else if (layerKey === 'metar') {
           weatherGroups.metar.clearLayers();
@@ -6990,7 +7285,7 @@
       }
 
       if (layerKey === 'satellite') {
-        await syncTileWeatherLayer('satellite', 'satellite', 'weatherSatellitePane');
+        await syncGk2aSatelliteLayer('satellite', 'satellite', 'weatherSatellitePane');
         return;
       }
 

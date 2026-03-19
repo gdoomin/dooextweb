@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
@@ -58,11 +58,19 @@ def build_weather_config() -> dict[str, Any]:
         if radar_time:
             radar_generated = datetime.fromtimestamp(int(radar_time), tz=timezone.utc).isoformat()
 
-    satellite_date = datetime.now(timezone.utc).date().isoformat()
-    satellite_url = (
-        "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/"
-        f"MODIS_Terra_CorrectedReflectance_TrueColor/default/{satellite_date}/"
-        "GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg"
+    gk2a_base_url = "https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko"
+    gk2a_delay_minutes = 4
+    gk2a_refresh_seconds = 120
+    gk2a_day_channel = "vi006"
+    gk2a_night_channel = "ir105"
+    capture_utc = datetime.now(timezone.utc) - timedelta(minutes=gk2a_delay_minutes)
+    capture_utc = capture_utc.replace(minute=(capture_utc.minute // 2) * 2, second=0, microsecond=0)
+    capture_yyyymmdd = capture_utc.strftime("%Y%m%d")
+    capture_hhmm = capture_utc.strftime("%H%M")
+    satellite_channel = gk2a_night_channel
+    satellite_image_url = (
+        f"{gk2a_base_url}/{satellite_channel}/{capture_yyyymmdd}/{capture_hhmm}/"
+        f"gk2a_ami_le1b_{satellite_channel}_ko_{capture_yyyymmdd}{capture_hhmm}.srv.png"
     )
 
     return {
@@ -76,11 +84,20 @@ def build_weather_config() -> dict[str, Any]:
             "max_zoom": 12,
         },
         "satellite": {
-            "tile_url": satellite_url,
-            "date": satellite_date,
-            "attribution": "NASA GIBS / MODIS Terra",
-            "opacity": 0.52,
-            "max_zoom": 9,
+            "provider": "gk2a",
+            "base_url": gk2a_base_url,
+            "image_url": satellite_image_url,
+            "updated_at": capture_utc.isoformat(),
+            "yyyymmdd": capture_yyyymmdd,
+            "hhmm": capture_hhmm,
+            "day_channel": gk2a_day_channel,
+            "night_channel": gk2a_night_channel,
+            "delay_minutes": gk2a_delay_minutes,
+            "refresh_seconds": gk2a_refresh_seconds,
+            "bounds": [[15.0, 75.0], [60.0, 145.0]],
+            "attribution": "NMSC GK-2A AMI",
+            "opacity": 0.75,
+            "max_zoom": 12,
         },
     }
 
