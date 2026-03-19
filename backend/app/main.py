@@ -17,7 +17,7 @@ from uuid import uuid4
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, StreamingResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
 
 
@@ -32,7 +32,10 @@ from .weather import (
     build_aviation_overlay,
     build_weather_config,
     build_weather_grid,
+    fetch_gk2a_image,
+    normalize_gk2a_channel,
     parse_bbox_param,
+    parse_gk2a_capture_datetime,
 )
 
 
@@ -3093,6 +3096,31 @@ def get_weather_config():
         return JSONResponse(build_weather_config())
     except WeatherProviderError as error:
         raise HTTPException(status_code=502, detail=f"weather config unavailable: {error}") from error
+
+
+@app.get("/api/weather/satellite-image")
+def get_weather_satellite_image(request: Request):
+    query = request.query_params
+    channel_param = query.get("channel") or "ir105"
+    date_param = query.get("date")
+    try:
+        normalized_channel = normalize_gk2a_channel(channel_param)
+        capture_utc = parse_gk2a_capture_datetime(date_param)
+        image_bytes, resolved_channel, resolved_timestamp = fetch_gk2a_image(normalized_channel, capture_utc)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"satellite image unavailable: {error}") from error
+
+    return Response(
+        content=image_bytes,
+        media_type="image/png",
+        headers={
+            "Cache-Control": "public, max-age=90",
+            "X-GK2A-Channel": resolved_channel,
+            "X-GK2A-Timestamp": resolved_timestamp,
+        },
+    )
 
 
 @app.get("/api/weather/grid")

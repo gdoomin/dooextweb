@@ -1,14 +1,26 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import time
 from datetime import datetime, timedelta, timezone
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import quote
 from urllib.request import Request, urlopen
 
 
 DEFAULT_WEATHER_BBOX = (33.0, 124.0, 39.0, 132.0)
+GK2A_IMAGE_PROXY_PATH = "/api/weather/satellite-image"
+GK2A_API_BASE_URL = "https://apihub.kma.go.kr/api/typ05/api/GK2A/LE1B"
+GK2A_DEFAULT_AUTH_KEY = "essYXrddTSaLGF63Xc0mAw"
+GK2A_FETCH_TIMEOUT_SECONDS = 12
+GK2A_TIMESTAMP_RE = re.compile(r"^\d{12}$")
+GK2A_CHANNEL_MAP = {
+    "vi006": "VI006",
+    "ir105": "IR105",
+}
 _CACHE: dict[str, tuple[float, Any]] = {}
 _USER_AGENT = "dooextweb-weather/0.1"
 
@@ -58,20 +70,18 @@ def build_weather_config() -> dict[str, Any]:
         if radar_time:
             radar_generated = datetime.fromtimestamp(int(radar_time), tz=timezone.utc).isoformat()
 
-    gk2a_base_url = "https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko"
+    gk2a_base_url = GK2A_IMAGE_PROXY_PATH
     gk2a_delay_minutes = 4
     gk2a_refresh_seconds = 120
     gk2a_day_channel = "vi006"
     gk2a_night_channel = "ir105"
+    gk2a_fallback_steps = 4
     capture_utc = datetime.now(timezone.utc) - timedelta(minutes=gk2a_delay_minutes)
     capture_utc = capture_utc.replace(minute=(capture_utc.minute // 2) * 2, second=0, microsecond=0)
     capture_yyyymmdd = capture_utc.strftime("%Y%m%d")
     capture_hhmm = capture_utc.strftime("%H%M")
     satellite_channel = gk2a_night_channel
-    satellite_image_url = (
-        f"{gk2a_base_url}/{satellite_channel}/{capture_yyyymmdd}/{capture_hhmm}/"
-        f"gk2a_ami_le1b_{satellite_channel}_ko_{capture_yyyymmdd}{capture_hhmm}.srv.png"
-    )
+    satellite_image_url = f"{gk2a_base_url}?channel={satellite_channel}&date={capture_yyyymmdd}{capture_hhmm}"
 
     return {
         "ok": True,
@@ -86,6 +96,7 @@ def build_weather_config() -> dict[str, Any]:
         "satellite": {
             "provider": "gk2a",
             "base_url": gk2a_base_url,
+            "upstream_base_url": GK2A_API_BASE_URL,
             "image_url": satellite_image_url,
             "updated_at": capture_utc.isoformat(),
             "yyyymmdd": capture_yyyymmdd,
@@ -93,6 +104,7 @@ def build_weather_config() -> dict[str, Any]:
             "day_channel": gk2a_day_channel,
             "night_channel": gk2a_night_channel,
             "delay_minutes": gk2a_delay_minutes,
+            "fallback_steps": gk2a_fallback_steps,
             "refresh_seconds": gk2a_refresh_seconds,
             "bounds": [[15.0, 75.0], [60.0, 145.0]],
             "attribution": "NMSC GK-2A AMI",
@@ -296,6 +308,61 @@ def _pick_radar_frame(radar_root: dict[str, Any]) -> dict[str, Any] | None:
                 if isinstance(frame, dict) and frame.get("path"):
                     return frame
     return None
+
+
+def parse_gk2a_capture_datetime(raw: str | None, default_delay_minutes: int = 4) -> datetime:
+    value = str(raw or "").strip()
+    if not value:
+        current = datetime.now(timezone.utc) - timedelta(minutes=default_delay_minutes)
+        return current.replace(minute=(current.minute // 2) * 2, second=0, microsecond=0)
+
+    if not GK2A_TIMESTAMP_RE.match(value):
+        raise ValueError("date must be yyyymmddHHMM")
+
+    return datetime.strptime(value, "%Y%m%d%H%M").replace(tzinfo=timezone.utc)
+
+
+def normalize_gk2a_channel(raw: str | None) -> str:
+    channel = str(raw or "ir105").strip().lower()
+    if channel in GK2A_CHANNEL_MAP:
+        return channel
+    raise ValueError("channel must be vi006 or ir105")
+
+
+def fetch_gk2a_image(channel: str, capture_utc: datetime) -> tuple[bytes, str, str]:
+    normalized_channel = normalize_gk2a_channel(channel)
+    source_channel = GK2A_CHANNEL_MAP[normalized_channel]
+    timestamp = capture_utc.strftime("%Y%m%d%H%M")
+    auth_key = str(os.getenv("KMA_APIHUB_AUTH_KEY") or GK2A_DEFAULT_AUTH_KEY).strip()
+    if not auth_key:
+        raise WeatherProviderError("missing KMA_APIHUB_AUTH_KEY")
+
+    url = (
+        f"{GK2A_API_BASE_URL}/{source_channel}/KO/image"
+        f"?date={timestamp}&authKey={quote(auth_key, safe='')}"
+    )
+
+    request = Request(
+        url,
+        headers={
+            "User-Agent": _USER_AGENT,
+            "Accept": "image/png,image/*;q=0.9,*/*;q=0.5",
+        },
+    )
+    try:
+        with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS) as response:
+            payload = response.read()
+    except HTTPError as error:
+        if error.code == 404:
+            raise WeatherProviderError("image not found") from error
+        raise WeatherProviderError(f"gk2a request failed: http {error.code}") from error
+    except (URLError, TimeoutError) as error:
+        raise WeatherProviderError(f"gk2a request failed: {error}") from error
+
+    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        raise WeatherProviderError("invalid gk2a image payload")
+
+    return payload, normalized_channel, timestamp
 
 
 def _sample_grid_points(

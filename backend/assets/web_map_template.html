@@ -4083,7 +4083,8 @@
 
     function buildGk2aImageUrl(channel, utcDate, baseUrl) {
       const normalizedChannel = String(channel || 'ir105').trim().toLowerCase();
-      const root = String(baseUrl || 'https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko').replace(/\/+$/, '');
+      const rootRaw = String(baseUrl || '/api/weather/satellite-image').trim();
+      const root = rootRaw || '/api/weather/satellite-image';
       const year = utcDate.getUTCFullYear();
       const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
       const day = String(utcDate.getUTCDate()).padStart(2, '0');
@@ -4091,7 +4092,9 @@
       const minute = String(utcDate.getUTCMinutes()).padStart(2, '0');
       const yyyymmdd = `${year}${month}${day}`;
       const hhmm = `${hour}${minute}`;
-      return `${root}/${normalizedChannel}/${yyyymmdd}/${hhmm}/gk2a_ami_le1b_${normalizedChannel}_ko_${yyyymmdd}${hhmm}.srv.png`;
+      const timestamp = `${yyyymmdd}${hhmm}`;
+      const separator = root.includes('?') ? '&' : '?';
+      return `${root}${separator}channel=${encodeURIComponent(normalizedChannel)}&date=${timestamp}`;
     }
 
     function probeImageUrl(url, timeoutMs = 12000) {
@@ -4159,9 +4162,11 @@
     async function refreshGk2aSatelliteOverlay(layerConfig, paneName, key = 'satellite') {
       const config = layerConfig && typeof layerConfig === 'object' ? layerConfig : {};
       const bounds = parseSatelliteBounds(config.bounds);
-      const baseUrl = String(config.base_url || 'https://nmsc.kma.go.kr/resources/homepage/image/data/gk2a/ami/ko').trim();
+      const baseUrl = String(config.base_url || '/api/weather/satellite-image').trim();
       const delayMinutesRaw = Number(config.delay_minutes);
       const delayMinutes = Number.isFinite(delayMinutesRaw) ? clamp(delayMinutesRaw, 0, 30) : 4;
+      const fallbackStepsRaw = Number(config.fallback_steps);
+      const fallbackSteps = Number.isFinite(fallbackStepsRaw) ? clamp(Math.round(fallbackStepsRaw), 0, 30) : 10;
       const opacityRaw = Number(config.opacity);
       const opacity = Number.isFinite(opacityRaw) ? clamp(opacityRaw, 0.05, 1) : 0.75;
       const dayChannel = String(config.day_channel || 'vi006').trim().toLowerCase();
@@ -4173,15 +4178,20 @@
 
       let selectedChannel = '';
       let selectedUrl = '';
-      for (const candidate of candidateChannels) {
-        const candidateUrl = buildGk2aImageUrl(candidate, captureUtc, baseUrl);
-        const ok = await probeImageUrl(candidateUrl);
-        if (!ok) {
-          continue;
+      let selectedCaptureUtc = null;
+      for (let step = 0; step <= fallbackSteps && !selectedUrl; step += 1) {
+        const candidateCaptureUtc = new Date(captureUtc.getTime() - (step * 2 * 60 * 1000));
+        for (const candidate of candidateChannels) {
+          const candidateUrl = buildGk2aImageUrl(candidate, candidateCaptureUtc, baseUrl);
+          const ok = await probeImageUrl(candidateUrl);
+          if (!ok) {
+            continue;
+          }
+          selectedChannel = candidate;
+          selectedCaptureUtc = candidateCaptureUtc;
+          selectedUrl = candidateUrl;
+          break;
         }
-        selectedChannel = candidate;
-        selectedUrl = candidateUrl;
-        break;
       }
       if (!selectedUrl) {
         throw new Error('gk2a image unavailable');
@@ -4208,9 +4218,10 @@
         weatherTiles[key].addTo(map);
       }
 
-      setSatelliteTimeLabel(captureUtc, selectedChannel);
+      const resolvedCaptureUtc = selectedCaptureUtc || captureUtc;
+      setSatelliteTimeLabel(resolvedCaptureUtc, selectedChannel);
       setWeatherBadge(key, selectedChannel.toUpperCase(), 'live');
-      return { captureUtc, channel: selectedChannel };
+      return { captureUtc: resolvedCaptureUtc, channel: selectedChannel };
     }
 
     function aviationColor(props) {
