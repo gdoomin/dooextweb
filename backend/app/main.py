@@ -352,23 +352,58 @@ def _history_paths_for_identity(user_id: str, user_email: str) -> list[Path]:
     return unique_paths
 
 
-def _history_supabase_config() -> tuple[str, str, str] | None:
+def _history_supabase_config() -> dict[str, str] | None:
     supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
     service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    anon_key = str(os.getenv("SUPABASE_ANON_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or "").strip()
     table_name = str(os.getenv("DOO_HISTORY_SUPABASE_TABLE") or "doo_user_history").strip()
-    if not supabase_url or not service_role_key or not table_name:
+    if not supabase_url or not table_name:
+        return None
+    if not service_role_key and not anon_key:
         return None
     if not _is_http_url(supabase_url):
         return None
-    return supabase_url, service_role_key, table_name
+    return {
+        "supabase_url": supabase_url,
+        "service_role_key": service_role_key,
+        "anon_key": anon_key,
+        "table_name": table_name,
+    }
 
 
-def _history_supabase_fetch(user_id: str, user_email: str) -> list[dict]:
+def _history_supabase_headers(config: dict[str, str], *, access_token: str = "") -> dict[str, str] | None:
+    service_role_key = str(config.get("service_role_key") or "").strip()
+    anon_key = str(config.get("anon_key") or "").strip()
+    normalized_access_token = access_token.strip()
+
+    if service_role_key:
+        return {
+            "apikey": service_role_key,
+            "Authorization": f"Bearer {service_role_key}",
+            "Accept": "application/json",
+        }
+
+    if not anon_key or not normalized_access_token:
+        return None
+
+    return {
+        "apikey": anon_key,
+        "Authorization": f"Bearer {normalized_access_token}",
+        "Accept": "application/json",
+    }
+
+
+def _history_supabase_fetch(user_id: str, user_email: str, access_token: str = "") -> list[dict]:
     config = _history_supabase_config()
     if config is None:
         return []
 
-    supabase_url, api_key, table_name = config
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return []
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
     normalized_user_id = _normalize_user_identity(user_id)
     normalized_email = _normalize_user_email(user_email)
     if not normalized_user_id and not normalized_email:
@@ -392,11 +427,7 @@ def _history_supabase_fetch(user_id: str, user_email: str) -> list[dict]:
     request = UrlRequest(
         url=url,
         method="GET",
-        headers={
-            "apikey": api_key,
-            "Authorization": f"Bearer {api_key}",
-            "Accept": "application/json",
-        },
+        headers=headers,
     )
     try:
         with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
@@ -427,7 +458,7 @@ def _history_supabase_fetch(user_id: str, user_email: str) -> list[dict]:
     return rows
 
 
-def _history_supabase_upsert(user_id: str, user_email: str, entry: dict) -> bool:
+def _history_supabase_upsert(user_id: str, user_email: str, entry: dict, access_token: str = "") -> bool:
     config = _history_supabase_config()
     if config is None:
         return False
@@ -437,7 +468,12 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict) -> bool
     if not normalized_user_id:
         return False
 
-    supabase_url, api_key, table_name = config
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
     url = f"{supabase_url}/rest/v1/{table_name}?on_conflict=user_id,job_id"
     payload = [
         {
@@ -457,8 +493,7 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict) -> bool
         method="POST",
         data=body,
         headers={
-            "apikey": api_key,
-            "Authorization": f"Bearer {api_key}",
+            **headers,
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
         },
@@ -1656,7 +1691,11 @@ def _job_history_entry(job: dict) -> dict:
     }
 
 
-def _record_user_history(job: dict, billing_status: dict[str, Any] | None = None) -> None:
+def _record_user_history(
+    job: dict,
+    billing_status: dict[str, Any] | None = None,
+    access_token: str = "",
+) -> None:
     user_id = _normalize_user_identity(str(job.get("user_id") or ""))
     user_email = _normalize_user_email(str(job.get("user_email") or ""))
     status = billing_status or _billing_status_for_user(user_id, user_email)
@@ -1664,7 +1703,7 @@ def _record_user_history(job: dict, billing_status: dict[str, Any] | None = None
     if not history_paths and _history_supabase_config() is None:
         return
     entry = _job_history_entry(job)
-    _history_supabase_upsert(user_id, user_email, entry)
+    _history_supabase_upsert(user_id, user_email, entry, access_token=access_token)
     for path in history_paths:
         existing = _load_json(path, [])
         items = existing if isinstance(existing, list) else []
@@ -1674,14 +1713,19 @@ def _record_user_history(job: dict, billing_status: dict[str, Any] | None = None
         _save_json(path, trimmed_items[:USER_HISTORY_LIMIT])
 
 
-def _load_user_history(user_id: str, user_email: str = "", billing_status: dict[str, Any] | None = None) -> list[dict]:
+def _load_user_history(
+    user_id: str,
+    user_email: str = "",
+    billing_status: dict[str, Any] | None = None,
+    access_token: str = "",
+) -> list[dict]:
     history_paths = _history_paths_for_identity(user_id, user_email)
     if not history_paths and _history_supabase_config() is None:
         return []
 
     merged: list[dict] = []
     seen_job_ids: set[str] = set()
-    for item in _history_supabase_fetch(user_id, user_email):
+    for item in _history_supabase_fetch(user_id, user_email, access_token=access_token):
         if not isinstance(item, dict):
             continue
         job_id = str(item.get("job_id") or "").strip()
@@ -1839,7 +1883,11 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         "source_file_bytes": int(payload.source_file_bytes or 0),
     }
     _save_json(_job_path(job_id), job_data)
-    _record_user_history(job_data, billing_status=billing_status)
+    _record_user_history(
+        job_data,
+        billing_status=billing_status,
+        access_token=_extract_bearer_token(request),
+    )
     if user_id and billing_status.get("billing_enabled") and int(billing_status.get("monthly_kml_limit") or 0) > 0:
         _increment_usage_month(user_id, _current_month_key())
 
@@ -2054,7 +2102,16 @@ def get_notam_overlay(request: Request):
 def get_history(request: Request):
     user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
     billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
-    return JSONResponse({"items": _load_user_history(user_id, user_email, billing_status=billing_status)})
+    return JSONResponse(
+        {
+            "items": _load_user_history(
+                user_id,
+                user_email,
+                billing_status=billing_status,
+                access_token=_extract_bearer_token(request),
+            )
+        }
+    )
 
 
 @app.get("/api/history/{job_id}")
