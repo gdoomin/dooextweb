@@ -11,7 +11,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qsl, urlencode, urlparse
+from urllib.parse import parse_qsl, quote, urlencode, urlparse
 from urllib.request import Request as UrlRequest, urlopen
 from uuid import uuid4
 
@@ -97,9 +97,10 @@ ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
 FONTS_DIR = ASSETS_DIR / "fonts"
 POPUP_NOTICE_PATH = RUNTIME_DIR / "popup_notice.json"
 
-DEFAULT_POPUP_NOTICE_MESSAGE = "지금 말도 안되게 대낮에 업데이트 중입니다. 죄송합니다."
+DEFAULT_POPUP_NOTICE_MESSAGE = "筌왖疫?筌띾Ŧ猷???덈┷野?????肉???낅쑓??꾨뱜 餓λ쵐???덈뼄. 雅뚭쑴???몃빍??"
 
 USER_HISTORY_LIMIT = 50
+HISTORY_SUPABASE_FETCH_LIMIT = 500
 SUPABASE_HTTP_TIMEOUT_SECONDS = 10
 PAYAPP_API_URL = "https://api.payapp.kr/oapi/apiLoad.html"
 NOTAM_DEFAULT_SUPABASE_URL = "https://zxocgwaogeyhwkefqmts.supabase.co"
@@ -351,6 +352,124 @@ def _history_paths_for_identity(user_id: str, user_email: str) -> list[Path]:
     return unique_paths
 
 
+def _history_supabase_config() -> tuple[str, str, str] | None:
+    supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
+    service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    table_name = str(os.getenv("DOO_HISTORY_SUPABASE_TABLE") or "doo_user_history").strip()
+    if not supabase_url or not service_role_key or not table_name:
+        return None
+    if not _is_http_url(supabase_url):
+        return None
+    return supabase_url, service_role_key, table_name
+
+
+def _history_supabase_fetch(user_id: str, user_email: str) -> list[dict]:
+    config = _history_supabase_config()
+    if config is None:
+        return []
+
+    supabase_url, api_key, table_name = config
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    if not normalized_user_id and not normalized_email:
+        return []
+
+    query_items: list[tuple[str, str]] = [
+        ("select", "job_id,filename,project_name,mode,result_count,uploaded_at"),
+        ("order", "uploaded_at.desc"),
+        ("limit", str(HISTORY_SUPABASE_FETCH_LIMIT)),
+    ]
+    if normalized_user_id and normalized_email:
+        encoded_user_id = quote(normalized_user_id, safe="-_.")
+        encoded_email = quote(normalized_email, safe="@-_.")
+        query_items.append(("or", f"(user_id.eq.{encoded_user_id},user_email.eq.{encoded_email})"))
+    elif normalized_user_id:
+        query_items.append(("user_id", f"eq.{quote(normalized_user_id, safe='-_.')}"))
+    else:
+        query_items.append(("user_email", f"eq.{quote(normalized_email, safe='@-_.')}"))
+
+    url = f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}"
+    request = UrlRequest(
+        url=url,
+        method="GET",
+        headers={
+            "apikey": api_key,
+            "Authorization": f"Bearer {api_key}",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return []
+
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else []
+    except Exception:
+        return []
+    if not isinstance(payload, list):
+        return []
+    rows: list[dict] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "job_id": str(item.get("job_id") or ""),
+                "filename": str(item.get("filename") or ""),
+                "project_name": str(item.get("project_name") or ""),
+                "mode": str(item.get("mode") or ""),
+                "result_count": int(item.get("result_count") or 0),
+                "uploaded_at": str(item.get("uploaded_at") or ""),
+            }
+        )
+    return rows
+
+
+def _history_supabase_upsert(user_id: str, user_email: str, entry: dict) -> bool:
+    config = _history_supabase_config()
+    if config is None:
+        return False
+
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    if not normalized_user_id:
+        return False
+
+    supabase_url, api_key, table_name = config
+    url = f"{supabase_url}/rest/v1/{table_name}?on_conflict=user_id,job_id"
+    payload = [
+        {
+            "user_id": normalized_user_id,
+            "user_email": normalized_email,
+            "job_id": str(entry.get("job_id") or ""),
+            "filename": str(entry.get("filename") or ""),
+            "project_name": str(entry.get("project_name") or ""),
+            "mode": str(entry.get("mode") or ""),
+            "result_count": int(entry.get("result_count") or 0),
+            "uploaded_at": str(entry.get("uploaded_at") or _utc_now_iso()),
+        }
+    ]
+    body = json.dumps(payload).encode("utf-8")
+    request = UrlRequest(
+        url=url,
+        method="POST",
+        data=body,
+        headers={
+            "apikey": api_key,
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except Exception:
+        return False
+
+
 def _load_json(path: Path, default):
     if not path.exists():
         return default
@@ -427,9 +546,9 @@ def _admin_popup_password() -> str:
 def _require_popup_admin_password(password: str) -> None:
     configured = _admin_popup_password()
     if not configured:
-        raise HTTPException(status_code=503, detail="관리자 비밀번호가 설정되지 않았습니다.")
+        raise HTTPException(status_code=503, detail="?온?귐딆쁽 ??쑬?甕곕뜇?뉐첎? ??쇱젟??? ??녿릭??щ빍??")
     if not secrets.compare_digest(str(password or ""), configured):
-        raise HTTPException(status_code=401, detail="비밀번호가 일치하지 않습니다.")
+        raise HTTPException(status_code=401, detail="??쑬?甕곕뜇?뉐첎? ??깊뒄??? ??녿뮸??덈뼄.")
 
 
 def _load_map_layers() -> dict:
@@ -466,7 +585,7 @@ def _build_map_layer_catalog() -> list[dict]:
 def _load_job(job_id: str) -> dict:
     data = _load_json(_job_path(job_id), {})
     if not isinstance(data, dict) or not data:
-        raise HTTPException(status_code=404, detail="작업 데이터를 찾을 수 없습니다.")
+        raise HTTPException(status_code=404, detail="?臾믩씜 ?怨쀬뵠?怨? 筌≪뼚??????곷뮸??덈뼄.")
     return data
 
 
@@ -504,7 +623,7 @@ def _default_viewer_payload() -> dict[str, Any]:
         "has_layers": bool(layer_catalog),
         "layer_catalog": layer_catalog,
         "default_gray_map": False,
-        "meta_text": "KML 변환 없이도 Viewer를 열 수 있습니다.",
+        "meta_text": "KML 癰궰????곸뵠??Viewer????????됰뮸??덈뼄.",
     }
 
 
@@ -598,9 +717,9 @@ def _payapp_config() -> tuple[str, str, str, str]:
     api_url = str(os.getenv("PAYAPP_API_URL") or PAYAPP_API_URL).strip()
 
     if not userid or not linkkey or not linkval:
-        raise HTTPException(status_code=503, detail="PayApp 설정(PAYAPP_USERID/LINKKEY/LINKVAL)이 누락되었습니다.")
+        raise HTTPException(status_code=503, detail="PayApp ??쇱젟(PAYAPP_USERID/LINKKEY/LINKVAL)???袁⑥뵭??뤿???щ빍??")
     if not _is_http_url(api_url):
-        raise HTTPException(status_code=503, detail="PAYAPP_API_URL 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=503, detail="PAYAPP_API_URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     return userid, linkkey, linkval, api_url
 
@@ -671,9 +790,9 @@ def _payapp_request(payload: dict[str, str]) -> dict[str, str]:
             raw = response.read()
     except HTTPError as error:
         detail = _parse_urlencoded_bytes(error.read()).get("errorMessage", "").strip()
-        raise HTTPException(status_code=502, detail=detail or "PayApp 요청에 실패했습니다.") from error
+        raise HTTPException(status_code=502, detail=detail or "PayApp ?遺욧퍕????쎈솭??됰뮸??덈뼄.") from error
     except URLError as error:
-        raise HTTPException(status_code=502, detail="PayApp 서버에 연결하지 못했습니다.") from error
+        raise HTTPException(status_code=502, detail="PayApp ??뺤쒔???怨뚭퍙??? 筌륁궢六??щ빍??") from error
 
     parsed = _parse_urlencoded_bytes(raw)
     state = str(parsed.get("state") or "").strip()
@@ -683,7 +802,7 @@ def _payapp_request(payload: dict[str, str]) -> dict[str, str]:
         if text and not parsed:
             parsed = {"raw": text}
     if str(payload.get("userid") or "").strip() and str(payload.get("userid")).strip() != userid:
-        raise HTTPException(status_code=500, detail="PayApp userid 요청값이 올바르지 않습니다.")
+        raise HTTPException(status_code=500, detail="PayApp userid ?遺욧퍕揶쏅?????而?몴?? ??녿뮸??덈뼄.")
     return parsed
 
 
@@ -814,7 +933,7 @@ def _load_payment_order(order_id: str) -> dict[str, Any]:
 def _save_payment_order(order_data: dict[str, Any]) -> dict[str, Any]:
     order_id = _normalize_user_identity(str(order_data.get("order_id") or ""))
     if not order_id:
-        raise HTTPException(status_code=400, detail="결제 주문번호가 올바르지 않습니다.")
+        raise HTTPException(status_code=400, detail="野껉퀣??雅뚯눖揆甕곕뜇?뉐첎? ??而?몴?? ??녿뮸??덈뼄.")
 
     now_iso = _utc_now_iso()
     next_payload = dict(order_data)
@@ -1136,13 +1255,10 @@ def _transition_user_plan_from_payment(
 
 
 def _trim_history_for_plan(items: list[dict], billing_status: dict[str, Any]) -> list[dict]:
-    if not _has_feature_access(billing_status, "history"):
-        return []
-
     history_days = int(billing_status.get("history_days") or 0)
     history_limit = int(billing_status.get("history_limit") or 0)
     if history_limit <= 0:
-        return []
+        history_limit = USER_HISTORY_LIMIT
 
     now = datetime.now(timezone.utc)
     min_time = now - timedelta(days=history_days) if history_days > 0 else None
@@ -1192,9 +1308,9 @@ def _supabase_auth_config() -> tuple[str, str]:
     auth_key = service_role_key or anon_key
 
     if not supabase_url or not auth_key:
-        raise HTTPException(status_code=503, detail="서버 Supabase 인증 설정이 누락되었습니다.")
+        raise HTTPException(status_code=503, detail="??뺤쒔 Supabase ?紐꾩쵄 ??쇱젟???袁⑥뵭??뤿???щ빍??")
     if not _is_http_url(supabase_url):
-        raise HTTPException(status_code=503, detail="SUPABASE_URL 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=503, detail="SUPABASE_URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     return supabase_url, auth_key
 
@@ -1204,9 +1320,9 @@ def _supabase_admin_config() -> tuple[str, str]:
     service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
 
     if not supabase_url or not service_role_key:
-        raise HTTPException(status_code=503, detail="서버 Supabase 관리자 인증 설정이 누락되었습니다.")
+        raise HTTPException(status_code=503, detail="??뺤쒔 Supabase ?온?귐딆쁽 ?紐꾩쵄 ??쇱젟???袁⑥뵭??뤿???щ빍??")
     if not _is_http_url(supabase_url):
-        raise HTTPException(status_code=503, detail="SUPABASE_URL 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=503, detail="SUPABASE_URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     return supabase_url, service_role_key
 
@@ -1247,12 +1363,12 @@ def _supabase_request_json(method: str, url: str, service_role_key: str, payload
     except HTTPError as error:
         detail = _extract_supabase_error_message(error.read())
         if error.code in {401, 403}:
-            raise HTTPException(status_code=503, detail="서버 Supabase 관리자 키가 올바르지 않습니다.") from error
+            raise HTTPException(status_code=503, detail="??뺤쒔 Supabase ?온?귐딆쁽 ??? ??而?몴?? ??녿뮸??덈뼄.") from error
         if error.code == 429:
-            raise HTTPException(status_code=429, detail="요청이 많습니다. 잠시 후 다시 시도해 주세요.") from error
-        raise HTTPException(status_code=502, detail=detail or "Supabase 인증 요청에 실패했습니다.") from error
+            raise HTTPException(status_code=429, detail="?遺욧퍕??筌띾‘???덈뼄. ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??") from error
+        raise HTTPException(status_code=502, detail=detail or "Supabase ?紐꾩쵄 ?遺욧퍕????쎈솭??됰뮸??덈뼄.") from error
     except URLError as error:
-        raise HTTPException(status_code=502, detail="Supabase 인증 서버에 연결하지 못했습니다.") from error
+        raise HTTPException(status_code=502, detail="Supabase ?紐꾩쵄 ??뺤쒔???怨뚭퍙??? 筌륁궢六??щ빍??") from error
 
     if not raw:
         return {}
@@ -1303,9 +1419,9 @@ def _notam_supabase_config() -> tuple[str, str]:
     ).strip()
 
     if not supabase_url or not api_key:
-        raise HTTPException(status_code=503, detail="NOTAM Supabase 설정이 누락되었습니다.")
+        raise HTTPException(status_code=503, detail="NOTAM Supabase ??쇱젟???袁⑥뵭??뤿???щ빍??")
     if not _is_http_url(supabase_url):
-        raise HTTPException(status_code=503, detail="NOTAM Supabase URL 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=503, detail="NOTAM Supabase URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
     return supabase_url, api_key
 
 
@@ -1325,14 +1441,14 @@ def _supabase_request_payload(method: str, url: str, api_key: str, payload: dict
     except HTTPError as error:
         detail = _extract_supabase_error_message(error.read())
         if error.code in {401, 403}:
-            raise HTTPException(status_code=503, detail="NOTAM Supabase API 키가 올바르지 않습니다.") from error
+            raise HTTPException(status_code=503, detail="NOTAM Supabase API ??? ??而?몴?? ??녿뮸??덈뼄.") from error
         if error.code == 404:
-            raise HTTPException(status_code=404, detail=detail or "NOTAM 데이터 소스를 찾지 못했습니다.") from error
+            raise HTTPException(status_code=404, detail=detail or "NOTAM ?怨쀬뵠?????뮞??筌≪뼚? 筌륁궢六??щ빍??") from error
         if error.code == 429:
-            raise HTTPException(status_code=429, detail="NOTAM 요청이 많습니다. 잠시 후 다시 시도해 주세요.") from error
-        raise HTTPException(status_code=502, detail=detail or "NOTAM Supabase 요청에 실패했습니다.") from error
+            raise HTTPException(status_code=429, detail="NOTAM ?遺욧퍕??筌띾‘???덈뼄. ?醫롫뻻 ????쇰뻻 ??뺣즲??雅뚯눘苑??") from error
+        raise HTTPException(status_code=502, detail=detail or "NOTAM Supabase ?遺욧퍕????쎈솭??됰뮸??덈뼄.") from error
     except URLError as error:
-        raise HTTPException(status_code=502, detail="NOTAM Supabase 서버에 연결하지 못했습니다.") from error
+        raise HTTPException(status_code=502, detail="NOTAM Supabase ??뺤쒔???怨뚭퍙??? 筌륁궢六??щ빍??") from error
 
     if not raw:
         return {}
@@ -1415,7 +1531,7 @@ def _fetch_notam_rows(supabase_url: str, api_key: str, bbox: tuple[float, float,
             return []
 
     if last_error is not None:
-        raise HTTPException(status_code=404, detail="NOTAM 테이블(notam_scraper/notams)을 찾지 못했습니다.")
+        raise HTTPException(status_code=404, detail="NOTAM ???뵠??notam_scraper/notams)??筌≪뼚? 筌륁궢六??щ빍??")
     return []
 
 
@@ -1448,22 +1564,22 @@ def _supabase_user_from_access_token(access_token: str) -> tuple[str, str]:
     except HTTPError as error:
         detail = _extract_supabase_error_message(error.read())
         if error.code in {401, 403}:
-            raise HTTPException(status_code=401, detail=detail or "인증 토큰이 올바르지 않습니다.") from error
-        raise HTTPException(status_code=502, detail=detail or "사용자 인증 확인에 실패했습니다.") from error
+            raise HTTPException(status_code=401, detail=detail or "?紐꾩쵄 ?醫뤾쿃????而?몴?? ??녿뮸??덈뼄.") from error
+        raise HTTPException(status_code=502, detail=detail or "??????紐꾩쵄 ?類ㅼ뵥????쎈솭??됰뮸??덈뼄.") from error
     except URLError as error:
-        raise HTTPException(status_code=502, detail="Supabase 인증 서버에 연결하지 못했습니다.") from error
+        raise HTTPException(status_code=502, detail="Supabase ?紐꾩쵄 ??뺤쒔???怨뚭퍙??? 筌륁궢六??щ빍??") from error
 
     try:
         payload = json.loads(raw.decode("utf-8"))
     except Exception:
-        raise HTTPException(status_code=502, detail="사용자 인증 응답을 해석하지 못했습니다.")
+        raise HTTPException(status_code=502, detail="??????紐꾩쵄 ?臾먮뼗????곴퐤??? 筌륁궢六??щ빍??")
     if not isinstance(payload, dict):
-        raise HTTPException(status_code=502, detail="사용자 인증 응답 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=502, detail="??????紐꾩쵄 ?臾먮뼗 ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     user_id = _normalize_user_identity(str(payload.get("id") or ""))
     user_email = _normalize_user_email(str(payload.get("email") or ""))
     if not user_id:
-        raise HTTPException(status_code=401, detail="유효한 로그인 세션이 아닙니다.")
+        raise HTTPException(status_code=401, detail="?醫륁뒞??嚥≪뮄????紐꾨???袁⑤뻸??덈뼄.")
     return user_id, user_email
 
 
@@ -1499,10 +1615,10 @@ def _request_identity_with_created_at(
                 raise
         except Exception:
             if required:
-                raise HTTPException(status_code=401, detail="?몄쬆 ?좏겙???꾩슂?⑸땲?? ?ㅼ떆 濡쒓렇?명빐 二쇱꽭??")
+                raise HTTPException(status_code=401, detail="?筌뤾쑴理???ルㅎ荑???熬곣뫗???紐껊퉵?? ???곕뻣 ?β돦裕??筌뤿굝???낅슣?섋땻??")
 
     if required and require_token:
-        raise HTTPException(status_code=401, detail="?몄쬆 ?좏겙???꾩슂?⑸땲?? ?ㅼ떆 濡쒓렇?명빐 二쇱꽭??")
+        raise HTTPException(status_code=401, detail="?筌뤾쑴理???ルㅎ荑???熬곣뫗???紐껊퉵?? ???곕뻣 ?β돦裕??筌뤿굝???낅슣?섋땻??")
 
     user_id, user_email = _request_user_identity(request, required=required)
     return user_id, user_email, ""
@@ -1525,7 +1641,7 @@ def _request_verified_identity(request: Request, *, required: bool = False) -> t
     if required and not user_id and not user_email:
         raise HTTPException(status_code=401, detail="login required")
     if required:
-        raise HTTPException(status_code=401, detail="인증 토큰이 필요합니다. 다시 로그인해 주세요.")
+        raise HTTPException(status_code=401, detail="?紐꾩쵄 ?醫뤾쿃???袁⑹뒄??몃빍?? ??쇰뻻 嚥≪뮄??紐낅퉸 雅뚯눘苑??")
     return user_id, user_email
 
 
@@ -1544,12 +1660,11 @@ def _record_user_history(job: dict, billing_status: dict[str, Any] | None = None
     user_id = _normalize_user_identity(str(job.get("user_id") or ""))
     user_email = _normalize_user_email(str(job.get("user_email") or ""))
     status = billing_status or _billing_status_for_user(user_id, user_email)
-    if not _has_feature_access(status, "history"):
-        return
     history_paths = _history_paths_for_identity(user_id, user_email)
-    if not history_paths:
+    if not history_paths and _history_supabase_config() is None:
         return
     entry = _job_history_entry(job)
+    _history_supabase_upsert(user_id, user_email, entry)
     for path in history_paths:
         existing = _load_json(path, [])
         items = existing if isinstance(existing, list) else []
@@ -1561,11 +1676,21 @@ def _record_user_history(job: dict, billing_status: dict[str, Any] | None = None
 
 def _load_user_history(user_id: str, user_email: str = "", billing_status: dict[str, Any] | None = None) -> list[dict]:
     history_paths = _history_paths_for_identity(user_id, user_email)
-    if not history_paths:
+    if not history_paths and _history_supabase_config() is None:
         return []
 
     merged: list[dict] = []
     seen_job_ids: set[str] = set()
+    for item in _history_supabase_fetch(user_id, user_email):
+        if not isinstance(item, dict):
+            continue
+        job_id = str(item.get("job_id") or "").strip()
+        if job_id and job_id in seen_job_ids:
+            continue
+        if job_id:
+            seen_job_ids.add(job_id)
+        merged.append(item)
+
     for path in history_paths:
         items = _load_json(path, [])
         if not isinstance(items, list):
@@ -1633,7 +1758,7 @@ def update_popup_notice(payload: PopupNoticeUpdatePayload):
 
     message = str(payload.message or "").strip()
     if len(message) > 500:
-        raise HTTPException(status_code=400, detail="팝업 문구는 500자 이하로 입력해 주세요.")
+        raise HTTPException(status_code=400, detail="??밸씜 ?얜㈇???500????꾨릭嚥???낆젾??雅뚯눘苑??")
 
     notice = _save_popup_notice(message, payload.enabled)
     return JSONResponse({"ok": True, "notice": notice})
@@ -1688,7 +1813,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         if file_size_limit_bytes > 0 and source_file_bytes > file_size_limit_bytes:
             raise HTTPException(
                 status_code=413,
-                detail=f"현재 플랜의 파일 용량 한도({file_size_limit_mb}MB)를 초과했습니다.",
+                detail=f"?袁⑹삺 ???삏?????뵬 ??몄쎗 ??뺣즲({file_size_limit_mb}MB)???λ뜃???됰뮸??덈뼄.",
             )
 
         monthly_limit = int(billing_status.get("monthly_kml_limit") or 0)
@@ -1696,7 +1821,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         if monthly_limit > 0 and monthly_used >= monthly_limit:
             raise HTTPException(
                 status_code=402,
-                detail=f"이번 달 KML 변환 한도({monthly_limit}회)를 모두 사용했습니다.",
+                detail=f"??苡???KML 癰궰????뺣즲({monthly_limit}????筌뤴뫀紐??????됰뮸??덈뼄.",
             )
 
     job_data = {
@@ -1725,15 +1850,15 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
 async def request_password_reset(payload: PasswordResetRequest):
     email = _normalize_user_email(payload.email).lower()
     if not email or not EMAIL_PATTERN.match(email):
-        raise HTTPException(status_code=400, detail="유효한 이메일을 입력해 주세요.")
+        raise HTTPException(status_code=400, detail="?醫륁뒞????李??깆뱽 ??낆젾??雅뚯눘苑??")
 
     redirect_to = str(payload.redirect_to or "").strip()
     if redirect_to and not _is_http_url(redirect_to):
-        raise HTTPException(status_code=400, detail="redirect_to URL 형식이 올바르지 않습니다.")
+        raise HTTPException(status_code=400, detail="redirect_to URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     supabase_url, service_role_key = _supabase_admin_config()
     if not _supabase_user_exists(supabase_url, service_role_key, email):
-        raise HTTPException(status_code=404, detail="가입되지 않은 이메일입니다.")
+        raise HTTPException(status_code=404, detail="揶쎛??낅┷筌왖 ??? ??李??깆뿯??덈뼄.")
 
     _send_supabase_password_reset(supabase_url, service_role_key, email, redirect_to or None)
     return {"ok": True}
@@ -1744,7 +1869,7 @@ def download_txt(job_id: str):
     job = _load_job(job_id)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "text_download"):
-        raise HTTPException(status_code=402, detail="현재 플랜에서는 텍스트 다운로드를 사용할 수 없습니다.")
+        raise HTTPException(status_code=402, detail="?袁⑹삺 ???삏?癒?퐣????용뮞????쇱뒲嚥≪뮆諭띄몴??????????곷뮸??덈뼄.")
     content = (job.get("text_output") or "").encode("utf-8-sig")
     filename = _download_filename(job, ".txt")
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
@@ -1756,7 +1881,7 @@ def download_xlsx(job_id: str):
     job = _load_job(job_id)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "excel_download"):
-        raise HTTPException(status_code=402, detail="현재 플랜에서는 엑셀 다운로드를 사용할 수 없습니다.")
+        raise HTTPException(status_code=402, detail="?袁⑹삺 ???삏?癒?퐣???臾? ??쇱뒲嚥≪뮆諭띄몴??????????곷뮸??덈뼄.")
     if job.get("mode") == "polygon":
         raise HTTPException(status_code=400, detail=POLYGON_ONLY_MESSAGE)
 
@@ -1849,7 +1974,7 @@ async def save_viewer_state(job_id: str, request: Request):
         return JSONResponse({"ok": False, "saved": False, "reason": "plan_restricted"})
     payload = await request.json()
     if not isinstance(payload, dict):
-        raise HTTPException(status_code=400, detail="viewer state는 객체여야 합니다.")
+        raise HTTPException(status_code=400, detail="viewer state??揶쏆빘猿??鍮???몃빍??")
     _save_json(_viewer_state_path(job_id), payload)
     return {"ok": True}
 
@@ -1873,7 +1998,7 @@ def get_notam_overlay(request: Request):
     try:
         requested_limit = int(request.query_params.get("limit", str(NOTAM_DEFAULT_LIMIT)))
     except ValueError as error:
-        raise HTTPException(status_code=400, detail="limit 값이 올바르지 않습니다.") from error
+        raise HTTPException(status_code=400, detail="limit 揶쏅?????而?몴?? ??녿뮸??덈뼄.") from error
     limit = max(1, min(requested_limit, NOTAM_MAX_LIMIT))
 
     supabase_url, api_key = _notam_supabase_config()
@@ -1934,10 +2059,7 @@ def get_history(request: Request):
 
 @app.get("/api/history/{job_id}")
 def get_history_item(job_id: str, request: Request):
-    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
-    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
-    if not _has_feature_access(billing_status, "history"):
-        raise HTTPException(status_code=402, detail="현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.")
+    user_id, user_email, _ = _request_identity_with_created_at(request, required=True)
     job = _load_job(job_id)
     owner_id = _normalize_user_identity(str(job.get("user_id") or ""))
     owner_email = _normalize_user_email(str(job.get("user_email") or ""))
@@ -1958,8 +2080,8 @@ def get_billing_plans():
             "billing_enabled": _billing_enabled(),
             "plans": _public_plan_rows(),
             "notice": {
-                "legacy": "결제 시스템 도입일 이전 가입자는 기존 가입자 혜택(기존 기능)을 유지합니다.",
-                "rejoin": "동일인이더라도 새 이메일로 신규 가입한 경우 신규 회원 정책이 적용됩니다.",
+                "legacy": "野껉퀣????뽯뮞???袁⑹뿯????곸읈 揶쎛??놁쁽??疫꿸퀣??揶쎛??놁쁽 ??쀪문(疫꿸퀣??疫꿸퀡?????醫???몃빍??",
+                "rejoin": "??덉뵬?紐꾩뵠?遺얠뵬??????李??곗쨮 ?醫됲뇣 揶쎛??뉖립 野껋럩???醫됲뇣 ???뜚 ?類ㅼ퐠???怨몄뒠??몃빍??",
             },
         }
     )
@@ -1978,21 +2100,21 @@ async def start_payapp_subscription(payload: BillingStartPayload, request: Reque
     user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True, require_token=True)
     billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     if not billing_status.get("billing_enabled"):
-        raise HTTPException(status_code=400, detail="결제 기능이 아직 활성화되지 않았습니다.")
+        raise HTTPException(status_code=400, detail="野껉퀣??疫꿸퀡????袁⑹춦 ??뽮쉐?遺얜┷筌왖 ??녿릭??щ빍??")
     if not billing_status.get("is_new_pricing_user"):
-        raise HTTPException(status_code=400, detail="기존 가입자 혜택 대상자는 별도 결제가 필요하지 않습니다.")
+        raise HTTPException(status_code=400, detail="疫꿸퀣??揶쎛??놁쁽 ??쀪문 ???怨몄쁽??癰귢쑬猷?野껉퀣?ｅ첎? ?袁⑹뒄??? ??녿뮸??덈뼄.")
 
     plan_code = _normalize_plan_code(payload.plan_code, fallback=DEFAULT_PLAN_CODE)
     if plan_code not in {LITE_PLAN_CODE, PRO_PLAN_CODE}:
-        raise HTTPException(status_code=400, detail="지원하지 않는 구독 플랜입니다.")
+        raise HTTPException(status_code=400, detail="筌왖?癒곕릭筌왖 ??낅뮉 ?닌됰즴 ???삏??낅빍??")
 
     buyer_phone = _sanitize_phone(payload.buyer_phone)
     if len(buyer_phone) < 9:
-        raise HTTPException(status_code=400, detail="결제용 휴대전화 번호를 올바르게 입력해 주세요.")
+        raise HTTPException(status_code=400, detail="野껉퀣???????袁れ넅 甕곕뜇?뉒몴???而?몴?우쓺 ??낆젾??雅뚯눘苑??")
 
     price = int(PLAN_PRICES_KRW.get(plan_code) or 0)
     if price <= 0:
-        raise HTTPException(status_code=500, detail="결제 금액 설정이 올바르지 않습니다.")
+        raise HTTPException(status_code=500, detail="野껉퀣??疫뀀뜆釉???쇱젟????而?몴?? ??녿뮸??덈뼄.")
 
     order_id = uuid4().hex
     userid, _, _, _ = _payapp_config()
@@ -2040,7 +2162,7 @@ async def start_payapp_subscription(payload: BillingStartPayload, request: Reque
                 "error_message": error_message,
             }
         )
-        raise HTTPException(status_code=502, detail=error_message or "PayApp 정기결제 요청 등록에 실패했습니다.")
+        raise HTTPException(status_code=502, detail=error_message or "PayApp ?類?┛野껉퀣???遺욧퍕 ?源낆쨯????쎈솭??됰뮸??덈뼄.")
 
     payurl = str(response_payload.get("payurl") or "").strip()
     rebill_no = str(response_payload.get("rebill_no") or "").strip()
@@ -2221,14 +2343,14 @@ def cancel_subscription(payload: BillingCancelPayload, request: Request):
     user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True, require_token=True)
     billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     if not billing_status.get("billing_enabled"):
-        raise HTTPException(status_code=400, detail="결제 기능이 아직 활성화되지 않았습니다.")
+        raise HTTPException(status_code=400, detail="野껉퀣??疫꿸퀡????袁⑹춦 ??뽮쉐?遺얜┷筌왖 ??녿릭??щ빍??")
     if not billing_status.get("is_new_pricing_user"):
-        raise HTTPException(status_code=400, detail="기존 가입자 혜택 계정은 해지 대상이 아닙니다.")
+        raise HTTPException(status_code=400, detail="疫꿸퀣??揶쎛??놁쁽 ??쀪문 ?④쑴??? ??? ???怨몄뵠 ?袁⑤뻸??덈뼄.")
 
     record = _ensure_billing_record(user_id, user_email, created_at_hint=created_at_hint)
     rebill_no = str(record.get("payapp_rebill_no") or "").strip()
     if not rebill_no:
-        raise HTTPException(status_code=400, detail="해지할 정기결제 정보가 없습니다.")
+        raise HTTPException(status_code=400, detail="??????類?┛野껉퀣???類ｋ궖揶쎛 ??곷뮸??덈뼄.")
 
     userid, linkkey, _, _ = _payapp_config()
     response_payload = _payapp_request(
@@ -2241,7 +2363,7 @@ def cancel_subscription(payload: BillingCancelPayload, request: Request):
     )
     if str(response_payload.get("state") or "").strip() != "1":
         error_message = str(response_payload.get("errorMessage") or "").strip()
-        raise HTTPException(status_code=502, detail=error_message or "정기결제 해지 요청에 실패했습니다.")
+        raise HTTPException(status_code=502, detail=error_message or "?類?┛野껉퀣????? ?遺욧퍕????쎈솭??됰뮸??덈뼄.")
 
     _transition_user_plan_from_payment(
         user_id,
@@ -2252,7 +2374,7 @@ def cancel_subscription(payload: BillingCancelPayload, request: Request):
         subscription_status="cancelled",
         active=False,
     )
-    return JSONResponse({"ok": True, "message": "정기결제가 해지되었습니다.", "reason": payload.reason})
+    return JSONResponse({"ok": True, "message": "?類?┛野껉퀣?ｅ첎? ?????뤿???щ빍??", "reason": payload.reason})
 
 
 @app.get("/ads.txt")
@@ -2268,14 +2390,14 @@ def get_ads_txt():
 @app.get("/api/assets/html2canvas.min.js")
 def get_html2canvas():
     if not HTML2CANVAS_PATH.exists():
-        raise HTTPException(status_code=404, detail="html2canvas 자산을 찾을 수 없습니다.")
+        raise HTTPException(status_code=404, detail="html2canvas ?癒?텦??筌≪뼚??????곷뮸??덈뼄.")
     return FileResponse(HTML2CANVAS_PATH, media_type="application/javascript")
 
 
 @app.get("/api/assets/doogpx.png")
 def get_banner():
     if not BANNER_PATH.exists():
-        raise HTTPException(status_code=404, detail="배너 이미지를 찾을 수 없습니다.")
+        raise HTTPException(status_code=404, detail="獄쏄퀡瑗????筌왖??筌≪뼚??????곷뮸??덈뼄.")
     return FileResponse(BANNER_PATH, media_type="image/png")
 
 

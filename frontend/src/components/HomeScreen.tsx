@@ -161,7 +161,7 @@ export function HomeScreen({
   const isAuthenticated = Boolean(userId);
   const pathLabel = useMemo(() => response?.filename || "", [response]);
   const modeText = response ? modeLabel[response.mode] : "KML을 업로드하면 변환 결과가 표시됩니다.";
-  const canUseHistory = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.history);
+  const canUseHistory = isAuthenticated;
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
   const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
   const shouldShowPricing =
