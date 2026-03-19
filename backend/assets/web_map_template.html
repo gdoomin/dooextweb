@@ -2765,6 +2765,7 @@
     const forceLabelMarkers = new Map();
     const kmlLabelMarkers = new Map();
     const hiddenKmlLabelIds = new Set();
+    const deletedKmlLabelIds = new Set();
     const selectedKmlLabelIds = new Set();
     const numberLabelState = {
       kind: '',
@@ -5106,24 +5107,30 @@
     }
 
     function shouldRenderKmlLabel(entryId) {
+      if (deletedKmlLabelIds.has(entryId)) {
+        return false;
+      }
       if (numToggle.checked) {
         return true;
       }
       if (hiddenKmlLabelIds.has(entryId)) {
         return false;
       }
-      return forceState.active && forceState.mode === 'existing' && selectedKmlLabelIds.has(entryId);
+      if (!selectedKmlLabelIds.has(entryId)) {
+        return false;
+      }
+      if (forceState.mode === 'existing') {
+        return true;
+      }
+      return !forceState.active;
     }
 
     function shouldShowKmlLabels() {
       if (numToggle.checked) {
         return true;
       }
-      if (!(forceState.active && forceState.mode === 'existing')) {
-        return false;
-      }
       for (const entryId of selectedKmlLabelIds) {
-        if (!hiddenKmlLabelIds.has(entryId)) {
+        if (shouldRenderKmlLabel(entryId)) {
           return true;
         }
       }
@@ -5245,7 +5252,8 @@
       }
 
       if (selectedKind === 'kml') {
-        hiddenKmlLabelIds.add(selectedEntryId);
+        deletedKmlLabelIds.add(selectedEntryId);
+        hiddenKmlLabelIds.delete(selectedEntryId);
         selectedKmlLabelIds.delete(selectedEntryId);
         refreshKmlLabels();
         syncKmlLabelVisibility();
@@ -5319,6 +5327,7 @@
       if (!entry) {
         return;
       }
+      deletedKmlLabelIds.delete(entry.id);
       hiddenKmlLabelIds.delete(entry.id);
       selectedKmlLabelIds.add(entry.id);
       refreshKmlLabels();
@@ -5630,6 +5639,7 @@
           .filter((entry) => entry.row.force_assigned != null)
           .map((entry) => ({ id: entry.id, value: entry.row.force_assigned })),
         hiddenKmlLabelIds: Array.from(hiddenKmlLabelIds.values()),
+        deletedKmlLabelIds: Array.from(deletedKmlLabelIds.values()),
         selectedKmlLabelIds: Array.from(selectedKmlLabelIds.values()),
         textMarkers: textState.markers.map((marker) => {
           const latlng = marker.getLatLng();
@@ -6021,11 +6031,19 @@
         setForceActive(false, true);
         deselectNumberLabel();
         hiddenKmlLabelIds.clear();
+        deletedKmlLabelIds.clear();
         selectedKmlLabelIds.clear();
         if (Array.isArray(saved.hiddenKmlLabelIds)) {
           saved.hiddenKmlLabelIds.forEach((item) => {
             if (Number.isFinite(item)) {
               hiddenKmlLabelIds.add(item);
+            }
+          });
+        }
+        if (Array.isArray(saved.deletedKmlLabelIds)) {
+          saved.deletedKmlLabelIds.forEach((item) => {
+            if (Number.isFinite(item)) {
+              deletedKmlLabelIds.add(item);
             }
           });
         }
@@ -8247,6 +8265,7 @@
     numToggle.addEventListener('change', () => {
       if (numToggle.checked) {
         hiddenKmlLabelIds.clear();
+        deletedKmlLabelIds.clear();
       }
       setNumControlsEnabled(numToggle.checked);
       refreshKmlLabels();

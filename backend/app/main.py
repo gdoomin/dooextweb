@@ -102,6 +102,8 @@ DEFAULT_POPUP_NOTICE_MESSAGE = "筌왖疫?筌띾Ŧ猷???덈┷野?????肉???�
 USER_HISTORY_LIMIT = 50
 HISTORY_SUPABASE_FETCH_LIMIT = 500
 SUPABASE_HTTP_TIMEOUT_SECONDS = 10
+JOB_PAYLOAD_SUPABASE_DEFAULT_BUCKET = "doo-job-payloads"
+JOB_PAYLOAD_SUPABASE_DEFAULT_TABLE = "doo_job_payload_meta"
 PAYAPP_API_URL = "https://api.payapp.kr/oapi/apiLoad.html"
 NOTAM_DEFAULT_SUPABASE_URL = "https://zxocgwaogeyhwkefqmts.supabase.co"
 NOTAM_DEFAULT_SUPABASE_ANON_KEY = (
@@ -198,6 +200,7 @@ PLAN_PAYAPP_GOODNAME = {
     LITE_PLAN_CODE: "DOO Extractor Lite Monthly",
     PRO_PLAN_CODE: "DOO Extractor Pro Monthly",
 }
+JOB_PAYLOAD_BUCKET_CACHE: set[str] = set()
 
 
 class PasswordResetRequest(BaseModel):
@@ -505,6 +508,284 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict, access_
             return True
     except Exception:
         return False
+
+
+def _job_payload_supabase_config() -> dict[str, str] | None:
+    base = _history_supabase_config()
+    if base is None:
+        return None
+
+    bucket_name = str(
+        os.getenv("DOO_JOB_PAYLOAD_SUPABASE_BUCKET")
+        or os.getenv("DOO_JOB_PAYLOAD_BUCKET")
+        or JOB_PAYLOAD_SUPABASE_DEFAULT_BUCKET
+        or ""
+    ).strip()
+    table_name = str(
+        os.getenv("DOO_JOB_PAYLOAD_SUPABASE_TABLE")
+        or os.getenv("DOO_JOB_PAYLOAD_META_TABLE")
+        or JOB_PAYLOAD_SUPABASE_DEFAULT_TABLE
+        or ""
+    ).strip()
+    if not bucket_name:
+        return None
+
+    return {
+        **base,
+        "bucket_name": bucket_name,
+        "meta_table": table_name,
+    }
+
+
+def _job_payload_storage_path(job: dict) -> str:
+    job_id = _normalize_user_identity(str(job.get("job_id") or ""))
+    if not job_id:
+        fallback_seed = str(job.get("created_at") or _utc_now_iso())
+        job_id = hashlib.sha256(fallback_seed.encode("utf-8")).hexdigest()[:24]
+    return f"jobs/by-id/{job_id}.json"
+
+
+def _job_payload_storage_ref(job: dict) -> tuple[str, str]:
+    config = _job_payload_supabase_config()
+    default_bucket = str(config.get("bucket_name") or "") if config else ""
+    bucket_name = str(job.get("payload_bucket") or default_bucket or "").strip()
+    object_path = str(job.get("payload_path") or "").strip()
+    if not object_path:
+        object_path = _job_payload_storage_path(job)
+    return bucket_name, object_path
+
+
+def _job_payload_supabase_ensure_bucket(config: dict[str, str], headers: dict[str, str]) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    bucket_name = str(config.get("bucket_name") or "").strip()
+    service_role_key = str(config.get("service_role_key") or "").strip()
+    if not supabase_url or not bucket_name:
+        return False
+
+    cache_key = f"{supabase_url}:{bucket_name}"
+    if cache_key in JOB_PAYLOAD_BUCKET_CACHE:
+        return True
+
+    bucket_url = f"{supabase_url}/storage/v1/bucket/{quote(bucket_name, safe='-_.')}"
+    check_request = UrlRequest(url=bucket_url, method="GET", headers=headers)
+    try:
+        with urlopen(check_request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            JOB_PAYLOAD_BUCKET_CACHE.add(cache_key)
+            return True
+    except HTTPError as error:
+        if error.code != 404 or not service_role_key:
+            return False
+    except Exception:
+        return False
+
+    create_body = json.dumps({"id": bucket_name, "name": bucket_name, "public": False}).encode("utf-8")
+    create_request = UrlRequest(
+        url=f"{supabase_url}/storage/v1/bucket",
+        method="POST",
+        data=create_body,
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+        },
+    )
+    try:
+        with urlopen(create_request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            JOB_PAYLOAD_BUCKET_CACHE.add(cache_key)
+            return True
+    except HTTPError as error:
+        if error.code == 409:
+            JOB_PAYLOAD_BUCKET_CACHE.add(cache_key)
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _job_payload_supabase_upload(
+    config: dict[str, str],
+    headers: dict[str, str],
+    bucket_name: str,
+    object_path: str,
+    payload: dict,
+) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    if not supabase_url or not bucket_name or not object_path:
+        return False
+
+    if not _job_payload_supabase_ensure_bucket(config, headers):
+        return False
+
+    path = quote(object_path.lstrip("/"), safe="-_./")
+    upload_url = f"{supabase_url}/storage/v1/object/{quote(bucket_name, safe='-_.')}/{path}"
+    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = UrlRequest(
+        url=upload_url,
+        method="POST",
+        data=body,
+        headers={
+            **headers,
+            "Content-Type": "application/json; charset=utf-8",
+            "x-upsert": "true",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except Exception:
+        return False
+
+
+def _job_payload_supabase_upsert_meta(
+    config: dict[str, str],
+    headers: dict[str, str],
+    job: dict,
+    bucket_name: str,
+    object_path: str,
+) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("meta_table") or "").strip()
+    job_id = str(job.get("job_id") or "").strip()
+    if not supabase_url or not table_name or not job_id:
+        return False
+
+    row = {
+        "job_id": job_id,
+        "user_id": _normalize_user_identity(str(job.get("user_id") or "")),
+        "user_email": _normalize_user_email(str(job.get("user_email") or "")),
+        "payload_bucket": bucket_name,
+        "payload_path": object_path,
+        "source_hash": _normalize_source_hash(str(job.get("source_hash") or "")),
+        "filename": str(job.get("filename") or ""),
+        "project_name": str(job.get("project_name") or ""),
+        "mode": str(job.get("mode") or ""),
+        "result_count": int(job.get("result_count") or 0),
+        "uploaded_at": str(job.get("created_at") or _utc_now_iso()),
+        "updated_at": _utc_now_iso(),
+    }
+    body = json.dumps([row]).encode("utf-8")
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?on_conflict=job_id",
+        method="POST",
+        data=body,
+        headers={
+            **headers,
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except Exception:
+        return False
+
+
+def _job_payload_supabase_store(job: dict, access_token: str = "") -> tuple[str, str]:
+    config = _job_payload_supabase_config()
+    if config is None:
+        return "", ""
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return "", ""
+
+    bucket_name, object_path = _job_payload_storage_ref(job)
+    if not bucket_name or not object_path:
+        return "", ""
+
+    if not _job_payload_supabase_upload(config, headers, bucket_name, object_path, job):
+        return "", ""
+
+    _job_payload_supabase_upsert_meta(config, headers, job, bucket_name, object_path)
+    return bucket_name, object_path
+
+
+def _job_payload_supabase_fetch_meta(
+    config: dict[str, str],
+    headers: dict[str, str],
+    job_id: str,
+) -> tuple[str, str]:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("meta_table") or "").strip()
+    normalized_job_id = str(job_id or "").strip()
+    if not supabase_url or not table_name or not normalized_job_id:
+        return "", ""
+
+    query_items = [
+        ("select", "payload_bucket,payload_path"),
+        ("job_id", f"eq.{quote(normalized_job_id, safe='-_')}"),
+        ("limit", "1"),
+    ]
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}",
+        method="GET",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return "", ""
+
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else []
+    except Exception:
+        return "", ""
+    if not isinstance(payload, list) or not payload:
+        return "", ""
+    first = payload[0] if isinstance(payload[0], dict) else {}
+    return str(first.get("payload_bucket") or "").strip(), str(first.get("payload_path") or "").strip()
+
+
+def _job_payload_supabase_download(
+    config: dict[str, str],
+    headers: dict[str, str],
+    bucket_name: str,
+    object_path: str,
+) -> dict | None:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    if not supabase_url or not bucket_name or not object_path:
+        return None
+
+    object_url = f"{supabase_url}/storage/v1/object/{quote(bucket_name, safe='-_.')}/{quote(object_path.lstrip('/'), safe='-_./')}"
+    request = UrlRequest(url=object_url, method="GET", headers=headers)
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return None
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else {}
+    except Exception:
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
+def _load_job_from_supabase(job_id: str, access_token: str = "") -> dict | None:
+    config = _job_payload_supabase_config()
+    if config is None:
+        return None
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return None
+
+    bucket_name, object_path = _job_payload_supabase_fetch_meta(config, headers, job_id)
+    if not bucket_name or not object_path:
+        bucket_name = str(config.get("bucket_name") or "").strip()
+        object_path = _job_payload_storage_path({"job_id": job_id})
+
+    payload = _job_payload_supabase_download(config, headers, bucket_name, object_path)
+    if not isinstance(payload, dict) or not payload:
+        return None
+
+    payload["job_id"] = str(payload.get("job_id") or job_id)
+    payload["payload_bucket"] = bucket_name
+    payload["payload_path"] = object_path
+    payload["source_hash"] = _normalize_source_hash(str(payload.get("source_hash") or ""))
+    if not isinstance(payload.get("map_payload"), dict):
+        payload["map_payload"] = {}
+    if not isinstance(payload.get("results"), list):
+        payload["results"] = []
+    return payload
 
 
 def _normalize_source_hash(value: str | None) -> str:
@@ -873,11 +1154,17 @@ def _build_map_layer_catalog() -> list[dict]:
     return catalog
 
 
-def _load_job(job_id: str) -> dict:
+def _load_job(job_id: str, access_token: str = "") -> dict:
     data = _load_json(_job_path(job_id), {})
-    if not isinstance(data, dict) or not data:
-        raise HTTPException(status_code=404, detail="복원할 변환 데이터가 서버에 없습니다. 파일을 다시 변환해 주세요.")
-    return data
+    if isinstance(data, dict) and data:
+        return data
+
+    remote = _load_job_from_supabase(job_id, access_token=access_token)
+    if isinstance(remote, dict) and remote:
+        _save_json(_job_path(job_id), remote)
+        return remote
+
+    raise HTTPException(status_code=404, detail="복원할 변환 데이터가 서버에 없습니다. 파일을 다시 변환해 주세요.")
 
 
 def _viewer_html_with_paths(payload: dict, viewer_state_path: str, layers_path: str) -> str:
@@ -1938,6 +2225,7 @@ def _request_verified_identity(request: Request, *, required: bool = False) -> t
 
 
 def _job_history_entry(job: dict) -> dict:
+    payload_bucket, payload_path = _job_payload_storage_ref(job)
     return {
         "job_id": str(job.get("job_id") or ""),
         "filename": str(job.get("filename") or ""),
@@ -1945,6 +2233,8 @@ def _job_history_entry(job: dict) -> dict:
         "mode": str(job.get("mode") or ""),
         "result_count": int(job.get("result_count") or 0),
         "uploaded_at": str(job.get("created_at") or ""),
+        "payload_bucket": payload_bucket,
+        "payload_path": payload_path,
     }
 
 
@@ -2105,6 +2395,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
 
     job_id = uuid4().hex
     base_url = _external_base_url(request)
+    access_token = _extract_bearer_token(request)
     user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=False)
     billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
 
@@ -2142,11 +2433,15 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         "source_file_bytes": int(payload.source_file_bytes or 0),
         "source_hash": source_hash,
     }
+    payload_bucket, payload_path = _job_payload_supabase_store(job_data, access_token=access_token)
+    if payload_bucket and payload_path:
+        job_data["payload_bucket"] = payload_bucket
+        job_data["payload_path"] = payload_path
     _save_json(_job_path(job_id), job_data)
     _record_user_history(
         job_data,
         billing_status=billing_status,
-        access_token=_extract_bearer_token(request),
+        access_token=access_token,
     )
     if user_id and billing_status.get("billing_enabled") and int(billing_status.get("monthly_kml_limit") or 0) > 0:
         _increment_usage_month(user_id, _current_month_key())
@@ -2267,11 +2562,12 @@ def get_default_viewer_layers():
 
 @app.get("/api/viewer/{job_id}/viewer-state")
 def get_viewer_state(job_id: str, request: Request):
-    job = _load_job(job_id)
+    access_token = _extract_bearer_token(request)
+    job = _load_job(job_id, access_token=access_token)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
         return JSONResponse({})
-    remote_state = _viewer_state_supabase_fetch(job, access_token=_extract_bearer_token(request))
+    remote_state = _viewer_state_supabase_fetch(job, access_token=access_token)
     if isinstance(remote_state, dict):
         return JSONResponse(remote_state)
     for path in _viewer_state_paths_for_job(job):
@@ -2283,7 +2579,8 @@ def get_viewer_state(job_id: str, request: Request):
 
 @app.post("/api/viewer/{job_id}/viewer-state")
 async def save_viewer_state(job_id: str, request: Request):
-    job = _load_job(job_id)
+    access_token = _extract_bearer_token(request)
+    job = _load_job(job_id, access_token=access_token)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
         return JSONResponse({"ok": False, "saved": False, "reason": "plan_restricted"})
@@ -2292,7 +2589,7 @@ async def save_viewer_state(job_id: str, request: Request):
         raise HTTPException(status_code=400, detail="viewer state??揶쏆빘猿??鍮???몃빍??")
     for path in _viewer_state_paths_for_job(job):
         _save_json(path, payload)
-    _viewer_state_supabase_upsert(job, payload, access_token=_extract_bearer_token(request))
+    _viewer_state_supabase_upsert(job, payload, access_token=access_token)
     return {"ok": True}
 
 
@@ -2386,7 +2683,7 @@ def get_history(request: Request):
 @app.get("/api/history/{job_id}")
 def get_history_item(job_id: str, request: Request):
     user_id, user_email, _ = _request_identity_with_created_at(request, required=True)
-    job = _load_job(job_id)
+    job = _load_job(job_id, access_token=_extract_bearer_token(request))
     owner_id = _normalize_user_identity(str(job.get("user_id") or ""))
     owner_email = _normalize_user_email(str(job.get("user_email") or ""))
     request_email = _normalize_user_email(user_email)
