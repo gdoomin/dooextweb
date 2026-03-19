@@ -34,6 +34,11 @@ type HomeScreenProps = {
   authAvailable?: boolean;
 };
 
+type PopupNoticeResponse = {
+  enabled?: boolean;
+  message?: string;
+};
+
 const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
@@ -104,7 +109,8 @@ export function HomeScreen({
   initialUserId = "",
   authAvailable = true,
 }: HomeScreenProps) {
-  const [showUpdateNotice, setShowUpdateNotice] = useState(true);
+  const [showUpdateNotice, setShowUpdateNotice] = useState(false);
+  const [updateNoticeMessage, setUpdateNoticeMessage] = useState("");
   const restored = loadLastConvert();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [response, setResponse] = useState<ConvertResponse | null>(restored);
@@ -238,6 +244,32 @@ export function HomeScreen({
       cancelled = true;
     };
   }, [userId, userEmail]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPopupNotice() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/popup-notice`, { cache: "no-store" });
+        if (!response.ok) {
+          return;
+        }
+        const payload = (await response.json()) as PopupNoticeResponse;
+        const message = typeof payload.message === "string" ? payload.message.trim() : "";
+        if (!cancelled && payload.enabled && message) {
+          setUpdateNoticeMessage(message);
+          setShowUpdateNotice(true);
+        }
+      } catch {
+        // Ignore popup config load failures.
+      }
+    }
+
+    loadPopupNotice();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   function openAuthModal(message: string) {
     setAuthMessage(message);
@@ -664,7 +696,7 @@ export function HomeScreen({
           <section className="auth-modal-card" onClick={(event) => event.stopPropagation()}>
             <div className="auth-modal-copy">
               <span className="auth-badge">Notice</span>
-              <h2>지금 말도 안되게 대낮에 업데이트 중입니다. 죄송합니다.</h2>
+              <h2>{updateNoticeMessage}</h2>
             </div>
             <button type="button" className="auth-modal-close" onClick={() => setShowUpdateNotice(false)}>
               확인

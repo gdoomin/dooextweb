@@ -19,6 +19,11 @@ Next.js App Router frontend.
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
+## Popup Notice Admin
+
+- URL: `/admin/popup` (example: `https://dooext.dooheetv.com/admin/popup`)
+- Password is validated by backend via `DOO_ADMIN_POPUP_PASSWORD`.
+
 ## Run
 
 ```powershell

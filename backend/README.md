@@ -1,18 +1,25 @@
 # Backend
 
-FastAPI 백엔드입니다.
+FastAPI backend for persistence and viewer/download APIs.
 
-## 주요 파일
+## Current Role
 
-- `app/main.py`: API 시작점
-- `requirements.txt`: 백엔드 의존성
+- Accepts already-converted JSON payloads from the browser at `POST /api/convert`
+- Stores conversion jobs/history metadata
+- Serves viewer pages and download endpoints (`/api/viewer/*`, `/api/download/*`)
 
-## 현재 API
+The backend no longer parses uploaded KML files directly.
 
-- `GET /health`
-- `POST /api/convert`
+## Persistent Data (Railway)
 
-## 실행
+- Runtime data (jobs/history/viewer state) is stored under `DOO_DATA_DIR`.
+- Default in container is `/data`.
+- For Railway production, mount a Railway Volume to `/data` so redeploy does not wipe JSON files.
+- If `DOO_DATA_DIR` changes, backend auto-copies missing files from legacy `backend/runtime` on startup.
+- Popup notice settings are stored in `DOO_DATA_DIR/popup_notice.json`.
+- Set `DOO_ADMIN_POPUP_PASSWORD` to use the popup admin page (`/admin/popup` on frontend).
+
+## Run
 
 ```powershell
 cd C:\Users\indoo\Desktop\DH_APP\DOO_EXTRACTOR_Web

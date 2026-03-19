@@ -1,6 +1,7 @@
 import json
 import os
 import re
+import secrets
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -70,6 +71,9 @@ MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 FONTS_DIR = ASSETS_DIR / "fonts"
+POPUP_NOTICE_PATH = RUNTIME_DIR / "popup_notice.json"
+
+DEFAULT_POPUP_NOTICE_MESSAGE = "지금 말도 안되게 대낮에 업데이트 중입니다. 죄송합니다."
 
 USER_HISTORY_LIMIT = 50
 SUPABASE_HTTP_TIMEOUT_SECONDS = 10
@@ -89,6 +93,16 @@ class ClientConvertPayload(BaseModel):
     text_output: str
     map_payload: dict
     results: list[dict]
+
+
+class PopupNoticeAuthPayload(BaseModel):
+    password: str
+
+
+class PopupNoticeUpdatePayload(BaseModel):
+    password: str
+    message: str
+    enabled: bool = True
 
 for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -170,6 +184,56 @@ def _load_json(path: Path, default):
 def _save_json(path: Path, data) -> None:
     with path.open("w", encoding="utf-8") as handle:
         json.dump(data, handle, ensure_ascii=False, indent=2)
+
+
+def _default_popup_notice() -> dict:
+    return {
+        "enabled": True,
+        "message": DEFAULT_POPUP_NOTICE_MESSAGE,
+        "updated_at": "",
+    }
+
+
+def _normalize_popup_notice(data: dict | None) -> dict:
+    baseline = _default_popup_notice()
+    payload = data if isinstance(data, dict) else {}
+
+    message = str(payload.get("message") or "").strip()
+    enabled = bool(payload.get("enabled", baseline["enabled"]))
+    updated_at = str(payload.get("updated_at") or "").strip()
+
+    return {
+        "enabled": enabled,
+        "message": message or baseline["message"],
+        "updated_at": updated_at,
+    }
+
+
+def _load_popup_notice() -> dict:
+    raw = _load_json(POPUP_NOTICE_PATH, None)
+    return _normalize_popup_notice(raw if isinstance(raw, dict) else None)
+
+
+def _save_popup_notice(message: str, enabled: bool) -> dict:
+    notice = {
+        "enabled": bool(enabled),
+        "message": str(message or "").strip() or DEFAULT_POPUP_NOTICE_MESSAGE,
+        "updated_at": _utc_now_iso(),
+    }
+    _save_json(POPUP_NOTICE_PATH, notice)
+    return notice
+
+
+def _admin_popup_password() -> str:
+    return str(os.getenv("DOO_ADMIN_POPUP_PASSWORD") or os.getenv("DOO_ADMIN_PASSWORD") or "").strip()
+
+
+def _require_popup_admin_password(password: str) -> None:
+    configured = _admin_popup_password()
+    if not configured:
+        raise HTTPException(status_code=503, detail="관리자 비밀번호가 설정되지 않았습니다.")
+    if not secrets.compare_digest(str(password or ""), configured):
+        raise HTTPException(status_code=401, detail="비밀번호가 일치하지 않습니다.")
 
 
 def _load_map_layers() -> dict:
@@ -401,6 +465,29 @@ def _external_base_url(request: Request) -> str:
 @app.get("/health")
 def health():
     return {"ok": True, "service": "doo-extractor-web"}
+
+
+@app.get("/api/popup-notice")
+def get_popup_notice():
+    return JSONResponse(_load_popup_notice())
+
+
+@app.post("/api/admin/popup-notice/verify")
+def verify_popup_notice_admin(payload: PopupNoticeAuthPayload):
+    _require_popup_admin_password(payload.password)
+    return JSONResponse({"ok": True, "notice": _load_popup_notice()})
+
+
+@app.post("/api/admin/popup-notice")
+def update_popup_notice(payload: PopupNoticeUpdatePayload):
+    _require_popup_admin_password(payload.password)
+
+    message = str(payload.message or "").strip()
+    if len(message) > 500:
+        raise HTTPException(status_code=400, detail="팝업 문구는 500자 이하로 입력해 주세요.")
+
+    notice = _save_popup_notice(message, payload.enabled)
+    return JSONResponse({"ok": True, "notice": notice})
 
 
 @app.post("/api/convert")
