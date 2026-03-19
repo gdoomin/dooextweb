@@ -157,7 +157,7 @@
       min-width: 0;
     }
     .toolbar > .toolbar-row:first-child {
-      flex-wrap: nowrap;
+      flex-wrap: wrap;
     }
     .toolbar-banner {
       margin-left: auto;
@@ -2561,19 +2561,21 @@
       });
     }
 
+    function getKmlLabelText(entry, index) {
+      const raw = typeof entry.row.num === 'string' ? entry.row.num.trim() : '';
+      return raw || String(index + 1);
+    }
+
     function refreshKmlLabels() {
       kmlLabelGroup.clearLayers();
-      if (!payload.has_kml_num) {
-        return;
-      }
-
       const inlineStyle = getKmlLabelStyle();
-      resultLineEntries.forEach((entry) => {
-        if (!entry.row.num) {
+      resultLineEntries.forEach((entry, index) => {
+        const labelText = getKmlLabelText(entry, index);
+        if (!labelText) {
           return;
         }
         L.marker(entry.labelPoint, {
-          icon: labelIcon(entry.row.num, 'kml', inlineStyle),
+          icon: labelIcon(labelText, 'kml', inlineStyle),
           keyboard: false,
           interactive: false
         }).addTo(kmlLabelGroup);
@@ -2731,13 +2733,8 @@
 
       map.addLayer(forceLabelGroup);
       setForceControlsEnabled(true);
-      if (payload.has_kml_num) {
-        syncGroup(numToggle, kmlLabelGroup, payload.default_show_num);
-        setNumControlsEnabled(numToggle.checked);
-      } else {
-        numWrap.style.display = 'none';
-        numControls.style.display = 'none';
-      }
+      syncGroup(numToggle, kmlLabelGroup, payload.has_kml_num ? payload.default_show_num : false);
+      setNumControlsEnabled(numToggle.checked);
       refreshKmlLabels();
       refreshForceLabels();
     }
@@ -2752,7 +2749,7 @@
       return {
         version: VIEWER_STATE_VERSION,
         gray: grayToggle.checked,
-        numVisible: payload.has_kml_num ? numToggle.checked : false,
+        numVisible: numToggle.checked,
         numSize: getKmlFontSize(),
         numColor: getKmlColor(),
         forceStart: getForceStartNumber(),
@@ -2932,24 +2929,22 @@
         }
         applyBaseMapTone();
 
-        if (payload.has_kml_num) {
-          if (typeof saved.numVisible === 'boolean') {
-            numToggle.checked = saved.numVisible;
-          }
-          if (Number.isFinite(saved.numSize)) {
-            numSizeInput.value = String(clamp(saved.numSize, 8, 48));
-          }
-          if (typeof saved.numColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.numColor)) {
-            numColorInput.value = saved.numColor;
-          }
-          setNumControlsEnabled(numToggle.checked);
-          if (numToggle.checked) {
-            map.addLayer(kmlLabelGroup);
-          } else {
-            map.removeLayer(kmlLabelGroup);
-          }
-          refreshKmlLabels();
+        if (typeof saved.numVisible === 'boolean') {
+          numToggle.checked = saved.numVisible;
         }
+        if (Number.isFinite(saved.numSize)) {
+          numSizeInput.value = String(clamp(saved.numSize, 8, 48));
+        }
+        if (typeof saved.numColor === 'string' && /^#[0-9a-f]{6}$/i.test(saved.numColor)) {
+          numColorInput.value = saved.numColor;
+        }
+        setNumControlsEnabled(numToggle.checked);
+        if (numToggle.checked) {
+          map.addLayer(kmlLabelGroup);
+        } else {
+          map.removeLayer(kmlLabelGroup);
+        }
+        refreshKmlLabels();
 
         if (Number.isFinite(saved.forceStart)) {
           forceStartInput.value = String(saved.forceStart);
