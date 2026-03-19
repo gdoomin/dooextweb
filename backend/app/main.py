@@ -875,7 +875,7 @@ def _ensure_billing_record(user_id: str, user_email: str) -> dict[str, Any]:
 
     next_record = _default_billing_record(normalized_user_id, user_email)
     try:
-        supabase_url, service_role_key = _supabase_auth_config()
+        supabase_url, service_role_key = _supabase_admin_config()
         profile = _supabase_lookup_user_profile(
             supabase_url,
             service_role_key,
@@ -1099,9 +1099,23 @@ def _payment_event_key(payload: dict[str, str]) -> str:
 def _supabase_auth_config() -> tuple[str, str]:
     supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
     service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    anon_key = str(os.getenv("SUPABASE_ANON_KEY") or os.getenv("NEXT_PUBLIC_SUPABASE_ANON_KEY") or "").strip()
+    auth_key = service_role_key or anon_key
+
+    if not supabase_url or not auth_key:
+        raise HTTPException(status_code=503, detail="서버 Supabase 인증 설정이 누락되었습니다.")
+    if not _is_http_url(supabase_url):
+        raise HTTPException(status_code=503, detail="SUPABASE_URL 형식이 올바르지 않습니다.")
+
+    return supabase_url, auth_key
+
+
+def _supabase_admin_config() -> tuple[str, str]:
+    supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
+    service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
 
     if not supabase_url or not service_role_key:
-        raise HTTPException(status_code=503, detail="서버 Supabase 인증 설정이 누락되었습니다.")
+        raise HTTPException(status_code=503, detail="서버 Supabase 관리자 인증 설정이 누락되었습니다.")
     if not _is_http_url(supabase_url):
         raise HTTPException(status_code=503, detail="SUPABASE_URL 형식이 올바르지 않습니다.")
 
@@ -1587,7 +1601,7 @@ async def request_password_reset(payload: PasswordResetRequest):
     if redirect_to and not _is_http_url(redirect_to):
         raise HTTPException(status_code=400, detail="redirect_to URL 형식이 올바르지 않습니다.")
 
-    supabase_url, service_role_key = _supabase_auth_config()
+    supabase_url, service_role_key = _supabase_admin_config()
     if not _supabase_user_exists(supabase_url, service_role_key, email):
         raise HTTPException(status_code=404, detail="가입되지 않은 이메일입니다.")
 
