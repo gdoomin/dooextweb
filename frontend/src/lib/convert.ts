@@ -60,6 +60,50 @@ export type ServerHistoryItem = {
   uploaded_at: string;
 };
 
+export type BillingPlan = {
+  plan_code: "free" | "lite" | "pro";
+  name: string;
+  price_krw_monthly: number;
+};
+
+export type BillingFeatures = {
+  history?: boolean;
+  viewer_state?: boolean;
+  text_download?: boolean;
+  excel_download?: boolean;
+  weather_metar_taf?: boolean;
+  weather_satellite?: boolean;
+  notam_detail?: boolean;
+};
+
+export type BillingStatusResponse = {
+  billing_enabled: boolean;
+  user_id: string;
+  user_email: string;
+  plan_code: "free" | "lite" | "pro" | "legacy";
+  legacy_full_access: boolean;
+  is_new_pricing_user: boolean;
+  subscription_status: string;
+  subscription_active: boolean;
+  monthly_kml_limit: number;
+  monthly_kml_used: number;
+  monthly_kml_remaining: number;
+  file_size_limit_mb: number;
+  history_days: number;
+  history_limit: number;
+  features: BillingFeatures;
+  plans?: BillingPlan[];
+};
+
+export type BillingStartResponse = {
+  ok: boolean;
+  order_id: string;
+  plan_code: "lite" | "pro";
+  price_krw: number;
+  payurl: string;
+  rebill_no: string;
+};
+
 export type ClientConvertRequestBody = {
   filename: string;
   project_name: string;
@@ -68,6 +112,7 @@ export type ClientConvertRequestBody = {
   text_output: string;
   map_payload: MapPayload;
   results: Array<Record<string, unknown>>;
+  source_file_bytes?: number;
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";
@@ -258,17 +303,22 @@ export function loadLastConvert(): ConvertResponse | null {
   }
 }
 
-export function buildUserHeaders(userId: string, userEmail = ""): HeadersInit {
-  return {
+export function buildUserHeaders(userId: string, userEmail = "", accessToken = ""): HeadersInit {
+  const headers: Record<string, string> = {
     "X-DOO-USER-ID": userId,
     "X-DOO-USER-EMAIL": userEmail,
   };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return headers;
 }
 
 export async function persistConvertedJob(
   payload: ClientConvertRequestBody,
   userId = "",
   userEmail = "",
+  accessToken = "",
 ): Promise<ConvertResponse> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -276,6 +326,9 @@ export async function persistConvertedJob(
   if (userId) {
     headers["X-DOO-USER-ID"] = userId;
     headers["X-DOO-USER-EMAIL"] = userEmail;
+  }
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
   }
 
   const response = await fetch(`${API_BASE_URL}/api/convert`, {
@@ -293,9 +346,9 @@ export async function persistConvertedJob(
   return body as ConvertResponse;
 }
 
-export async function fetchUserHistory(userId: string, userEmail = ""): Promise<ServerHistoryItem[]> {
+export async function fetchUserHistory(userId: string, userEmail = "", accessToken = ""): Promise<ServerHistoryItem[]> {
   const response = await fetch(`${API_BASE_URL}/api/history`, {
-    headers: buildUserHeaders(userId, userEmail),
+    headers: buildUserHeaders(userId, userEmail, accessToken),
     cache: "no-store",
   });
   const { body, rawText } = await parseResponseBody(response);
@@ -309,9 +362,9 @@ export async function fetchUserHistory(userId: string, userEmail = ""): Promise<
   return isHistoryListResponse(payload) && Array.isArray(payload.items) ? payload.items : [];
 }
 
-export async function reopenHistoryItem(jobId: string, userId: string, userEmail = ""): Promise<ConvertResponse> {
+export async function reopenHistoryItem(jobId: string, userId: string, userEmail = "", accessToken = ""): Promise<ConvertResponse> {
   const response = await fetch(`${API_BASE_URL}/api/history/${jobId}`, {
-    headers: buildUserHeaders(userId, userEmail),
+    headers: buildUserHeaders(userId, userEmail, accessToken),
     cache: "no-store",
   });
   const { body, rawText } = await parseResponseBody(response);
@@ -322,4 +375,66 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
     throw new Error("히스토리 응답 형식이 올바르지 않습니다.");
   }
   return body as ConvertResponse;
+}
+
+export async function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/billing/status`, {
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+    cache: "no-store",
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "결제 상태를 확인하지 못했습니다."));
+  }
+  if (!body || typeof body !== "object") {
+    throw new Error("결제 상태 응답 형식이 올바르지 않습니다.");
+  }
+  return body as BillingStatusResponse;
+}
+
+export async function startBillingSubscription(
+  planCode: "lite" | "pro",
+  buyerPhone: string,
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<BillingStartResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/billing/payapp/start`, {
+    method: "POST",
+    headers: {
+      ...buildUserHeaders(userId, userEmail, accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      plan_code: planCode,
+      buyer_phone: buyerPhone,
+    }),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "구독 결제를 시작하지 못했습니다."));
+  }
+  if (!body || typeof body !== "object") {
+    throw new Error("구독 시작 응답 형식이 올바르지 않습니다.");
+  }
+  return body as BillingStartResponse;
+}
+
+export async function cancelBillingSubscription(
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/billing/subscription/cancel`, {
+    method: "POST",
+    headers: {
+      ...buildUserHeaders(userId, userEmail, accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ reason: "user_requested" }),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "구독 해지에 실패했습니다."));
+  }
 }

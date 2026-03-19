@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -7,13 +7,17 @@ import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { LoginForm } from "@/components/LoginForm";
 import {
   API_BASE_URL,
+  type BillingStatusResponse,
   type ConvertResponse,
   type ServerHistoryItem,
+  cancelBillingSubscription,
+  fetchBillingStatus,
   fetchUserHistory,
   loadLastConvert,
   persistConvertedJob,
   reopenHistoryItem,
   saveLastConvert,
+  startBillingSubscription,
 } from "@/lib/convert";
 import { convertKmlFileInBrowser } from "@/lib/kml-client-convert";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
@@ -145,29 +149,45 @@ export function HomeScreen({
   const [historyOpeningId, setHistoryOpeningId] = useState("");
   const [userEmail, setUserEmail] = useState(initialUserEmail);
   const [userId, setUserId] = useState(initialUserId);
+  const [accessToken, setAccessToken] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMessage, setAuthMessage] = useState("전체 기능을 사용하려면 회원가입이 필요합니다.");
+  const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
+  const [billingLoading, setBillingLoading] = useState(false);
+  const [billingActionLoading, setBillingActionLoading] = useState(false);
+  const [buyerPhone, setBuyerPhone] = useState("");
 
   const isAuthenticated = Boolean(userId);
   const pathLabel = useMemo(() => response?.filename || "", [response]);
   const modeText = response ? modeLabel[response.mode] : "KML을 업로드하면 변환 결과가 표시됩니다.";
+  const canUseHistory = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.history);
+  const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
+  const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
+  const shouldShowPricing =
+    Boolean(billingStatus?.billing_enabled) &&
+    isAuthenticated &&
+    Boolean(billingStatus?.is_new_pricing_user);
 
   async function resolveCurrentIdentity() {
     if (!authAvailable) {
-      return { id: "", email: "" };
+      return { id: "", email: "", token: "" };
     }
 
     const supabase = createSupabaseClient();
     if (!supabase) {
-      return { id: userId, email: userEmail };
+      return { id: userId, email: userEmail, token: accessToken };
     }
 
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       const resolvedId = user?.id || "";
       const resolvedEmail = user?.email || "";
+      const resolvedToken = session?.access_token || "";
 
       if (resolvedId !== userId) {
         setUserId(resolvedId);
@@ -175,10 +195,13 @@ export function HomeScreen({
       if (resolvedEmail !== userEmail) {
         setUserEmail(resolvedEmail);
       }
+      if (resolvedToken !== accessToken) {
+        setAccessToken(resolvedToken);
+      }
 
-      return { id: resolvedId, email: resolvedEmail };
+      return { id: resolvedId, email: resolvedEmail, token: resolvedToken };
     } catch {
-      return { id: userId, email: userEmail };
+      return { id: userId, email: userEmail, token: accessToken };
     }
   }
 
@@ -186,6 +209,7 @@ export function HomeScreen({
     if (!authAvailable) {
       setUserId("");
       setUserEmail("");
+      setAccessToken("");
       return;
     }
 
@@ -197,6 +221,7 @@ export function HomeScreen({
       if (!supabase) {
         setUserId("");
         setUserEmail("");
+        setAccessToken("");
         return;
       }
 
@@ -207,6 +232,12 @@ export function HomeScreen({
         setUserId(data.user?.id || "");
         setUserEmail(data.user?.email || "");
       });
+      supabase.auth.getSession().then(({ data }) => {
+        if (!mounted) {
+          return;
+        }
+        setAccessToken(data.session?.access_token || "");
+      });
 
       const {
         data: { subscription },
@@ -216,12 +247,14 @@ export function HomeScreen({
         }
         setUserId(session?.user?.id || "");
         setUserEmail(session?.user?.email || "");
+        setAccessToken(session?.access_token || "");
       });
 
       unsubscribe = () => subscription.unsubscribe();
     } catch {
       setUserId("");
       setUserEmail("");
+      setAccessToken("");
     }
 
     return () => {
@@ -235,6 +268,45 @@ export function HomeScreen({
 
     async function run() {
       if (!userId) {
+        setBillingStatus(null);
+        return;
+      }
+
+      setBillingLoading(true);
+      try {
+        const status = await fetchBillingStatus(userId, userEmail, accessToken);
+        if (!cancelled) {
+          setBillingStatus(status);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setBillingStatus(null);
+          setStatusTone("error");
+          setStatusMessage(describeUnknownError(error, "구독 상태를 확인하지 못했습니다."));
+        }
+      } finally {
+        if (!cancelled) {
+          setBillingLoading(false);
+        }
+      }
+    }
+
+    run();
+    return () => {
+      cancelled = true;
+    };
+  }, [userId, userEmail, accessToken]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function run() {
+      if (!userId) {
+        setHistoryItems([]);
+        setHistoryError("");
+        return;
+      }
+      if (!canUseHistory) {
         setHistoryItems([]);
         setHistoryError("");
         return;
@@ -243,7 +315,7 @@ export function HomeScreen({
       setHistoryLoading(true);
       setHistoryError("");
       try {
-        const items = await fetchUserHistory(userId, userEmail);
+        const items = await fetchUserHistory(userId, userEmail, accessToken);
         if (!cancelled) {
           setHistoryItems(items);
         }
@@ -263,7 +335,7 @@ export function HomeScreen({
     return () => {
       cancelled = true;
     };
-  }, [userId, userEmail]);
+  }, [userId, userEmail, accessToken, canUseHistory]);
 
   useEffect(() => {
     let cancelled = false;
@@ -333,8 +405,13 @@ export function HomeScreen({
     }).format(date);
   }
 
-  async function refreshHistory(nextUserId = userId, nextUserEmail = userEmail) {
+  async function refreshHistory(nextUserId = userId, nextUserEmail = userEmail, nextAccessToken = accessToken) {
     if (!nextUserId) {
+      setHistoryItems([]);
+      setHistoryError("");
+      return;
+    }
+    if (!canUseHistory) {
       setHistoryItems([]);
       setHistoryError("");
       return;
@@ -343,7 +420,7 @@ export function HomeScreen({
     setHistoryLoading(true);
     setHistoryError("");
     try {
-      const items = await fetchUserHistory(nextUserId, nextUserEmail);
+      const items = await fetchUserHistory(nextUserId, nextUserEmail, nextAccessToken);
       setHistoryItems(items);
     } catch (error) {
       setHistoryError(describeUnknownError(error, "히스토리를 불러오지 못했습니다."));
@@ -368,12 +445,22 @@ export function HomeScreen({
 
       const identity = await resolveCurrentIdentity();
       const uploadAuthenticated = Boolean(identity.id);
-      const converted = await persistConvertedJob(convertedForUpload, identity.id, identity.email);
+      const converted = await persistConvertedJob(
+        {
+          ...convertedForUpload,
+          source_file_bytes: file.size,
+        },
+        identity.id,
+        identity.email,
+        identity.token,
+      );
       setResponse(converted);
       saveLastConvert(converted);
 
       if (uploadAuthenticated) {
-        await refreshHistory(identity.id, identity.email);
+        await refreshHistory(identity.id, identity.email, identity.token);
+        const latestBilling = await fetchBillingStatus(identity.id, identity.email, identity.token);
+        setBillingStatus(latestBilling);
       }
 
       setStatusTone("success");
@@ -399,6 +486,11 @@ export function HomeScreen({
   }
 
   async function handleHistoryOpen(item: ServerHistoryItem) {
+    if (!canUseHistory) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.");
+      return;
+    }
     if (!requireAuth("개인 히스토리를 다시 열려면 로그인해 주세요.")) {
       return;
     }
@@ -408,7 +500,7 @@ export function HomeScreen({
     setStatusMessage(`${item.project_name || item.filename} 결과를 다시 불러오는 중입니다...`);
 
     try {
-      const reopened = await reopenHistoryItem(item.job_id, userId, userEmail);
+      const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
       setResponse(reopened);
       saveLastConvert(reopened);
       setStatusTone("success");
@@ -465,6 +557,11 @@ export function HomeScreen({
     if (!requireAuth("텍스트 다운로드는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
+    if (!canDownloadText) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 텍스트 다운로드를 사용할 수 없습니다.");
+      return;
+    }
 
     window.open(response.txt_download_url, "_blank", "noopener,noreferrer");
     setStatusTone("success");
@@ -483,6 +580,11 @@ export function HomeScreen({
       return;
     }
     if (!requireAuth("엑셀 다운로드는 로그인 후 사용할 수 있습니다.")) {
+      return;
+    }
+    if (!canDownloadExcel) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 엑셀 다운로드를 사용할 수 없습니다.");
       return;
     }
 
@@ -510,13 +612,78 @@ export function HomeScreen({
       await supabase.auth.signOut();
       setUserId("");
       setUserEmail("");
+      setAccessToken("");
       setHistoryItems([]);
       setHistoryError("");
+      setBillingStatus(null);
       setStatusTone("idle");
       setStatusMessage("로그아웃했습니다.");
     } catch {
       setStatusTone("error");
       setStatusMessage("로그아웃에 실패했습니다.");
+    }
+  }
+
+  async function handleStartSubscription(planCode: "lite" | "pro") {
+    const identity = await resolveCurrentIdentity();
+    if (!identity.id) {
+      openAuthModal("구독 결제를 시작하려면 로그인해 주세요.");
+      return;
+    }
+    if (!identity.token) {
+      setStatusTone("error");
+      setStatusMessage("보안을 위해 다시 로그인 후 결제를 진행해 주세요.");
+      return;
+    }
+
+    const normalizedPhone = buyerPhone.replace(/[^0-9]/g, "");
+    if (normalizedPhone.length < 9) {
+      setStatusTone("error");
+      setStatusMessage("결제용 휴대전화 번호를 먼저 입력해 주세요.");
+      return;
+    }
+
+    setBillingActionLoading(true);
+    setStatusTone("loading");
+    setStatusMessage("결제 창을 준비하고 있습니다...");
+    try {
+      const result = await startBillingSubscription(planCode, normalizedPhone, identity.id, identity.email, identity.token);
+      if (!result.payurl) {
+        throw new Error("결제 페이지 URL을 받지 못했습니다.");
+      }
+      window.location.href = result.payurl;
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "구독 결제를 시작하지 못했습니다."));
+    } finally {
+      setBillingActionLoading(false);
+    }
+  }
+
+  async function handleCancelSubscription() {
+    const identity = await resolveCurrentIdentity();
+    if (!identity.id) {
+      return;
+    }
+    if (!identity.token) {
+      setStatusTone("error");
+      setStatusMessage("보안을 위해 다시 로그인 후 구독 해지를 진행해 주세요.");
+      return;
+    }
+    setBillingActionLoading(true);
+    setStatusTone("loading");
+    setStatusMessage("구독을 해지하고 있습니다...");
+    try {
+      await cancelBillingSubscription(identity.id, identity.email, identity.token);
+      const latest = await fetchBillingStatus(identity.id, identity.email, identity.token);
+      setBillingStatus(latest);
+      setStatusTone("success");
+      setStatusMessage("구독이 해지되었습니다. 다음 결제일부터 자동결제가 중단됩니다.");
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "구독 해지에 실패했습니다."));
+    } finally {
+      setBillingActionLoading(false);
     }
   }
 
@@ -574,6 +741,75 @@ export function HomeScreen({
                   {isAuthenticated ? "로그아웃" : "회원가입 / 로그인"}
                 </button>
               </div>
+
+              {isAuthenticated ? (
+                <div className="doo-billing-card">
+                  <div className="doo-billing-head">
+                    <strong>구독 상태</strong>
+                    {billingLoading ? <span>확인 중...</span> : <span>{billingStatus?.plan_code || "free"}</span>}
+                  </div>
+
+                  {billingStatus?.billing_enabled ? (
+                    <>
+                      <p className="doo-billing-meta">
+                        월 변환: {billingStatus.monthly_kml_used}
+                        {billingStatus.monthly_kml_limit > 0 ? ` / ${billingStatus.monthly_kml_limit}` : " / 무제한"}
+                      </p>
+                      <p className="doo-billing-meta">파일 최대 용량: {billingStatus.file_size_limit_mb}MB</p>
+
+                      {shouldShowPricing ? (
+                        <div className="doo-billing-actions">
+                          <label className="doo-billing-phone">
+                            <span>결제용 휴대전화</span>
+                            <input
+                              type="tel"
+                              value={buyerPhone}
+                              onChange={(event) => setBuyerPhone(event.target.value)}
+                              placeholder="숫자만 입력"
+                              inputMode="numeric"
+                            />
+                          </label>
+                          <div className="doo-billing-buttons">
+                            <button
+                              type="button"
+                              className="doo-auth-button"
+                              onClick={() => handleStartSubscription("lite")}
+                              disabled={billingActionLoading}
+                            >
+                              라이트 3,900원
+                            </button>
+                            <button
+                              type="button"
+                              className="doo-auth-button"
+                              onClick={() => handleStartSubscription("pro")}
+                              disabled={billingActionLoading}
+                            >
+                              프로 8,900원
+                            </button>
+                            {billingStatus.subscription_active ? (
+                              <button
+                                type="button"
+                                className="doo-auth-button"
+                                onClick={handleCancelSubscription}
+                                disabled={billingActionLoading}
+                              >
+                                구독 해지
+                              </button>
+                            ) : null}
+                          </div>
+                          <p className="doo-billing-help">
+                            기존 가입자 혜택은 유지되며, 새 이메일로 신규 가입하면 신규 정책이 적용됩니다.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="doo-billing-help">기존 가입자 혜택 계정은 별도 결제가 필요하지 않습니다.</p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="doo-billing-help">결제 기능 준비 중입니다.</p>
+                  )}
+                </div>
+              ) : null}
             </div>
           </aside>
 
@@ -618,11 +854,13 @@ export function HomeScreen({
                   <div>
                     <div className="doo-panel-title">히스토리</div>
                   </div>
-                  {isAuthenticated ? <span className="doo-panel-count">{historyItems.length}건</span> : null}
+                  {isAuthenticated && canUseHistory ? <span className="doo-panel-count">{historyItems.length}건</span> : null}
                 </div>
 
                 {!isAuthenticated ? (
                   <p className="doo-history-empty">로그인하면 업로드 시점이 서버에 저장되고, 이곳에서 다시열기로 현재 결과를 덮어쓸 수 있습니다.</p>
+                ) : !canUseHistory ? (
+                  <p className="doo-history-empty">현재 플랜에서는 히스토리를 사용할 수 없습니다. 구독 후 이용해 주세요.</p>
                 ) : historyLoading ? (
                   <p className="doo-history-empty">히스토리를 불러오는 중입니다...</p>
                 ) : historyError ? (
@@ -665,10 +903,20 @@ export function HomeScreen({
                 <button type="button" className="doo-action doo-action-copy" onClick={copyClipboard}>
                   클립보드 복사
                 </button>
-                <button type="button" className="doo-action doo-action-xlsx" onClick={downloadExcel}>
+                <button
+                  type="button"
+                  className="doo-action doo-action-xlsx"
+                  onClick={downloadExcel}
+                  disabled={isAuthenticated && !canDownloadExcel}
+                >
                   엑셀 저장
                 </button>
-                <button type="button" className="doo-action doo-action-txt" onClick={downloadText}>
+                <button
+                  type="button"
+                  className="doo-action doo-action-txt"
+                  onClick={downloadText}
+                  disabled={isAuthenticated && !canDownloadText}
+                >
                   텍스트 저장
                 </button>
                 <button type="button" className="doo-action doo-action-map" onClick={openViewer}>
@@ -730,3 +978,4 @@ export function HomeScreen({
     </>
   );
 }
+

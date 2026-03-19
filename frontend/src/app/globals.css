@@ -224,6 +224,78 @@ textarea {
   padding-bottom: 62px;
 }
 
+.doo-billing-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-radius: 18px;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  background: rgba(18, 34, 48, 0.72);
+  padding: 14px;
+  color: #c9d1d9;
+}
+
+.doo-billing-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.doo-billing-head strong {
+  font-size: 13px;
+  color: #e6edf3;
+}
+
+.doo-billing-head span {
+  font-size: 12px;
+  color: #9cc8f0;
+  text-transform: uppercase;
+}
+
+.doo-billing-meta {
+  margin: 0;
+  color: #9fb3c8;
+  font-size: 12px;
+}
+
+.doo-billing-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.doo-billing-phone {
+  display: grid;
+  gap: 6px;
+}
+
+.doo-billing-phone span {
+  color: #9fb3c8;
+  font-size: 12px;
+}
+
+.doo-billing-phone input {
+  width: 100%;
+  border: 1px solid rgba(121, 192, 255, 0.2);
+  border-radius: 10px;
+  background: #0e1d2b;
+  color: #e6edf3;
+  padding: 9px 10px;
+  font-size: 13px;
+}
+
+.doo-billing-buttons {
+  display: grid;
+  gap: 6px;
+}
+
+.doo-billing-help {
+  margin: 0;
+  color: #8b949e;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
 .doo-history-card {
   display: flex;
   flex-direction: column;
@@ -756,6 +828,12 @@ textarea {
   box-shadow:
     0 0 0 1px rgba(0, 0, 0, 0.18) inset,
     0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.doo-action:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  filter: grayscale(0.2);
 }
 
 .doo-action-copy {
