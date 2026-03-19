@@ -123,6 +123,7 @@ PAYAPP_CANCEL_STATES = {"8", "9", "32", "64"}
 PAYAPP_PARTIAL_CANCEL_STATES = {"70", "71"}
 PAYAPP_PENDING_STATES = {"1", "10"}
 MONTH_KEY_FORMAT = "%Y-%m"
+DEFAULT_BILLING_CUTOVER_AT = datetime(2026, 3, 19, 0, 0, tzinfo=timezone(timedelta(hours=9)))
 PLAN_POLICIES: dict[str, dict[str, Any]] = {
     DEFAULT_PLAN_CODE: {
         "monthly_kml_limit": 5,
@@ -554,8 +555,9 @@ def _billing_enabled() -> bool:
 def _billing_cutover_at() -> datetime | None:
     raw = str(os.getenv("DOO_BILLING_CUTOVER_AT") or "").strip()
     if not raw:
-        return None
-    return _parse_iso_datetime(raw)
+        return DEFAULT_BILLING_CUTOVER_AT
+    parsed = _parse_iso_datetime(raw)
+    return parsed if parsed is not None else DEFAULT_BILLING_CUTOVER_AT
 
 
 def _normalize_plan_code(value: str | None, *, fallback: str = DEFAULT_PLAN_CODE) -> str:
@@ -691,6 +693,7 @@ def _default_billing_record(user_id: str, user_email: str) -> dict[str, Any]:
         "user_email": _normalize_user_email(user_email),
         "plan_code": DEFAULT_PLAN_CODE,
         "legacy_full_access": False,
+        "legacy_checked": False,
         "subscription_status": "inactive",
         "subscription_active": False,
         "subscription_started_at": "",
@@ -722,6 +725,7 @@ def _save_user_billing_record(record: dict[str, Any]) -> dict[str, Any]:
     next_record["user_email"] = _normalize_user_email(str(record.get("user_email") or ""))
     next_record["plan_code"] = _normalize_plan_code(str(record.get("plan_code") or ""), fallback=DEFAULT_PLAN_CODE)
     next_record["legacy_full_access"] = bool(record.get("legacy_full_access"))
+    next_record["legacy_checked"] = bool(record.get("legacy_checked"))
     next_record["subscription_status"] = _normalize_subscription_status(
         str(record.get("subscription_status") or ""),
         fallback="inactive",
@@ -886,41 +890,69 @@ def _is_legacy_member(created_at: str | None) -> bool:
     return joined_at <= cutover
 
 
-def _ensure_billing_record(user_id: str, user_email: str) -> dict[str, Any]:
+def _mark_legacy_full_access(record: dict[str, Any], note: str = "legacy_member_before_billing_cutover") -> None:
+    record["legacy_full_access"] = True
+    record["legacy_checked"] = True
+    record["plan_code"] = LEGACY_PLAN_CODE
+    record["subscription_status"] = "active"
+    record["subscription_active"] = True
+    if note:
+        record["notes"] = note
+
+
+def _try_mark_legacy_from_admin_profile(record: dict[str, Any], user_id: str, user_email: str) -> tuple[bool, bool]:
+    try:
+        supabase_url, service_role_key = _supabase_admin_config()
+        profile = _supabase_lookup_user_profile(
+            supabase_url,
+            service_role_key,
+            user_id=user_id,
+            user_email=user_email,
+        )
+        created_at = str(profile.get("created_at") or "").strip()
+        if _is_legacy_member(created_at):
+            _mark_legacy_full_access(record)
+            return True, True
+        record["legacy_checked"] = True
+        return True, False
+    except HTTPException:
+        record["notes"] = "supabase_profile_lookup_failed"
+        return False, False
+
+
+def _ensure_billing_record(user_id: str, user_email: str, created_at_hint: str = "") -> dict[str, Any]:
     normalized_user_id = _normalize_user_identity(user_id)
     if not normalized_user_id:
         return _default_billing_record("", user_email)
 
     existing = _load_user_billing_record(normalized_user_id)
     if existing:
+        changed = False
         if user_email and _normalize_user_email(str(existing.get("user_email") or "")) != _normalize_user_email(user_email):
             existing["user_email"] = _normalize_user_email(user_email)
+            changed = True
+        if not bool(existing.get("legacy_full_access")):
+            if _is_legacy_member(created_at_hint):
+                _mark_legacy_full_access(existing, "legacy_member_from_access_token")
+                changed = True
+            elif not bool(existing.get("legacy_checked")):
+                checked, upgraded = _try_mark_legacy_from_admin_profile(existing, normalized_user_id, user_email)
+                if checked or upgraded:
+                    changed = True
+        if changed:
             existing = _save_user_billing_record(existing)
         return existing
 
     next_record = _default_billing_record(normalized_user_id, user_email)
-    try:
-        supabase_url, service_role_key = _supabase_admin_config()
-        profile = _supabase_lookup_user_profile(
-            supabase_url,
-            service_role_key,
-            user_id=normalized_user_id,
-            user_email=user_email,
-        )
-        created_at = str(profile.get("created_at") or "").strip()
-        if _is_legacy_member(created_at):
-            next_record["legacy_full_access"] = True
-            next_record["plan_code"] = LEGACY_PLAN_CODE
-            next_record["subscription_status"] = "active"
-            next_record["subscription_active"] = True
-            next_record["notes"] = "legacy_member_before_billing_cutover"
-    except HTTPException:
-        next_record["notes"] = "supabase_profile_lookup_failed"
+    if _is_legacy_member(created_at_hint):
+        _mark_legacy_full_access(next_record, "legacy_member_from_access_token")
+    else:
+        _try_mark_legacy_from_admin_profile(next_record, normalized_user_id, user_email)
 
     return _save_user_billing_record(next_record)
 
 
-def _billing_status_for_user(user_id: str, user_email: str) -> dict[str, Any]:
+def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str = "") -> dict[str, Any]:
     normalized_user_id = _normalize_user_identity(user_id)
     normalized_email = _normalize_user_email(user_email)
     billing_enabled = _billing_enabled()
@@ -966,7 +998,7 @@ def _billing_status_for_user(user_id: str, user_email: str) -> dict[str, Any]:
             "history_limit": int(policy.get("history_limit") or 0),
         }
 
-    record = _ensure_billing_record(normalized_user_id, normalized_email)
+    record = _ensure_billing_record(normalized_user_id, normalized_email, created_at_hint=created_at_hint)
     effective_plan = _effective_plan_code(record)
     policy = _plan_policy(effective_plan)
     monthly_limit = int(policy.get("monthly_kml_limit") or 0)
@@ -1434,6 +1466,47 @@ def _supabase_user_from_access_token(access_token: str) -> tuple[str, str]:
     return user_id, user_email
 
 
+def _request_identity_with_created_at(
+    request: Request,
+    *,
+    required: bool = False,
+    require_token: bool = False,
+) -> tuple[str, str, str]:
+    token = _extract_bearer_token(request)
+    if token:
+        try:
+            supabase_url, auth_key = _supabase_auth_config()
+            supabase_request = UrlRequest(
+                url=f"{supabase_url}/auth/v1/user",
+                method="GET",
+                headers={
+                    "apikey": auth_key,
+                    "Authorization": f"Bearer {token}",
+                },
+            )
+            with urlopen(supabase_request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+                raw = response.read()
+            payload = json.loads(raw.decode("utf-8")) if raw else {}
+            if isinstance(payload, dict):
+                user_id = _normalize_user_identity(str(payload.get("id") or ""))
+                user_email = _normalize_user_email(str(payload.get("email") or ""))
+                created_at = str(payload.get("created_at") or "").strip()
+                if user_id:
+                    return user_id, user_email, created_at
+        except HTTPException:
+            if required:
+                raise
+        except Exception:
+            if required:
+                raise HTTPException(status_code=401, detail="?몄쬆 ?좏겙???꾩슂?⑸땲?? ?ㅼ떆 濡쒓렇?명빐 二쇱꽭??")
+
+    if required and require_token:
+        raise HTTPException(status_code=401, detail="?몄쬆 ?좏겙???꾩슂?⑸땲?? ?ㅼ떆 濡쒓렇?명빐 二쇱꽭??")
+
+    user_id, user_email = _request_user_identity(request, required=required)
+    return user_id, user_email, ""
+
+
 def _request_user_identity(request: Request, *, required: bool = False) -> tuple[str, str]:
     user_id = _normalize_user_identity(request.headers.get("X-DOO-USER-ID"))
     user_email = _normalize_user_email(request.headers.get("X-DOO-USER-EMAIL"))
@@ -1604,8 +1677,8 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
 
     job_id = uuid4().hex
     base_url = _external_base_url(request)
-    user_id, user_email = _request_user_identity(request)
-    billing_status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=False)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
 
     if user_id and billing_status.get("billing_enabled"):
         file_size_limit_mb = int(billing_status.get("file_size_limit_mb") or 0)
@@ -1848,15 +1921,15 @@ def get_notam_overlay(request: Request):
 
 @app.get("/api/history")
 def get_history(request: Request):
-    user_id, user_email = _request_user_identity(request, required=True)
-    billing_status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     return JSONResponse({"items": _load_user_history(user_id, user_email, billing_status=billing_status)})
 
 
 @app.get("/api/history/{job_id}")
 def get_history_item(job_id: str, request: Request):
-    user_id, user_email = _request_user_identity(request, required=True)
-    billing_status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     if not _has_feature_access(billing_status, "history"):
         raise HTTPException(status_code=402, detail="현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.")
     job = _load_job(job_id)
@@ -1888,16 +1961,16 @@ def get_billing_plans():
 
 @app.get("/api/billing/status")
 def get_billing_status(request: Request):
-    user_id, user_email = _request_verified_identity(request, required=False)
-    status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=False)
+    status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     status["plans"] = _public_plan_rows()
     return JSONResponse(status)
 
 
 @app.post("/api/billing/payapp/start")
 async def start_payapp_subscription(payload: BillingStartPayload, request: Request):
-    user_id, user_email = _request_verified_identity(request, required=True)
-    billing_status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True, require_token=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     if not billing_status.get("billing_enabled"):
         raise HTTPException(status_code=400, detail="결제 기능이 아직 활성화되지 않았습니다.")
     if not billing_status.get("is_new_pricing_user"):
@@ -2139,14 +2212,14 @@ async def payapp_fail(request: Request):
 
 @app.post("/api/billing/subscription/cancel")
 def cancel_subscription(payload: BillingCancelPayload, request: Request):
-    user_id, user_email = _request_verified_identity(request, required=True)
-    billing_status = _billing_status_for_user(user_id, user_email)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True, require_token=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     if not billing_status.get("billing_enabled"):
         raise HTTPException(status_code=400, detail="결제 기능이 아직 활성화되지 않았습니다.")
     if not billing_status.get("is_new_pricing_user"):
         raise HTTPException(status_code=400, detail="기존 가입자 혜택 계정은 해지 대상이 아닙니다.")
 
-    record = _ensure_billing_record(user_id, user_email)
+    record = _ensure_billing_record(user_id, user_email, created_at_hint=created_at_hint)
     rebill_no = str(record.get("payapp_rebill_no") or "").strip()
     if not rebill_no:
         raise HTTPException(status_code=400, detail="해지할 정기결제 정보가 없습니다.")

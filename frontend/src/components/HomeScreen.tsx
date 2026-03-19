@@ -47,22 +47,6 @@ const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
-const PLAN_GUIDE_COLUMNS = ["무료", "라이트", "프로"] as const;
-const PLAN_GUIDE_ROWS: Array<{ item: string; free: string; lite: string; pro: string }> = [
-  { item: "월 요금", free: "0원", lite: "3,900원", pro: "8,900원" },
-  { item: "월 KML 변환 횟수", free: "5회", lite: "30회", pro: "무제한" },
-  { item: "1파일 최대용량", free: "1MB", lite: "5MB", pro: "200MB" },
-  { item: "히스토리 보관", free: "없음", lite: "30일 / 최대 10건", pro: "무기한 / 사실상 무제한" },
-  { item: "Viewer 설정 저장", free: "없음", lite: "마지막 설정 저장", pro: "마지막 설정 저장" },
-  { item: "번호/텍스트/형광펜 편집", free: "불가", lite: "가능 (색상·굵기 고정)", pro: "전체 사용 가능" },
-  { item: "측정 결과 객체화/편집", free: "불가", lite: "가능 (선 색·굵기 고정)", pro: "전체 사용 가능" },
-  { item: "폰트/정렬 옵션", free: "기본 폰트 1종", lite: "무제한", pro: "무제한" },
-  { item: "NOTAM", free: "불러오기만", lite: "개별 조회 가능", pro: "개별 조회 가능" },
-  { item: "내보내기", free: "클립보드", lite: "텍스트·엑셀", pro: "텍스트·엑셀" },
-  { item: "날씨", free: "미지원", lite: "METAR/TAF", pro: "METAR/TAF + 위성영상" },
-  { item: "은둔/출현", free: "불가", lite: "가능", pro: "가능" },
-  { item: "겹", free: "MOA만", lite: "전체", pro: "전체" },
-];
 
 function describeUnknownError(error: unknown, fallback: string): string {
   const isObjectObjectText = (value: string) => value.trim() === "[object Object]";
@@ -991,40 +975,183 @@ export function HomeScreen({
       ) : null}
 
       {showPlanGuide ? (
-        <div className="auth-modal-backdrop" onClick={() => setShowPlanGuide(false)}>
-          <section className="auth-modal-card doo-plan-modal-card" onClick={(event) => event.stopPropagation()}>
-            <div className="auth-modal-copy">
-              <span className="auth-badge">Pricing</span>
-              <h2>DOO Extractor 요금제 안내</h2>
+        <div className="auth-modal-backdrop doo-pricing-backdrop" onClick={() => setShowPlanGuide(false)}>
+          <section className="doo-pricing-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="doo-pricing-header">
+              <div className="doo-pricing-tag">PRICING</div>
+              <h2>
+                DOO <span>Extractor</span> 요금제
+              </h2>
               <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다.</p>
             </div>
 
-            <div className="doo-plan-table-wrap">
-              <table className="doo-plan-table">
-                <thead>
-                  <tr>
-                    <th>기능</th>
-                    {PLAN_GUIDE_COLUMNS.map((column) => (
-                      <th key={column}>{column}</th>
-                    ))}
-                  </tr>
-                </thead>
+            <div className="doo-pricing-plans">
+              <article className="doo-pricing-plan doo-pricing-plan-free">
+                <div className="doo-pricing-badge">FREE</div>
+                <div className="doo-pricing-name">무료</div>
+                <div className="doo-pricing-price">
+                  0<span>원</span>
+                </div>
+                <div className="doo-pricing-period">/ 월</div>
+              </article>
+              <article className="doo-pricing-plan doo-pricing-plan-lite">
+                <div className="doo-pricing-badge">LITE</div>
+                <div className="doo-pricing-name">라이트</div>
+                <div className="doo-pricing-price">
+                  3,900<span>원</span>
+                </div>
+                <div className="doo-pricing-period">/ 월</div>
+              </article>
+              <article className="doo-pricing-plan doo-pricing-plan-pro">
+                <div className="doo-pricing-badge">★ PRO</div>
+                <div className="doo-pricing-name">프로</div>
+                <div className="doo-pricing-price">
+                  8,900<span>원</span>
+                </div>
+                <div className="doo-pricing-period">/ 월</div>
+              </article>
+            </div>
+
+            <div className="doo-pricing-table-wrap">
+              <table className="doo-pricing-table">
                 <tbody>
-                  {PLAN_GUIDE_ROWS.map((row) => (
-                    <tr key={row.item}>
-                      <td>{row.item}</td>
-                      <td>{row.free}</td>
-                      <td>{row.lite}</td>
-                      <td>{row.pro}</td>
-                    </tr>
-                  ))}
+                  <tr className="doo-pricing-category-row">
+                    <td colSpan={4}>기본 사용량</td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">월 KML 변환 횟수</td>
+                    <td className="doo-pricing-val-free">5회</td>
+                    <td className="doo-pricing-val-lite">
+                      <span className="doo-pricing-highlight-lite">30회</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">무제한</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">1파일 최대용량</td>
+                    <td className="doo-pricing-val-free">1MB</td>
+                    <td className="doo-pricing-val-lite">5MB</td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">200MB</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">히스토리 보관</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">—</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">
+                      30일<span className="doo-pricing-sub-note">최대 10건</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">무기한</span>
+                      <span className="doo-pricing-sub-note">사실상 무제한</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">Viewer 설정 저장</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">—</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">마지막 설정 저장</td>
+                    <td className="doo-pricing-val-pro">마지막 설정 저장</td>
+                  </tr>
+
+                  <tr className="doo-pricing-category-row">
+                    <td colSpan={4}>편집 기능</td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">번호 / 텍스트 / 형광펜 편집</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">✕</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">
+                      가능<span className="doo-pricing-sub-note">색상·굵기 고정</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">전체 사용 가능</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">측정 결과 객체화 / 편집</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">✕</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">
+                      가능<span className="doo-pricing-sub-note">선 색·굵기 고정</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">전체 사용 가능</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">폰트 / 정렬 옵션</td>
+                    <td className="doo-pricing-val-free">기본 폰트 1종</td>
+                    <td className="doo-pricing-val-lite">
+                      <span className="doo-pricing-highlight-lite">무제한</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">무제한</span>
+                    </td>
+                  </tr>
+
+                  <tr className="doo-pricing-category-row">
+                    <td colSpan={4}>고급 기능</td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">NOTAM</td>
+                    <td className="doo-pricing-val-free">불러오기만</td>
+                    <td className="doo-pricing-val-lite">개별 조회 가능</td>
+                    <td className="doo-pricing-val-pro">개별 조회 가능</td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">내보내기</td>
+                    <td className="doo-pricing-val-free">클립보드</td>
+                    <td className="doo-pricing-val-lite">텍스트·엑셀</td>
+                    <td className="doo-pricing-val-pro">텍스트·엑셀</td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">날씨</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">미지원</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">METAR / TAF</td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">METAR/TAF</span>
+                      <span className="doo-pricing-sub-note">+ 위성영상</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">은둔 / 출현</td>
+                    <td className="doo-pricing-val-free">
+                      <span className="doo-pricing-no">✕</span>
+                    </td>
+                    <td className="doo-pricing-val-lite">
+                      <span className="doo-pricing-yes">✓</span>
+                    </td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-yes">✓</span>
+                    </td>
+                  </tr>
+                  <tr className="doo-pricing-data-row">
+                    <td className="doo-pricing-feat-label">겹 MOA</td>
+                    <td className="doo-pricing-val-free">만</td>
+                    <td className="doo-pricing-val-lite">전체</td>
+                    <td className="doo-pricing-val-pro">
+                      <span className="doo-pricing-highlight-pro">전체</span>
+                    </td>
+                  </tr>
                 </tbody>
               </table>
             </div>
 
-            <button type="button" className="auth-modal-close" onClick={() => setShowPlanGuide(false)}>
-              닫기
-            </button>
+            <div className="doo-pricing-footer">
+              <p className="doo-pricing-footer-note">※ 요금제는 월 단위 자동 갱신되며, 언제든지 변경·해지 가능합니다.</p>
+              <button type="button" className="doo-pricing-close" onClick={() => setShowPlanGuide(false)}>
+                닫기
+              </button>
+            </div>
           </section>
         </div>
       ) : null}

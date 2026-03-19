@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>DOO Extractor Web Map</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700;900&display=swap">
   <style>
     html, body, #map { height: 100%; margin: 0; }
     body {
@@ -516,109 +517,326 @@
       display: none;
       align-items: center;
       justify-content: center;
-      padding: 16px;
+      padding: 20px;
       box-sizing: border-box;
-      background: rgba(4, 10, 18, 0.52);
+      background: rgba(4, 10, 18, 0.72);
       backdrop-filter: blur(8px);
     }
     .plan-guide-modal.is-visible {
       display: flex;
     }
     .plan-guide-card {
-      width: min(96vw, 1040px);
-      max-height: calc(100vh - 30px);
-      border-radius: 16px;
-      border: 1px solid rgba(121, 192, 255, 0.18);
-      background: rgba(15, 25, 35, 0.98);
-      box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42);
+      --bg: #0a0c10;
+      --surface: #111418;
+      --border: #1e2530;
+      --border-glow: #2a3545;
+      --text-primary: #e8edf5;
+      --text-secondary: #8a99b0;
+      --text-muted: #4a5568;
+      --free-accent: #6b7a90;
+      --lite-accent: #3b9ede;
+      --lite-glow: rgba(59, 158, 222, 0.15);
+      --pro-accent: #f59e0b;
+      --pro-glow: rgba(245, 158, 11, 0.18);
+      width: min(96vw, 860px);
+      max-height: min(92vh, 980px);
       overflow: hidden;
-      display: flex;
-      flex-direction: column;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-primary);
+      font-family: "Noto Sans KR", "Malgun Gothic", sans-serif;
+      box-shadow:
+        0 40px 100px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      animation: planGuideFadeUp 0.5s ease forwards;
     }
-    .plan-guide-head {
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(121, 192, 255, 0.2);
-      background: rgba(10, 19, 29, 0.95);
+    @keyframes planGuideFadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to { opacity: 1; transform: translateY(0); }
     }
-    .plan-guide-head h3 {
-      margin: 0;
-      color: #79c0ff;
-      font-size: 18px;
-      line-height: 1.25;
+    .plan-guide-header {
+      position: relative;
+      overflow: hidden;
+      padding: 36px 40px 28px;
+      border-bottom: 1px solid var(--border);
     }
-    .plan-guide-head p {
-      margin: 6px 0 0;
-      color: #c9d1d9;
-      font-size: 12px;
-      line-height: 1.5;
+    .plan-guide-header::before {
+      content: "PRICING";
+      position: absolute;
+      top: 50%;
+      right: -10px;
+      transform: translateY(-50%);
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-weight: 800;
+      font-size: 100px;
+      color: rgba(255, 255, 255, 0.02);
+      letter-spacing: -4px;
+      pointer-events: none;
+      user-select: none;
     }
-    .plan-guide-current {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 2px 8px;
-      border-radius: 999px;
-      border: 1px solid rgba(121, 192, 255, 0.28);
-      background: rgba(29, 44, 58, 0.92);
-      color: #e6edf3;
+    .plan-guide-tag {
+      display: inline-block;
+      background: rgba(59, 158, 222, 0.12);
+      border: 1px solid rgba(59, 158, 222, 0.3);
+      color: var(--lite-accent);
+      font-family: "Syne", "Noto Sans KR", sans-serif;
       font-size: 11px;
       font-weight: 700;
+      letter-spacing: 3px;
+      padding: 4px 12px;
+      border-radius: 4px;
+      margin-bottom: 16px;
+    }
+    .plan-guide-header h3 {
+      margin: 0;
+      color: var(--text-primary);
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-size: 36px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.1;
+    }
+    .plan-guide-header h3 span {
+      color: var(--lite-accent);
+    }
+    .plan-guide-header p {
+      margin: 10px 0 0;
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .plan-guide-plans {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0;
+      padding: 28px 28px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .plan-guide-plan {
+      padding: 24px 20px;
+      border-radius: 14px;
+      text-align: center;
+      position: relative;
+      transition: transform 0.2s ease;
+    }
+    .plan-guide-plan:hover {
+      transform: translateY(-2px);
+    }
+    .plan-guide-plan-free {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+    }
+    .plan-guide-plan-lite {
+      background: var(--lite-glow);
+      border: 1px solid rgba(59, 158, 222, 0.3);
+      box-shadow: 0 0 40px rgba(59, 158, 222, 0.08);
+    }
+    .plan-guide-plan-pro {
+      background: var(--pro-glow);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 0 40px rgba(245, 158, 11, 0.08);
+    }
+    .plan-guide-badge {
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+    .plan-guide-plan-free .plan-guide-badge {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+    }
+    .plan-guide-plan-lite .plan-guide-badge {
+      background: rgba(59, 158, 222, 0.2);
+      color: var(--lite-accent);
+    }
+    .plan-guide-plan-pro .plan-guide-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: var(--pro-accent);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .plan-guide-name {
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .plan-guide-plan-free .plan-guide-name {
+      color: var(--free-accent);
+    }
+    .plan-guide-plan-lite .plan-guide-name {
+      color: var(--lite-accent);
+    }
+    .plan-guide-plan-pro .plan-guide-name {
+      color: var(--pro-accent);
+    }
+    .plan-guide-price {
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 2px;
+    }
+    .plan-guide-price span {
+      font-size: 16px;
+      font-weight: 400;
+    }
+    .plan-guide-plan-free .plan-guide-price {
+      color: var(--text-secondary);
+    }
+    .plan-guide-plan-lite .plan-guide-price {
+      color: #ffffff;
+    }
+    .plan-guide-plan-pro .plan-guide-price {
+      color: var(--pro-accent);
+    }
+    .plan-guide-period {
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
     }
     .plan-guide-table-wrap {
-      padding: 12px;
-      overflow: auto;
+      padding: 0 28px 28px;
+      overflow-x: auto;
     }
     .plan-guide-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 760px;
-      font-size: 12px;
-      color: #d0d7de;
+      margin-top: 20px;
     }
-    .plan-guide-table th,
-    .plan-guide-table td {
-      border-right: 1px solid rgba(121, 192, 255, 0.12);
-      border-bottom: 1px solid rgba(121, 192, 255, 0.12);
-      padding: 8px 10px;
-      text-align: left;
-      vertical-align: top;
-      line-height: 1.5;
-    }
-    .plan-guide-table th:last-child,
-    .plan-guide-table td:last-child {
-      border-right: none;
-    }
-    .plan-guide-table thead th {
-      position: sticky;
-      top: 0;
-      background: rgba(20, 34, 48, 0.98);
-      color: #f7f9fb;
-      z-index: 1;
-      font-weight: 800;
-    }
-    .plan-guide-table td:first-child,
-    .plan-guide-table th:first-child {
-      width: 24%;
-      color: #f9d27c;
+    .plan-guide-category-row td {
+      padding: 18px 16px 6px;
+      font-family: "Syne", "Noto Sans KR", sans-serif;
+      font-size: 10px;
       font-weight: 700;
+      letter-spacing: 2.5px;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
     }
-    .plan-guide-table tbody td:nth-child(2) {
+    .plan-guide-data-row {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      transition: background 0.15s;
+    }
+    .plan-guide-data-row:hover {
       background: rgba(255, 255, 255, 0.02);
     }
-    .plan-guide-table tbody td:nth-child(3) {
-      background: rgba(255, 245, 164, 0.1);
-      color: #ffe898;
+    .plan-guide-table td {
+      padding: 14px 16px;
+      vertical-align: middle;
     }
-    .plan-guide-table tbody td:nth-child(4) {
-      background: rgba(255, 216, 77, 0.12);
-      color: #ffe9a8;
+    .plan-guide-feat-label {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+      width: 30%;
     }
-    .plan-guide-table tbody tr:last-child td {
-      border-bottom: none;
+    .plan-guide-val-free,
+    .plan-guide-val-lite,
+    .plan-guide-val-pro {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 400;
+      width: 23.3%;
+    }
+    .plan-guide-val-free {
+      color: var(--text-secondary);
+    }
+    .plan-guide-val-lite {
+      color: #a8d8f5;
+    }
+    .plan-guide-val-pro {
+      color: #fcd68a;
+    }
+    .plan-guide-no {
+      color: var(--text-muted);
+      font-size: 18px;
+    }
+    .plan-guide-yes {
+      color: var(--pro-accent);
+      font-size: 18px;
+    }
+    .plan-guide-sub-note {
+      display: block;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .plan-guide-highlight-lite {
+      color: var(--lite-accent) !important;
+      font-weight: 700;
+    }
+    .plan-guide-highlight-pro {
+      color: var(--pro-accent) !important;
+      font-weight: 700;
+    }
+    .plan-guide-footer {
+      padding: 20px 28px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      gap: 12px;
+    }
+    .plan-guide-footer-note {
+      margin: 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .plan-guide-close {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-glow);
+      color: var(--text-secondary);
+      font-family: "Noto Sans KR", sans-serif;
+      font-size: 14px;
+      font-weight: 500;
+      padding: 10px 28px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .plan-guide-close:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-primary);
+    }
+    @media (max-width: 600px) {
+      .plan-guide-header {
+        padding: 24px 20px 20px;
+      }
+      .plan-guide-header h3 {
+        font-size: 26px;
+      }
+      .plan-guide-plans {
+        padding: 20px 16px 0;
+        gap: 8px;
+      }
+      .plan-guide-price {
+        font-size: 24px;
+      }
+      .plan-guide-table-wrap {
+        padding: 0 16px 20px;
+      }
+      .plan-guide-feat-label {
+        font-size: 13px;
+      }
+      .plan-guide-val-free,
+      .plan-guide-val-lite,
+      .plan-guide-val-pro {
+        font-size: 12px;
+      }
+      .plan-guide-footer {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 16px;
+      }
     }
     #expandToolbarButton {
       display: none;
@@ -2050,39 +2268,115 @@
   </div>
   <div id="planGuideModal" class="plan-guide-modal">
     <div id="planGuideCard" class="plan-guide-card">
-      <div class="plan-guide-head">
-        <div>
-          <h3>DOO Extractor 요금제 안내</h3>
-          <p><span id="planGuideCurrentPlan" class="plan-guide-current">현재 플랜: FREE</span> · 기존 가입자 혜택 계정은 기존 기능 유지 / 새 이메일 재가입 시 신규 정책 적용</p>
+      <div class="plan-guide-header">
+        <div class="plan-guide-tag">PRICING</div>
+        <h3>DOO <span>Extractor</span> 요금제</h3>
+        <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다.</p>
+      </div>
+      <div class="plan-guide-plans">
+        <div class="plan-guide-plan plan-guide-plan-free">
+          <div class="plan-guide-badge">FREE</div>
+          <div class="plan-guide-name">무료</div>
+          <div class="plan-guide-price">0<span>원</span></div>
+          <div class="plan-guide-period">/ 월</div>
         </div>
-        <button id="planGuideCloseButton" class="mini-button" type="button">닫기</button>
+        <div class="plan-guide-plan plan-guide-plan-lite">
+          <div class="plan-guide-badge">LITE</div>
+          <div class="plan-guide-name">라이트</div>
+          <div class="plan-guide-price">3,900<span>원</span></div>
+          <div class="plan-guide-period">/ 월</div>
+        </div>
+        <div class="plan-guide-plan plan-guide-plan-pro">
+          <div class="plan-guide-badge">★ PRO</div>
+          <div class="plan-guide-name">프로</div>
+          <div class="plan-guide-price">8,900<span>원</span></div>
+          <div class="plan-guide-period">/ 월</div>
+        </div>
       </div>
       <div class="plan-guide-table-wrap">
         <table class="plan-guide-table">
-          <thead>
-            <tr>
-              <th>기능</th>
-              <th>무료</th>
-              <th>라이트</th>
-              <th>프로</th>
-            </tr>
-          </thead>
           <tbody>
-            <tr><td>월 요금</td><td>0원</td><td>3,900원</td><td>8,900원</td></tr>
-            <tr><td>월 KML 변환 횟수</td><td>5회</td><td>30회</td><td>무제한</td></tr>
-            <tr><td>1파일 최대용량</td><td>1MB</td><td>5MB</td><td>200MB</td></tr>
-            <tr><td>히스토리 보관</td><td>없음</td><td>30일 / 최대 10건</td><td>무기한 / 사실상 무제한</td></tr>
-            <tr><td>Viewer 설정 저장</td><td>없음</td><td>마지막 설정 저장</td><td>마지막 설정 저장</td></tr>
-            <tr><td>번호/텍스트/형광펜 편집</td><td>불가</td><td>가능 (색상·굵기 고정)</td><td>전체 사용 가능</td></tr>
-            <tr><td>측정 결과 객체화/편집</td><td>불가</td><td>가능 (선 색·굵기 고정)</td><td>전체 사용 가능</td></tr>
-            <tr><td>폰트/정렬 옵션</td><td>기본 폰트 1종</td><td>무제한</td><td>무제한</td></tr>
-            <tr><td>NOTAM</td><td>불러오기만</td><td>개별 조회 가능</td><td>개별 조회 가능</td></tr>
-            <tr><td>내보내기</td><td>클립보드</td><td>텍스트·엑셀</td><td>텍스트·엑셀</td></tr>
-            <tr><td>날씨</td><td>미지원</td><td>METAR/TAF</td><td>METAR/TAF + 위성영상</td></tr>
-            <tr><td>은둔/출현</td><td>불가</td><td>가능</td><td>가능</td></tr>
-            <tr><td>겹</td><td>MOA만</td><td>전체</td><td>전체</td></tr>
+            <tr class="plan-guide-category-row"><td colspan="4">기본 사용량</td></tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">월 KML 변환 횟수</td>
+              <td class="plan-guide-val-free">5회</td>
+              <td class="plan-guide-val-lite"><span class="plan-guide-highlight-lite">30회</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무제한</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">1파일 최대용량</td>
+              <td class="plan-guide-val-free">1MB</td>
+              <td class="plan-guide-val-lite">5MB</td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">200MB</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">히스토리 보관</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">—</span></td>
+              <td class="plan-guide-val-lite">30일<span class="plan-guide-sub-note">최대 10건</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무기한</span><span class="plan-guide-sub-note">사실상 무제한</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">Viewer 설정 저장</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">—</span></td>
+              <td class="plan-guide-val-lite">마지막 설정 저장</td>
+              <td class="plan-guide-val-pro">마지막 설정 저장</td>
+            </tr>
+            <tr class="plan-guide-category-row"><td colspan="4">편집 기능</td></tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">번호 / 텍스트 / 형광펜 편집</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
+              <td class="plan-guide-val-lite">가능<span class="plan-guide-sub-note">색상·굵기 고정</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체 사용 가능</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">측정 결과 객체화 / 편집</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
+              <td class="plan-guide-val-lite">가능<span class="plan-guide-sub-note">선 색·굵기 고정</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체 사용 가능</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">폰트 / 정렬 옵션</td>
+              <td class="plan-guide-val-free">기본 폰트 1종</td>
+              <td class="plan-guide-val-lite"><span class="plan-guide-highlight-lite">무제한</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">무제한</span></td>
+            </tr>
+            <tr class="plan-guide-category-row"><td colspan="4">고급 기능</td></tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">NOTAM</td>
+              <td class="plan-guide-val-free">불러오기만</td>
+              <td class="plan-guide-val-lite">개별 조회 가능</td>
+              <td class="plan-guide-val-pro">개별 조회 가능</td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">내보내기</td>
+              <td class="plan-guide-val-free">클립보드</td>
+              <td class="plan-guide-val-lite">텍스트·엑셀</td>
+              <td class="plan-guide-val-pro">텍스트·엑셀</td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">날씨</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">미지원</span></td>
+              <td class="plan-guide-val-lite">METAR / TAF</td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">METAR/TAF</span><span class="plan-guide-sub-note">+ 위성영상</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">은둔 / 출현</td>
+              <td class="plan-guide-val-free"><span class="plan-guide-no">✕</span></td>
+              <td class="plan-guide-val-lite"><span class="plan-guide-yes">✓</span></td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-yes">✓</span></td>
+            </tr>
+            <tr class="plan-guide-data-row">
+              <td class="plan-guide-feat-label">겹 MOA</td>
+              <td class="plan-guide-val-free">만</td>
+              <td class="plan-guide-val-lite">전체</td>
+              <td class="plan-guide-val-pro"><span class="plan-guide-highlight-pro">전체</span></td>
+            </tr>
           </tbody>
         </table>
+      </div>
+      <div class="plan-guide-footer">
+        <p class="plan-guide-footer-note">※ 요금제는 월 단위 자동 갱신되며, 언제든지 변경·해지 가능합니다.</p>
+        <button id="planGuideCloseButton" class="plan-guide-close" type="button">닫기</button>
       </div>
     </div>
   </div>
@@ -2168,19 +2462,6 @@
       collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
       notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
     };
-    function viewerPlanDisplayName(planCode) {
-      const normalized = String(planCode || '').trim().toLowerCase();
-      if (normalized === 'pro') {
-        return 'PRO';
-      }
-      if (normalized === 'lite') {
-        return 'LITE';
-      }
-      if (normalized === 'legacy') {
-        return 'LEGACY';
-      }
-      return 'FREE';
-    }
     const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     function normalizeLayerKey(value) {
       return String(value || '').trim().toLowerCase();
@@ -2334,7 +2615,6 @@
     const textInputSaveButton = document.getElementById('textInputSaveButton');
     const planGuideModal = document.getElementById('planGuideModal');
     const planGuideCard = document.getElementById('planGuideCard');
-    const planGuideCurrentPlan = document.getElementById('planGuideCurrentPlan');
     const planGuideCloseButton = document.getElementById('planGuideCloseButton');
     const notamInfoModal = document.getElementById('notamInfoModal');
     const notamInfoCard = document.getElementById('notamInfoCard');
@@ -2351,9 +2631,6 @@
       if (payload.signup_url) {
         previewGateLink.href = payload.signup_url;
       }
-    }
-    if (planGuideCurrentPlan) {
-      planGuideCurrentPlan.textContent = `현재 플랜: ${viewerPlanDisplayName(viewerPlanCode)}`;
     }
     previewGateBackButton.addEventListener('click', () => {
       if (window.history.length > 1) {
