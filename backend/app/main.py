@@ -105,6 +105,22 @@ SUPABASE_HTTP_TIMEOUT_SECONDS = 10
 JOB_PAYLOAD_SUPABASE_DEFAULT_BUCKET = "doo-job-payloads"
 JOB_PAYLOAD_SUPABASE_DEFAULT_TABLE = "doo_job_payload_meta"
 PAYAPP_API_URL = "https://api.payapp.kr/oapi/apiLoad.html"
+PAYAPP_DEFAULT_OPENPAYTYPE = "card,phone,kakaopay,naverpay,rbank,smilepay,payco,applepay,tosspay"
+PAYAPP_SUPPORTED_OPENPAYTYPE_TOKENS = {
+    "card",
+    "phone",
+    "rbank",
+    "vbank",
+    "kakaopay",
+    "naverpay",
+    "smilepay",
+    "applepay",
+    "payco",
+    "wechat",
+    "myaccount",
+    "tosspay",
+    "dvpay",
+}
 NOTAM_DEFAULT_SUPABASE_URL = "https://zxocgwaogeyhwkefqmts.supabase.co"
 NOTAM_DEFAULT_SUPABASE_ANON_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
@@ -1300,6 +1316,25 @@ def _payapp_config() -> tuple[str, str, str, str]:
         raise HTTPException(status_code=503, detail="PAYAPP_API_URL ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.")
 
     return userid, linkkey, linkval, api_url
+
+
+def _payapp_openpaytype() -> str:
+    configured = str(os.getenv("PAYAPP_OPENPAYTYPE") or PAYAPP_DEFAULT_OPENPAYTYPE).strip()
+    if not configured:
+        return PAYAPP_DEFAULT_OPENPAYTYPE
+    tokens: list[str] = []
+    seen: set[str] = set()
+    for token in configured.split(","):
+        normalized = str(token or "").strip().lower()
+        if not normalized or normalized in seen:
+            continue
+        if normalized not in PAYAPP_SUPPORTED_OPENPAYTYPE_TOKENS:
+            continue
+        seen.add(normalized)
+        tokens.append(normalized)
+    if not tokens:
+        return PAYAPP_DEFAULT_OPENPAYTYPE
+    return ",".join(tokens)
 
 
 def _payment_return_url(request: Request, payload_return_url: str | None = None) -> str:
@@ -2741,6 +2776,7 @@ async def start_payapp_subscription(payload: BillingStartPayload, request: Reque
 
     order_id = uuid4().hex
     userid, _, _, _ = _payapp_config()
+    openpaytype = _payapp_openpaytype()
     order = _save_payment_order(
         {
             "order_id": order_id,
@@ -2770,7 +2806,8 @@ async def start_payapp_subscription(payload: BillingStartPayload, request: Reque
         "returnurl": _payment_return_url(request, payload.return_url),
         "checkretry": "y",
         "smsuse": "n",
-        "openpaytype": "card",
+        "openpaytype": openpaytype,
+        "pay_type": openpaytype,
         "var1": order_id,
         "var2": plan_code,
     }

@@ -1077,8 +1077,20 @@
       padding: 9px 6px;
       border-radius: 12px;
     }
+    .weather-row.weather-row--locked {
+      grid-template-columns: minmax(0, 1fr) auto auto;
+    }
     .weather-row:hover {
       background: rgba(255, 255, 255, 0.04);
+    }
+    .weather-row.weather-row--locked label {
+      color: #9fb2c8;
+    }
+    .weather-row.weather-row--locked .weather-name {
+      color: #c0cfdf;
+    }
+    .weather-row.weather-row--locked .weather-note {
+      color: #8294a9;
     }
     .weather-row label {
       display: inline-flex;
@@ -1130,6 +1142,10 @@
       color: #ffb4ab;
       border-color: rgba(255, 123, 114, 0.38);
       background: rgba(255, 123, 114, 0.10);
+    }
+    .weather-paid-button {
+      min-width: 68px;
+      text-align: center;
     }
     .weather-wind-pin {
       display: flex;
@@ -2098,7 +2114,7 @@
       <button id="textButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="글자 입력" title="글자 입력">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconText"></use></svg></span>
       </button>
-      <button id="doneButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="완료" title="완료">
+      <button id="doneButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="형광펜" title="형광펜">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconDone"></use></svg></span>
       </button>
       <button id="forceButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="강제번호" title="강제번호">
@@ -2500,6 +2516,7 @@
       forceTool: '현재 요금제에서 강제번호 기능을 사용할 수 없습니다.',
       measureTool: '현재 요금제에서 측정 기능을 사용할 수 없습니다.',
       textColorCustomize: '텍스트 색상 변경은 프로 요금제 전용 기능입니다.',
+      proFeature: '프로 기능입니다. 요금제 안내를 확인해 주세요.',
       weather: '현재 요금제에서 기상 기능을 사용할 수 없습니다.',
       collapse: '현재 요금제에서 은둔/출현 기능을 사용할 수 없습니다.',
       notamDetail: '현재 요금제에서는 NOTAM 상세 조회를 지원하지 않습니다.',
@@ -2953,6 +2970,40 @@
       }
       planRestrictionAlertAt = now;
       window.alert(text);
+    }
+
+    function notifyPlanRestrictionAndOpenGuide(message) {
+      notifyPlanRestriction(message);
+      setPlanGuideModalVisible(true);
+    }
+
+    function bindProOnlyInputGuard(control, shouldBlock, message, onBlocked = null) {
+      if (!control || typeof shouldBlock !== 'function') {
+        return;
+      }
+      const block = (event) => {
+        if (!shouldBlock()) {
+          return false;
+        }
+        if (event && typeof event.preventDefault === 'function') {
+          event.preventDefault();
+        }
+        if (event && typeof event.stopPropagation === 'function') {
+          event.stopPropagation();
+        }
+        if (typeof onBlocked === 'function') {
+          onBlocked();
+        }
+        if (typeof control.blur === 'function') {
+          control.blur();
+        }
+        notifyPlanRestrictionAndOpenGuide(message || viewerRestrictionMessage.proFeature);
+        return true;
+      };
+      control.addEventListener('mousedown', block);
+      control.addEventListener('touchstart', block, { passive: false });
+      control.addEventListener('focus', block);
+      control.addEventListener('keydown', block);
     }
 
     function isWeatherFeatureAllowed(key) {
@@ -4865,8 +4916,8 @@
       doneColorInput.value = doneState.highlightColor;
       doneThicknessInput.value = doneState.highlightWeight.toFixed(1);
       doneThicknessValue.textContent = `${doneState.highlightWeight.toFixed(1)}px`;
-      doneColorInput.disabled = !viewerAccess.doneTool || !viewerAccess.doneStyleCustomize;
-      doneThicknessInput.disabled = !viewerAccess.doneTool || !viewerAccess.doneStyleCustomize;
+      doneColorInput.disabled = !viewerAccess.doneTool;
+      doneThicknessInput.disabled = !viewerAccess.doneTool;
 
       resultLineEntries.forEach((entry) => {
         if (entry.completed) {
@@ -5980,10 +6031,19 @@
         if (!item || !weatherControls.has(item.key)) {
           return;
         }
-        weatherControls.get(item.key).toggle.checked = !!item.visible;
+        const controls = weatherControls.get(item.key);
+        if (controls.allowed === false) {
+          controls.toggle.checked = false;
+          return;
+        }
+        controls.toggle.checked = !!item.visible;
       });
       for (const item of savedWeather) {
-        if (!item || !weatherControls.has(item.key) || !weatherControls.get(item.key).toggle.checked) {
+        if (!item || !weatherControls.has(item.key)) {
+          continue;
+        }
+        const controls = weatherControls.get(item.key);
+        if (controls.allowed === false || !controls.toggle.checked) {
           continue;
         }
         await syncWeatherLayer(item.key);
@@ -6343,14 +6403,15 @@
     setForcePanelVisible(false);
 
     function buildWeatherRows() {
-      const enabledDefs = WEATHER_LAYER_DEFS.filter((item) => isWeatherFeatureAllowed(item.key));
-      if (!enabledDefs.length) {
+      const hasAnyAllowed = WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
+      if (!hasAnyAllowed) {
         weatherButton.disabled = true;
         weatherPanel.classList.remove('is-visible');
         return;
       }
 
-      enabledDefs.forEach((item) => {
+      WEATHER_LAYER_DEFS.forEach((item) => {
+        const allowed = isWeatherFeatureAllowed(item.key);
         const row = document.createElement('div');
         row.className = 'weather-row';
         row.dataset.weatherKey = item.key;
@@ -6379,9 +6440,27 @@
         badge.textContent = item.badge;
         badge.dataset.tone = 'idle';
 
+        let paidButton = null;
+        if (!allowed) {
+          row.classList.add('weather-row--locked');
+          toggle.disabled = true;
+          paidButton = document.createElement('button');
+          paidButton.type = 'button';
+          paidButton.className = 'layer-paid-button weather-paid-button';
+          paidButton.textContent = '(프로기능)';
+          paidButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            notifyPlanRestrictionAndOpenGuide(viewerRestrictionMessage.proFeature);
+          });
+        }
+
         row.append(label, badge);
+        if (paidButton) {
+          row.appendChild(paidButton);
+        }
         weatherRows.appendChild(row);
-        weatherControls.set(item.key, { toggle, badge, definition: item });
+        weatherControls.set(item.key, { toggle, badge, definition: item, allowed, paidButton });
 
         toggle.addEventListener('change', async () => {
           await syncWeatherLayer(item.key);
@@ -6897,6 +6976,18 @@
       if (!weatherControls.has(layerKey)) {
         return;
       }
+      const controls = weatherControls.get(layerKey);
+      if (controls.allowed === false) {
+        controls.toggle.checked = false;
+        if (layerKey === 'satellite' && weatherTiles.satellite) {
+          map.removeLayer(weatherTiles.satellite);
+          syncBaseMapForSatelliteMode();
+        } else if (layerKey === 'metar') {
+          weatherGroups.metar.clearLayers();
+          map.removeLayer(weatherGroups.metar);
+        }
+        return;
+      }
 
       if (layerKey === 'satellite') {
         await syncTileWeatherLayer('satellite', 'satellite', 'weatherSatellitePane');
@@ -7325,8 +7416,8 @@
       const isEnabled = !!enabled && forceState.mode === 'new';
       forceControls.style.opacity = isEnabled ? '1' : '0.46';
       forceStartInput.disabled = !isEnabled;
-      forceSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
-      forceColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      forceSizeInput.disabled = !isEnabled;
+      forceColorInput.disabled = !isEnabled;
       if (inlineNumberSizeInput) {
         inlineNumberSizeInput.disabled = !viewerAccess.forceStyleCustomize;
       }
@@ -7343,8 +7434,8 @@
     function setNumControlsEnabled(enabled) {
       const isEnabled = !!enabled || (forceState.active && forceState.mode === 'existing');
       numControls.style.opacity = isEnabled ? '1' : '0.46';
-      numSizeInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
-      numColorInput.disabled = !isEnabled || !viewerAccess.forceStyleCustomize;
+      numSizeInput.disabled = !isEnabled;
+      numColorInput.disabled = !isEnabled;
       if (inlineNumberSizeInput) {
         inlineNumberSizeInput.disabled = !viewerAccess.forceStyleCustomize;
       }
@@ -8199,6 +8290,17 @@
       scheduleViewerStateSave();
     });
     if (inlineTextColorInput) {
+      bindProOnlyInputGuard(
+        inlineTextColorInput,
+        () => !!textState.selectedMarker && !viewerAccess.textColorCustomize,
+        viewerRestrictionMessage.textColorCustomize,
+        () => {
+          const selected = textState.selectedMarker;
+          if (selected) {
+            inlineTextColorInput.value = getTextMarkerColor(selected);
+          }
+        }
+      );
       inlineTextColorInput.addEventListener('input', () => {
         const selected = textState.selectedMarker;
         if (!selected) {
@@ -8206,7 +8308,7 @@
           return;
         }
         if (!viewerAccess.textColorCustomize) {
-          notifyPlanRestriction(viewerRestrictionMessage.textColorCustomize);
+          notifyPlanRestrictionAndOpenGuide(viewerRestrictionMessage.textColorCustomize);
           inlineTextColorInput.value = getTextMarkerColor(selected);
           return;
         }
@@ -8252,9 +8354,70 @@
       applyInterfaceCollapseState(false);
       scheduleViewerStateSave();
     });
+    bindProOnlyInputGuard(
+      doneColorInput,
+      () => viewerAccess.doneTool && !viewerAccess.doneStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        doneColorInput.value = doneState.highlightColor;
+      }
+    );
+    bindProOnlyInputGuard(
+      doneThicknessInput,
+      () => viewerAccess.doneTool && !viewerAccess.doneStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        doneThicknessInput.value = doneState.highlightWeight.toFixed(1);
+        doneThicknessValue.textContent = `${doneState.highlightWeight.toFixed(1)}px`;
+      }
+    );
+    bindProOnlyInputGuard(
+      forceSizeInput,
+      () => viewerAccess.forceTool && !viewerAccess.forceStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        forceSizeInput.value = String(getKmlFontSize());
+      }
+    );
+    bindProOnlyInputGuard(
+      forceColorInput,
+      () => viewerAccess.forceTool && !viewerAccess.forceStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        forceColorInput.value = getKmlColor();
+      }
+    );
+    bindProOnlyInputGuard(
+      numSizeInput,
+      () => viewerAccess.forceTool && !viewerAccess.forceStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        numSizeInput.value = String(getForceFontSize());
+      }
+    );
+    bindProOnlyInputGuard(
+      numColorInput,
+      () => viewerAccess.forceTool && !viewerAccess.forceStyleCustomize,
+      viewerRestrictionMessage.proFeature,
+      () => {
+        numColorInput.value = getForceColor();
+      }
+    );
     forceStartInput.addEventListener('input', refreshForceSettings);
-    forceSizeInput.addEventListener('input', refreshForceSettings);
-    forceColorInput.addEventListener('input', refreshForceSettings);
+    forceSizeInput.addEventListener('input', () => {
+      if (viewerAccess.forceTool && !viewerAccess.forceStyleCustomize) {
+        forceSizeInput.value = String(getKmlFontSize());
+        return;
+      }
+      refreshForceSettings();
+    });
+    forceColorInput.addEventListener('input', () => {
+      if (viewerAccess.forceTool && !viewerAccess.forceStyleCustomize) {
+        forceColorInput.value = getKmlColor();
+        return;
+      }
+      refreshForceSettings();
+    });
     if (inlineNumberSizeInput) {
       inlineNumberSizeInput.addEventListener('input', () => {
         applySharedNumberLabelSize(inlineNumberSizeInput.value, true);
@@ -8276,9 +8439,18 @@
       refreshMeasureSettings();
     });
     doneColorInput.addEventListener('input', () => {
+      if (viewerAccess.doneTool && !viewerAccess.doneStyleCustomize) {
+        doneColorInput.value = doneState.highlightColor;
+        return;
+      }
       refreshDoneSettings();
     });
     doneThicknessInput.addEventListener('input', () => {
+      if (viewerAccess.doneTool && !viewerAccess.doneStyleCustomize) {
+        doneThicknessInput.value = doneState.highlightWeight.toFixed(1);
+        doneThicknessValue.textContent = `${doneState.highlightWeight.toFixed(1)}px`;
+        return;
+      }
       refreshDoneSettings();
     });
     syncInlineTextFontControl();
@@ -8310,8 +8482,20 @@
         captureSaveButton.disabled = false;
       }
     });
-    numSizeInput.addEventListener('input', refreshNumberSettings);
-    numColorInput.addEventListener('input', refreshNumberSettings);
+    numSizeInput.addEventListener('input', () => {
+      if (viewerAccess.forceTool && !viewerAccess.forceStyleCustomize) {
+        numSizeInput.value = String(getForceFontSize());
+        return;
+      }
+      refreshNumberSettings();
+    });
+    numColorInput.addEventListener('input', () => {
+      if (viewerAccess.forceTool && !viewerAccess.forceStyleCustomize) {
+        numColorInput.value = getForceColor();
+        return;
+      }
+      refreshNumberSettings();
+    });
     numToggle.addEventListener('change', () => {
       if (numToggle.checked) {
         hiddenKmlLabelIds.clear();
