@@ -876,7 +876,7 @@ def _build_map_layer_catalog() -> list[dict]:
 def _load_job(job_id: str) -> dict:
     data = _load_json(_job_path(job_id), {})
     if not isinstance(data, dict) or not data:
-        raise HTTPException(status_code=404, detail="?臾믩씜 ?怨쀬뵠?怨? 筌≪뼚??????곷뮸??덈뼄.")
+        raise HTTPException(status_code=404, detail="복원할 변환 데이터가 서버에 없습니다. 파일을 다시 변환해 주세요.")
     return data
 
 
