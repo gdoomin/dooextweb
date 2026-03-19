@@ -46,6 +46,7 @@ export type ConvertResponse = {
   map_payload: MapPayload;
   results: Array<Record<string, unknown>>;
   job_id: string;
+  source_hash?: string;
   viewer_url: string;
   txt_download_url: string;
   xlsx_download_url: string;
@@ -113,6 +114,7 @@ export type ClientConvertRequestBody = {
   map_payload: MapPayload;
   results: Array<Record<string, unknown>>;
   source_file_bytes?: number;
+  source_hash?: string;
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";

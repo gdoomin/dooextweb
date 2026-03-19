@@ -35,11 +35,30 @@ function toReadableErrorMessage(value: unknown, fallback: string): string {
 
 export async function convertKmlFileInBrowser(file: File): Promise<ClientConvertRequestBody> {
   const text = await file.text();
+  const sourceHash = await computeSha256Hex(text);
   try {
-    return await parseWithWorker(text, file.name);
+    const parsed = await parseWithWorker(text, file.name);
+    return {
+      ...parsed,
+      source_hash: sourceHash,
+    };
   } catch {
-    return buildClientConvertRequestFromKmlText(text, file.name);
+    return {
+      ...buildClientConvertRequestFromKmlText(text, file.name),
+      source_hash: sourceHash,
+    };
   }
+}
+
+async function computeSha256Hex(text: string): Promise<string> {
+  if (typeof window === "undefined" || !window.crypto || !window.crypto.subtle) {
+    return "";
+  }
+  const encoded = new TextEncoder().encode(text);
+  const digest = await window.crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((value) => value.toString(16).padStart(2, "0"))
+    .join("");
 }
 
 async function parseWithWorker(text: string, filename: string): Promise<ClientConvertRequestBody> {

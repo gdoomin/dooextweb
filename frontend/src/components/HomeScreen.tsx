@@ -162,6 +162,7 @@ export function HomeScreen({
   const pathLabel = useMemo(() => response?.filename || "", [response]);
   const modeText = response ? modeLabel[response.mode] : "KML을 업로드하면 변환 결과가 표시됩니다.";
   const canUseHistory = isAuthenticated;
+  const canOpenViewer = Boolean(response?.job_id);
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
   const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
   const shouldShowPricing =
@@ -535,33 +536,26 @@ export function HomeScreen({
   }
 
   function openViewer() {
-    const isJobViewer = Boolean(response?.job_id);
-    const viewerPath = response?.job_id ? `${API_BASE_URL}/api/viewer/${response.job_id}` : `${API_BASE_URL}/api/viewer/default`;
-    let viewerUrl = viewerPath;
-    if (!isJobViewer) {
-      const query = new URLSearchParams();
-      if (userId) {
-        query.set("user_id", userId);
-      }
-      if (userEmail) {
-        query.set("user_email", userEmail);
-      }
-      const queryString = query.toString();
-      if (queryString) {
-        viewerUrl = `${viewerPath}?${queryString}`;
-      }
+    if (!response?.job_id) {
+      setStatusTone("error");
+      setStatusMessage("실제 변환이 완료된 파일만 도식화 보기로 열 수 있습니다.");
+      return;
     }
+    const viewerPath = `${API_BASE_URL}/api/viewer/${response.job_id}`;
+    let viewerUrl = viewerPath;
     const tokenForViewer = accessToken.trim();
     if (tokenForViewer) {
       viewerUrl = `${viewerUrl}#doo_access_token=${encodeURIComponent(tokenForViewer)}`;
     }
 
-    const opened = window.open(viewerUrl, "_blank", "noopener,noreferrer");
+    const sourceHash = String(response.source_hash || "").trim().toLowerCase();
+    const viewerTarget = sourceHash ? `doo-viewer-${sourceHash.slice(0, 24)}` : "_blank";
+    const opened = window.open(viewerUrl, viewerTarget);
     if (!opened) {
       window.location.assign(viewerUrl);
     }
     setStatusTone("success");
-    setStatusMessage(isJobViewer ? "도식화 Viewer를 열었습니다." : "기본 Viewer를 열었습니다.");
+    setStatusMessage("도식화 Viewer를 열었습니다.");
   }
 
   function downloadText() {
@@ -942,7 +936,7 @@ export function HomeScreen({
                 >
                   텍스트 저장
                 </button>
-                <button type="button" className="doo-action doo-action-map" onClick={openViewer}>
+                <button type="button" className="doo-action doo-action-map" onClick={openViewer} disabled={!canOpenViewer}>
                   도식화 보기
                 </button>
               </div>

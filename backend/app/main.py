@@ -112,6 +112,7 @@ NOTAM_DEFAULT_SUPABASE_ANON_KEY = (
 NOTAM_MAX_LIMIT = 3000
 NOTAM_DEFAULT_LIMIT = 1200
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+SOURCE_HASH_PATTERN = re.compile(r"^[a-f0-9]{64}$")
 DEFAULT_PLAN_CODE = "free"
 LITE_PLAN_CODE = "lite"
 PRO_PLAN_CODE = "pro"
@@ -213,6 +214,7 @@ class ClientConvertPayload(BaseModel):
     map_payload: dict
     results: list[dict]
     source_file_bytes: int = 0
+    source_hash: str = ""
 
 
 class PopupNoticeAuthPayload(BaseModel):
@@ -505,6 +507,79 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict, access_
         return False
 
 
+def _normalize_source_hash(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    if SOURCE_HASH_PATTERN.fullmatch(normalized):
+        return normalized
+    return ""
+
+
+def _viewer_state_owner_key(job: dict) -> str:
+    user_id = _normalize_user_identity(str(job.get("user_id") or ""))
+    if user_id:
+        return f"user_id:{user_id}"
+    user_email = _normalize_user_email(str(job.get("user_email") or ""))
+    if user_email:
+        return f"user_email:{user_email}"
+    return ""
+
+
+def _viewer_state_storage_keys(job: dict) -> list[str]:
+    keys: list[str] = []
+    owner_key = _viewer_state_owner_key(job)
+    source_hash = _normalize_source_hash(str(job.get("source_hash") or ""))
+    job_id = str(job.get("job_id") or "").strip()
+
+    if owner_key and source_hash:
+        keys.append(f"file:{owner_key}:{source_hash}")
+    if job_id:
+        keys.append(f"job:{job_id}")
+
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for item in keys:
+        if item in seen:
+            continue
+        seen.add(item)
+        deduped.append(item)
+    return deduped
+
+
+def _viewer_state_primary_storage_key(job: dict) -> str:
+    keys = _viewer_state_storage_keys(job)
+    if keys:
+        return keys[0]
+    fallback_job_id = str(job.get("job_id") or "").strip()
+    return f"job:{fallback_job_id}" if fallback_job_id else ""
+
+
+def _viewer_state_path_for_storage_key(storage_key: str) -> Path:
+    digest = hashlib.sha256(storage_key.encode("utf-8")).hexdigest()
+    return VIEWER_STATE_DIR / f"state_{digest}.json"
+
+
+def _viewer_state_paths_for_job(job: dict) -> list[Path]:
+    paths: list[Path] = []
+    for storage_key in _viewer_state_storage_keys(job):
+        if not storage_key:
+            continue
+        paths.append(_viewer_state_path_for_storage_key(storage_key))
+
+    job_id = str(job.get("job_id") or "").strip()
+    if job_id:
+        paths.append(_viewer_state_path(job_id))
+
+    deduped: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(path)
+    return deduped
+
+
 def _viewer_state_supabase_config() -> dict[str, str] | None:
     supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
     service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
@@ -539,23 +614,19 @@ def _normalize_viewer_state_payload(value: Any) -> dict | None:
     return None
 
 
-def _viewer_state_supabase_fetch(job: dict, access_token: str = "") -> dict | None:
-    config = _viewer_state_supabase_config()
-    if config is None:
-        return None
-    headers = _history_supabase_headers(config, access_token=access_token)
-    if headers is None:
-        return None
-
-    job_id = str(job.get("job_id") or "").strip()
-    if not job_id:
-        return None
-
+def _viewer_state_supabase_fetch_one(
+    config: dict[str, str],
+    headers: dict[str, str],
+    *,
+    field_name: str,
+    field_value: str,
+) -> dict | None:
     supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
     table_name = str(config.get("table_name") or "").strip()
+    encoded_value = quote(str(field_value), safe="-_.:@")
     query_items: list[tuple[str, str]] = [
         ("select", "state_json,state,payload"),
-        ("job_id", f"eq.{quote(job_id, safe='-_')}"),
+        (field_name, f"eq.{encoded_value}"),
         ("limit", "1"),
     ]
     url = f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}"
@@ -588,29 +659,46 @@ def _viewer_state_supabase_fetch(job: dict, access_token: str = "") -> dict | No
     return None
 
 
-def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = "") -> bool:
+def _viewer_state_supabase_fetch(job: dict, access_token: str = "") -> dict | None:
     config = _viewer_state_supabase_config()
     if config is None:
-        return False
+        return None
     headers = _history_supabase_headers(config, access_token=access_token)
     if headers is None:
-        return False
+        return None
+
+    for storage_key in _viewer_state_storage_keys(job):
+        fetched = _viewer_state_supabase_fetch_one(
+            config,
+            headers,
+            field_name="storage_key",
+            field_value=storage_key,
+        )
+        if isinstance(fetched, dict):
+            return fetched
 
     job_id = str(job.get("job_id") or "").strip()
-    if not job_id:
-        return False
+    if job_id:
+        return _viewer_state_supabase_fetch_one(
+            config,
+            headers,
+            field_name="job_id",
+            field_value=job_id,
+        )
+    return None
 
+
+def _viewer_state_supabase_upsert_one(
+    config: dict[str, str],
+    headers: dict[str, str],
+    *,
+    row: dict[str, Any],
+    conflict_key: str,
+) -> bool:
     supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
     table_name = str(config.get("table_name") or "").strip()
-    row = {
-        "job_id": job_id,
-        "user_id": _normalize_user_identity(str(job.get("user_id") or "")),
-        "user_email": _normalize_user_email(str(job.get("user_email") or "")),
-        "state_json": payload,
-        "updated_at": _utc_now_iso(),
-    }
     body = json.dumps([row]).encode("utf-8")
-    url = f"{supabase_url}/rest/v1/{table_name}?on_conflict=job_id"
+    url = f"{supabase_url}/rest/v1/{table_name}?on_conflict={quote(conflict_key, safe='-_')}"
     request = UrlRequest(
         url=url,
         method="POST",
@@ -626,6 +714,51 @@ def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = 
             return True
     except Exception:
         return False
+
+
+def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = "") -> bool:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return False
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    job_id = str(job.get("job_id") or "").strip()
+    if not job_id:
+        return False
+
+    user_id = _normalize_user_identity(str(job.get("user_id") or ""))
+    user_email = _normalize_user_email(str(job.get("user_email") or ""))
+    source_hash = _normalize_source_hash(str(job.get("source_hash") or ""))
+    updated_at = _utc_now_iso()
+
+    success = False
+    for storage_key in _viewer_state_storage_keys(job):
+        row = {
+            "storage_key": storage_key,
+            "job_id": job_id,
+            "user_id": user_id,
+            "user_email": user_email,
+            "source_hash": source_hash,
+            "state_json": payload,
+            "updated_at": updated_at,
+        }
+        if _viewer_state_supabase_upsert_one(config, headers, row=row, conflict_key="storage_key"):
+            success = True
+
+    # Backward compatibility with legacy table schema using job_id unique key.
+    legacy_row = {
+        "job_id": job_id,
+        "user_id": user_id,
+        "user_email": user_email,
+        "state_json": payload,
+        "updated_at": updated_at,
+    }
+    if _viewer_state_supabase_upsert_one(config, headers, row=legacy_row, conflict_key="job_id"):
+        success = True
+
+    return success
 
 
 def _load_json(path: Path, default):
@@ -1890,6 +2023,7 @@ def _job_response(job: dict, base_url: str) -> dict:
         "map_payload": job.get("map_payload") or {},
         "results": job.get("results") or [],
         "job_id": job_id,
+        "source_hash": _normalize_source_hash(str(job.get("source_hash") or "")),
         "viewer_url": f"{base_url}/api/viewer/{job_id}",
         "txt_download_url": f"{base_url}/api/download/{job_id}/txt",
         "xlsx_download_url": f"{base_url}/api/download/{job_id}/xlsx",
@@ -1992,6 +2126,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
                 detail=f"??苡???KML 癰궰????뺣즲({monthly_limit}????筌뤴뫀紐??????됰뮸??덈뼄.",
             )
 
+    source_hash = _normalize_source_hash(payload.source_hash)
     job_data = {
         "job_id": job_id,
         "filename": payload.filename,
@@ -2005,6 +2140,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         "user_id": user_id,
         "user_email": user_email,
         "source_file_bytes": int(payload.source_file_bytes or 0),
+        "source_hash": source_hash,
     }
     _save_json(_job_path(job_id), job_data)
     _record_user_history(
@@ -2079,6 +2215,7 @@ def download_xlsx(job_id: str):
 def get_viewer(job_id: str, request: Request):
     job = _load_job(job_id)
     payload = dict(job["map_payload"])
+    payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
     payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
 
     preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
@@ -2137,8 +2274,11 @@ def get_viewer_state(job_id: str, request: Request):
     remote_state = _viewer_state_supabase_fetch(job, access_token=_extract_bearer_token(request))
     if isinstance(remote_state, dict):
         return JSONResponse(remote_state)
-    data = _load_json(_viewer_state_path(job_id), {})
-    return JSONResponse(data if isinstance(data, dict) else {})
+    for path in _viewer_state_paths_for_job(job):
+        data = _load_json(path, {})
+        if isinstance(data, dict) and data:
+            return JSONResponse(data)
+    return JSONResponse({})
 
 
 @app.post("/api/viewer/{job_id}/viewer-state")
@@ -2150,7 +2290,8 @@ async def save_viewer_state(job_id: str, request: Request):
     payload = await request.json()
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="viewer state??揶쏆빘猿??鍮???몃빍??")
-    _save_json(_viewer_state_path(job_id), payload)
+    for path in _viewer_state_paths_for_job(job):
+        _save_json(path, payload)
     _viewer_state_supabase_upsert(job, payload, access_token=_extract_bearer_token(request))
     return {"ok": True}
 

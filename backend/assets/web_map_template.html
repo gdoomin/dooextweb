@@ -2514,6 +2514,11 @@
       }
       return headers;
     }
+    const VIEWER_STATE_LOCAL_PREFIX = 'doo-viewer-state:';
+    const viewerStateStorageKeyRaw = String(payload.viewer_state_key || '').trim();
+    const viewerStateLocalKey = viewerStateStorageKeyRaw
+      ? `${VIEWER_STATE_LOCAL_PREFIX}${viewerStateStorageKeyRaw}`
+      : `${VIEWER_STATE_LOCAL_PREFIX}job:${String(payload.job_id || '').trim()}`;
     const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     function normalizeLayerKey(value) {
       return String(value || '').trim().toLowerCase();
@@ -2785,10 +2790,18 @@
       A5: { label: 'A5', width: 1748, height: 2480 },
       LETTER: { label: 'Letter', width: 2550, height: 3300 },
     };
-    const VIEWER_STATE_VERSION = 4;
+    const VIEWER_STATE_VERSION = 5;
+    const VIEWER_STATE_SAVE_DEBOUNCE_MS = 420;
+    const VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS = 1300;
     const UNDO_LIMIT = 10;
     let viewerStateSaveTimer = null;
+    let viewerStateRemoteSaveTimer = null;
     let viewerStateRestoring = false;
+    let viewerStateLastSerialized = '';
+    let viewerStateLastRemoteSerialized = '';
+    let viewerStateLastRemoteSavedAt = 0;
+    let viewerStateRemoteSaveInFlight = null;
+    let viewerStatePendingRemoteSave = null;
     const undoHistory = [];
     let undoApplying = false;
     const TOOL_MODE_KEYS = new Set(['measure', 'text', 'done', 'force']);
@@ -5583,6 +5596,11 @@
               : forceState.active
                 ? 'force'
                 : '',
+        openMenuPanel: layerPanel.classList.contains('is-visible')
+          ? 'layer'
+          : weatherPanel.classList.contains('is-visible')
+            ? 'weather'
+            : '',
         toolbarCollapsed: toolbar.classList.contains('is-collapsed'),
         view: {
           center: [map.getCenter().lat, map.getCenter().lng],
@@ -5647,34 +5665,220 @@
       };
     }
 
-    function recordUndoState(force = false) {
+    function recordUndoState(force = false, snapshot = null, serialized = '') {
       if (viewerStateRestoring || undoApplying) {
         return;
       }
-      const snapshot = collectViewerState();
-      const serialized = JSON.stringify(snapshot);
+      const nextSnapshot = snapshot && typeof snapshot === 'object' ? snapshot : collectViewerState();
+      const nextSerialized = serialized || JSON.stringify(nextSnapshot);
       const latest = undoHistory.length ? undoHistory[undoHistory.length - 1].serialized : '';
-      if (!force && latest === serialized) {
+      if (!force && latest === nextSerialized) {
         return;
       }
-      undoHistory.push({ serialized, state: snapshot });
+      undoHistory.push({ serialized: nextSerialized, state: nextSnapshot });
       while (undoHistory.length > UNDO_LIMIT + 1) {
         undoHistory.shift();
       }
     }
 
-    async function saveViewerStateNow() {
-      if (viewerStateRestoring) {
+    function parseViewerStateObject(value) {
+      if (value && typeof value === 'object') {
+        return value;
+      }
+      if (typeof value !== 'string') {
+        return null;
+      }
+      try {
+        const parsed = JSON.parse(value);
+        return parsed && typeof parsed === 'object' ? parsed : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function getViewerStateSavedAt(value) {
+      if (!value || typeof value !== 'object') {
+        return 0;
+      }
+      const candidates = [value.savedAt, value.saved_at, value.clientSavedAt, value.updatedAt, value.updated_at];
+      for (const item of candidates) {
+        if (Number.isFinite(item) && Number(item) > 0) {
+          return Number(item);
+        }
+        if (typeof item === 'string') {
+          const parsed = Date.parse(item);
+          if (Number.isFinite(parsed) && parsed > 0) {
+            return parsed;
+          }
+        }
+      }
+      return 0;
+    }
+
+    function stripViewerStateMeta(value) {
+      if (!value || typeof value !== 'object') {
+        return null;
+      }
+      const next = { ...value };
+      delete next.savedAt;
+      delete next.saved_at;
+      delete next.clientSavedAt;
+      delete next.updatedAt;
+      delete next.updated_at;
+      return next;
+    }
+
+    function saveViewerStateToLocal(statePayload) {
+      if (!viewerStateLocalKey) {
         return;
       }
       try {
-        await fetch('/viewer-state', {
-          method: 'POST',
-          headers: viewerStateHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify(collectViewerState()),
-        });
+        window.localStorage.setItem(viewerStateLocalKey, JSON.stringify(statePayload));
       } catch (error) {
-        // Ignore transient save failures; a later interaction can retry.
+        // Ignore quota and private mode errors.
+      }
+    }
+
+    function loadViewerStateFromLocal() {
+      if (!viewerStateLocalKey) {
+        return null;
+      }
+      try {
+        const raw = window.localStorage.getItem(viewerStateLocalKey);
+        const parsed = parseViewerStateObject(raw);
+        if (!parsed || typeof parsed !== 'object') {
+          return null;
+        }
+        return Object.keys(parsed).length ? parsed : null;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    function queueRemoteViewerStateSave(statePayload, serialized, forceRemote = false, keepalive = false) {
+      viewerStatePendingRemoteSave = {
+        payload: statePayload,
+        serialized,
+        forceRemote: !!forceRemote,
+        keepalive: !!keepalive,
+      };
+      flushRemoteViewerStateSaveQueue().catch(() => {
+        // Ignore transient save failures; latest pending snapshot stays queued.
+      });
+    }
+
+    async function flushRemoteViewerStateSaveQueue() {
+      if (viewerStateRemoteSaveInFlight || !viewerStatePendingRemoteSave) {
+        return;
+      }
+      const pending = viewerStatePendingRemoteSave;
+
+      if (!pending.forceRemote && viewerStateLastRemoteSerialized === pending.serialized) {
+        viewerStatePendingRemoteSave = null;
+        return;
+      }
+
+      const elapsed = Date.now() - viewerStateLastRemoteSavedAt;
+      if (!pending.forceRemote && elapsed < VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS) {
+        const waitMs = Math.max(32, VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS - elapsed);
+        if (!viewerStateRemoteSaveTimer) {
+          viewerStateRemoteSaveTimer = window.setTimeout(() => {
+            viewerStateRemoteSaveTimer = null;
+            flushRemoteViewerStateSaveQueue().catch(() => {
+              // Ignore transient queue flush failures.
+            });
+          }, waitMs);
+        }
+        return;
+      }
+
+      window.clearTimeout(viewerStateRemoteSaveTimer);
+      viewerStateRemoteSaveTimer = null;
+      viewerStatePendingRemoteSave = null;
+
+      const requestOptions = {
+        method: 'POST',
+        headers: viewerStateHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify(pending.payload),
+      };
+      if (pending.keepalive) {
+        requestOptions.keepalive = true;
+      }
+
+      viewerStateRemoteSaveInFlight = fetch('/viewer-state', requestOptions);
+      try {
+        const response = await viewerStateRemoteSaveInFlight;
+        if (response && response.ok) {
+          viewerStateLastRemoteSerialized = pending.serialized;
+          viewerStateLastRemoteSavedAt = Date.now();
+        }
+      } catch (error) {
+        // Ignore and keep user interaction smooth.
+      } finally {
+        viewerStateRemoteSaveInFlight = null;
+        if (viewerStatePendingRemoteSave) {
+          flushRemoteViewerStateSaveQueue().catch(() => {
+            // Ignore transient queue flush failures.
+          });
+        }
+      }
+    }
+
+    function persistViewerStateSnapshot(snapshot, serialized = '', options = {}) {
+      if (!snapshot || typeof snapshot !== 'object') {
+        return;
+      }
+      const force = !!options.force;
+      const keepalive = !!options.keepalive;
+      const baseSerialized = serialized || JSON.stringify(snapshot);
+      if (!force && viewerStateLastSerialized === baseSerialized) {
+        return;
+      }
+
+      viewerStateLastSerialized = baseSerialized;
+      const statePayload = {
+        ...snapshot,
+        savedAt: Date.now(),
+      };
+      saveViewerStateToLocal(statePayload);
+      queueRemoteViewerStateSave(statePayload, baseSerialized, force, keepalive);
+    }
+
+    async function saveViewerStateNow(options = {}) {
+      if (viewerStateRestoring) {
+        return;
+      }
+      const snapshot = collectViewerState();
+      const serialized = JSON.stringify(snapshot);
+      if (options.force && options.keepalive) {
+        viewerStateLastSerialized = serialized;
+        const statePayload = {
+          ...snapshot,
+          savedAt: Date.now(),
+        };
+        saveViewerStateToLocal(statePayload);
+        try {
+          fetch('/viewer-state', {
+            method: 'POST',
+            headers: viewerStateHeaders({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify(statePayload),
+            keepalive: true,
+          });
+        } catch (error) {
+          // Ignore unload-time failures.
+        }
+        return;
+      }
+      persistViewerStateSnapshot(snapshot, serialized, options);
+      if (options.awaitRemote) {
+        await flushRemoteViewerStateSaveQueue();
+        if (viewerStateRemoteSaveInFlight) {
+          try {
+            await viewerStateRemoteSaveInFlight;
+          } catch (error) {
+            // Ignore transient save failures on unload.
+          }
+        }
       }
     }
 
@@ -5684,12 +5888,14 @@
       }
       window.clearTimeout(viewerStateSaveTimer);
       viewerStateSaveTimer = window.setTimeout(() => {
-        recordUndoState();
-        saveViewerStateNow();
-      }, 260);
+        const snapshot = collectViewerState();
+        const serialized = JSON.stringify(snapshot);
+        recordUndoState(false, snapshot, serialized);
+        persistViewerStateSnapshot(snapshot, serialized);
+      }, VIEWER_STATE_SAVE_DEBOUNCE_MS);
     }
 
-    async function loadViewerState() {
+    async function loadViewerStateFromServer() {
       try {
         const response = await fetch('/viewer-state', {
           cache: 'no-store',
@@ -6015,6 +6221,17 @@
         } else if (saved.activeTool === 'force') {
           setForceActive(true, true);
         }
+        const openMenuPanel = String(saved.openMenuPanel || '').toLowerCase();
+        if (openMenuPanel === 'layer') {
+          setWeatherPanelVisible(false);
+          setLayerPanelVisible(true);
+        } else if (openMenuPanel === 'weather') {
+          setLayerPanelVisible(false);
+          setWeatherPanelVisible(true);
+        } else {
+          setLayerPanelVisible(false);
+          setWeatherPanelVisible(false);
+        }
         syncKmlLabelVisibility();
         refreshKmlLabels();
 
@@ -6025,11 +6242,34 @@
     }
 
     async function restoreViewerState() {
-      const saved = await loadViewerState();
-      if (!saved || typeof saved !== 'object') {
-        return false;
+      let restored = false;
+      const localRaw = loadViewerStateFromLocal();
+      const localSavedAt = getViewerStateSavedAt(localRaw);
+      const localState = stripViewerStateMeta(localRaw);
+      if (localState && Object.keys(localState).length) {
+        const localSerialized = JSON.stringify(localState);
+        viewerStateLastSerialized = localSerialized;
+        restored = await applyViewerStateSnapshot(localState);
       }
-      return applyViewerStateSnapshot(saved);
+
+      const remoteRaw = await loadViewerStateFromServer();
+      const remoteSavedAt = getViewerStateSavedAt(remoteRaw);
+      const remoteState = stripViewerStateMeta(remoteRaw);
+      if (remoteState && Object.keys(remoteState).length) {
+        const remoteSerialized = JSON.stringify(remoteState);
+        const shouldApplyRemote = !localState || (remoteSavedAt > 0 && remoteSavedAt >= localSavedAt);
+        if (shouldApplyRemote) {
+          restored = await applyViewerStateSnapshot(remoteState);
+          viewerStateLastSerialized = remoteSerialized;
+          saveViewerStateToLocal({
+            ...remoteState,
+            savedAt: remoteSavedAt || Date.now(),
+          });
+        }
+        viewerStateLastRemoteSerialized = remoteSerialized;
+      }
+
+      return restored;
     }
 
     async function undoLastAction() {
@@ -8053,7 +8293,7 @@
       scheduleViewerStateSave();
     });
     window.addEventListener('beforeunload', () => {
-      saveViewerStateNow();
+      saveViewerStateNow({ force: true, keepalive: true });
     });
     document.addEventListener('keydown', (event) => {
       if ((event.ctrlKey || event.metaKey) && !event.shiftKey && String(event.key).toLowerCase() === 'z') {
