@@ -223,6 +223,36 @@
       border-color: rgba(88, 166, 255, 0.78);
       box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
     }
+    .inline-text-font-wrap {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 8px;
+      border-radius: 9px;
+      border: 1px solid rgba(121, 192, 255, 0.2);
+      background: rgba(13, 17, 23, 0.42);
+      color: #d0d7de;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .inline-text-font-wrap.is-hidden {
+      display: none;
+    }
+    .inline-text-font-select {
+      min-width: 120px;
+      padding: 4px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.2);
+      background: rgba(13, 17, 23, 0.82);
+      color: #e6edf3;
+      font-size: 12px;
+      outline: none;
+    }
+    .inline-text-font-select:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.15);
+    }
     .toolbar input[type="color"] {
       width: 31px;
       height: 31px;
@@ -1495,6 +1525,16 @@
       <button id="collapseToolbarButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="은둔" title="은둔">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconHide"></use></svg></span>
       </button>
+      <label id="inlineTextFontWrap" class="toolbar-collapse-hide inline-text-font-wrap is-hidden">
+        글꼴
+        <select id="inlineTextFontSelect" class="inline-text-font-select" aria-label="선택 글꼴">
+          <option value="nanum_square">나눔스퀘어</option>
+          <option value="nanum_square_ac">나눔스퀘어 라운드</option>
+          <option value="maruburi">마루부리</option>
+          <option value="nanum_myeongjo">나눔명조</option>
+          <option value="nanum_dasisijakhae">나눔다시시작해</option>
+        </select>
+      </label>
       <a class="toolbar-banner toolbar-collapse-hide" href="https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581" target="_blank" rel="noreferrer noopener" title="DOO GPX 앱스토어 열기">
         <img src="/doogpx.png" alt="DOO GPX banner">
       </a>
@@ -1756,6 +1796,8 @@
     const captureButton = document.getElementById('captureButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
     const expandToolbarButton = document.getElementById('expandToolbarButton');
+    const inlineTextFontWrap = document.getElementById('inlineTextFontWrap');
+    const inlineTextFontSelect = document.getElementById('inlineTextFontSelect');
     const layerPanel = document.getElementById('layerPanel');
     const layerRows = document.getElementById('layerRows');
     const weatherPanel = document.getElementById('weatherPanel');
@@ -2328,6 +2370,19 @@
       return TEXT_FONT_FAMILIES[normalizeTextFont(fontKey)] || TEXT_FONT_FAMILIES[TEXT_DEFAULT_FONT];
     }
 
+    function syncInlineTextFontControl() {
+      if (!inlineTextFontWrap || !inlineTextFontSelect) {
+        return;
+      }
+      const selected = textState.selectedMarker;
+      if (!selected) {
+        inlineTextFontWrap.classList.add('is-hidden');
+        return;
+      }
+      inlineTextFontWrap.classList.remove('is-hidden');
+      inlineTextFontSelect.value = normalizeTextFont(selected.options.textFont || TEXT_DEFAULT_FONT);
+    }
+
     function textIcon(text, size = 45, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
       const htmlText = escapeHtml(String(text || '').trim()).replace(/\n/g, '<br>');
       const titleAttr = isTitle ? ' data-title="1"' : ' data-title="0"';
@@ -2391,16 +2446,19 @@
 
     function deselectTextMarker() {
       if (!textState.selectedMarker) {
+        syncInlineTextFontControl();
         return;
       }
       const previous = textState.selectedMarker;
       textState.selectedMarker = null;
       syncTextMarkerSelection(previous);
+      syncInlineTextFontControl();
     }
 
     function selectTextMarker(marker) {
       if (textState.selectedMarker === marker) {
         syncTextMarkerSelection(marker);
+        syncInlineTextFontControl();
         return;
       }
       deselectNumberLabel();
@@ -2413,6 +2471,7 @@
       if (marker.bringToFront) {
         marker.bringToFront();
       }
+      syncInlineTextFontControl();
     }
 
     function setTextInputModalVisible(visible) {
@@ -2451,6 +2510,7 @@
       if (textState.selectedMarker === marker) {
         textState.selectedMarker = null;
       }
+      syncInlineTextFontControl();
       scheduleViewerStateSave();
     }
 
@@ -4982,6 +5042,21 @@
         });
       }
     });
+    inlineTextFontSelect.addEventListener('change', () => {
+      const selected = textState.selectedMarker;
+      if (!selected) {
+        syncInlineTextFontControl();
+        return;
+      }
+      selected.options.textFont = normalizeTextFont(inlineTextFontSelect.value);
+      updateTextMarkerElement(selected);
+      syncTextMarkerSelection(selected);
+      setTextHover(selected, true);
+      if (selected.bringToFront) {
+        selected.bringToFront();
+      }
+      scheduleViewerStateSave();
+    });
     capturePreviewCanvas.addEventListener('pointerdown', (event) => {
       startCaptureImageDrag(event);
     });
@@ -5035,6 +5110,7 @@
     doneThicknessInput.addEventListener('input', () => {
       refreshDoneSettings();
     });
+    syncInlineTextFontControl();
     refreshMeasureSettings(false);
     refreshDoneSettings(false);
     capturePaperSelect.addEventListener('change', async () => {
