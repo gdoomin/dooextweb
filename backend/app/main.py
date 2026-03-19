@@ -129,7 +129,7 @@ class PopupNoticeAuthPayload(BaseModel):
 class PopupNoticeUpdatePayload(BaseModel):
     password: str
     message: str
-    enabled: bool = True
+    enabled: bool = False
 
 for path in (JOBS_DIR, VIEWER_STATE_DIR, USER_HISTORY_DIR):
     path.mkdir(parents=True, exist_ok=True)
@@ -250,7 +250,7 @@ def _save_json(path: Path, data) -> None:
 
 def _default_popup_notice() -> dict:
     return {
-        "enabled": True,
+        "enabled": False,
         "message": DEFAULT_POPUP_NOTICE_MESSAGE,
         "updated_at": "",
     }

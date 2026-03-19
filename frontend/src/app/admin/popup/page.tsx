@@ -43,7 +43,7 @@ async function parseJson(response: Response): Promise<Record<string, unknown>> {
   }
 }
 
-function parseLooseBoolean(value: unknown, defaultValue = true): boolean {
+function parseLooseBoolean(value: unknown, defaultValue = false): boolean {
   if (typeof value === "boolean") {
     return value;
   }
@@ -67,7 +67,7 @@ export default function PopupAdminPage() {
   const [password, setPassword] = useState("");
   const [verified, setVerified] = useState(false);
   const [message, setMessage] = useState("");
-  const [enabled, setEnabled] = useState(true);
+  const [enabled, setEnabled] = useState(false);
   const [updatedAt, setUpdatedAt] = useState("");
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<"idle" | "success" | "error">("idle");
@@ -93,7 +93,7 @@ export default function PopupAdminPage() {
       const notice = ((payload.notice as NoticePayload) || {}) as NoticePayload;
       setVerified(true);
       setMessage(typeof notice.message === "string" ? notice.message : "");
-      setEnabled(parseLooseBoolean(notice.enabled, true));
+      setEnabled(parseLooseBoolean(notice.enabled, false));
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("비밀번호 확인 완료. 팝업 문구를 수정할 수 있습니다.");
       setStatusTone("success");
@@ -124,7 +124,7 @@ export default function PopupAdminPage() {
 
       const notice = ((payload.notice as NoticePayload) || {}) as NoticePayload;
       setMessage(typeof notice.message === "string" ? notice.message : message);
-      setEnabled(parseLooseBoolean(notice.enabled, true));
+      setEnabled(parseLooseBoolean(notice.enabled, false));
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("저장되었습니다. 메인 화면 새로고침 시 반영됩니다.");
       setStatusTone("success");
