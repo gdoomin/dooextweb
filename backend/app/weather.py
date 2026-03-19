@@ -106,7 +106,10 @@ def build_weather_config() -> dict[str, Any]:
             "delay_minutes": gk2a_delay_minutes,
             "fallback_steps": gk2a_fallback_steps,
             "refresh_seconds": gk2a_refresh_seconds,
-            "bounds": [[15.0, 75.0], [60.0, 145.0]],
+            # GK-2A KO 영역 코너(문서 기준) 평균 경도대를 사용한 근사 bounds
+            # TL: 45.728965N, 113.996418E / TR: 45.728965N, 138.003582E
+            # BL: 29.312252N, 116.753260E / BR: 29.312252N, 135.246740E
+            "bounds": [[29.312252, 115.374839], [45.728965, 136.625161]],
             "attribution": "NMSC GK-2A AMI",
             "opacity": 0.75,
             "max_zoom": 12,
