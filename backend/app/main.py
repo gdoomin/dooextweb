@@ -4,6 +4,7 @@ import re
 import secrets
 import shutil
 import sys
+import hashlib
 from datetime import datetime, timezone
 from io import BytesIO
 from pathlib import Path
@@ -41,25 +42,43 @@ ASSETS_DIR = BACKEND_DIR / "assets"
 LEGACY_RUNTIME_DIR = BACKEND_DIR / "runtime"
 
 
-def _resolve_runtime_dir() -> Path:
-    configured = str(os.getenv("DOO_DATA_DIR") or "").strip()
-    if not configured:
-        return LEGACY_RUNTIME_DIR
-
-    candidate = Path(configured).expanduser()
-    if not candidate.is_absolute():
-        candidate = (BACKEND_DIR / candidate).resolve()
-
+def _prepare_runtime_dir(candidate: Path, label: str) -> Path | None:
     try:
         candidate.mkdir(parents=True, exist_ok=True)
+        probe = candidate / ".doo_runtime_probe"
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        return candidate
     except OSError as error:
         print(
-            f"[warn] DOO_DATA_DIR={candidate} is not writable ({error}); "
-            f"falling back to {LEGACY_RUNTIME_DIR}",
+            f"[warn] {label}={candidate} is not writable ({error})",
             file=sys.stderr,
         )
-        return LEGACY_RUNTIME_DIR
-    return candidate
+        return None
+
+
+def _resolve_runtime_dir() -> Path:
+    configured = str(os.getenv("DOO_DATA_DIR") or os.getenv("DOO_RUNTIME_DIR") or "").strip()
+    if configured:
+        candidate = Path(configured).expanduser()
+        if not candidate.is_absolute():
+            candidate = (BACKEND_DIR / candidate).resolve()
+        prepared = _prepare_runtime_dir(candidate, "DOO_DATA_DIR")
+        if prepared is not None:
+            return prepared
+
+    auto_candidates: list[tuple[str, Path]] = []
+    railway_mount = str(os.getenv("RAILWAY_VOLUME_MOUNT_PATH") or "").strip()
+    if railway_mount:
+        auto_candidates.append(("RAILWAY_VOLUME_MOUNT_PATH", Path(railway_mount).expanduser() / "dooextweb"))
+    auto_candidates.append(("AUTO_DATA_DIR", Path("/data/dooextweb")))
+
+    for label, candidate in auto_candidates:
+        prepared = _prepare_runtime_dir(candidate, label)
+        if prepared is not None:
+            return prepared
+
+    return LEGACY_RUNTIME_DIR
 
 
 RUNTIME_DIR = _resolve_runtime_dir()
@@ -77,6 +96,14 @@ DEFAULT_POPUP_NOTICE_MESSAGE = "지금 말도 안되게 대낮에 업데이트 �
 
 USER_HISTORY_LIMIT = 50
 SUPABASE_HTTP_TIMEOUT_SECONDS = 10
+NOTAM_DEFAULT_SUPABASE_URL = "https://zxocgwaogeyhwkefqmts.supabase.co"
+NOTAM_DEFAULT_SUPABASE_ANON_KEY = (
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
+    "eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp4b2Nnd2FvZ2V5aHdrZWZxbXRzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE4NDgxNjAsImV4cCI6MjA4NzQyNDE2MH0."
+    "YTryJaDm_pmR8tNuuc_HOsRvuDUo29hLCwTz8sQQt_8"
+)
+NOTAM_MAX_LIMIT = 3000
+NOTAM_DEFAULT_LIMIT = 1200
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -137,6 +164,14 @@ def _migrate_legacy_runtime_data() -> None:
             except OSError:
                 continue
 
+    src_popup = LEGACY_RUNTIME_DIR / "popup_notice.json"
+    dst_popup = RUNTIME_DIR / "popup_notice.json"
+    if src_popup.exists() and not dst_popup.exists():
+        try:
+            shutil.copy2(src_popup, dst_popup)
+        except OSError:
+            pass
+
 
 _migrate_legacy_runtime_data()
 
@@ -168,6 +203,33 @@ def _viewer_state_path(job_id: str) -> Path:
 
 def _user_history_path(user_id: str) -> Path:
     return USER_HISTORY_DIR / f"{user_id}.json"
+
+
+def _user_email_history_path(user_email: str) -> Path:
+    normalized = _normalize_user_email(user_email)
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    return USER_HISTORY_DIR / f"email_{digest}.json"
+
+
+def _history_paths_for_identity(user_id: str, user_email: str) -> list[Path]:
+    paths: list[Path] = []
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+
+    if normalized_user_id:
+        paths.append(_user_history_path(normalized_user_id))
+    if normalized_email:
+        paths.append(_user_email_history_path(normalized_email))
+
+    unique_paths: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_paths.append(path)
+    return unique_paths
 
 
 def _load_json(path: Path, default):
@@ -317,7 +379,7 @@ def _normalize_user_identity(value: str | None) -> str:
 
 
 def _normalize_user_email(value: str | None) -> str:
-    return str(value or "").strip()[:320]
+    return str(value or "").strip().lower()[:320]
 
 
 def _is_http_url(value: str | None) -> bool:
@@ -412,10 +474,143 @@ def _send_supabase_password_reset(supabase_url: str, service_role_key: str, emai
     _supabase_request_json("POST", url, service_role_key, {"email": email})
 
 
+def _notam_supabase_config() -> tuple[str, str]:
+    supabase_url = str(
+        os.getenv("DOO_NOTAM_SUPABASE_URL")
+        or os.getenv("NOTAM_SUPABASE_URL")
+        or os.getenv("NEXT_PUBLIC_NOTAM_SUPABASE_URL")
+        or NOTAM_DEFAULT_SUPABASE_URL
+        or ""
+    ).strip().rstrip("/")
+    api_key = str(
+        os.getenv("DOO_NOTAM_SUPABASE_ANON_KEY")
+        or os.getenv("NOTAM_SUPABASE_ANON_KEY")
+        or os.getenv("NEXT_PUBLIC_NOTAM_SUPABASE_ANON_KEY")
+        or NOTAM_DEFAULT_SUPABASE_ANON_KEY
+        or ""
+    ).strip()
+
+    if not supabase_url or not api_key:
+        raise HTTPException(status_code=503, detail="NOTAM Supabase 설정이 누락되었습니다.")
+    if not _is_http_url(supabase_url):
+        raise HTTPException(status_code=503, detail="NOTAM Supabase URL 형식이 올바르지 않습니다.")
+    return supabase_url, api_key
+
+
+def _supabase_request_payload(method: str, url: str, api_key: str, payload: dict | None = None):
+    body = json.dumps(payload).encode("utf-8") if payload is not None else None
+    headers = {
+        "apikey": api_key,
+        "Authorization": f"Bearer {api_key}",
+    }
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+
+    request = UrlRequest(url=url, method=method.upper(), headers=headers, data=body)
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except HTTPError as error:
+        detail = _extract_supabase_error_message(error.read())
+        if error.code in {401, 403}:
+            raise HTTPException(status_code=503, detail="NOTAM Supabase API 키가 올바르지 않습니다.") from error
+        if error.code == 404:
+            raise HTTPException(status_code=404, detail=detail or "NOTAM 데이터 소스를 찾지 못했습니다.") from error
+        if error.code == 429:
+            raise HTTPException(status_code=429, detail="NOTAM 요청이 많습니다. 잠시 후 다시 시도해 주세요.") from error
+        raise HTTPException(status_code=502, detail=detail or "NOTAM Supabase 요청에 실패했습니다.") from error
+    except URLError as error:
+        raise HTTPException(status_code=502, detail="NOTAM Supabase 서버에 연결하지 못했습니다.") from error
+
+    if not raw:
+        return {}
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except Exception:
+        return {}
+
+
+def _normalize_notam_series(value: str | None, fallback_notam_id: str | None = None) -> str:
+    raw = str(value or "").strip().upper()
+    if raw:
+        return raw[0]
+    fallback = str(fallback_notam_id or "").strip().upper()
+    return fallback[:1]
+
+
+def _notam_group_key(series: str) -> str:
+    if series in {"D", "E"}:
+        return "de"
+    if series in {"A", "C", "G", "Z"}:
+        return "acgz"
+    return ""
+
+
+def _extract_notam_airport(content: str) -> str:
+    match = re.search(r"\bA\)\s*([A-Z0-9]{4})\b", str(content or "").upper())
+    if not match:
+        return ""
+    return match.group(1)
+
+
+def _notam_query_items(bbox: tuple[float, float, float, float] | None, limit: int) -> list[tuple[str, str]]:
+    items: list[tuple[str, str]] = [
+        ("select", "id,notam_id,content,lat,lng,created_at,series,start_date,end_date"),
+        ("order", "created_at.desc"),
+        ("limit", str(limit)),
+    ]
+    if bbox is not None:
+        south, west, north, east = bbox
+        items.extend(
+            [
+                ("lat", f"gte.{south:.6f}"),
+                ("lat", f"lte.{north:.6f}"),
+            ]
+        )
+        if west <= east:
+            items.extend(
+                [
+                    ("lng", f"gte.{west:.6f}"),
+                    ("lng", f"lte.{east:.6f}"),
+                ]
+            )
+    return items
+
+
+def _fetch_notam_rows(supabase_url: str, api_key: str, bbox: tuple[float, float, float, float] | None, limit: int) -> list[dict]:
+    raw_tables = str(os.getenv("DOO_NOTAM_TABLES") or os.getenv("DOO_NOTAM_TABLE") or "notam_scraper,notams")
+    table_candidates = [item.strip() for item in raw_tables.split(",") if item.strip()]
+    if not table_candidates:
+        table_candidates = ["notams"]
+
+    query = urlencode(_notam_query_items(bbox, limit), doseq=True)
+    last_error: HTTPException | None = None
+    for table_name in table_candidates:
+        url = f"{supabase_url}/rest/v1/{table_name}?{query}"
+        try:
+            payload = _supabase_request_payload("GET", url, api_key)
+        except HTTPException as error:
+            if error.status_code == 404:
+                last_error = error
+                continue
+            raise
+        if isinstance(payload, list):
+            return [row for row in payload if isinstance(row, dict)]
+        if isinstance(payload, dict):
+            data = payload.get("data")
+            if isinstance(data, list):
+                return [row for row in data if isinstance(row, dict)]
+            return []
+
+    if last_error is not None:
+        raise HTTPException(status_code=404, detail="NOTAM 테이블(notam_scraper/notams)을 찾지 못했습니다.")
+    return []
+
+
 def _request_user_identity(request: Request, *, required: bool = False) -> tuple[str, str]:
     user_id = _normalize_user_identity(request.headers.get("X-DOO-USER-ID"))
     user_email = _normalize_user_email(request.headers.get("X-DOO-USER-EMAIL"))
-    if required and not user_id:
+    if required and not user_id and not user_email:
         raise HTTPException(status_code=401, detail="login required")
     return user_id, user_email
 
@@ -433,22 +628,42 @@ def _job_history_entry(job: dict) -> dict:
 
 def _record_user_history(job: dict) -> None:
     user_id = _normalize_user_identity(str(job.get("user_id") or ""))
-    if not user_id:
+    user_email = _normalize_user_email(str(job.get("user_email") or ""))
+    history_paths = _history_paths_for_identity(user_id, user_email)
+    if not history_paths:
         return
-    path = _user_history_path(user_id)
-    existing = _load_json(path, [])
-    items = existing if isinstance(existing, list) else []
     entry = _job_history_entry(job)
-    next_items = [entry]
-    next_items.extend(item for item in items if isinstance(item, dict) and item.get("job_id") != entry["job_id"])
-    _save_json(path, next_items[:USER_HISTORY_LIMIT])
+    for path in history_paths:
+        existing = _load_json(path, [])
+        items = existing if isinstance(existing, list) else []
+        next_items = [entry]
+        next_items.extend(item for item in items if isinstance(item, dict) and item.get("job_id") != entry["job_id"])
+        _save_json(path, next_items[:USER_HISTORY_LIMIT])
 
 
-def _load_user_history(user_id: str) -> list[dict]:
-    items = _load_json(_user_history_path(user_id), [])
-    if not isinstance(items, list):
+def _load_user_history(user_id: str, user_email: str = "") -> list[dict]:
+    history_paths = _history_paths_for_identity(user_id, user_email)
+    if not history_paths:
         return []
-    return [item for item in items if isinstance(item, dict)]
+
+    merged: list[dict] = []
+    seen_job_ids: set[str] = set()
+    for path in history_paths:
+        items = _load_json(path, [])
+        if not isinstance(items, list):
+            continue
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            job_id = str(item.get("job_id") or "").strip()
+            if job_id and job_id in seen_job_ids:
+                continue
+            if job_id:
+                seen_job_ids.add(job_id)
+            merged.append(item)
+
+    merged.sort(key=lambda item: str(item.get("uploaded_at") or ""), reverse=True)
+    return merged[:USER_HISTORY_LIMIT]
 
 
 def _job_response(job: dict, base_url: str) -> dict:
@@ -652,17 +867,88 @@ def get_layers(job_id: str):
     return JSONResponse(_load_map_layers())
 
 
+@app.get("/api/notam")
+def get_notam_overlay(request: Request):
+    bbox_param = str(request.query_params.get("bbox") or "").strip()
+    bbox: tuple[float, float, float, float] | None = None
+    if bbox_param:
+        try:
+            bbox = parse_bbox_param(bbox_param)
+        except ValueError as error:
+            raise HTTPException(status_code=400, detail=str(error)) from error
+
+    try:
+        requested_limit = int(request.query_params.get("limit", str(NOTAM_DEFAULT_LIMIT)))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail="limit 값이 올바르지 않습니다.") from error
+    limit = max(1, min(requested_limit, NOTAM_MAX_LIMIT))
+
+    supabase_url, api_key = _notam_supabase_config()
+    rows = _fetch_notam_rows(supabase_url, api_key, bbox=bbox, limit=limit)
+
+    items: list[dict] = []
+    counts = {"de": 0, "acgz": 0}
+    for row in rows:
+        notam_id = str(row.get("notam_id") or "").strip()
+        series = _normalize_notam_series(str(row.get("series") or ""), notam_id)
+        group_key = _notam_group_key(series)
+        if not group_key:
+            continue
+
+        try:
+            lat = float(row.get("lat"))
+            lng = float(row.get("lng"))
+        except (TypeError, ValueError):
+            continue
+        if lat < -90 or lat > 90 or lng < -180 or lng > 180:
+            continue
+
+        content = str(row.get("content") or "")
+        item = {
+            "id": row.get("id"),
+            "notam_id": notam_id,
+            "series": series,
+            "group": group_key,
+            "lat": lat,
+            "lng": lng,
+            "start_date": str(row.get("start_date") or ""),
+            "end_date": str(row.get("end_date") or ""),
+            "created_at": str(row.get("created_at") or ""),
+            "airport": _extract_notam_airport(content),
+            "content": content,
+        }
+        items.append(item)
+        counts[group_key] += 1
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "source": "supabase",
+            "total": len(items),
+            "counts": counts,
+            "items": items,
+            "fetched_at": _utc_now_iso(),
+        }
+    )
+
+
 @app.get("/api/history")
 def get_history(request: Request):
-    user_id, _user_email = _request_user_identity(request, required=True)
-    return JSONResponse({"items": _load_user_history(user_id)})
+    user_id, user_email = _request_user_identity(request, required=True)
+    return JSONResponse({"items": _load_user_history(user_id, user_email)})
 
 
 @app.get("/api/history/{job_id}")
 def get_history_item(job_id: str, request: Request):
-    user_id, _user_email = _request_user_identity(request, required=True)
+    user_id, user_email = _request_user_identity(request, required=True)
     job = _load_job(job_id)
-    if _normalize_user_identity(str(job.get("user_id") or "")) != user_id:
+    owner_id = _normalize_user_identity(str(job.get("user_id") or ""))
+    owner_email = _normalize_user_email(str(job.get("user_email") or ""))
+    request_email = _normalize_user_email(user_email)
+
+    matches_id = bool(user_id) and owner_id == user_id
+    matches_email = bool(request_email) and bool(owner_email) and owner_email == request_email
+    if not (matches_id or matches_email):
         raise HTTPException(status_code=404, detail="history item not found")
     return JSONResponse(_job_response(job, _external_base_url(request)))
 

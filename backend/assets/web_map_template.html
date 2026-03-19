@@ -664,6 +664,18 @@
       padding: 8px 6px;
       border-radius: 12px;
     }
+    .layer-row.layer-row--sub {
+      margin-left: 18px;
+      border-left: 1px dashed rgba(121, 192, 255, 0.24);
+      padding-left: 10px;
+    }
+    .layer-row.layer-row--sub label {
+      font-size: 11px;
+      color: #c9d1d9;
+    }
+    .layer-row.layer-row--sub .layer-count {
+      font-size: 10px;
+    }
     .layer-row:hover {
       background: rgba(255, 255, 255, 0.04);
     }
@@ -865,6 +877,10 @@
         0 18px 44px rgba(0, 0, 0, 0.52),
         0 0 0 1px rgba(255, 255, 255, 0.03) inset;
       backdrop-filter: none;
+      cursor: grab;
+    }
+    .leaflet-popup.doo-popup.is-dragging .leaflet-popup-content-wrapper {
+      cursor: grabbing;
     }
     .leaflet-popup.doo-popup .leaflet-popup-content {
       margin: 14px 16px;
@@ -1235,9 +1251,12 @@
       padding: 4px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.98);
-      border: 1px solid rgba(28, 35, 46, 0.28);
-      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+      border: 2px solid rgba(17, 21, 28, 0.64);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.82) inset,
+        0 8px 18px rgba(0, 0, 0, 0.2);
       white-space: nowrap;
+      cursor: grab;
     }
     .distance-unit {
       appearance: none;
@@ -1262,12 +1281,33 @@
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.98);
       color: #111111;
-      border: 1px solid rgba(28, 35, 46, 0.24);
+      border: 2px solid rgba(17, 21, 28, 0.9);
       font-size: 12px;
-      font-weight: 800;
+      font-weight: 900;
       letter-spacing: 0.02em;
       box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
       white-space: nowrap;
+      text-shadow: 0 0 0 transparent;
+    }
+    .leaflet-marker-draggable .distance-badge:active {
+      cursor: grabbing;
+    }
+    .capture-render .distance-badge {
+      gap: 0;
+      padding: 5px 7px;
+      border-color: rgba(12, 14, 19, 0.9);
+      box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.94) inset,
+        0 0 0 2px rgba(12, 14, 19, 0.28),
+        0 10px 24px rgba(0, 0, 0, 0.36);
+    }
+    .capture-render .distance-unit {
+      display: none !important;
+    }
+    .capture-render .distance-chip {
+      border-color: rgba(12, 14, 19, 0.98);
+      box-shadow: none;
+      letter-spacing: 0.01em;
     }
     .flag-pin {
       position: relative;
@@ -1465,6 +1505,12 @@
       <circle cx="69" cy="30" r="3.2" fill="#ffd96e"></circle>
       <path d="M77 14l2 5 5 2-5 2-2 5-2-5-5-2 5-2z" fill="#fff1b3" stroke="#17324b" stroke-width="1.8" stroke-linejoin="round"></path>
     </symbol>
+    <symbol id="toolIconNotam" viewBox="0 0 96 72">
+      <rect x="19" y="14" width="58" height="44" rx="10" fill="#eff7ff" stroke="#17324b" stroke-width="2.8"></rect>
+      <path d="M31 27h34M31 35h26M31 43h20" stroke="#7caad5" stroke-width="2.8" stroke-linecap="round"></path>
+      <path d="M63 20 70 29l8 2-6 7 1 10-9-4-9 5 1-11-7-6 9-3z" fill="#ffd86d" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
+      <path d="M62 31h9M62 36h7" stroke="#17324b" stroke-width="2.2" stroke-linecap="round"></path>
+    </symbol>
     <symbol id="toolIconHide" viewBox="0 0 96 72">
       <path d="M70 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
       <path d="M76 21c4-5 8-2 8 3" stroke="#17324b" stroke-width="2.6" stroke-linecap="round"></path>
@@ -1519,6 +1565,9 @@
       </button>
       <button id="captureButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="카메라" title="카메라">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconCamera"></use></svg></span>
+      </button>
+      <button id="notamButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="NOTAM" title="NOTAM">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconNotam"></use></svg></span>
       </button>
       <label class="toolbar-collapse-hide"><input id="grayToggle" type="checkbox">GRAY</label>
       <label id="numWrap" class="toolbar-collapse-hide"><input id="numToggle" type="checkbox">번호</label>
@@ -1702,6 +1751,10 @@
     const measureMinLabelSize = 10;
     const measureMaxLabelSize = 36;
     const measureDefaultLabelSize = 12;
+    const measureLabelSnapMinDistance = 22;
+    const measureLabelSnapMaxDistance = 72;
+    const measureLabelSnapDefaultDistance = 34;
+    const measureLabelDragCooldownMs = 260;
     const TEXT_DEFAULT_FONT = 'nanum_square';
     const TEXT_DEFAULT_ALIGN = 'center';
     const TEXT_FONT_FAMILIES = {
@@ -1721,6 +1774,16 @@
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'satellite', label: '위성영상', note: 'NASA GIBS True Color', badge: 'SAT' },
     ];
+    const NOTAM_GROUP_DEFINITIONS = [
+      { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
+      { key: 'acgz', label: 'NOTAM A,C,G,Z', defaultColor: '#4bc6ff' },
+    ];
+    const NOTAM_SERIES_DE = new Set(['D', 'E']);
+    const NOTAM_SERIES_ACGZ = new Set(['A', 'C', 'G', 'Z']);
+    const weatherPopupSnapMinDistance = 36;
+    const weatherPopupSnapMaxDistance = 120;
+    const weatherPopupSnapDefaultDistance = 72;
+    const weatherPopupDragThreshold = 3;
     const renderer = L.canvas({ padding: 0.5 });
     const map = L.map('map', {
       preferCanvas: true,
@@ -1739,10 +1802,12 @@
     map.getPane('completionPane').style.zIndex = '360';
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
+    map.createPane('notamPane');
+    map.getPane('notamPane').style.zIndex = '350';
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    const baseTileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
       minZoom: 3,
       keepBuffer: 16,
@@ -1785,6 +1850,7 @@
     const forceModeNewButton = document.getElementById('forceModeNewButton');
     const forceModeExistingButton = document.getElementById('forceModeExistingButton');
     const captureButton = document.getElementById('captureButton');
+    const notamButton = document.getElementById('notamButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
     const expandToolbarButton = document.getElementById('expandToolbarButton');
     const inlineTextFontWrap = document.getElementById('inlineTextFontWrap');
@@ -1847,6 +1913,7 @@
     const layerControls = new Map();
     const layerBundles = new Map();
     const weatherControls = new Map();
+    const notamControls = new Map();
     const resultLineEntries = [];
     let layerDataMap = null;
     let layerDataPromise = null;
@@ -1856,13 +1923,24 @@
     const weatherTiles = {
       satellite: null,
     };
+    const notamGroups = {
+      de: L.layerGroup(),
+      acgz: L.layerGroup(),
+    };
     const weatherConfigState = {
       data: null,
       fetchedAt: 0,
       promise: null,
     };
+    const notamState = {
+      loaded: false,
+      loading: false,
+      promise: null,
+      counts: { de: 0, acgz: 0 },
+    };
     let weatherRefreshTimer = null;
     let weatherRefreshToken = 0;
+    let notamRefreshTimer = null;
 
     const measureState = {
       active: false,
@@ -1927,6 +2005,82 @@
     let viewerStateRestoring = false;
     const undoHistory = [];
     let undoApplying = false;
+    const TOOL_MODE_KEYS = new Set(['measure', 'text', 'done', 'force']);
+    const menuButtonsByKey = {
+      layer: layerButton,
+      weather: weatherButton,
+      measure: measureButton,
+      text: textButton,
+      done: doneButton,
+      force: forceButton,
+      capture: captureButton,
+      notam: notamButton,
+    };
+
+    function applyMenuButtonActiveState(activeKey = '') {
+      Object.values(menuButtonsByKey).forEach((button) => {
+        if (!button) {
+          return;
+        }
+        button.classList.remove('is-active');
+        button.classList.remove('measure-active');
+      });
+      if (!activeKey || !menuButtonsByKey[activeKey]) {
+        return;
+      }
+      const targetButton = menuButtonsByKey[activeKey];
+      targetButton.classList.add('is-active');
+      if (TOOL_MODE_KEYS.has(activeKey)) {
+        targetButton.classList.add('measure-active');
+      }
+    }
+
+    function getActiveMenuButtonKey() {
+      if (captureModal.classList.contains('is-visible')) {
+        return 'capture';
+      }
+      if (layerPanel.classList.contains('is-visible')) {
+        return 'layer';
+      }
+      if (weatherPanel.classList.contains('is-visible')) {
+        return 'weather';
+      }
+      if (measureState.active) {
+        return 'measure';
+      }
+      if (textState.active) {
+        return 'text';
+      }
+      if (doneState.active) {
+        return 'done';
+      }
+      if (forceState.active) {
+        return 'force';
+      }
+      if (isAnyNotamVisible()) {
+        return 'notam';
+      }
+      return '';
+    }
+
+    function syncMenuButtonActiveState() {
+      applyMenuButtonActiveState(getActiveMenuButtonKey());
+    }
+
+    function deactivateToolModes(except = '') {
+      if (except !== 'measure' && measureState.active) {
+        setMeasureActive(false, true);
+      }
+      if (except !== 'text' && textState.active) {
+        setTextActive(false, true);
+      }
+      if (except !== 'done' && doneState.active) {
+        setDoneActive(false, true);
+      }
+      if (except !== 'force' && forceState.active) {
+        setForceActive(false, true);
+      }
+    }
 
     function escapeHtml(value) {
       return String(value || '')
@@ -2031,6 +2185,99 @@
     function getWeatherBoundsQuery() {
       const bounds = map.getBounds().pad(0.18);
       return `${bounds.getSouth().toFixed(4)},${bounds.getWest().toFixed(4)},${bounds.getNorth().toFixed(4)},${bounds.getEast().toFixed(4)}`;
+    }
+
+    function getNotamBoundsQuery() {
+      const bounds = map.getBounds().pad(0.22);
+      return `${bounds.getSouth().toFixed(4)},${bounds.getWest().toFixed(4)},${bounds.getNorth().toFixed(4)},${bounds.getEast().toFixed(4)}`;
+    }
+
+    function normalizeNotamSeries(seriesValue, notamIdValue = '') {
+      const raw = String(seriesValue || '').trim().toUpperCase();
+      if (raw) {
+        return raw.charAt(0);
+      }
+      const fallback = String(notamIdValue || '').trim().toUpperCase();
+      return fallback ? fallback.charAt(0) : '';
+    }
+
+    function resolveNotamGroupKey(seriesValue, notamIdValue = '') {
+      const series = normalizeNotamSeries(seriesValue, notamIdValue);
+      if (NOTAM_SERIES_DE.has(series)) {
+        return 'de';
+      }
+      if (NOTAM_SERIES_ACGZ.has(series)) {
+        return 'acgz';
+      }
+      return '';
+    }
+
+    function parseCompactNotamDate(value) {
+      const text = String(value || '').trim();
+      if (!/^\d{10}$/.test(text)) {
+        return null;
+      }
+      const year = Number(text.slice(0, 2));
+      const month = Number(text.slice(2, 4));
+      const day = Number(text.slice(4, 6));
+      const hour = Number(text.slice(6, 8));
+      const minute = Number(text.slice(8, 10));
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day) || !Number.isFinite(hour) || !Number.isFinite(minute)) {
+        return null;
+      }
+      const fullYear = 2000 + year;
+      const utcDate = new Date(Date.UTC(fullYear, month - 1, day, hour, minute));
+      if (Number.isNaN(utcDate.getTime())) {
+        return null;
+      }
+      return utcDate;
+    }
+
+    function formatNotamDate(value) {
+      const parsed = parseCompactNotamDate(value);
+      if (!parsed) {
+        return String(value || '').trim();
+      }
+      return new Intl.DateTimeFormat('ko-KR', {
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZoneName: 'short',
+      }).format(parsed);
+    }
+
+    function notamMarkerStyle(groupKey, colorValue) {
+      const color = String(colorValue || '#4bc6ff');
+      const radius = groupKey === 'de' ? 6.8 : 6.1;
+      return {
+        pane: 'notamPane',
+        radius,
+        color: '#11293f',
+        weight: 1.6,
+        fillColor: color,
+        fillOpacity: 0.96,
+        renderer,
+      };
+    }
+
+    function buildNotamPopupHtml(item) {
+      const notamId = item && item.notam_id ? String(item.notam_id) : '';
+      const series = normalizeNotamSeries(item && item.series, notamId);
+      const airport = String((item && item.airport) || '').trim();
+      const startText = formatNotamDate(item && item.start_date);
+      const endText = formatNotamDate(item && item.end_date);
+      const rows = [
+        ['번호', notamId],
+        ['시리즈', series],
+        ['공항', airport],
+        ['시작', startText],
+        ['종료', endText],
+      ];
+      const title = `${notamId || 'NOTAM'}${series ? ` (${series})` : ''}`;
+      const detail = String((item && item.content) || '').trim();
+      return buildWeatherPopupHtml(title, rows, detail);
     }
 
     function weatherTileLayer(url, options) {
@@ -2310,6 +2557,137 @@
         ['현상', props.wx || ''],
         ['TAF', formatWeatherRange(props.tafValidFrom, props.tafValidTo)],
       ], detailBlocks.join('\n\n'), summary);
+    }
+
+    function snapWeatherPopupLatLng(originLatLng, desiredLatLng) {
+      if (!originLatLng || !desiredLatLng) {
+        return desiredLatLng || originLatLng || null;
+      }
+      const originPoint = map.latLngToLayerPoint(originLatLng);
+      const desiredPoint = map.latLngToLayerPoint(desiredLatLng);
+      let direction = desiredPoint.subtract(originPoint);
+      let directionLength = Math.hypot(direction.x, direction.y);
+
+      if (directionLength <= 1e-6) {
+        direction = L.point(0.65, -1);
+        directionLength = Math.hypot(direction.x, direction.y);
+      }
+
+      const unitDirection = direction.multiplyBy(1 / directionLength);
+      const snapDistance = clamp(
+        directionLength,
+        weatherPopupSnapMinDistance,
+        weatherPopupSnapMaxDistance,
+      );
+      const snappedPoint = originPoint.add(unitDirection.multiplyBy(
+        Number.isFinite(snapDistance) ? snapDistance : weatherPopupSnapDefaultDistance,
+      ));
+      return map.layerPointToLatLng(snappedPoint);
+    }
+
+    function attachAviationPopupDrag(marker) {
+      if (!marker || marker._dooPopupDragBound) {
+        return;
+      }
+      marker._dooPopupDragBound = true;
+
+      marker.on('popupopen', (openEvent) => {
+        const popup = openEvent && openEvent.popup ? openEvent.popup : null;
+        const popupElement = popup && popup.getElement ? popup.getElement() : null;
+        if (!popup || !popupElement) {
+          return;
+        }
+
+        const wrapper = popupElement.querySelector('.leaflet-popup-content-wrapper');
+        if (!wrapper) {
+          return;
+        }
+
+        let dragging = false;
+        let moved = false;
+        let startClientX = 0;
+        let startClientY = 0;
+        let startPopupPoint = null;
+        let mapDraggingWasEnabled = false;
+
+        const stopDrag = () => {
+          window.removeEventListener('mousemove', onMove, true);
+          window.removeEventListener('mouseup', onUp, true);
+          popupElement.classList.remove('is-dragging');
+          if (mapDraggingWasEnabled && map.dragging) {
+            map.dragging.enable();
+          }
+          dragging = false;
+        };
+
+        const onMove = (event) => {
+          if (!dragging || !startPopupPoint) {
+            return;
+          }
+          const deltaX = event.clientX - startClientX;
+          const deltaY = event.clientY - startClientY;
+          if (!moved && (Math.abs(deltaX) + Math.abs(deltaY)) < weatherPopupDragThreshold) {
+            return;
+          }
+          moved = true;
+          const desiredPoint = L.point(startPopupPoint.x + deltaX, startPopupPoint.y + deltaY);
+          popup.setLatLng(map.layerPointToLatLng(desiredPoint));
+        };
+
+        const onUp = (event) => {
+          if (!dragging) {
+            return;
+          }
+          if (event) {
+            event.preventDefault();
+            event.stopPropagation();
+          }
+
+          if (moved) {
+            const sourceLatLng = marker.getLatLng();
+            const popupLatLng = popup.getLatLng();
+            const snapped = snapWeatherPopupLatLng(sourceLatLng, popupLatLng);
+            if (snapped) {
+              popup.setLatLng(snapped);
+            }
+          }
+          stopDrag();
+        };
+
+        const onDown = (event) => {
+          if (!popup.isOpen || !popup.isOpen()) {
+            return;
+          }
+          if (event.button !== 0) {
+            return;
+          }
+          const target = event.target;
+          if (target && target.closest && target.closest('.leaflet-popup-close-button')) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          dragging = true;
+          moved = false;
+          startClientX = event.clientX;
+          startClientY = event.clientY;
+          startPopupPoint = map.latLngToLayerPoint(popup.getLatLng());
+          mapDraggingWasEnabled = !!(map.dragging && map.dragging.enabled && map.dragging.enabled());
+          if (mapDraggingWasEnabled && map.dragging) {
+            map.dragging.disable();
+          }
+          popupElement.classList.add('is-dragging');
+          window.addEventListener('mousemove', onMove, true);
+          window.addEventListener('mouseup', onUp, true);
+        };
+
+        wrapper.addEventListener('mousedown', onDown, true);
+        marker.once('popupclose', () => {
+          wrapper.removeEventListener('mousedown', onDown, true);
+          stopDrag();
+        });
+      });
     }
 
     function ensureWeatherConfig() {
@@ -2692,8 +3070,6 @@
 
     function setTextActive(active, fromOtherTool = false) {
       textState.active = active;
-      textButton.classList.toggle('is-active', active);
-      textButton.classList.toggle('measure-active', active);
       if (active && measureState.active) {
         setMeasureActive(false, true);
       }
@@ -2703,6 +3079,11 @@
       if (active && !fromOtherTool && forceState.active) {
         setForceActive(false, true);
       }
+      if (active && !fromOtherTool) {
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
+      }
+      syncMenuButtonActiveState();
       scheduleViewerStateSave();
     }
 
@@ -2752,8 +3133,6 @@
 
     function setDoneActive(active, fromOtherTool = false) {
       doneState.active = active;
-      doneButton.classList.toggle('is-active', active);
-      doneButton.classList.toggle('measure-active', active);
       if (!active) {
         setDonePanelVisible(false);
       } else if (!fromOtherTool) {
@@ -2769,7 +3148,10 @@
         if (forceState.active) {
           setForceActive(false, true);
         }
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
       }
+      syncMenuButtonActiveState();
       scheduleViewerStateSave();
     }
 
@@ -2832,6 +3214,72 @@
       });
     }
 
+    function projectPointToSegment(point, start, end) {
+      const segment = end.subtract(start);
+      const segmentLengthSq = (segment.x * segment.x) + (segment.y * segment.y);
+      if (segmentLengthSq <= 1e-8) {
+        return { point: start, ratio: 0 };
+      }
+      const pointOffset = point.subtract(start);
+      const ratio = clamp(((pointOffset.x * segment.x) + (pointOffset.y * segment.y)) / segmentLengthSq, 0, 1);
+      return {
+        point: L.point(start.x + (segment.x * ratio), start.y + (segment.y * ratio)),
+        ratio,
+      };
+    }
+
+    function getMeasureLabelSnapDistance(item) {
+      const element = item && item.label ? item.label.getElement() : null;
+      if (!element) {
+        return measureLabelSnapDefaultDistance;
+      }
+      const target = element.querySelector('.distance-badge') || element;
+      const rect = target.getBoundingClientRect();
+      if (!rect || !Number.isFinite(rect.height) || rect.height <= 0) {
+        return measureLabelSnapDefaultDistance;
+      }
+      const preferred = (rect.height * 0.5) + 14;
+      return clamp(preferred, measureLabelSnapMinDistance, measureLabelSnapMaxDistance);
+    }
+
+    function snapMeasureLabelToLine(item, desiredLatLng, persist = false) {
+      if (!item || !item.label) {
+        return null;
+      }
+      const desired = desiredLatLng || item.label.getLatLng();
+      if (!desired) {
+        return null;
+      }
+
+      const startPoint = map.latLngToLayerPoint(item.start);
+      const endPoint = map.latLngToLayerPoint(item.end);
+      const desiredPoint = map.latLngToLayerPoint(desired);
+      const projected = projectPointToSegment(desiredPoint, startPoint, endPoint);
+      let direction = desiredPoint.subtract(projected.point);
+      let directionLength = Math.hypot(direction.x, direction.y);
+
+      if (directionLength <= 1e-6) {
+        const segment = endPoint.subtract(startPoint);
+        direction = L.point(-segment.y, segment.x);
+        directionLength = Math.hypot(direction.x, direction.y);
+      }
+      if (directionLength <= 1e-6) {
+        direction = L.point(0, -1);
+        directionLength = 1;
+      }
+
+      const unitDirection = direction.multiplyBy(1 / directionLength);
+      const snapDistance = getMeasureLabelSnapDistance(item);
+      const snappedPoint = projected.point.add(unitDirection.multiplyBy(snapDistance));
+      const snappedLatLng = map.layerPointToLatLng(snappedPoint);
+      item.label.setLatLng(snappedLatLng);
+
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+      return snappedLatLng;
+    }
+
     function applyMeasureItemStyle(item) {
       if (!item) {
         return;
@@ -2847,6 +3295,7 @@
       if (item.label) {
         const distanceMeters = map.distance(item.start, item.end);
         item.label.setIcon(distanceIcon(formatDistance(distanceMeters, measureState.unit), measureState.unit, measureState.labelSize));
+        snapMeasureLabelToLine(item, item.label.getLatLng(), false);
       }
     }
 
@@ -2894,11 +3343,11 @@
     }
 
     function shouldRenderKmlLabel(entryId) {
-      if (hiddenKmlLabelIds.has(entryId)) {
-        return false;
-      }
       if (numToggle.checked) {
         return true;
+      }
+      if (hiddenKmlLabelIds.has(entryId)) {
+        return false;
       }
       return forceState.active && forceState.mode === 'existing' && selectedKmlLabelIds.has(entryId);
     }
@@ -3053,8 +3502,6 @@
       if (active) {
         forceState.nextNumber = getForceStartNumber();
       }
-      forceButton.classList.toggle('is-active', active);
-      forceButton.classList.toggle('measure-active', active);
       if (!active) {
         setForcePanelVisible(false);
       } else if (!fromOtherTool) {
@@ -3070,6 +3517,8 @@
         if (doneState.active) {
           setDoneActive(false, true);
         }
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
       }
       setForceControlsEnabled(true);
       setNumControlsEnabled(numToggle.checked);
@@ -3080,6 +3529,7 @@
         deselectNumberLabel();
       }
       updateForceStatus();
+      syncMenuButtonActiveState();
       scheduleViewerStateSave();
     }
 
@@ -3387,6 +3837,14 @@
           key,
           visible: !!controls.toggle.checked,
         })),
+        notam: {
+          loaded: !!notamState.loaded,
+          groups: Array.from(notamControls.entries()).map(([key, controls]) => ({
+            key,
+            visible: !!controls.toggle.checked,
+            color: controls.color.value,
+          })),
+        },
         completedLineIds: resultLineEntries
           .filter((entry) => entry.completed)
           .map((entry) => entry.id),
@@ -3419,6 +3877,9 @@
             id: item.id,
             start: [item.start.lat, item.start.lng],
             end: [item.end.lat, item.end.lng],
+            label: item.label && item.label.getLatLng
+              ? [item.label.getLatLng().lat, item.label.getLatLng().lng]
+              : null,
           })),
         },
       };
@@ -3523,6 +3984,49 @@
         }
         await syncWeatherLayer(item.key);
       }
+    }
+
+    async function applySavedNotamState(savedNotam) {
+      if (!savedNotam || typeof savedNotam !== 'object' || !notamControls.size) {
+        return;
+      }
+
+      const groupStates = Array.isArray(savedNotam.groups) ? savedNotam.groups : [];
+      groupStates.forEach((stateItem) => {
+        if (!stateItem || !notamControls.has(stateItem.key)) {
+          return;
+        }
+        const controls = notamControls.get(stateItem.key);
+        if (typeof stateItem.color === 'string' && /^#[0-9a-f]{6}$/i.test(stateItem.color)) {
+          controls.color.value = stateItem.color;
+        }
+        controls.toggle.checked = !!stateItem.visible;
+      });
+
+      const wantsAnyVisible = groupStates.some((stateItem) => stateItem && stateItem.visible && notamControls.has(stateItem.key));
+      const shouldLoad = !!savedNotam.loaded || wantsAnyVisible;
+      if (!shouldLoad) {
+        clearNotamLayers();
+        setNotamRowsVisible(false);
+        setNotamRowsEnabled(false);
+        syncMenuButtonActiveState();
+        return;
+      }
+
+      try {
+        await refreshNotamData(true);
+      } catch (error) {
+        clearNotamLayers();
+        return;
+      }
+
+      groupStates.forEach((stateItem) => {
+        if (!stateItem || !notamControls.has(stateItem.key)) {
+          return;
+        }
+        notamControls.get(stateItem.key).toggle.checked = !!stateItem.visible;
+      });
+      syncAllNotamGroups();
     }
 
     async function applyViewerStateSnapshot(saved) {
@@ -3662,6 +4166,7 @@
         }
 
         await applySavedWeatherState(saved.weather);
+        await applySavedNotamState(saved.notam);
 
         clearAllMeasurements(false);
         measureState.unit = saved.measure && saved.measure.unit === 'nm' ? 'nm' : 'km';
@@ -3697,7 +4202,15 @@
             }
             const start = L.latLng(item.start[0], item.start[1]);
             const end = L.latLng(item.end[0], item.end[1]);
-            createMeasurementItem(start, end, []);
+            const labelLatLng = (
+              Array.isArray(item.label) &&
+              item.label.length === 2 &&
+              Number.isFinite(item.label[0]) &&
+              Number.isFinite(item.label[1])
+            )
+              ? L.latLng(item.label[0], item.label[1])
+              : null;
+            createMeasurementItem(start, end, [], labelLatLng);
           });
         }
         if (saved.measure && Number.isFinite(saved.measure.nextId)) {
@@ -3815,6 +4328,100 @@
       });
     }
 
+    function isNotamGroupVisible(groupKey) {
+      const controls = notamControls.get(groupKey);
+      return !!(controls && controls.toggle.checked);
+    }
+
+    function isAnyNotamVisible() {
+      return NOTAM_GROUP_DEFINITIONS.some((item) => isNotamGroupVisible(item.key));
+    }
+
+    function setNotamRowsVisible(visible) {
+      const isVisible = !!visible;
+      notamControls.forEach((controls) => {
+        controls.row.style.display = isVisible ? '' : 'none';
+      });
+    }
+
+    function setNotamRowsEnabled(enabled) {
+      const isEnabled = !!enabled;
+      notamControls.forEach((controls) => {
+        controls.toggle.disabled = !isEnabled;
+        controls.color.disabled = !isEnabled;
+      });
+    }
+
+    function updateNotamRowCounts(counts = {}) {
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        const controls = notamControls.get(definition.key);
+        if (!controls) {
+          return;
+        }
+        const value = Number(counts && counts[definition.key]);
+        controls.count.textContent = `${Number.isFinite(value) ? value : 0}개`;
+      });
+    }
+
+    function buildNotamLayerRows(anchorRow) {
+      if (notamControls.size) {
+        return;
+      }
+      const airportAnchor = anchorRow || layerRows.querySelector('.layer-row[data-layer-key="airport"]');
+      let insertAfter = airportAnchor;
+
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        const row = document.createElement('div');
+        row.className = 'layer-row layer-row--sub';
+        row.dataset.layerKey = `notam-${definition.key}`;
+
+        const label = document.createElement('label');
+        const toggle = document.createElement('input');
+        toggle.type = 'checkbox';
+        toggle.checked = false;
+        toggle.disabled = true;
+
+        const text = document.createElement('span');
+        text.textContent = definition.label;
+
+        label.append(toggle, text);
+
+        const count = document.createElement('span');
+        count.className = 'layer-count';
+        count.textContent = '0개';
+
+        const color = document.createElement('input');
+        color.className = 'layer-color';
+        color.type = 'color';
+        color.value = definition.defaultColor;
+        color.disabled = true;
+
+        row.append(label, count, color);
+
+        if (insertAfter && insertAfter.parentElement === layerRows) {
+          layerRows.insertBefore(row, insertAfter.nextSibling);
+          insertAfter = row;
+        } else {
+          layerRows.appendChild(row);
+        }
+
+        notamControls.set(definition.key, { row, toggle, count, color, definition });
+
+        toggle.addEventListener('change', () => {
+          syncNotamGroup(definition.key);
+          syncMenuButtonActiveState();
+          scheduleViewerStateSave();
+        });
+        color.addEventListener('input', () => {
+          applyNotamColor(definition.key);
+          scheduleViewerStateSave();
+        });
+      });
+
+      setNotamRowsVisible(false);
+      updateNotamRowCounts(notamState.counts);
+    }
+
     function buildLayerRows() {
       if (!payload.has_layers || !layerCatalog.length) {
         layerButton.style.display = 'none';
@@ -3822,6 +4429,7 @@
         return;
       }
 
+      let airportRow = null;
       layerCatalog.forEach((layer) => {
         const row = document.createElement('div');
         row.className = 'layer-row';
@@ -3849,6 +4457,9 @@
         row.append(label, count, color);
         layerRows.appendChild(row);
         layerControls.set(layer.key, { toggle, color });
+        if (layer.key === 'airport') {
+          airportRow = row;
+        }
 
         toggle.addEventListener('change', async () => {
           await syncLayer(layer.key);
@@ -3860,6 +4471,9 @@
           scheduleViewerStateSave();
         });
       });
+
+      buildNotamLayerRows(airportRow);
+      setNotamRowsEnabled(false);
     }
 
     function layerStyle(featureType, color, hovered = false) {
@@ -4053,6 +4667,7 @@
           className: 'doo-popup',
           maxWidth: 360,
         });
+        attachAviationPopupDrag(marker);
         weatherGroups.metar.addLayer(marker);
       });
       if (isWeatherEnabled('metar')) {
@@ -4110,6 +4725,24 @@
       }, delay);
     }
 
+    function syncBaseMapForSatelliteMode() {
+      const satelliteLayer = weatherTiles.satellite;
+      const satelliteActive = !!(
+        isWeatherEnabled('satellite') &&
+        satelliteLayer &&
+        map.hasLayer(satelliteLayer)
+      );
+      if (satelliteActive) {
+        if (map.hasLayer(baseTileLayer)) {
+          map.removeLayer(baseTileLayer);
+        }
+        return;
+      }
+      if (!map.hasLayer(baseTileLayer)) {
+        baseTileLayer.addTo(map);
+      }
+    }
+
     async function syncTileWeatherLayer(key, configKey, paneName) {
       const controls = weatherControls.get(key);
       if (!controls) {
@@ -4121,6 +4754,7 @@
           map.removeLayer(weatherTiles[key]);
         }
         resetWeatherBadge(key);
+        syncBaseMapForSatelliteMode();
         return;
       }
 
@@ -4138,25 +4772,31 @@
         if (!weatherTiles[key]) {
           weatherTiles[key] = weatherTileLayer(layerConfig.tile_url, {
             pane: paneName,
-            opacity: layerConfig.opacity || 0.6,
+            opacity: key === 'satellite' ? 1 : (layerConfig.opacity || 0.6),
             attribution: layerConfig.attribution || '',
             maxZoom: layerConfig.max_zoom || 12,
           });
         } else if (typeof weatherTiles[key].setUrl === 'function') {
           weatherTiles[key].setUrl(layerConfig.tile_url);
-          if (typeof weatherTiles[key].setOpacity === 'function' && Number.isFinite(layerConfig.opacity)) {
-            weatherTiles[key].setOpacity(layerConfig.opacity);
+          if (typeof weatherTiles[key].setOpacity === 'function') {
+            if (key === 'satellite') {
+              weatherTiles[key].setOpacity(1);
+            } else if (Number.isFinite(layerConfig.opacity)) {
+              weatherTiles[key].setOpacity(layerConfig.opacity);
+            }
           }
         }
         if (!map.hasLayer(weatherTiles[key])) {
           weatherTiles[key].addTo(map);
         }
+        syncBaseMapForSatelliteMode();
         setWeatherBadge(key, controls.definition.badge, 'live');
       } catch (error) {
         controls.toggle.checked = false;
         if (weatherTiles[key]) {
           map.removeLayer(weatherTiles[key]);
         }
+        syncBaseMapForSatelliteMode();
         setWeatherBadge(key, '오류', 'error');
         throw error;
       } finally {
@@ -4191,25 +4831,208 @@
       }
     }
 
+    function clearNotamLayers() {
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        const group = notamGroups[definition.key];
+        if (!group) {
+          return;
+        }
+        group.clearLayers();
+        map.removeLayer(group);
+      });
+    }
+
+    function applyNotamColor(groupKey) {
+      const controls = notamControls.get(groupKey);
+      const group = notamGroups[groupKey];
+      if (!controls || !group) {
+        return;
+      }
+      group.eachLayer((layer) => {
+        if (layer && layer.setStyle) {
+          layer.setStyle(notamMarkerStyle(groupKey, controls.color.value));
+        }
+      });
+    }
+
+    function syncNotamGroup(groupKey) {
+      const controls = notamControls.get(groupKey);
+      const group = notamGroups[groupKey];
+      if (!controls || !group) {
+        return;
+      }
+      const visible = controls.toggle.checked && Number(notamState.counts[groupKey] || 0) > 0;
+      if (visible) {
+        if (!map.hasLayer(group)) {
+          map.addLayer(group);
+        }
+        applyNotamColor(groupKey);
+      } else {
+        map.removeLayer(group);
+      }
+      syncMenuButtonActiveState();
+    }
+
+    function syncAllNotamGroups() {
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        syncNotamGroup(definition.key);
+      });
+    }
+
+    function renderNotamItems(items) {
+      clearNotamLayers();
+      const nextCounts = { de: 0, acgz: 0 };
+      const list = Array.isArray(items) ? items : [];
+
+      list.forEach((item) => {
+        const groupKey = resolveNotamGroupKey(item && item.series, item && item.notam_id);
+        if (!groupKey) {
+          return;
+        }
+        const lat = Number(item && item.lat);
+        const lng = Number(item && item.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          return;
+        }
+        const controls = notamControls.get(groupKey);
+        const marker = L.circleMarker([lat, lng], notamMarkerStyle(groupKey, controls ? controls.color.value : undefined));
+        const title = String((item && item.notam_id) || normalizeNotamSeries(item && item.series, '') || 'NOTAM');
+        marker.bindTooltip(title, {
+          className: 'doo-tooltip',
+          direction: 'top',
+          offset: [0, -5],
+          opacity: 0.97,
+        });
+        marker.bindPopup(buildNotamPopupHtml(item), {
+          className: 'doo-popup',
+          maxWidth: 460,
+        });
+        notamGroups[groupKey].addLayer(marker);
+        nextCounts[groupKey] += 1;
+      });
+
+      notamState.counts = nextCounts;
+      updateNotamRowCounts(nextCounts);
+      const hasAny = (nextCounts.de + nextCounts.acgz) > 0;
+      setNotamRowsVisible(hasAny);
+      setNotamRowsEnabled(hasAny);
+      if (!hasAny) {
+        NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+          const controls = notamControls.get(definition.key);
+          if (!controls) {
+            return;
+          }
+          controls.toggle.checked = false;
+        });
+      }
+      syncAllNotamGroups();
+    }
+
+    async function refreshNotamData(force = false) {
+      if (notamState.loading) {
+        return notamState.promise || Promise.resolve();
+      }
+      if (!force && notamState.loaded) {
+        return;
+      }
+
+      notamState.loading = true;
+      notamButton.disabled = true;
+      const requestUrl = `/api/notam?bbox=${encodeURIComponent(getNotamBoundsQuery())}&limit=1200`;
+      const pending = fetchJson(requestUrl)
+        .then((data) => {
+          renderNotamItems(Array.isArray(data && data.items) ? data.items : []);
+          notamState.loaded = true;
+        })
+        .finally(() => {
+          notamState.loading = false;
+          notamButton.disabled = false;
+          notamState.promise = null;
+        });
+      notamState.promise = pending;
+      return pending;
+    }
+
+    function scheduleNotamRefresh(delay = 420) {
+      if (!isAnyNotamVisible()) {
+        return;
+      }
+      window.clearTimeout(notamRefreshTimer);
+      notamRefreshTimer = window.setTimeout(() => {
+        refreshNotamData(true).catch(() => {
+          // Keep existing markers if refresh fails.
+        });
+      }, delay);
+    }
+
+    async function toggleNotamOverlay() {
+      if (!notamControls.size) {
+        return;
+      }
+      const currentlyVisible = isAnyNotamVisible();
+      if (currentlyVisible) {
+        NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+          const controls = notamControls.get(definition.key);
+          if (controls) {
+            controls.toggle.checked = false;
+          }
+        });
+        syncAllNotamGroups();
+        scheduleViewerStateSave();
+        return;
+      }
+
+      try {
+        await refreshNotamData(true);
+      } catch (error) {
+        window.alert('NOTAM 데이터를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.');
+        syncMenuButtonActiveState();
+        return;
+      }
+
+      const hasAny = (Number(notamState.counts.de) + Number(notamState.counts.acgz)) > 0;
+      if (!hasAny) {
+        window.alert('현재 범위에 표시할 NOTAM이 없습니다.');
+        syncMenuButtonActiveState();
+        return;
+      }
+
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        const controls = notamControls.get(definition.key);
+        if (!controls) {
+          return;
+        }
+        controls.toggle.checked = Number(notamState.counts[definition.key] || 0) > 0;
+      });
+      syncAllNotamGroups();
+      scheduleViewerStateSave();
+    }
+
     function setLayerPanelVisible(visible) {
       if (!payload.has_layers || !layerCatalog.length) {
         return;
       }
-      layerPanel.classList.toggle('is-visible', visible);
-      layerButton.classList.toggle('is-active', visible);
-      if (visible) {
-        weatherPanel.classList.remove('is-visible');
-        weatherButton.classList.remove('is-active');
+      const isVisible = !!visible;
+      if (isVisible) {
+        deactivateToolModes();
       }
+      layerPanel.classList.toggle('is-visible', isVisible);
+      if (isVisible) {
+        weatherPanel.classList.remove('is-visible');
+      }
+      syncMenuButtonActiveState();
     }
 
     function setWeatherPanelVisible(visible) {
-      weatherPanel.classList.toggle('is-visible', visible);
-      weatherButton.classList.toggle('is-active', visible);
-      if (visible) {
-        layerPanel.classList.remove('is-visible');
-        layerButton.classList.remove('is-active');
+      const isVisible = !!visible;
+      if (isVisible) {
+        deactivateToolModes();
       }
+      weatherPanel.classList.toggle('is-visible', isVisible);
+      if (isVisible) {
+        layerPanel.classList.remove('is-visible');
+      }
+      syncMenuButtonActiveState();
     }
 
     function applyInterfaceCollapseState(collapsed) {
@@ -4257,7 +5080,12 @@
     }
 
     function setCaptureModalVisible(visible) {
-      captureModal.classList.toggle('is-visible', visible);
+      const isVisible = !!visible;
+      if (isVisible) {
+        deactivateToolModes();
+      }
+      captureModal.classList.toggle('is-visible', isVisible);
+      syncMenuButtonActiveState();
     }
 
     function getCurrentPaperPreset() {
@@ -4663,6 +5491,9 @@
           if (modal) {
             modal.style.display = 'none';
           }
+          if (doc.body) {
+            doc.body.classList.add('capture-render');
+          }
           const clonedMap = doc.getElementById('map');
           if (clonedMap) {
             clonedMap.style.background = 'transparent';
@@ -4785,6 +5616,7 @@
         return;
       }
 
+      deactivateToolModes();
       setLayerPanelVisible(false);
       setWeatherPanelVisible(false);
       captureButton.disabled = true;
@@ -4971,6 +5803,13 @@
       setWeatherPanelVisible(!weatherPanel.classList.contains('is-visible'));
     });
 
+    notamButton.addEventListener('click', async (event) => {
+      event.stopPropagation();
+      setLayerPanelVisible(false);
+      setWeatherPanelVisible(false);
+      await toggleNotamOverlay();
+    });
+
     layerPanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
@@ -5131,6 +5970,9 @@
     numSizeInput.addEventListener('input', refreshNumberSettings);
     numColorInput.addEventListener('input', refreshNumberSettings);
     numToggle.addEventListener('change', () => {
+      if (numToggle.checked) {
+        hiddenKmlLabelIds.clear();
+      }
       setNumControlsEnabled(numToggle.checked);
       refreshKmlLabels();
       syncKmlLabelVisibility();
@@ -5263,16 +6105,10 @@
         requestAnimationFrame(() => bindMeasureLabelControls(item));
         return;
       }
-
-      element.addEventListener('click', (event) => {
-        const target = event.target;
-        if (target && target.closest && target.closest('[data-measure-unit]')) {
-          return;
-        }
-        event.preventDefault();
-        event.stopPropagation();
-        removeMeasurementItem(item.id, true);
-      });
+      if (item.boundLabelElement === element) {
+        return;
+      }
+      item.boundLabelElement = element;
 
       element.querySelectorAll('[data-measure-unit]').forEach((button) => {
         button.addEventListener('click', (event) => {
@@ -5315,7 +6151,7 @@
       scheduleViewerStateSave();
     }
 
-    function createMeasurementItem(start, end, markers = []) {
+    function createMeasurementItem(start, end, markers = [], labelLatLng = null) {
       const itemId = measureState.nextId++;
       const itemStart = L.latLng(start.lat, start.lng);
       const itemEnd = L.latLng(end.lat, end.lng);
@@ -5329,11 +6165,20 @@
 
       const distanceText = formatDistance(map.distance(itemStart, itemEnd), measureState.unit);
       const mid = L.latLng((itemStart.lat + itemEnd.lat) / 2, (itemStart.lng + itemEnd.lng) / 2);
+      const preferredLatLng = (
+        labelLatLng &&
+        Number.isFinite(labelLatLng.lat) &&
+        Number.isFinite(labelLatLng.lng)
+      )
+        ? L.latLng(labelLatLng.lat, labelLatLng.lng)
+        : mid;
       const label = L.marker(mid, {
         icon: distanceIcon(distanceText, measureState.unit, measureState.labelSize),
         interactive: true,
         keyboard: false,
-        riseOnHover: true
+        riseOnHover: true,
+        draggable: true,
+        autoPan: true,
       }).addTo(measureGroup);
 
       const item = {
@@ -5343,6 +6188,8 @@
         line,
         label,
         markers: Array.isArray(markers) ? markers.slice() : [],
+        boundLabelElement: null,
+        lastLabelDragAt: 0,
       };
 
       line.on('click', (event) => {
@@ -5357,13 +6204,26 @@
         if (target && target.closest && target.closest('[data-measure-unit]')) {
           return;
         }
+        if ((Date.now() - (item.lastLabelDragAt || 0)) < measureLabelDragCooldownMs) {
+          if (event && event.originalEvent) {
+            L.DomEvent.stop(event.originalEvent);
+          }
+          return;
+        }
         if (event && event.originalEvent) {
           L.DomEvent.stop(event.originalEvent);
         }
         removeMeasurementItem(itemId, true);
       });
+      label.on('dragend', (event) => {
+        const marker = event && event.target ? event.target : label;
+        const currentLatLng = marker.getLatLng();
+        snapMeasureLabelToLine(item, currentLatLng, true);
+        item.lastLabelDragAt = Date.now();
+      });
 
       measureState.items.push(item);
+      snapMeasureLabelToLine(item, preferredLatLng, false);
       bindMeasureLabelControls(item);
 
       if (line.bringToFront) {
@@ -5385,8 +6245,6 @@
 
     function setMeasureActive(active, fromOtherTool = false) {
       measureState.active = active;
-      measureButton.classList.toggle('is-active', active);
-      measureButton.classList.toggle('measure-active', active);
       if (!active) {
         clearMeasurePending();
         setMeasurePanelVisible(false);
@@ -5402,6 +6260,11 @@
       if (active && !fromOtherTool && forceState.active) {
         setForceActive(false, true);
       }
+      if (active && !fromOtherTool) {
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
+      }
+      syncMenuButtonActiveState();
       scheduleViewerStateSave();
     }
 
@@ -5464,6 +6327,7 @@
 
     map.on('moveend zoomend', () => {
       scheduleWeatherRefresh(420);
+      scheduleNotamRefresh(420);
     });
 
     async function initializeViewer() {
