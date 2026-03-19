@@ -5,7 +5,7 @@ import { FormEvent, useState } from "react";
 import { API_BASE_URL } from "@/lib/convert";
 
 type NoticePayload = {
-  enabled?: boolean;
+  enabled?: unknown;
   message?: string;
   updated_at?: string;
 };
@@ -43,6 +43,26 @@ async function parseJson(response: Response): Promise<Record<string, unknown>> {
   }
 }
 
+function parseLooseBoolean(value: unknown, defaultValue = true): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["", "0", "false", "off", "no", "n", "disabled"].includes(normalized)) {
+      return false;
+    }
+    if (["1", "true", "on", "yes", "y", "enabled"].includes(normalized)) {
+      return true;
+    }
+    return defaultValue;
+  }
+  return defaultValue;
+}
+
 export default function PopupAdminPage() {
   const [password, setPassword] = useState("");
   const [verified, setVerified] = useState(false);
@@ -73,7 +93,7 @@ export default function PopupAdminPage() {
       const notice = ((payload.notice as NoticePayload) || {}) as NoticePayload;
       setVerified(true);
       setMessage(typeof notice.message === "string" ? notice.message : "");
-      setEnabled(Boolean(notice.enabled));
+      setEnabled(parseLooseBoolean(notice.enabled, true));
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("비밀번호 확인 완료. 팝업 문구를 수정할 수 있습니다.");
       setStatusTone("success");
@@ -104,7 +124,7 @@ export default function PopupAdminPage() {
 
       const notice = ((payload.notice as NoticePayload) || {}) as NoticePayload;
       setMessage(typeof notice.message === "string" ? notice.message : message);
-      setEnabled(Boolean(notice.enabled));
+      setEnabled(parseLooseBoolean(notice.enabled, true));
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("저장되었습니다. 메인 화면 새로고침 시 반영됩니다.");
       setStatusTone("success");

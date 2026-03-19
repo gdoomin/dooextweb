@@ -194,12 +194,27 @@ def _default_popup_notice() -> dict:
     }
 
 
+def _coerce_bool(value, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value != 0
+    if isinstance(value, str):
+        normalized = value.strip().lower()
+        if normalized in {"", "0", "false", "off", "no", "n", "disabled"}:
+            return False
+        if normalized in {"1", "true", "on", "yes", "y", "enabled"}:
+            return True
+        return default
+    return default
+
+
 def _normalize_popup_notice(data: dict | None) -> dict:
     baseline = _default_popup_notice()
     payload = data if isinstance(data, dict) else {}
 
     message = str(payload.get("message") or "").strip()
-    enabled = bool(payload.get("enabled", baseline["enabled"]))
+    enabled = _coerce_bool(payload.get("enabled", baseline["enabled"]), bool(baseline["enabled"]))
     updated_at = str(payload.get("updated_at") or "").strip()
 
     return {

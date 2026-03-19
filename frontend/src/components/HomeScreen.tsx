@@ -35,7 +35,7 @@ type HomeScreenProps = {
 };
 
 type PopupNoticeResponse = {
-  enabled?: boolean;
+  enabled?: unknown;
   message?: string;
 };
 
@@ -102,6 +102,26 @@ function describeUnknownError(error: unknown, fallback: string): string {
     return String(error);
   }
   return fallback;
+}
+
+function parseLooseBoolean(value: unknown, defaultValue = false): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["", "0", "false", "off", "no", "n", "disabled"].includes(normalized)) {
+      return false;
+    }
+    if (["1", "true", "on", "yes", "y", "enabled"].includes(normalized)) {
+      return true;
+    }
+    return defaultValue;
+  }
+  return defaultValue;
 }
 
 export function HomeScreen({
@@ -256,9 +276,12 @@ export function HomeScreen({
         }
         const payload = (await response.json()) as PopupNoticeResponse;
         const message = typeof payload.message === "string" ? payload.message.trim() : "";
-        if (!cancelled && payload.enabled && message) {
+        const enabled = parseLooseBoolean(payload.enabled, false);
+        if (!cancelled && enabled && message) {
           setUpdateNoticeMessage(message);
           setShowUpdateNotice(true);
+        } else if (!cancelled) {
+          setShowUpdateNotice(false);
         }
       } catch {
         // Ignore popup config load failures.
