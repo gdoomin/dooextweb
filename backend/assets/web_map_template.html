@@ -223,7 +223,8 @@
       border-color: rgba(88, 166, 255, 0.78);
       box-shadow: 0 0 0 3px rgba(47, 129, 247, 0.16);
     }
-    .inline-text-font-wrap {
+    .inline-text-font-wrap,
+    .inline-measure-unit-wrap {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -236,10 +237,12 @@
       font-weight: 700;
       white-space: nowrap;
     }
-    .inline-text-font-wrap.is-hidden {
+    .inline-text-font-wrap.is-hidden,
+    .inline-measure-unit-wrap.is-hidden {
       display: none;
     }
-    .inline-text-font-select {
+    .inline-text-font-select,
+    .inline-measure-unit-select {
       min-width: 120px;
       padding: 4px 8px;
       border-radius: 8px;
@@ -249,7 +252,8 @@
       font-size: 12px;
       outline: none;
     }
-    .inline-text-font-select:focus {
+    .inline-text-font-select:focus,
+    .inline-measure-unit-select:focus {
       border-color: rgba(88, 166, 255, 0.78);
       box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.15);
     }
@@ -1247,8 +1251,8 @@
     .distance-badge {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-      padding: 4px;
+      justify-content: center;
+      padding: 5px 7px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.98);
       border: 2px solid rgba(17, 21, 28, 0.64);
@@ -1258,25 +1262,8 @@
       white-space: nowrap;
       cursor: grab;
     }
-    .distance-unit {
-      appearance: none;
-      border: 1px solid rgba(28, 35, 46, 0.24);
-      border-radius: 999px;
-      padding: 5px 10px;
-      background: rgba(255, 255, 255, 0.72);
-      color: #1a1a1a;
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: background 140ms ease, color 140ms ease, box-shadow 140ms ease;
-    }
-    .distance-unit.is-active {
-      background: rgba(18, 24, 33, 0.92);
-      color: #ffffff;
-      box-shadow: 0 0 0 1px rgba(18, 24, 33, 0.2) inset;
-    }
     .distance-chip {
+      position: relative;
       padding: 5px 10px;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.98);
@@ -1289,11 +1276,18 @@
       white-space: nowrap;
       text-shadow: 0 0 0 transparent;
     }
+    .distance-chip-value {
+      display: inline-block;
+      color: inherit;
+      font: inherit;
+      line-height: 1.2;
+      letter-spacing: inherit;
+      white-space: inherit;
+    }
     .leaflet-marker-draggable .distance-badge:active {
       cursor: grabbing;
     }
     .capture-render .distance-badge {
-      gap: 0;
       padding: 5px 7px;
       border-color: rgba(12, 14, 19, 0.9);
       box-shadow:
@@ -1301,13 +1295,57 @@
         0 0 0 2px rgba(12, 14, 19, 0.28),
         0 10px 24px rgba(0, 0, 0, 0.36);
     }
-    .capture-render .distance-unit {
-      display: none !important;
-    }
     .capture-render .distance-chip {
       border-color: rgba(12, 14, 19, 0.98);
       box-shadow: none;
       letter-spacing: 0.01em;
+    }
+    .capture-render .distance-chip::after {
+      content: attr(data-distance);
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: #111111;
+      font: inherit;
+      font-weight: inherit;
+      letter-spacing: inherit;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+    .capture-render .distance-chip-value {
+      color: #111111 !important;
+      font-weight: 900 !important;
+      text-shadow: none !important;
+    }
+    .notam-label-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 22px;
+      padding: 3px 8px;
+      border-radius: 7px;
+      border: 1px solid rgba(70, 45, 0, 0.9);
+      background: rgba(255, 170, 0, 0.93);
+      color: #1e1300;
+      font-size: 11px;
+      font-weight: 900;
+      line-height: 1.1;
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.22);
+      text-align: center;
+      white-space: nowrap;
+      user-select: none;
+      pointer-events: auto;
+    }
+    .notam-label-chip.cluster {
+      border-color: rgba(185, 217, 255, 0.95);
+      background: rgba(20, 76, 164, 0.95);
+      color: #eaf4ff;
+    }
+    .notam-label-chip.qrpca {
+      border-color: rgba(255, 208, 208, 0.95);
+      background: rgba(206, 36, 45, 0.96);
+      color: #ffffff;
     }
     .flag-pin {
       position: relative;
@@ -1584,6 +1622,13 @@
           <option value="nanum_dasisijakhae">나눔다시시작해</option>
         </select>
       </label>
+      <label id="inlineMeasureUnitWrap" class="toolbar-collapse-hide inline-measure-unit-wrap is-hidden">
+        거리 단위
+        <select id="inlineMeasureUnitSelect" class="inline-measure-unit-select" aria-label="거리 단위">
+          <option value="km">KM</option>
+          <option value="nm">NM</option>
+        </select>
+      </label>
       <a class="toolbar-banner toolbar-collapse-hide" href="https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581" target="_blank" rel="noreferrer noopener" title="DOO GPX 앱스토어 열기">
         <img src="/doogpx.png" alt="DOO GPX banner">
       </a>
@@ -1855,6 +1900,8 @@
     const expandToolbarButton = document.getElementById('expandToolbarButton');
     const inlineTextFontWrap = document.getElementById('inlineTextFontWrap');
     const inlineTextFontSelect = document.getElementById('inlineTextFontSelect');
+    const inlineMeasureUnitWrap = document.getElementById('inlineMeasureUnitWrap');
+    const inlineMeasureUnitSelect = document.getElementById('inlineMeasureUnitSelect');
     const layerPanel = document.getElementById('layerPanel');
     const layerRows = document.getElementById('layerRows');
     const weatherPanel = document.getElementById('weatherPanel');
@@ -2248,17 +2295,441 @@
       }).format(parsed);
     }
 
-    function notamMarkerStyle(groupKey, colorValue) {
+    function decodeXmlText(source) {
+      return String(source || '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, '\'');
+    }
+
+    function sanitizeNotamContent(raw) {
+      if (!raw) {
+        return '';
+      }
+      return decodeXmlText(
+        String(raw)
+          .replace(/<br\s*\/?>/gi, '\n')
+          .replace(/<\/p>/gi, '\n')
+          .replace(/<\/h\d>/gi, '\n')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/gi, ' ')
+          .replace(/\r/g, '')
+          .replace(/[ \t]+\n/g, '\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim()
+      );
+    }
+
+    function extractNotamSectionValue(content, section) {
+      const text = sanitizeNotamContent(content || '');
+      if (!text) {
+        return '';
+      }
+      const upperSection = String(section || '').trim().toUpperCase();
+      if (!upperSection) {
+        return '';
+      }
+      const tokenRe = /\b([A-Z])\)\s*/gi;
+      const marks = [];
+      let match = null;
+      while ((match = tokenRe.exec(text)) !== null) {
+        marks.push({ sec: String(match[1] || '').toUpperCase(), idx: match.index, end: tokenRe.lastIndex });
+      }
+      const startMark = marks.find((mark) => mark.sec === upperSection);
+      if (!startMark) {
+        return '';
+      }
+      const startIdx = startMark.end;
+      const nextMark = marks.find((mark) => mark.idx > startMark.idx);
+      const endIdx = nextMark ? nextMark.idx : text.length;
+      return text.slice(startIdx, endIdx).trim();
+    }
+
+    function extractNotamESection(content) {
+      return extractNotamSectionValue(content, 'E');
+    }
+
+    function parseAngleToken(token, isLat) {
+      const raw = String(token || '').trim().toUpperCase();
+      const hemi = raw.slice(-1);
+      const numeric = raw.slice(0, -1);
+      if (!numeric || !/[NSEW]/.test(hemi)) {
+        return null;
+      }
+
+      const segments = numeric.split('.');
+      const intPart = String(segments[0] || '');
+      const fracPart = String(segments[1] || '');
+      const digits = intPart.replace(/\D/g, '');
+      if (!digits) {
+        return null;
+      }
+
+      let deg = 0;
+      let min = 0;
+      let sec = 0;
+      if (isLat) {
+        if (digits.length <= 4) {
+          deg = Number(digits.slice(0, 2));
+          min = Number(`${digits.slice(2)}${fracPart ? `.${fracPart}` : ''}`);
+        } else {
+          deg = Number(digits.slice(0, 2));
+          min = Number(digits.slice(2, 4));
+          sec = Number(`${digits.slice(4)}${fracPart ? `.${fracPart}` : ''}`);
+        }
+      } else if (digits.length <= 5) {
+        deg = Number(digits.slice(0, 3));
+        min = Number(`${digits.slice(3)}${fracPart ? `.${fracPart}` : ''}`);
+      } else {
+        deg = Number(digits.slice(0, 3));
+        min = Number(digits.slice(3, 5));
+        sec = Number(`${digits.slice(5)}${fracPart ? `.${fracPart}` : ''}`);
+      }
+
+      if (!Number.isFinite(deg) || !Number.isFinite(min) || !Number.isFinite(sec)) {
+        return null;
+      }
+      const value = deg + (min / 60) + (sec / 3600);
+      if (!Number.isFinite(value)) {
+        return null;
+      }
+      return (hemi === 'S' || hemi === 'W') ? -value : value;
+    }
+
+    function parseCoordPair(latToken, lonToken) {
+      const lat = parseAngleToken(latToken, true);
+      const lon = parseAngleToken(lonToken, false);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
+        return null;
+      }
+      return { latitude: lat, longitude: lon };
+    }
+
+    function extractNotamCoordPairsFromE(content) {
+      const eSection = extractNotamESection(content);
+      if (!eSection) {
+        return [];
+      }
+      const out = [];
+      const pairRe = /(\d{4,6}(?:\.\d+)?[NS])[\s,/-]*(\d{5,7}(?:\.\d+)?[EW])/gi;
+      let match = null;
+      while ((match = pairRe.exec(eSection)) !== null) {
+        const parsed = parseCoordPair(match[1], match[2]);
+        if (parsed) {
+          out.push(parsed);
+        }
+      }
+      return out;
+    }
+
+    function removeClosingPointIfNeeded(points) {
+      if (!Array.isArray(points) || points.length < 2) {
+        return Array.isArray(points) ? points.slice() : [];
+      }
+      const out = points.slice();
+      const first = out[0];
+      const last = out[out.length - 1];
+      if (
+        first &&
+        last &&
+        Math.abs(first.latitude - last.latitude) < 0.0000001 &&
+        Math.abs(first.longitude - last.longitude) < 0.0000001
+      ) {
+        out.pop();
+      }
+      return out;
+    }
+
+    function extractNotamCorridorHalfWidthNm(content) {
+      const eSection = extractNotamESection(content);
+      if (!eSection) {
+        return null;
+      }
+      const halfWidthPatterns = [
+        /(\d+(?:\.\d+)?)\s*NM\s*(?:ON\s+)?(?:EITHER|EACH)\s+SIDE/i,
+        /(?:ON\s+)?(?:EITHER|EACH)\s+SIDE\s+(\d+(?:\.\d+)?)\s*NM/i,
+        /HALF[-\s]?WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i,
+      ];
+      for (const pattern of halfWidthPatterns) {
+        const match = eSection.match(pattern);
+        if (!match) {
+          continue;
+        }
+        const value = Number(match[1]);
+        if (Number.isFinite(value) && value > 0) {
+          return value;
+        }
+      }
+
+      const fullWidthPatterns = [
+        /(\d+(?:\.\d+)?)\s*NM\s*WIDE/i,
+        /WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i,
+      ];
+      for (const pattern of fullWidthPatterns) {
+        const match = eSection.match(pattern);
+        if (!match) {
+          continue;
+        }
+        const value = Number(match[1]);
+        if (Number.isFinite(value) && value > 0) {
+          return value / 2;
+        }
+      }
+      return null;
+    }
+
+    function extractNotamCorridorCenterline(content) {
+      const points = removeClosingPointIfNeeded(extractNotamCoordPairsFromE(content));
+      return points.length >= 2 ? points : null;
+    }
+
+    function toRadians(value) {
+      return (value * Math.PI) / 180;
+    }
+
+    function bearingDeg(a, b) {
+      if (!a || !b || !Number.isFinite(a.latitude) || !Number.isFinite(a.longitude) || !Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) {
+        return 0;
+      }
+      const lat1 = toRadians(a.latitude);
+      const lat2 = toRadians(b.latitude);
+      const dLon = toRadians(b.longitude - a.longitude);
+      const y = Math.sin(dLon) * Math.cos(lat2);
+      const x = (Math.cos(lat1) * Math.sin(lat2)) - (Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon));
+      if (!Number.isFinite(x) || !Number.isFinite(y)) {
+        return 0;
+      }
+      if (Math.abs(x) < 1e-12 && Math.abs(y) < 1e-12) {
+        return 0;
+      }
+      const bearing = (Math.atan2(y, x) * 180) / Math.PI;
+      return (bearing + 360) % 360;
+    }
+
+    function offsetCoordByMeters(base, headingDeg, meters) {
+      const radius = 6378137;
+      const bearing = toRadians(headingDeg);
+      const lat1 = toRadians(base.latitude);
+      const lon1 = toRadians(base.longitude);
+      const distance = meters / radius;
+      const lat2 = Math.asin((Math.sin(lat1) * Math.cos(distance)) + (Math.cos(lat1) * Math.sin(distance) * Math.cos(bearing)));
+      const lon2 = lon1 + Math.atan2(
+        Math.sin(bearing) * Math.sin(distance) * Math.cos(lat1),
+        Math.cos(distance) - (Math.sin(lat1) * Math.sin(lat2))
+      );
+      return {
+        latitude: (lat2 * 180) / Math.PI,
+        longitude: (lon2 * 180) / Math.PI,
+      };
+    }
+
+    function blendBearing(a, b) {
+      const ar = toRadians(a);
+      const br = toRadians(b);
+      const x = Math.cos(ar) + Math.cos(br);
+      const y = Math.sin(ar) + Math.sin(br);
+      if (Math.abs(x) < 0.000001 && Math.abs(y) < 0.000001) {
+        return a;
+      }
+      return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+    }
+
+    function buildNotamCorridorPolygon(centerline, halfWidthMeters) {
+      if (!Array.isArray(centerline) || centerline.length < 2 || !Number.isFinite(halfWidthMeters) || halfWidthMeters <= 0) {
+        return null;
+      }
+      const left = [];
+      const right = [];
+      for (let index = 0; index < centerline.length; index += 1) {
+        const curr = centerline[index];
+        const prev = centerline[Math.max(0, index - 1)];
+        const next = centerline[Math.min(centerline.length - 1, index + 1)];
+        const prevBearing = bearingDeg(prev, curr);
+        const nextBearing = bearingDeg(curr, next);
+        const bearing = index === 0
+          ? nextBearing
+          : index === (centerline.length - 1)
+            ? prevBearing
+            : blendBearing(prevBearing, nextBearing);
+        left.push(offsetCoordByMeters(curr, bearing - 90, halfWidthMeters));
+        right.push(offsetCoordByMeters(curr, bearing + 90, halfWidthMeters));
+      }
+      const polygon = left.concat(right.reverse());
+      return polygon.length >= 4 ? polygon : null;
+    }
+
+    function extractNotamPolygon(content) {
+      const points = removeClosingPointIfNeeded(extractNotamCoordPairsFromE(content));
+      return points.length >= 3 ? points : null;
+    }
+
+    function extractNotamQRadiusNm(content) {
+      const qRaw = extractNotamSectionValue(content, 'Q');
+      if (!qRaw) {
+        return null;
+      }
+      const qTokens = qRaw
+        .split('/')
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+      const centerRadius = qTokens[7] || '';
+      const match = centerRadius.match(/^(\d{4,6}(?:\.\d+)?[NS])(\d{5,7}(?:\.\d+)?[EW])(\d{3})$/i);
+      if (!match) {
+        return null;
+      }
+      const radius = Number(match[3]);
+      return Number.isFinite(radius) && radius > 0 ? radius : null;
+    }
+
+    function extractNotamRadiusNm(content) {
+      const text = sanitizeNotamContent(content || '');
+      const radiusNmMatch = text.match(/RADIUS\s*([0-9.]+)\s*NM/i);
+      if (radiusNmMatch) {
+        const radiusNm = Number(radiusNmMatch[1]);
+        if (Number.isFinite(radiusNm) && radiusNm > 0) {
+          return radiusNm;
+        }
+      }
+      const diameterNmMatch = text.match(/([0-9.]+)\s*NM\s+IN\s+DIAMETER/i);
+      if (diameterNmMatch) {
+        const diameterNm = Number(diameterNmMatch[1]);
+        if (Number.isFinite(diameterNm) && diameterNm > 0) {
+          return diameterNm / 2;
+        }
+      }
+      const qLineRadiusMatch = text.match(/Q\)[^\n]*\/\d{3}\/\d{3}\/\d{4,6}(?:\.\d+)?[NS]\d{5,7}(?:\.\d+)?[EW](\d{3})/i);
+      if (qLineRadiusMatch) {
+        const qRadius = Number(qLineRadiusMatch[1]);
+        if (Number.isFinite(qRadius) && qRadius > 0 && qRadius < 900) {
+          return qRadius;
+        }
+      }
+      return extractNotamQRadiusNm(text);
+    }
+
+    function extractNotamQCenterCoord(content) {
+      const qRaw = extractNotamSectionValue(content, 'Q');
+      if (!qRaw) {
+        return null;
+      }
+      const qTokens = qRaw
+        .split('/')
+        .map((value) => String(value || '').trim())
+        .filter(Boolean);
+      const centerRadius = qTokens[7] || '';
+      const match = centerRadius.match(/^(\d{4,6}(?:\.\d+)?[NS])(\d{5,7}(?:\.\d+)?[EW])\d{3}$/i);
+      if (!match) {
+        return null;
+      }
+      return parseCoordPair(match[1], match[2]);
+    }
+
+    function centroid(coords) {
+      if (!Array.isArray(coords) || !coords.length) {
+        return null;
+      }
+      const sum = coords.reduce((acc, point) => ({
+        latitude: acc.latitude + point.latitude,
+        longitude: acc.longitude + point.longitude,
+      }), { latitude: 0, longitude: 0 });
+      return {
+        latitude: sum.latitude / coords.length,
+        longitude: sum.longitude / coords.length,
+      };
+    }
+
+    function getNotamSeriesLabel(notamIdValue, seriesValue = '') {
+      const normalized = normalizeNotamSeries(seriesValue, notamIdValue);
+      return normalized || 'N';
+    }
+
+    function isNotamQrpca(content) {
+      return /\bQRPCA\b/i.test(String(content || ''));
+    }
+
+    function getNotamCoordKey(latitude, longitude) {
+      return `${Number(latitude).toFixed(6)}|${Number(longitude).toFixed(6)}`;
+    }
+
+    function notamPathStyle(groupKey, colorValue, geometryType = 'polygon') {
       const color = String(colorValue || '#4bc6ff');
-      const radius = groupKey === 'de' ? 6.8 : 6.1;
+      const isLine = geometryType === 'corridor-centerline';
+      const fillOpacity = geometryType === 'corridor-polygon' ? 0.1 : 0.12;
       return {
         pane: 'notamPane',
-        radius,
-        color: '#11293f',
-        weight: 1.6,
+        color,
+        weight: isLine ? 1.8 : 1.5,
+        opacity: 0.95,
         fillColor: color,
-        fillOpacity: 0.96,
+        fillOpacity: isLine ? 0 : fillOpacity,
+        lineCap: 'round',
+        lineJoin: 'round',
         renderer,
+      };
+    }
+
+    function applyNotamLayerStyle(layer, groupKey, colorValue) {
+      if (!layer || typeof layer.setStyle !== 'function') {
+        return;
+      }
+      const geometryType = layer.options && layer.options.notamGeometryType
+        ? layer.options.notamGeometryType
+        : 'polygon';
+      layer.setStyle(notamPathStyle(groupKey, colorValue, geometryType));
+    }
+
+    function notamLabelIcon(text, kind = 'single') {
+      const safeText = escapeHtml(String(text || '').trim() || 'N');
+      const kindClass = kind === 'qrpca'
+        ? ' qrpca'
+        : kind === 'cluster'
+          ? ' cluster'
+          : '';
+      return L.divIcon({
+        className: '',
+        html: `<div class="notam-label-chip${kindClass}">${safeText}</div>`,
+        iconSize: null,
+      });
+    }
+
+    function buildParsedNotamItem(rawItem) {
+      const item = rawItem && typeof rawItem === 'object' ? rawItem : {};
+      const content = sanitizeNotamContent(item.content || '');
+      const corridorHalfWidthNm = extractNotamCorridorHalfWidthNm(content);
+      const corridorCenterlineCoords = corridorHalfWidthNm != null ? extractNotamCorridorCenterline(content) : null;
+      const corridorHalfWidthMeters = corridorHalfWidthNm != null ? corridorHalfWidthNm * 1852 : null;
+      const corridorPolygonCoords = corridorCenterlineCoords && corridorHalfWidthMeters
+        ? buildNotamCorridorPolygon(corridorCenterlineCoords, corridorHalfWidthMeters)
+        : null;
+      const polygonCoords = corridorPolygonCoords ? null : extractNotamPolygon(content);
+      const polygonCenter = polygonCoords ? centroid(polygonCoords) : null;
+      const corridorCenter = corridorCenterlineCoords ? centroid(corridorCenterlineCoords) : null;
+      const qCenter = extractNotamQCenterCoord(content);
+      const fallbackCenter = corridorCenter || polygonCenter || qCenter || null;
+      const rowLat = Number(item.lat);
+      const rowLng = Number(item.lng);
+      const latitude = Number.isFinite(rowLat) ? rowLat : (fallbackCenter ? fallbackCenter.latitude : NaN);
+      const longitude = Number.isFinite(rowLng) ? rowLng : (fallbackCenter ? fallbackCenter.longitude : NaN);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+      }
+      const radiusNm = extractNotamRadiusNm(content);
+      return {
+        raw: item,
+        content,
+        notamId: item.notam_id != null ? String(item.notam_id) : '',
+        series: normalizeNotamSeries(item.series, item.notam_id),
+        airport: String(item.airport || '').trim(),
+        startDate: item.start_date,
+        endDate: item.end_date,
+        lat: latitude,
+        lng: longitude,
+        radiusMeters: Number.isFinite(radiusNm) && radiusNm > 0 ? radiusNm * 1852 : null,
+        polygonCoords,
+        corridorCenterlineCoords,
+        corridorPolygonCoords,
       };
     }
 
@@ -2276,8 +2747,25 @@
         ['종료', endText],
       ];
       const title = `${notamId || 'NOTAM'}${series ? ` (${series})` : ''}`;
-      const detail = String((item && item.content) || '').trim();
+      const detail = sanitizeNotamContent((item && item.content) || '');
       return buildWeatherPopupHtml(title, rows, detail);
+    }
+
+    function buildNotamGroupPopupHtml(items) {
+      const list = Array.isArray(items) ? items : [];
+      const seriesSet = new Set();
+      list.forEach((item) => {
+        seriesSet.add(getNotamSeriesLabel(item.notamId, item.series));
+      });
+      const rows = [
+        ['개수', `${list.length}건`],
+        ['시리즈', Array.from(seriesSet.values()).join(', ') || '-'],
+      ];
+      const detail = list
+        .slice(0, 18)
+        .map((item) => `${item.notamId || 'NOTAM'} ${item.airport || ''}`.trim())
+        .join('\n');
+      return buildWeatherPopupHtml('NOTAM 그룹', rows, detail, '같은 좌표의 NOTAM이 묶여 있습니다.');
     }
 
     function weatherTileLayer(url, options) {
@@ -2752,6 +3240,19 @@
       inlineTextFontSelect.value = normalizeTextFont(selected.options.textFont || TEXT_DEFAULT_FONT);
     }
 
+    function syncInlineMeasureUnitControl() {
+      if (!inlineMeasureUnitWrap || !inlineMeasureUnitSelect) {
+        return;
+      }
+      const hasMeasurements = Array.isArray(measureState.items) && measureState.items.length > 0;
+      if (!hasMeasurements) {
+        inlineMeasureUnitWrap.classList.add('is-hidden');
+        return;
+      }
+      inlineMeasureUnitWrap.classList.remove('is-hidden');
+      inlineMeasureUnitSelect.value = measureState.unit === 'nm' ? 'nm' : 'km';
+    }
+
     function textIcon(text, size = 45, isTitle = false, textFont = TEXT_DEFAULT_FONT, textAlign = TEXT_DEFAULT_ALIGN) {
       const htmlText = escapeHtml(String(text || '').trim()).replace(/\n/g, '<br>');
       const titleAttr = isTitle ? ' data-title="1"' : ' data-title="0"';
@@ -3201,13 +3702,14 @@
     function distanceIcon(text, unit, fontSize = measureState.labelSize) {
       const currentUnit = unit === 'nm' ? 'nm' : 'km';
       const safeFontSize = Math.round(clamp(fontSize, measureMinLabelSize, measureMaxLabelSize));
+      const safeText = String(text || '');
       return L.divIcon({
         className: '',
         html: `
           <div class="distance-badge">
-            <button class="distance-unit ${currentUnit === 'km' ? 'is-active' : ''}" type="button" data-measure-unit="km">KM</button>
-            <button class="distance-unit ${currentUnit === 'nm' ? 'is-active' : ''}" type="button" data-measure-unit="nm">NM</button>
-            <div class="distance-chip" style="font-size:${safeFontSize}px">${escapeHtml(text)}</div>
+            <div class="distance-chip" style="font-size:${safeFontSize}px" data-distance="${escapeHtml(safeText)}" data-unit="${currentUnit}">
+              <span class="distance-chip-value">${escapeHtml(safeText)}</span>
+            </div>
           </div>
         `,
         iconSize: null
@@ -4849,9 +5351,7 @@
         return;
       }
       group.eachLayer((layer) => {
-        if (layer && layer.setStyle) {
-          layer.setStyle(notamMarkerStyle(groupKey, controls.color.value));
-        }
+        applyNotamLayerStyle(layer, groupKey, controls.color.value);
       });
     }
 
@@ -4879,36 +5379,197 @@
       });
     }
 
-    function renderNotamItems(items) {
-      clearNotamLayers();
-      const nextCounts = { de: 0, acgz: 0 };
-      const list = Array.isArray(items) ? items : [];
+    function notamCoordsKey(coords) {
+      return coords
+        .map((point) => `${point.latitude.toFixed(6)}:${point.longitude.toFixed(6)}`)
+        .join('|');
+    }
 
-      list.forEach((item) => {
-        const groupKey = resolveNotamGroupKey(item && item.series, item && item.notam_id);
-        if (!groupKey) {
-          return;
-        }
-        const lat = Number(item && item.lat);
-        const lng = Number(item && item.lng);
-        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-          return;
-        }
-        const controls = notamControls.get(groupKey);
-        const marker = L.circleMarker([lat, lng], notamMarkerStyle(groupKey, controls ? controls.color.value : undefined));
-        const title = String((item && item.notam_id) || normalizeNotamSeries(item && item.series, '') || 'NOTAM');
-        marker.bindTooltip(title, {
+    function bindNotamLayerInteractions(layer, popupHtml, tooltipText = '') {
+      if (!layer) {
+        return;
+      }
+      if (tooltipText && typeof layer.bindTooltip === 'function') {
+        layer.bindTooltip(String(tooltipText), {
           className: 'doo-tooltip',
           direction: 'top',
           offset: [0, -5],
           opacity: 0.97,
         });
-        marker.bindPopup(buildNotamPopupHtml(item), {
+      }
+      if (popupHtml && typeof layer.bindPopup === 'function') {
+        layer.bindPopup(popupHtml, {
           className: 'doo-popup',
           maxWidth: 460,
         });
-        notamGroups[groupKey].addLayer(marker);
+      }
+    }
+
+    function renderNotamItems(items) {
+      clearNotamLayers();
+      const nextCounts = { de: 0, acgz: 0 };
+      const groupedBySeries = {
+        de: [],
+        acgz: [],
+      };
+      const list = Array.isArray(items) ? items : [];
+      list.forEach((rawItem) => {
+        const groupKey = resolveNotamGroupKey(rawItem && rawItem.series, rawItem && rawItem.notam_id);
+        if (!groupKey || !groupedBySeries[groupKey]) {
+          return;
+        }
+        const parsed = buildParsedNotamItem(rawItem);
+        if (!parsed) {
+          return;
+        }
+        groupedBySeries[groupKey].push(parsed);
         nextCounts[groupKey] += 1;
+      });
+
+      const currentZoom = map.getZoom();
+      NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
+        const groupKey = definition.key;
+        const groupItems = groupedBySeries[groupKey];
+        if (!Array.isArray(groupItems) || !groupItems.length) {
+          return;
+        }
+        const group = notamGroups[groupKey];
+        if (!group) {
+          return;
+        }
+        const controls = notamControls.get(groupKey);
+        const colorValue = controls ? controls.color.value : definition.defaultColor;
+
+        const groupedByCoord = new Map();
+        groupItems.forEach((item) => {
+          const coordKey = getNotamCoordKey(item.lat, item.lng);
+          if (!groupedByCoord.has(coordKey)) {
+            groupedByCoord.set(coordKey, {
+              key: coordKey,
+              lat: item.lat,
+              lng: item.lng,
+              items: [],
+            });
+          }
+          groupedByCoord.get(coordKey).items.push(item);
+        });
+
+        groupedByCoord.forEach((groupItem) => {
+          const uniqueCorridorPolygons = [];
+          const uniqueCorridorCenterlines = [];
+          const uniquePolygons = [];
+          const corridorKeys = new Set();
+          const polygonKeys = new Set();
+          const uniqueRadii = new Set();
+
+          groupItem.items.forEach((item) => {
+            if (Array.isArray(item.corridorPolygonCoords) && item.corridorPolygonCoords.length >= 4) {
+              const corridorKey = notamCoordsKey(item.corridorPolygonCoords);
+              if (!corridorKeys.has(corridorKey)) {
+                corridorKeys.add(corridorKey);
+                uniqueCorridorPolygons.push(item.corridorPolygonCoords);
+                if (Array.isArray(item.corridorCenterlineCoords) && item.corridorCenterlineCoords.length >= 2) {
+                  uniqueCorridorCenterlines.push(item.corridorCenterlineCoords);
+                }
+              }
+              return;
+            }
+            if (Array.isArray(item.polygonCoords) && item.polygonCoords.length >= 3) {
+              const polygonKey = notamCoordsKey(item.polygonCoords);
+              if (!polygonKeys.has(polygonKey)) {
+                polygonKeys.add(polygonKey);
+                uniquePolygons.push(item.polygonCoords);
+              }
+              return;
+            }
+            if (Number.isFinite(item.radiusMeters) && item.radiusMeters > 0) {
+              uniqueRadii.add(Math.round(item.radiusMeters));
+            }
+          });
+
+          const popupHtml = groupItem.items.length === 1
+            ? buildNotamPopupHtml(groupItem.items[0].raw)
+            : buildNotamGroupPopupHtml(groupItem.items);
+          const tooltipTitle = groupItem.items.length === 1
+            ? (groupItem.items[0].notamId || 'NOTAM')
+            : `NOTAM ${groupItem.items.length}건`;
+
+          uniqueCorridorPolygons.forEach((coords) => {
+            const layer = L.polygon(
+              coords.map((point) => [point.latitude, point.longitude]),
+              {
+                ...notamPathStyle(groupKey, colorValue, 'corridor-polygon'),
+                notamGeometryType: 'corridor-polygon',
+              }
+            );
+            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            group.addLayer(layer);
+          });
+          uniqueCorridorCenterlines.forEach((coords) => {
+            const layer = L.polyline(
+              coords.map((point) => [point.latitude, point.longitude]),
+              {
+                ...notamPathStyle(groupKey, colorValue, 'corridor-centerline'),
+                notamGeometryType: 'corridor-centerline',
+              }
+            );
+            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            group.addLayer(layer);
+          });
+          uniquePolygons.forEach((coords) => {
+            const layer = L.polygon(
+              coords.map((point) => [point.latitude, point.longitude]),
+              {
+                ...notamPathStyle(groupKey, colorValue, 'polygon'),
+                notamGeometryType: 'polygon',
+              }
+            );
+            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            group.addLayer(layer);
+          });
+          Array.from(uniqueRadii.values()).forEach((radiusMeters) => {
+            const layer = L.circle([groupItem.lat, groupItem.lng], {
+              ...notamPathStyle(groupKey, colorValue, 'circle'),
+              radius: radiusMeters,
+              notamGeometryType: 'circle',
+            });
+            bindNotamLayerInteractions(layer, popupHtml, tooltipTitle);
+            group.addLayer(layer);
+          });
+
+          const labelText = groupItem.items.length > 1
+            ? String(groupItem.items.length)
+            : getNotamSeriesLabel(groupItem.items[0].notamId, groupItem.items[0].series);
+          const hasDSeries = groupItem.items.some((item) => {
+            const seriesLabel = getNotamSeriesLabel(item.notamId, item.series);
+            return seriesLabel === 'D' || seriesLabel === 'E';
+          });
+          const hasQrpca = groupItem.items.some((item) => isNotamQrpca(item.content));
+          const shouldShowLabel = currentZoom >= 7 || hasDSeries;
+          if (shouldShowLabel) {
+            const center = { latitude: groupItem.lat, longitude: groupItem.lng };
+            const markerCoord = currentZoom >= 7
+              ? offsetCoordByMeters(center, 45, 130)
+              : center;
+            const labelKind = hasQrpca
+              ? 'qrpca'
+              : groupItem.items.length > 1
+                ? 'cluster'
+                : 'single';
+            const labelMarker = L.marker(
+              [markerCoord.latitude, markerCoord.longitude],
+              {
+                pane: 'notamPane',
+                icon: notamLabelIcon(labelText, labelKind),
+                interactive: true,
+                keyboard: false,
+                riseOnHover: true,
+              }
+            );
+            bindNotamLayerInteractions(labelMarker, popupHtml, tooltipTitle);
+            group.addLayer(labelMarker);
+          }
+        });
       });
 
       notamState.counts = nextCounts;
@@ -5887,6 +6548,9 @@
       }
       scheduleViewerStateSave();
     });
+    inlineMeasureUnitSelect.addEventListener('change', () => {
+      updateMeasureUnit(inlineMeasureUnitSelect.value === 'nm' ? 'nm' : 'km');
+    });
     capturePreviewCanvas.addEventListener('pointerdown', (event) => {
       startCaptureImageDrag(event);
     });
@@ -5941,6 +6605,7 @@
       refreshDoneSettings();
     });
     syncInlineTextFontControl();
+    syncInlineMeasureUnitControl();
     refreshMeasureSettings(false);
     refreshDoneSettings(false);
     capturePaperSelect.addEventListener('change', async () => {
@@ -6069,6 +6734,7 @@
         });
       });
       measureState.items = [];
+      syncInlineMeasureUnitControl();
       if (persist) {
         scheduleViewerStateSave();
       }
@@ -6089,35 +6755,14 @@
       (item.markers || []).forEach((marker) => {
         measureGroup.removeLayer(marker);
       });
+      syncInlineMeasureUnitControl();
       if (persist) {
         scheduleViewerStateSave();
       }
       return true;
     }
 
-    function bindMeasureLabelControls(item) {
-      if (!item || !item.label) {
-        return;
-      }
-
-      const element = item.label.getElement();
-      if (!element) {
-        requestAnimationFrame(() => bindMeasureLabelControls(item));
-        return;
-      }
-      if (item.boundLabelElement === element) {
-        return;
-      }
-      item.boundLabelElement = element;
-
-      element.querySelectorAll('[data-measure-unit]').forEach((button) => {
-        button.addEventListener('click', (event) => {
-          event.preventDefault();
-          event.stopPropagation();
-          updateMeasureUnit(button.dataset.measureUnit);
-        });
-      });
-    }
+    function bindMeasureLabelControls() {}
 
     function refreshMeasureSettings(persist = true) {
       measureState.color = getMeasureColor();
@@ -6131,8 +6776,8 @@
 
       measureState.items.forEach((item) => {
         applyMeasureItemStyle(item);
-        bindMeasureLabelControls(item);
       });
+      syncInlineMeasureUnitControl();
 
       if (persist) {
         scheduleViewerStateSave();
@@ -6146,8 +6791,8 @@
       measureState.unit = unit;
       measureState.items.forEach((item) => {
         applyMeasureItemStyle(item);
-        bindMeasureLabelControls(item);
       });
+      syncInlineMeasureUnitControl();
       scheduleViewerStateSave();
     }
 
@@ -6200,10 +6845,6 @@
       });
 
       label.on('click', (event) => {
-        const target = event && event.originalEvent ? event.originalEvent.target : null;
-        if (target && target.closest && target.closest('[data-measure-unit]')) {
-          return;
-        }
         if ((Date.now() - (item.lastLabelDragAt || 0)) < measureLabelDragCooldownMs) {
           if (event && event.originalEvent) {
             L.DomEvent.stop(event.originalEvent);
@@ -6224,7 +6865,7 @@
 
       measureState.items.push(item);
       snapMeasureLabelToLine(item, preferredLatLng, false);
-      bindMeasureLabelControls(item);
+      syncInlineMeasureUnitControl();
 
       if (line.bringToFront) {
         line.bringToFront();
