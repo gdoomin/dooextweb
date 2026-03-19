@@ -1795,7 +1795,12 @@ def get_viewer(job_id: str, request: Request):
 @app.get("/api/viewer/default", response_class=HTMLResponse)
 def get_default_viewer(request: Request):
     payload = _default_viewer_payload()
-    payload["viewer_billing"] = _viewer_billing_payload(_billing_status_for_user("", ""))
+    viewer_user_id = _normalize_user_identity(str(request.query_params.get("user_id") or ""))
+    viewer_user_email = _normalize_user_email(str(request.query_params.get("user_email") or ""))
+    viewer_created_at = str(request.query_params.get("created_at") or "").strip()
+    payload["viewer_billing"] = _viewer_billing_payload(
+        _billing_status_for_user(viewer_user_id, viewer_user_email, created_at_hint=viewer_created_at)
+    )
 
     preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
     if preview_gate:

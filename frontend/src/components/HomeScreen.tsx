@@ -535,12 +535,29 @@ export function HomeScreen({
   }
 
   function openViewer() {
+    const isJobViewer = Boolean(response?.job_id);
     const viewerPath = response?.job_id ? `${API_BASE_URL}/api/viewer/${response.job_id}` : `${API_BASE_URL}/api/viewer/default`;
-    const viewerUrl = response?.viewer_url || viewerPath;
+    let viewerUrl = response?.viewer_url || viewerPath;
+    if (!isJobViewer) {
+      const query = new URLSearchParams();
+      if (userId) {
+        query.set("user_id", userId);
+      }
+      if (userEmail) {
+        query.set("user_email", userEmail);
+      }
+      const queryString = query.toString();
+      if (queryString) {
+        viewerUrl = `${viewerPath}?${queryString}`;
+      }
+    }
 
-    window.open(viewerUrl, "_blank", "noopener,noreferrer");
+    const opened = window.open(viewerUrl, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      window.location.assign(viewerUrl);
+    }
     setStatusTone("success");
-    setStatusMessage(response?.job_id ? "도식화 Viewer를 열었습니다." : "기본 Viewer를 열었습니다.");
+    setStatusMessage(isJobViewer ? "도식화 Viewer를 열었습니다." : "기본 Viewer를 열었습니다.");
   }
 
   function downloadText() {
@@ -735,7 +752,11 @@ export function HomeScreen({
                   {isAuthenticated ? <div className="doo-auth-state">로그인됨</div> : null}
                 </div>
                 <code>{isAuthenticated ? userEmail : "비회원 미리보기 모드"}</code>
-                <button type="button" className="doo-auth-button" onClick={handleAuthButton}>
+                <button
+                  type="button"
+                  className={`doo-auth-button ${isAuthenticated ? "doo-auth-button-logout" : "doo-auth-button-login"}`}
+                  onClick={handleAuthButton}
+                >
                   {isAuthenticated ? "로그아웃" : "회원가입 / 로그인"}
                 </button>
               </div>

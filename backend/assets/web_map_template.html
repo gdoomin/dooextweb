@@ -2433,6 +2433,7 @@
         : []
     );
     const viewerPlanCode = String(viewerBilling && viewerBilling.plan_code ? viewerBilling.plan_code : '').trim().toLowerCase();
+    const viewerIsLegacyPlanUser = viewerPlanCode === 'legacy';
     function resolveViewerFlag(flagKey, fallbackValue = true) {
       if (Object.prototype.hasOwnProperty.call(viewerBillingFlags, flagKey)) {
         return !!viewerBillingFlags[flagKey];
@@ -2769,6 +2770,16 @@
         collapseToolbarButton.disabled = true;
         expandToolbarButton.disabled = true;
         applyInterfaceCollapseState(false, true);
+      }
+      if (planInfoButton) {
+        const shouldHidePlanButton = viewerIsLegacyPlanUser;
+        planInfoButton.style.display = shouldHidePlanButton ? 'none' : '';
+        if (shouldHidePlanButton) {
+          planInfoButton.setAttribute('aria-hidden', 'true');
+          setPlanGuideModalVisible(false);
+        } else {
+          planInfoButton.removeAttribute('aria-hidden');
+        }
       }
       if (!weatherControls.size) {
         weatherButton.disabled = true;

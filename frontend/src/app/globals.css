@@ -205,15 +205,17 @@ textarea {
 }
 
 .doo-note-label {
-  font-size: 11px;
+  font-size: 14px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 700;
 }
 
 .doo-sidebar-note code {
   word-break: break-all;
   color: #c9d1d9;
-  font-size: 12px;
+  font-size: 16px;
+  font-weight: 600;
 }
 
 .doo-sidebar-footer {
@@ -226,11 +228,11 @@ textarea {
 .doo-plan-guide-button {
   border: 0;
   border-radius: 12px;
-  background: #f2f5f8;
-  color: #111827;
+  background: #fff2a8;
+  color: #2d2f3a;
   padding: 10px 12px;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 16px;
+  font-weight: 800;
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -241,8 +243,8 @@ textarea {
 .doo-plan-guide-button:hover {
   filter: brightness(1.02);
   box-shadow:
-    0 0 0 1px rgba(17, 24, 39, 0.12) inset,
-    0 0 16px rgba(255, 224, 102, 0.26);
+    0 0 0 1px rgba(45, 47, 58, 0.18) inset,
+    0 0 16px rgba(255, 224, 102, 0.4);
 }
 
 .doo-plan-guide-button:active {
@@ -254,10 +256,10 @@ textarea {
   flex-direction: column;
   gap: 10px;
   border-radius: 18px;
-  border: 1px solid rgba(15, 23, 42, 0.14);
-  background: #ffffff;
+  border: 1px solid rgba(121, 92, 0, 0.46);
+  background: linear-gradient(180deg, #f2c026 0%, #dfaa17 100%);
   padding: 14px;
-  color: #111827;
+  color: #2f3542;
 }
 
 .doo-billing-head {
@@ -268,20 +270,23 @@ textarea {
 }
 
 .doo-billing-head strong {
-  font-size: 13px;
-  color: #111827;
+  font-size: 14px;
+  color: #2f3542;
+  font-weight: 800;
 }
 
 .doo-billing-head span {
-  font-size: 12px;
-  color: #374151;
+  font-size: 13px;
+  color: #3b414d;
+  font-weight: 700;
   text-transform: uppercase;
 }
 
 .doo-billing-meta {
   margin: 0;
-  color: #374151;
-  font-size: 12px;
+  color: #3b414d;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .doo-billing-actions {
@@ -295,8 +300,9 @@ textarea {
 }
 
 .doo-billing-phone span {
-  color: #374151;
-  font-size: 12px;
+  color: #3b414d;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 .doo-billing-phone input {
@@ -316,8 +322,9 @@ textarea {
 
 .doo-billing-help {
   margin: 0;
-  color: #4b5563;
-  font-size: 11px;
+  color: #3f4652;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.5;
 }
 
@@ -412,13 +419,14 @@ textarea {
   width: fit-content;
   align-items: center;
   border-radius: 999px;
-  background: rgba(39, 174, 96, 0.14);
-  color: #7ee2a8;
+  background: rgba(193, 255, 58, 0.18);
+  color: #ccff38;
   padding: 5px 10px;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  box-shadow: 0 0 10px rgba(204, 255, 56, 0.34);
 }
 
 .doo-auth-button {
@@ -446,6 +454,20 @@ textarea {
 
 .doo-auth-button:active {
   transform: translateY(1px) scale(0.985);
+}
+
+.doo-auth-button-logout {
+  background: #d8dce3;
+  color: #111111;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.doo-auth-button-logout:hover {
+  filter: brightness(1.03);
+  box-shadow:
+    0 0 0 1px rgba(17, 17, 17, 0.14) inset,
+    0 0 16px rgba(148, 163, 184, 0.3);
 }
 
 .doo-main {
@@ -512,14 +534,17 @@ textarea {
 
 .doo-open-button {
   position: relative;
-  height: 66px;
+  height: 53px;
   border: 2px solid #111111;
-  border-radius: 10px;
+  border-radius: 8px;
   background: linear-gradient(180deg, #ffe066 0%, #ffd43b 100%);
   color: #111111;
-  padding: 0 38px;
-  font-size: 30px;
+  padding: 0 30px;
+  font-size: 24px;
   font-weight: 800;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.38),
+    0 2px 6px rgba(0, 0, 0, 0.26);
   cursor: pointer;
   overflow: hidden;
   isolation: isolate;
@@ -838,11 +863,14 @@ textarea {
 
 .doo-action {
   border: 0;
-  border-radius: 10px;
+  border-radius: 8px;
   color: #fff;
-  padding: 15px 21px;
-  font-size: 20px;
+  padding: 12px 17px;
+  font-size: 16px;
   font-weight: 700;
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.34);
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -1063,7 +1091,7 @@ textarea {
   }
 
   .doo-action {
-    flex: 1 1 180px;
+    flex: 1 1 144px;
   }
 }
 
