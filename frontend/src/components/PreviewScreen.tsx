@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { MapPreview } from "@/components/MapPreview";
 import { type ConvertResponse, loadLastConvert } from "@/lib/convert";
@@ -13,6 +13,12 @@ const modeLabel = {
 
 export function PreviewScreen() {
   const [data] = useState<ConvertResponse | null>(() => loadLastConvert());
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+  }, []);
 
   if (!data) {
     return (
@@ -38,8 +44,8 @@ export function PreviewScreen() {
   return (
     <main className="min-h-screen bg-[linear-gradient(160deg,_#dde6f2_0%,_#f5f7fb_100%)] px-6 py-8 text-slate-900 lg:px-8">
       <section className="mx-auto grid max-w-7xl gap-6 xl:grid-cols-[0.34fr_0.66fr]">
-        <aside className="grid gap-4 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_20px_80px_rgba(33,47,85,0.12)]">
-          <div className="space-y-2">
+        <aside className="grid gap-4 rounded-[30px] border border-slate-200 bg-white p-6 shadow-[0_20px_80px_rgba(33,47,85,0.12)] xl:max-h-[calc(100vh-4rem)] xl:overflow-auto">
+          <div className="sticky top-0 z-20 -mx-2 space-y-2 rounded-2xl bg-white/95 px-2 py-1 backdrop-blur supports-[backdrop-filter]:bg-white/85">
             <h1 className="text-3xl font-semibold tracking-tight">지도 미리보기</h1>
             <p className="text-sm leading-6 text-slate-600">업로드 직후 받은 map payload를 기준으로 라인 또는 폴리곤을 지도에 표시합니다.</p>
           </div>

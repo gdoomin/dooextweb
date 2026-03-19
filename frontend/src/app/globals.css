@@ -145,6 +145,26 @@ textarea {
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
 }
 
+.doo-sidebar-image-link {
+  display: block;
+  border-radius: inherit;
+  overflow: hidden;
+  transition:
+    transform 120ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.doo-sidebar-image-link:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow: 0 0 0 1px rgba(121, 192, 255, 0.18) inset;
+}
+
+.doo-sidebar-image-link:active {
+  transform: translateY(1px) scale(0.992);
+}
+
 .doo-sidebar-image {
   display: block;
   width: 100%;
@@ -330,7 +350,25 @@ textarea {
   background: #161b22;
   height: 100vh;
   overflow: hidden;
-  padding-bottom: 28px;
+  padding-bottom: 14px;
+}
+
+.doo-ad-rail {
+  width: 320px;
+  flex: 0 0 320px;
+  display: flex;
+  background: #161b22;
+  border-left: 1px solid #30363d;
+  padding: 14px 12px;
+}
+
+.doo-ad-rail-inner {
+  width: 100%;
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  background: rgba(18, 34, 48, 0.72);
+  padding: 10px;
 }
 
 .doo-top-panel {
@@ -616,11 +654,50 @@ textarea {
   flex: 0 0 auto;
   align-items: center;
   gap: 12px;
-  margin: 0 14px 124px;
+  margin: 0 14px 10px;
   padding: 10px 14px;
   background: #1c2333;
   border-radius: 16px;
   box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+}
+
+.doo-bottom-ad-wrap {
+  flex: 0 0 auto;
+  margin: 0 14px;
+  min-height: 120px;
+  border-radius: 16px;
+  border: 1px solid rgba(121, 192, 255, 0.12);
+  background: rgba(18, 34, 48, 0.72);
+  padding: 8px 10px;
+}
+
+.doo-ad-unit {
+  width: 100%;
+  overflow: hidden;
+  border-radius: 12px;
+}
+
+.doo-ad-unit-right {
+  min-height: 600px;
+}
+
+.doo-ad-unit-bottom {
+  min-height: 120px;
+}
+
+.doo-ad-placeholder {
+  display: flex;
+  width: 100%;
+  min-height: 100%;
+  align-items: center;
+  justify-content: center;
+  border: 1px dashed rgba(121, 192, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(13, 21, 31, 0.78);
+  color: #8b949e;
+  padding: 14px;
+  text-align: center;
+  font-size: 12px;
 }
 
 .doo-status {
@@ -841,9 +918,18 @@ textarea {
     overflow: visible;
   }
 
+  .doo-ad-rail {
+    display: none;
+  }
+
   .doo-bottom-bar {
     flex-direction: column;
     align-items: stretch;
+    margin-bottom: 10px;
+  }
+
+  .doo-bottom-ad-wrap {
+    min-height: 90px;
     margin-bottom: 28px;
   }
 

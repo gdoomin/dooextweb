@@ -1,15 +1,17 @@
 # Frontend
 
-Next.js App Router 기반 프론트엔드입니다.
+Next.js App Router frontend.
 
-## 현재 구현
+## Current Flow (Client-side KML)
 
-- KML 파일 선택
-- `/api/convert` 호출
-- 변환 결과 텍스트 표시
-- 결과 요약 카드와 테이블 표시
+1. User selects a `.kml` file.
+2. Browser reads the file with `File.text()`.
+3. KML is converted to GeoJSON with `@tmcw/togeojson` in a Web Worker.
+4. Geometry is simplified with `@turf/simplify` (adaptive tolerance).
+5. Result is rendered with Leaflet `L.geoJSON(...)`.
+6. Converted JSON is sent to backend `POST /api/convert` only for persistence/history/viewer URLs.
 
-## 환경 변수
+## Environment
 
 `.env.local`
 
@@ -17,7 +19,7 @@ Next.js App Router 기반 프론트엔드입니다.
 NEXT_PUBLIC_API_BASE_URL=http://127.0.0.1:8000
 ```
 
-## 실행
+## Run
 
 ```powershell
 cd C:\Users\indoo\Desktop\DH_APP\DOO_EXTRACTOR_Web\frontend

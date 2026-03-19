@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+
+import type { FeatureCollection, Geometry } from "geojson";
 
 import type { MapPayload } from "@/lib/convert";
-
 
 type LeafletModule = typeof import("leaflet");
 
@@ -13,6 +14,7 @@ type MapPreviewProps = {
 
 export function MapPreview({ payload }: MapPreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const sourceGeoJson = useMemo(() => payload.geojson ?? buildFallbackGeoJson(payload), [payload]);
 
   useEffect(() => {
     let map: import("leaflet").Map | null = null;
@@ -34,69 +36,60 @@ export function MapPreview({ payload }: MapPreviewProps) {
         maxZoom: 19,
       }).addTo(map);
 
-      const bounds = L.latLngBounds([]);
+      const labelLayer = L.layerGroup().addTo(map);
+      const renderLabels = sourceGeoJson.features.length <= 240;
 
-      if (payload.mode === "polygon") {
-        payload.polygons.forEach((polygon, index) => {
-          if (!polygon.points?.length) {
+      const geoLayer = L.geoJSON(sourceGeoJson, {
+        style: (feature) => {
+          if (feature?.geometry?.type.includes("Polygon")) {
+            return {
+              color: "#0f766e",
+              weight: 2.5,
+              fillColor: "#14b8a6",
+              fillOpacity: 0.2,
+            };
+          }
+          return {
+            color: "#1d4ed8",
+            weight: 3,
+            opacity: 0.9,
+          };
+        },
+        pointToLayer: (_feature, latlng) =>
+          L.circleMarker(latlng, {
+            radius: 4,
+            color: "#1d4ed8",
+            weight: 1,
+            fillColor: "#60a5fa",
+            fillOpacity: 0.9,
+          }),
+        onEachFeature: (feature, layer) => {
+          const label = resolveFeatureLabel(feature);
+          if (!label) {
+            return;
+          }
+          layer.bindTooltip(escapeHtml(label), {
+            sticky: true,
+          });
+
+          if (!renderLabels) {
             return;
           }
 
-          const shape = L.polygon(polygon.points, {
-            color: "#0f766e",
-            weight: 3,
-            fillColor: "#14b8a6",
-            fillOpacity: 0.22,
-          }).addTo(map!);
-
-          bounds.extend(shape.getBounds());
-
-          const center = shape.getBounds().getCenter();
-          const label = polygon.label?.trim() || polygon.num?.trim() || `Polygon ${index + 1}`;
+          const center = resolveLayerCenter(layer);
+          if (!center) {
+            return;
+          }
           L.marker(center, {
             icon: createLabelIcon(L, label),
             keyboard: false,
-          }).addTo(map!);
-        });
-      } else {
-        payload.results.forEach((row, index) => {
-          if (
-            typeof row.s_lat !== "number" ||
-            typeof row.s_lon !== "number" ||
-            typeof row.e_lat !== "number" ||
-            typeof row.e_lon !== "number"
-          ) {
-            return;
-          }
+          }).addTo(labelLayer);
+        },
+      }).addTo(map);
 
-          const points: [number, number][] = [
-            [row.s_lat, row.s_lon],
-            [row.e_lat, row.e_lon],
-          ];
-
-          const line = L.polyline(points, {
-            color: "#1d4ed8",
-            weight: 3.5,
-            opacity: 0.92,
-          }).addTo(map!);
-
-          bounds.extend(line.getBounds());
-
-          const label = row.num?.trim() || row.force_label?.trim() || `${index + 1}`;
-          const midPoint: [number, number] = [
-            (row.s_lat + row.e_lat) / 2,
-            (row.s_lon + row.e_lon) / 2,
-          ];
-
-          L.marker(midPoint, {
-            icon: createLabelIcon(L, label),
-            keyboard: false,
-          }).addTo(map!);
-        });
-      }
-
+      const bounds = geoLayer.getBounds();
       if (bounds.isValid()) {
-        map.fitBounds(bounds.pad(0.18));
+        map.fitBounds(bounds.pad(0.15));
       } else {
         map.setView([36.35, 127.95], 7);
       }
@@ -110,9 +103,51 @@ export function MapPreview({ payload }: MapPreviewProps) {
         map.remove();
       }
     };
-  }, [payload]);
+  }, [sourceGeoJson]);
 
   return <div ref={containerRef} className="h-[560px] w-full rounded-[26px]" />;
+}
+
+function resolveFeatureLabel(feature: { properties?: Record<string, unknown> } | undefined): string {
+  if (!feature || !feature.properties) {
+    return "";
+  }
+  const candidate =
+    feature.properties.label ??
+    feature.properties.name ??
+    feature.properties.num ??
+    feature.properties.force_label;
+
+  if (typeof candidate === "string") {
+    return candidate.trim();
+  }
+  return candidate ? String(candidate).trim() : "";
+}
+
+function resolveLayerCenter(layer: unknown): { lat: number; lng: number } | null {
+  if (
+    layer &&
+    typeof layer === "object" &&
+    "getLatLng" in layer &&
+    typeof (layer as { getLatLng?: () => { lat: number; lng: number } }).getLatLng === "function"
+  ) {
+    return (layer as { getLatLng: () => { lat: number; lng: number } }).getLatLng();
+  }
+  if (
+    layer &&
+    typeof layer === "object" &&
+    "getBounds" in layer &&
+    typeof (layer as { getBounds?: () => { isValid: () => boolean; getCenter: () => { lat: number; lng: number } } })
+      .getBounds === "function"
+  ) {
+    const bounds = (
+      layer as { getBounds: () => { isValid: () => boolean; getCenter: () => { lat: number; lng: number } } }
+    ).getBounds();
+    if (bounds.isValid()) {
+      return bounds.getCenter();
+    }
+  }
+  return null;
 }
 
 function createLabelIcon(L: LeafletModule, label: string) {
@@ -123,6 +158,67 @@ function createLabelIcon(L: LeafletModule, label: string) {
   });
 }
 
+function buildFallbackGeoJson(payload: MapPayload): FeatureCollection<Geometry> {
+  if (payload.mode === "polygon") {
+    return {
+      type: "FeatureCollection",
+      features: payload.polygons
+        .filter((polygon) => Array.isArray(polygon.points) && polygon.points.length >= 3)
+        .map((polygon, index) => {
+          const ring = polygon.points.map(([lat, lon]) => [lon, lat]);
+          const closedRing = closeRing(ring);
+          return {
+            type: "Feature",
+            properties: {
+              label: polygon.label || polygon.num || `Polygon ${index + 1}`,
+            },
+            geometry: {
+              type: "Polygon",
+              coordinates: [closedRing],
+            },
+          };
+        }),
+    };
+  }
+
+  return {
+    type: "FeatureCollection",
+    features: payload.results
+      .filter(
+        (row) =>
+          typeof row.s_lat === "number" &&
+          typeof row.s_lon === "number" &&
+          typeof row.e_lat === "number" &&
+          typeof row.e_lon === "number",
+      )
+      .map((row, index) => ({
+        type: "Feature",
+        properties: {
+          label: row.num || row.force_label || String(index + 1),
+        },
+        geometry: {
+          type: "LineString",
+          coordinates: [
+            [row.s_lon as number, row.s_lat as number],
+            [row.e_lon as number, row.e_lat as number],
+          ],
+        },
+      })),
+  };
+}
+
+function closeRing(points: number[][]): number[][] {
+  if (points.length < 3) {
+    return points;
+  }
+  const [firstLon, firstLat] = points[0];
+  const [lastLon, lastLat] = points[points.length - 1];
+  if (firstLon === lastLon && firstLat === lastLat) {
+    return points;
+  }
+  return [...points, [firstLon, firstLat]];
+}
+
 function escapeHtml(value: string) {
   return value
     .replaceAll("&", "&amp;")
@@ -131,4 +227,3 @@ function escapeHtml(value: string) {
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
 }
-

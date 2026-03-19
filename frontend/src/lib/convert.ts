@@ -1,3 +1,5 @@
+import type { FeatureCollection, Geometry } from "geojson";
+
 export type LineResult = {
   num?: string;
   force_label?: string;
@@ -28,6 +30,10 @@ export type MapPayload = {
   layer_catalog?: Array<Record<string, unknown>>;
   default_gray_map?: boolean;
   meta_text?: string;
+  geojson?: FeatureCollection<Geometry | null>;
+  source_format?: "kml";
+  simplify_tolerance?: number;
+  coordinate_count?: number;
 };
 
 export type ConvertResponse = {
@@ -52,6 +58,16 @@ export type ServerHistoryItem = {
   mode: "linestring" | "polygon";
   result_count: number;
   uploaded_at: string;
+};
+
+export type ClientConvertRequestBody = {
+  filename: string;
+  project_name: string;
+  mode: "linestring" | "polygon";
+  result_count: number;
+  text_output: string;
+  map_payload: MapPayload;
+  results: Array<Record<string, unknown>>;
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";
@@ -114,7 +130,9 @@ export function resolveApiBaseUrl(): string {
 export const API_BASE_URL = resolveApiBaseUrl();
 
 type ErrorLike = {
-  detail?: string;
+  detail?: unknown;
+  message?: unknown;
+  error?: unknown;
 };
 
 type HistoryListResponse = {
@@ -123,6 +141,96 @@ type HistoryListResponse = {
 
 function isHistoryListResponse(payload: HistoryListResponse | ErrorLike): payload is HistoryListResponse {
   return typeof payload === "object" && payload !== null && "items" in payload;
+}
+
+function stringifyUnknown(value: unknown): string {
+  const isObjectObjectText = (text: string) => text.trim() === "[object Object]";
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (isObjectObjectText(trimmed)) {
+      return "";
+    }
+    return trimmed || "";
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value)) {
+    const joined = value
+      .map((item) => stringifyUnknown(item))
+      .filter(Boolean)
+      .join(" | ");
+    return joined;
+  }
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const preferred = stringifyUnknown(obj.detail ?? obj.message ?? obj.msg ?? obj.error);
+    if (preferred) {
+      return preferred;
+    }
+    try {
+      return JSON.stringify(obj);
+    } catch {
+      return "";
+    }
+  }
+  return "";
+}
+
+function parseFastApiDetail(detail: unknown): string {
+  if (!Array.isArray(detail)) {
+    return stringifyUnknown(detail);
+  }
+  const parsed = detail
+    .map((entry) => {
+      if (!entry || typeof entry !== "object") {
+        return stringifyUnknown(entry);
+      }
+      const row = entry as Record<string, unknown>;
+      const msg = stringifyUnknown(row.msg);
+      const loc = Array.isArray(row.loc) ? row.loc.map((x) => stringifyUnknown(x)).filter(Boolean).join(".") : "";
+      if (msg && loc) {
+        return `${loc}: ${msg}`;
+      }
+      return msg || stringifyUnknown(row);
+    })
+    .filter(Boolean);
+  return parsed.join(" | ");
+}
+
+async function parseResponseBody(response: Response): Promise<{ body: unknown; rawText: string }> {
+  const rawText = await response.text();
+  if (!rawText) {
+    return { body: null, rawText: "" };
+  }
+
+  try {
+    return { body: JSON.parse(rawText), rawText };
+  } catch {
+    return { body: null, rawText };
+  }
+}
+
+function extractErrorMessage(body: unknown, rawText: string, fallback: string): string {
+  if (body && typeof body === "object") {
+    const payload = body as ErrorLike;
+    const fromDetail = parseFastApiDetail(payload.detail);
+    if (fromDetail) {
+      return fromDetail;
+    }
+    const fromMessage = stringifyUnknown(payload.message ?? payload.error);
+    if (fromMessage) {
+      return fromMessage;
+    }
+    const fallbackFromBody = stringifyUnknown(body);
+    if (fallbackFromBody) {
+      return fallbackFromBody;
+    }
+  }
+
+  const fromText = stringifyUnknown(rawText);
+  return fromText || fallback;
 }
 
 export function saveLastConvert(payload: ConvertResponse) {
@@ -157,15 +265,47 @@ export function buildUserHeaders(userId: string, userEmail = ""): HeadersInit {
   };
 }
 
+export async function persistConvertedJob(
+  payload: ClientConvertRequestBody,
+  userId = "",
+  userEmail = "",
+): Promise<ConvertResponse> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (userId) {
+    headers["X-DOO-USER-ID"] = userId;
+    headers["X-DOO-USER-EMAIL"] = userEmail;
+  }
+
+  const response = await fetch(`${API_BASE_URL}/api/convert`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "Failed to persist converted data."));
+  }
+  if (!body || typeof body !== "object") {
+    throw new Error("Server returned an invalid conversion response.");
+  }
+  return body as ConvertResponse;
+}
+
 export async function fetchUserHistory(userId: string, userEmail = ""): Promise<ServerHistoryItem[]> {
   const response = await fetch(`${API_BASE_URL}/api/history`, {
     headers: buildUserHeaders(userId, userEmail),
     cache: "no-store",
   });
-  const payload = (await response.json()) as HistoryListResponse | ErrorLike;
+  const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error("detail" in payload ? payload.detail || "히스토리를 불러오지 못했습니다." : "히스토리를 불러오지 못했습니다.");
+    throw new Error(extractErrorMessage(body, rawText, "히스토리를 불러오지 못했습니다."));
   }
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+  const payload = body as HistoryListResponse | ErrorLike;
   return isHistoryListResponse(payload) && Array.isArray(payload.items) ? payload.items : [];
 }
 
@@ -174,9 +314,12 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
     headers: buildUserHeaders(userId, userEmail),
     cache: "no-store",
   });
-  const payload = (await response.json()) as ConvertResponse | ErrorLike;
+  const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error("detail" in payload ? payload.detail || "히스토리 항목을 다시 열지 못했습니다." : "히스토리 항목을 다시 열지 못했습니다.");
+    throw new Error(extractErrorMessage(body, rawText, "히스토리 항목을 다시 열지 못했습니다."));
   }
-  return payload as ConvertResponse;
+  if (!body || typeof body !== "object") {
+    throw new Error("히스토리 응답 형식이 올바르지 않습니다.");
+  }
+  return body as ConvertResponse;
 }

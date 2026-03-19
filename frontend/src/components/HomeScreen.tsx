@@ -39,11 +39,72 @@ const DOOGPX_APPSTORE_URL =
 const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 
+function describeUnknownError(error: unknown, fallback: string): string {
+  const isObjectObjectText = (value: string) => value.trim() === "[object Object]";
+
+  if (error instanceof Error) {
+    const message = error.message?.trim();
+    if (message && !isObjectObjectText(message)) {
+      return message;
+    }
+
+    const cause = (error as Error & { cause?: unknown }).cause;
+    const causeText = describeUnknownError(cause, "");
+    if (causeText) {
+      return causeText;
+    }
+
+    try {
+      const own: Record<string, unknown> = {};
+      const errorRecord = error as unknown as Record<string, unknown>;
+      for (const key of Object.getOwnPropertyNames(error)) {
+        own[key] = errorRecord[key];
+      }
+      const ownText = describeUnknownError(own, "");
+      if (ownText) {
+        return ownText;
+      }
+    } catch {
+      // Ignore and fallback below.
+    }
+
+    return fallback;
+  }
+  if (typeof error === "string") {
+    const message = error.trim();
+    if (!message || isObjectObjectText(message)) {
+      return fallback;
+    }
+    return message;
+  }
+  if (error && typeof error === "object") {
+    const payload = error as Record<string, unknown>;
+    const nested =
+      describeUnknownError(payload.detail, "") ||
+      describeUnknownError(payload.message, "") ||
+      describeUnknownError(payload.error, "");
+    if (nested) {
+      return nested;
+    }
+    try {
+      const serialized = JSON.stringify(payload);
+      return serialized || fallback;
+    } catch {
+      return fallback;
+    }
+  }
+  if (typeof error === "number" || typeof error === "boolean") {
+    return String(error);
+  }
+  return fallback;
+}
+
 export function HomeScreen({
   initialUserEmail = "",
   initialUserId = "",
   authAvailable = true,
 }: HomeScreenProps) {
+  const [showUpdateNotice, setShowUpdateNotice] = useState(true);
   const restored = loadLastConvert();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [response, setResponse] = useState<ConvertResponse | null>(restored);
@@ -162,7 +223,7 @@ export function HomeScreen({
         }
       } catch (error) {
         if (!cancelled) {
-          setHistoryError(error instanceof Error ? error.message : "히스토리를 불러오지 못했습니다.");
+          setHistoryError(describeUnknownError(error, "히스토리를 불러오지 못했습니다."));
         }
       } finally {
         if (!cancelled) {
@@ -230,7 +291,7 @@ export function HomeScreen({
       const items = await fetchUserHistory(nextUserId, nextUserEmail);
       setHistoryItems(items);
     } catch (error) {
-      setHistoryError(error instanceof Error ? error.message : "히스토리를 불러오지 못했습니다.");
+      setHistoryError(describeUnknownError(error, "히스토리를 불러오지 못했습니다."));
     } finally {
       setHistoryLoading(false);
     }
@@ -267,8 +328,9 @@ export function HomeScreen({
           : `${converted.result_count} results converted. Log in to use history and reopen.`,
       );
     } catch (error) {
+      console.error("[KML convert] failed", error);
       setStatusTone("error");
-      setStatusMessage(error instanceof Error ? error.message : "Conversion failed.");
+      setStatusMessage(describeUnknownError(error, "Conversion failed."));
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -298,7 +360,7 @@ export function HomeScreen({
       setStatusMessage(`${reopened.project_name || reopened.filename} 결과를 다시 열었습니다.`);
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(error instanceof Error ? error.message : "히스토리 항목을 다시 열지 못했습니다.");
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 다시 열지 못했습니다."));
     } finally {
       setHistoryOpeningId("");
     }
@@ -592,6 +654,20 @@ export function HomeScreen({
             />
             <button type="button" className="auth-modal-close" onClick={() => setShowAuthModal(false)}>
               닫기
+            </button>
+          </section>
+        </div>
+      ) : null}
+
+      {showUpdateNotice ? (
+        <div className="auth-modal-backdrop" onClick={() => setShowUpdateNotice(false)}>
+          <section className="auth-modal-card" onClick={(event) => event.stopPropagation()}>
+            <div className="auth-modal-copy">
+              <span className="auth-badge">Notice</span>
+              <h2>지금 말도 안되게 대낮에 업데이트 중입니다. 죄송합니다.</h2>
+            </div>
+            <button type="button" className="auth-modal-close" onClick={() => setShowUpdateNotice(false)}>
+              확인
             </button>
           </section>
         </div>
