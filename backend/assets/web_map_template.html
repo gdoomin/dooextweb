@@ -1360,7 +1360,7 @@
     .text-input-grid {
       margin-top: 12px;
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: minmax(0, 1fr);
       gap: 10px;
     }
     .text-input-field-wrap {
@@ -1672,15 +1672,6 @@
       <p>지도에 표시할 글자를 입력하고, 제목이면 체크하세요.</p>
       <textarea id="textInputField" class="text-input-field" placeholder="지도에 표시할 글자를 입력하세요."></textarea>
       <div class="text-input-grid">
-        <label class="text-input-field-wrap">폰트
-          <select id="textFontSelect" class="text-input-select">
-            <option value="nanum_square">나눔스퀘어</option>
-            <option value="nanum_square_ac">나눔스퀘어 라운드</option>
-            <option value="maruburi">마루부리</option>
-            <option value="nanum_myeongjo">나눔명조</option>
-            <option value="nanum_dasisijakhae">나눔다시시작해</option>
-          </select>
-        </label>
         <label class="text-input-field-wrap">정렬
           <select id="textAlignSelect" class="text-input-select">
             <option value="center">중앙</option>
@@ -1830,7 +1821,6 @@
     const textInputCard = document.getElementById('textInputCard');
     const textInputTitle = document.getElementById('textInputTitle');
     const textInputField = document.getElementById('textInputField');
-    const textFontSelect = document.getElementById('textFontSelect');
     const textAlignSelect = document.getElementById('textAlignSelect');
     const textTitleCheckbox = document.getElementById('textTitleCheckbox');
     const textInputCancelButton = document.getElementById('textInputCancelButton');
@@ -1891,6 +1881,7 @@
       selectedMarker: null,
       resizing: null,
       dialogResolver: null,
+      dialogFont: TEXT_DEFAULT_FONT,
     };
     const doneState = {
       active: false,
@@ -2491,10 +2482,10 @@
     function promptForText(initialValue = '', initialTitle = false, initialFont = TEXT_DEFAULT_FONT, initialAlign = TEXT_DEFAULT_ALIGN) {
       return new Promise((resolve) => {
         textState.dialogResolver = resolve;
+        textState.dialogFont = normalizeTextFont(initialFont);
         textInputTitle.textContent = initialValue ? '글자 수정' : '글자 입력';
         textInputField.value = initialValue;
         textTitleCheckbox.checked = !!initialTitle;
-        textFontSelect.value = normalizeTextFont(initialFont);
         textAlignSelect.value = normalizeTextAlign(initialAlign);
         setTextInputModalVisible(true);
         window.setTimeout(() => {
@@ -5021,7 +5012,7 @@
       resolveTextInput({
         text,
         isTitle: !!textTitleCheckbox.checked,
-        textFont: normalizeTextFont(textFontSelect.value),
+        textFont: normalizeTextFont(textState.dialogFont),
         textAlign: normalizeTextAlign(textAlignSelect.value),
       });
     });
@@ -5037,7 +5028,7 @@
         resolveTextInput({
           text,
           isTitle: !!textTitleCheckbox.checked,
-          textFont: normalizeTextFont(textFontSelect.value),
+          textFont: normalizeTextFont(textState.dialogFont),
           textAlign: normalizeTextAlign(textAlignSelect.value),
         });
       }
