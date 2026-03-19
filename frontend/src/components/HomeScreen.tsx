@@ -537,7 +537,7 @@ export function HomeScreen({
   function openViewer() {
     const isJobViewer = Boolean(response?.job_id);
     const viewerPath = response?.job_id ? `${API_BASE_URL}/api/viewer/${response.job_id}` : `${API_BASE_URL}/api/viewer/default`;
-    let viewerUrl = response?.viewer_url || viewerPath;
+    let viewerUrl = viewerPath;
     if (!isJobViewer) {
       const query = new URLSearchParams();
       if (userId) {

@@ -5635,6 +5635,8 @@
         saved.view &&
         Array.isArray(saved.view.center) &&
         saved.view.center.length === 2 &&
+        Number.isFinite(saved.view.center[0]) &&
+        Number.isFinite(saved.view.center[1]) &&
         Number.isFinite(saved.view.zoom)
       );
 
@@ -5760,7 +5762,10 @@
         applyInterfaceCollapseState(!!saved.toolbarCollapsed, true);
 
         if (hasSavedView) {
-          map.setView(saved.view.center, saved.view.zoom, { animate: false });
+          const savedLat = clamp(Number(saved.view.center[0]), -85, 85);
+          const savedLng = clamp(Number(saved.view.center[1]), -180, 180);
+          const savedZoom = clamp(Number(saved.view.zoom), 3, 19);
+          map.setView([savedLat, savedLng], savedZoom, { animate: false });
         }
 
         await applySavedWeatherState(saved.weather);
@@ -8163,6 +8168,9 @@
           map.setView([36.4, 127.8], 7);
         }
       }
+      requestAnimationFrame(() => {
+        map.invalidateSize({ pan: false, animate: false });
+      });
       recordUndoState(true);
     }
 
