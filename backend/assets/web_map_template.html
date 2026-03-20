@@ -1251,6 +1251,46 @@
       outline: none;
       box-sizing: border-box;
     }
+    .sim-panel--minimal .sim-help,
+    .sim-panel--minimal .sim-subhead,
+    .sim-panel--minimal .sim-grid-single,
+    .sim-panel--minimal .sim-grid-two,
+    .sim-panel--minimal .sim-controls,
+    .sim-panel--minimal .sim-stats,
+    .sim-panel--minimal .sim-divider {
+      display: none !important;
+    }
+    .sim-panel--minimal .sim-actions {
+      margin-top: 12px;
+    }
+    .sim-simple-section {
+      display: grid;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .sim-simple-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      color: #dde8ff;
+    }
+    .sim-simple-row select {
+      border-radius: 8px;
+      border: 1px solid rgba(148, 184, 240, 0.36);
+      background: rgba(9, 18, 34, 0.9);
+      color: #f6fbff;
+      min-width: 110px;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .sim-delete-button {
+      border-color: rgba(255, 133, 133, 0.45);
+      color: #ffdede;
+      background: rgba(122, 27, 27, 0.42);
+    }
     .layer-title,
     .weather-title {
       margin: 0 0 10px;
@@ -1419,23 +1459,33 @@
     .weather-overlay-master {
       display: flex;
       align-items: center;
-      justify-content: space-between;
+      justify-content: flex-start;
+      gap: 8px;
       color: #e6edf3;
       font-size: 12px;
       font-weight: 700;
+      flex-direction: row-reverse;
     }
     .weather-overlay-checks {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 5px;
-      color: #c9d7e6;
-      font-size: 11px;
-      line-height: 1.35;
+      display: none !important;
     }
     .weather-overlay-checks label {
-      display: inline-flex;
+      display: flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      min-width: 20px;
+      min-height: 20px;
+      border-radius: 6px;
+      border: 1px solid rgba(134, 180, 228, 0.28);
+      background: rgba(255, 255, 255, 0.03);
+      padding: 0;
+      margin: 0;
+    }
+    .weather-overlay-checks label input {
+      margin: 0;
+    }
+    .weather-overlay-checks label.weather-overlay-timeline-label {
+      display: none;
     }
     .weather-overlay-actions {
       display: flex;
@@ -2550,16 +2600,13 @@
       <path d="M53 47 73 36" stroke="#b8ff67" stroke-width="10" stroke-linecap="round" opacity="0.72"></path>
     </symbol>
     <symbol id="toolIconForce" viewBox="0 0 96 72">
-      <rect x="17" y="14" width="62" height="42" rx="10" fill="#f6fbff" stroke="#17324b" stroke-width="2.6"></rect>
-      <circle cx="33" cy="47" r="8.4" fill="#9ec8ff" stroke="#17324b" stroke-width="2"></circle>
-      <circle cx="49" cy="47" r="8.4" fill="#ffe27a" stroke="#17324b" stroke-width="2"></circle>
-      <circle cx="65" cy="47" r="8.4" fill="#ffc9bf" stroke="#17324b" stroke-width="2"></circle>
-      <text x="29" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">3</text>
-      <text x="45" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">4</text>
-      <text x="61" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">5</text>
-      <path d="M30 21c2-3 6-4 9-2l4 3 2-3c2-3 7-3 9 0l2 3 3-2c3-2 7-1 9 2l-4 5-7 11-30 1-10-11z" fill="#f4dccd" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
-      <path d="M30 37h36" stroke="#17324b" stroke-width="2"></path>
-      <path d="M40 27h16" stroke="#17324b" stroke-width="1.8" stroke-linecap="round"></path>
+      <rect x="16" y="12" width="64" height="48" rx="10" fill="#f7f9fc" stroke="#1b2430" stroke-width="2.4"></rect>
+      <text x="38" y="44" text-anchor="middle" fill="#111111" font-size="52" font-weight="900" font-family="Arial, sans-serif">7</text>
+      <g transform="translate(50 50)">
+        <path d="M-22 6 -8 -9 8 -9 22 6 8 13 -8 13Z" fill="#6f747b" stroke="#353941" stroke-width="1.8" stroke-linejoin="round"></path>
+        <path d="M-6 -8 6 10M6 -8 -6 10" stroke="#1f2329" stroke-width="4.4" stroke-linecap="round"></path>
+        <path d="M0 -9 2 -3 8 -3 3 1 5 7 0 3 -5 7 -3 1 -8 -3 -2 -3Z" fill="#ff3b3b" stroke="#b61515" stroke-width="1.1" stroke-linejoin="round"></path>
+      </g>
     </symbol>
     <symbol id="toolIconCamera" viewBox="0 0 96 72">
       <rect x="18" y="24" width="60" height="28" rx="9" fill="#d7e8f9" stroke="#17324b" stroke-width="2.8"></rect>
@@ -2713,10 +2760,10 @@
         <input id="weatherOverlayMasterToggle" type="checkbox" aria-label="기상 체크">
       </label>
       <div class="weather-overlay-checks">
-        <label><input id="weatherOverlayMarkerToggle" type="checkbox" checked> 기상 마커</label>
-        <label><input id="weatherOverlayBadgeToggle" type="checkbox" checked> 촬영가능 배지</label>
-        <label><input id="weatherOverlayWindToggle" type="checkbox" checked> 풍향 레이어</label>
-        <label><input id="weatherOverlayTimelineToggle" type="checkbox" checked> 시간별 타임라인</label>
+        <label title="기상 마커"><input id="weatherOverlayMarkerToggle" type="checkbox" checked aria-label="기상 마커"></label>
+        <label title="촬영 가능 배지"><input id="weatherOverlayBadgeToggle" type="checkbox" checked aria-label="촬영 가능 배지"></label>
+        <label title="풍향 레이어"><input id="weatherOverlayWindToggle" type="checkbox" checked aria-label="풍향 레이어"></label>
+        <label class="weather-overlay-timeline-label" title="시간별 타임라인"><input id="weatherOverlayTimelineToggle" type="checkbox" aria-label="시간별 타임라인"></label>
       </div>
       <div class="weather-overlay-actions">
         <button id="weatherOverlayRefreshButton" class="mini-button" type="button">새로고침</button>
@@ -2874,7 +2921,7 @@
         <input id="simArcSplitsInput" class="sim-size-input" type="number" value="20" min="8" max="72" step="1" aria-label="반원 분할 수">
       </label>
       <label class="force-field">최대 이탈(NM)
-        <input id="simMaxDeviationNmInput" class="sim-size-input" type="number" value="6" min="1" max="20" step="0.1" aria-label="최대 이탈 거리">
+        <input id="simMaxDeviationNmInput" class="sim-size-input" type="number" value="6" min="2" max="7" step="1" aria-label="최대 이탈 거리">
       </label>
       <label id="simCustomSpeedWrap" class="force-field sim-span-two is-hidden">순항속도(knots)
         <input id="simCustomSpeedInput" class="sim-size-input" type="number" value="185" min="80" max="420" step="1" aria-label="직접입력 순항속도">
@@ -3288,7 +3335,7 @@
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
     map.createPane('weatherOverlayPane');
-    map.getPane('weatherOverlayPane').style.zIndex = '355';
+    map.getPane('weatherOverlayPane').style.zIndex = '650';
     map.createPane('notamPane');
     map.getPane('notamPane').style.zIndex = '350';
 
@@ -3315,6 +3362,9 @@
     const textGroup = L.layerGroup().addTo(map);
     const gpxRouteGroup = L.layerGroup().addTo(map);
     const simulationRouteGroup = L.layerGroup();
+    const surveyFlightDirectionGroup = L.layerGroup().addTo(map);
+    const surveyFlightTurnArcGroup = L.layerGroup().addTo(map);
+    const surveyFlightPlaneGroup = L.layerGroup().addTo(map);
     const bounds = L.latLngBounds([]);
     const tilePane = map.getPane('tilePane');
     const toolbar = document.querySelector('.toolbar');
@@ -3377,6 +3427,8 @@
     const simStatEstimatedTime = document.getElementById('simStatEstimatedTime');
     const simToggleOverlayButton = document.getElementById('simToggleOverlayButton');
     const simApplyButton = document.getElementById('simApplyButton');
+    let simSimpleDistanceSelect = null;
+    let simDeleteButton = null;
     const notamButton = document.getElementById('notamButton');
     const planInfoButton = document.getElementById('planInfoButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
@@ -3523,7 +3575,7 @@
         marker: true,
         badge: true,
         wind: true,
-        timeline: true,
+        timeline: false,
       },
       timelineCollapsed: true,
       timelineDayIndex: 0,
@@ -3614,6 +3666,13 @@
     const SIM_SELECTED_OPACITY = 1;
     const SIM_MAX_AUTO_FIT_ZOOM = 16;
     const SIM_NM_TO_METERS = 1852;
+    const SURVEY_ARROW_COLOR = '#4bd2ff';
+    const SURVEY_TURN_COLOR = '#ffd24a';
+    const SURVEY_TURN_WEIGHT = 2.4;
+    const SURVEY_TURN_DASH = '8 8';
+    const SURVEY_LINE_STEP_METERS = 320;
+    const SURVEY_TURN_STEPS = 28;
+    const SURVEY_DEFAULT_SPEED_MPS = 72;
     const SIM_AIRCRAFT_PRESETS = {
       caravan: {
         key: 'caravan',
@@ -3675,6 +3734,31 @@
       stats: null,
       settings: {
         ...SIM_DEFAULTS,
+      },
+    };
+    const surveyFlightState = {
+      lines: [],
+      turns: [],
+      pathCoords: [],
+      cumulativeMeters: [],
+      totalDistanceMeters: 0,
+      planeMarker: null,
+      control: {
+        leaflet: null,
+        container: null,
+        startButton: null,
+        pauseButton: null,
+        resetButton: null,
+        speedInput: null,
+        speedValue: null,
+      },
+      animation: {
+        running: false,
+        frameId: 0,
+        lastTimestamp: 0,
+        distanceMeters: 0,
+        speedMultiplier: 1,
+        baseSpeedMps: SURVEY_DEFAULT_SPEED_MPS,
       },
     };
     const TOOL_MODE_KEYS = new Set(['measure', 'text', 'done', 'force']);
@@ -4392,7 +4476,10 @@
       simInboundNmInput.value = String(settings.inboundNm);
       simArcSplitsInput.value = String(settings.arcSplits);
       if (simMaxDeviationNmInput) {
-        simMaxDeviationNmInput.value = String(settings.maxDeviationNm || SIM_DEFAULTS.maxDeviationNm);
+        simMaxDeviationNmInput.value = String(clamp(Number(settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 2, 7));
+      }
+      if (simSimpleDistanceSelect) {
+        simSimpleDistanceSelect.value = String(clamp(Number(settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 2, 7));
       }
       if (simCustomSpeedInput) {
         simCustomSpeedInput.value = String(clamp(Number(settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420));
@@ -4400,6 +4487,65 @@
       setSimDirectInputEnabled();
       syncSimulationSegmentSelections();
       updateSimStatsDisplay(simState.stats);
+    }
+
+    function applySimpleSimPanelLayout() {
+      if (!simPanel) {
+        return;
+      }
+      simPanel.classList.add('sim-panel--minimal');
+      const titleEl = simPanel.querySelector('.sim-title');
+      if (titleEl) {
+        titleEl.textContent = 'SIM 옵션';
+      }
+      const helpEl = simPanel.querySelector('.sim-help');
+      if (helpEl) {
+        helpEl.textContent = 'SIM 라인은 라인 밖으로 나가는 범위를 시각적으로 확인하기 위한 표시입니다.';
+      }
+      if (simMaxDeviationNmInput) {
+        simMaxDeviationNmInput.min = '2';
+        simMaxDeviationNmInput.max = '7';
+        simMaxDeviationNmInput.step = '1';
+        simMaxDeviationNmInput.value = String(clamp(Number(simMaxDeviationNmInput.value) || SIM_DEFAULTS.maxDeviationNm, 2, 7));
+      }
+      const styleWrap = simPanel.querySelector('.sim-style-wrap');
+      if (styleWrap && !simDeleteButton) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.id = 'simDeleteButton';
+        button.className = 'mini-button sim-delete-button';
+        button.textContent = '지우기';
+        styleWrap.appendChild(button);
+        simDeleteButton = button;
+      }
+      if (!simSimpleDistanceSelect) {
+        const section = document.createElement('div');
+        section.className = 'sim-simple-section';
+        section.innerHTML = `
+          <label class="sim-simple-row">나가는 거리
+            <select id="simSimpleDistanceSelect" aria-label="나가는 거리">
+              <option value="2">2 NM</option>
+              <option value="3">3 NM</option>
+              <option value="4">4 NM</option>
+              <option value="5">5 NM</option>
+              <option value="6">6 NM</option>
+              <option value="7">7 NM</option>
+            </select>
+          </label>
+        `;
+        const head = simPanel.querySelector('.sim-head');
+        if (head && head.nextSibling) {
+          simPanel.insertBefore(section, head.nextSibling);
+        } else {
+          simPanel.appendChild(section);
+        }
+        simSimpleDistanceSelect = section.querySelector('#simSimpleDistanceSelect');
+      }
+      if (simSimpleDistanceSelect && simMaxDeviationNmInput) {
+        const normalized = String(clamp(Number(simMaxDeviationNmInput.value) || SIM_DEFAULTS.maxDeviationNm, 2, 7));
+        simSimpleDistanceSelect.value = normalized;
+      }
+      syncSimulationSegmentSelections();
     }
 
     function readSimSettingsFromInputs() {
@@ -4414,7 +4560,7 @@
       simState.settings.departureNm = clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20);
       simState.settings.turnRadiusNm = clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30);
       simState.settings.inboundNm = clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30);
-      simState.settings.maxDeviationNm = clamp(Number(simMaxDeviationNmInput ? simMaxDeviationNmInput.value : simState.settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 1, 20);
+      simState.settings.maxDeviationNm = clamp(Number(simMaxDeviationNmInput ? simMaxDeviationNmInput.value : simState.settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 2, 7);
       simState.settings.customSpeedKnots = clamp(Number(simCustomSpeedInput ? simCustomSpeedInput.value : simState.settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
       setSimDirectInputEnabled();
       return { ...simState.settings };
@@ -4872,7 +5018,7 @@
 
     function resolveSimTransitionMetrics(lines, settings) {
       const spacingMeters = clamp(estimateSimLineSpacingMeters(lines), 120, 4000);
-      const maxDeviationNm = clamp(Number(settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 1, 20);
+      const maxDeviationNm = clamp(Number(settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 2, 7);
       const maxDeviationMeters = maxDeviationNm * SIM_NM_TO_METERS;
       const departureRaw = Math.max(60, Number(settings.departureNm) * SIM_NM_TO_METERS);
       const inboundRaw = Math.max(60, Number(settings.inboundNm) * SIM_NM_TO_METERS);
@@ -5132,6 +5278,578 @@
         scheduleViewerStateSave();
       }
       return true;
+    }
+
+    function ensureSurveyFlightStyles() {
+      if (document.getElementById('surveyFlightStyles')) {
+        return;
+      }
+      const style = document.createElement('style');
+      style.id = 'surveyFlightStyles';
+      style.textContent = `
+        .survey-flight-control {
+          min-width: 212px;
+          border-radius: 14px;
+          padding: 10px 10px 8px;
+          background: rgba(8, 18, 36, 0.9);
+          border: 1px solid rgba(95, 149, 255, 0.42);
+          box-shadow: 0 16px 24px rgba(0, 0, 0, 0.34);
+          color: #dce8ff;
+          backdrop-filter: blur(4px);
+        }
+        .survey-flight-control__title {
+          font-size: 11px;
+          letter-spacing: 0.6px;
+          font-weight: 700;
+          margin: 0 0 8px;
+          color: #89d6ff;
+          text-transform: uppercase;
+        }
+        .survey-flight-control__buttons {
+          display: grid;
+          grid-template-columns: 1fr 1fr 1fr;
+          gap: 6px;
+          margin-bottom: 8px;
+        }
+        .survey-flight-control__buttons button {
+          border: 1px solid rgba(147, 188, 255, 0.4);
+          border-radius: 8px;
+          background: rgba(23, 42, 76, 0.94);
+          color: #e8f1ff;
+          font-size: 12px;
+          font-weight: 700;
+          padding: 6px 4px;
+          cursor: pointer;
+        }
+        .survey-flight-control__buttons button:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+        .survey-flight-control__speed {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-size: 12px;
+          color: #c9d9ff;
+        }
+        .survey-flight-control__speed input[type='range'] {
+          flex: 1;
+        }
+        .survey-flight-control__speed-value {
+          min-width: 38px;
+          text-align: right;
+          font-weight: 700;
+          color: #ffde74;
+        }
+        .survey-flight-line-label-icon {
+          background: transparent;
+          border: none;
+        }
+        .survey-flight-line-label {
+          display: inline-block;
+          min-width: 20px;
+          text-align: center;
+          padding: 2px 6px;
+          border-radius: 999px;
+          border: 1px solid rgba(255, 255, 255, 0.86);
+          background: rgba(10, 20, 44, 0.82);
+          color: #ffffff;
+          font-size: 11px;
+          font-weight: 800;
+          line-height: 1.15;
+          text-shadow: 0 0 5px rgba(0, 0, 0, 0.85);
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+        }
+        .survey-flight-arrow-icon {
+          background: transparent;
+          border: none;
+        }
+        .survey-flight-arrow {
+          display: inline-block;
+          color: ${SURVEY_ARROW_COLOR};
+          font-size: 16px;
+          font-weight: 900;
+          transform: rotate(var(--survey-arrow-rot, 0deg));
+          transform-origin: 50% 50%;
+          text-shadow: 0 0 6px rgba(0, 0, 0, 0.9);
+          filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.65));
+        }
+        .survey-flight-plane-icon {
+          background: transparent;
+          border: none;
+        }
+        .survey-flight-plane-glyph {
+          display: inline-block;
+          color: #ff775c;
+          font-size: 20px;
+          font-weight: 900;
+          transform: rotate(var(--survey-plane-rot, 0deg));
+          transform-origin: 50% 50%;
+          text-shadow: 0 0 8px rgba(0, 0, 0, 0.95);
+          filter: drop-shadow(0 0 3px rgba(0, 0, 0, 0.75));
+          transition: transform 80ms linear;
+          line-height: 1;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    function normalizeSurveyLineNo(value, fallback) {
+      const numeric = Number(value);
+      if (Number.isFinite(numeric) && numeric > 0) {
+        return Math.round(numeric);
+      }
+      return Math.max(1, Math.round(Number(fallback) || 1));
+    }
+
+    function buildSurveyFlightLineSequence() {
+      const lines = [];
+      resultLineEntries.forEach((entry, index) => {
+        const row = entry && entry.row ? entry.row : null;
+        if (!row) {
+          return;
+        }
+        const sLat = Number(row.s_lat);
+        const sLng = Number(row.s_lon);
+        const eLat = Number(row.e_lat);
+        const eLng = Number(row.e_lon);
+        if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || !Number.isFinite(eLat) || !Number.isFinite(eLng)) {
+          return;
+        }
+        const start = { latitude: sLat, longitude: sLng };
+        const end = { latitude: eLat, longitude: eLng };
+        const lineNo = normalizeSurveyLineNo(row.line, index + 1);
+        lines.push({
+          id: entry.id,
+          lineNo,
+          sortOrder: lineNo,
+          start,
+          end,
+          headingDeg: normalizeHeadingDeg(bearingDeg(start, end)),
+          lengthMeters: coordDistanceMeters(start, end),
+        });
+      });
+      lines.sort((a, b) => {
+        if (a.sortOrder !== b.sortOrder) {
+          return a.sortOrder - b.sortOrder;
+        }
+        return a.id - b.id;
+      });
+      return lines;
+    }
+
+    function interpolateCoord(a, b, t) {
+      const ratio = clamp(Number(t) || 0, 0, 1);
+      return {
+        latitude: a.latitude + ((b.latitude - a.latitude) * ratio),
+        longitude: a.longitude + ((b.longitude - a.longitude) * ratio),
+      };
+    }
+
+    function appendUniqueCoords(target, coords) {
+      if (!Array.isArray(target) || !Array.isArray(coords)) {
+        return;
+      }
+      coords.forEach((coord) => {
+        if (!coord || !Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+          return;
+        }
+        if (!target.length) {
+          target.push({ latitude: coord.latitude, longitude: coord.longitude });
+          return;
+        }
+        const last = target[target.length - 1];
+        if (coordDistanceMeters(last, coord) < 0.5) {
+          return;
+        }
+        target.push({ latitude: coord.latitude, longitude: coord.longitude });
+      });
+    }
+
+    function buildSurveyLinearCoords(startCoord, endCoord, stepMeters = SURVEY_LINE_STEP_METERS) {
+      const distance = coordDistanceMeters(startCoord, endCoord);
+      if (!Number.isFinite(distance) || distance < 1) {
+        return [startCoord, endCoord];
+      }
+      const step = Math.max(80, Number(stepMeters) || SURVEY_LINE_STEP_METERS);
+      const splitCount = Math.max(1, Math.round(distance / step));
+      const coords = [];
+      for (let index = 0; index <= splitCount; index += 1) {
+        coords.push(interpolateCoord(startCoord, endCoord, index / splitCount));
+      }
+      return coords;
+    }
+
+    function buildSurveyTurnArcCoords(currentLine, nextLine) {
+      const fromCoord = currentLine ? currentLine.end : null;
+      const toCoord = nextLine ? nextLine.start : null;
+      if (!fromCoord || !toCoord) {
+        return [];
+      }
+      const directDistance = coordDistanceMeters(fromCoord, toCoord);
+      if (!Number.isFinite(directDistance) || directDistance < 0.8) {
+        return [fromCoord, toCoord];
+      }
+      const outHeading = normalizeHeadingDeg(currentLine.headingDeg);
+      const inHeading = normalizeHeadingDeg(bearingDeg(nextLine.start, nextLine.end));
+      const bridgeHeading = normalizeHeadingDeg(bearingDeg(fromCoord, toCoord));
+      const turnDelta = signedHeadingDeltaDeg(outHeading, bridgeHeading);
+      const turnSign = turnDelta >= 0 ? 1 : -1;
+      const legMeters = clamp(directDistance * 0.36, 160, 2800);
+      const lateralMeters = clamp(directDistance * 0.2, 90, 1800);
+      let control1 = offsetCoordByMeters(fromCoord, outHeading, legMeters);
+      let control2 = offsetCoordByMeters(toCoord, normalizeHeadingDeg(inHeading + 180), legMeters);
+      control1 = offsetCoordByMeters(control1, normalizeHeadingDeg(outHeading + (turnSign * 90)), lateralMeters);
+      control2 = offsetCoordByMeters(control2, normalizeHeadingDeg(inHeading + (turnSign * 90)), lateralMeters * 0.9);
+      const curved = buildCubicBezierPath(fromCoord, control1, control2, toCoord, SURVEY_TURN_STEPS);
+      if (Array.isArray(curved) && curved.length >= 2) {
+        return curved;
+      }
+      return [fromCoord, toCoord];
+    }
+
+    function createSurveyLineLabelIcon(text) {
+      const value = String(text || '').trim() || '-';
+      return L.divIcon({
+        className: 'survey-flight-line-label-icon',
+        iconSize: [36, 18],
+        iconAnchor: [18, 9],
+        html: `<span class="survey-flight-line-label">${escapeHtml(value)}</span>`,
+      });
+    }
+
+    function createSurveyArrowIcon(headingDeg) {
+      const heading = normalizeHeadingDeg(headingDeg);
+      return L.divIcon({
+        className: 'survey-flight-arrow-icon',
+        iconSize: [20, 20],
+        iconAnchor: [10, 10],
+        html: `<span class="survey-flight-arrow" style="--survey-arrow-rot:${heading.toFixed(2)}deg;">➤</span>`,
+      });
+    }
+
+    function ensureSurveyPlaneMarker() {
+      if (surveyFlightState.planeMarker) {
+        return surveyFlightState.planeMarker;
+      }
+      const marker = L.marker([0, 0], {
+        icon: L.divIcon({
+          className: 'survey-flight-plane-icon',
+          iconSize: [24, 24],
+          iconAnchor: [12, 12],
+          html: '<span class="survey-flight-plane-glyph">✈</span>',
+        }),
+        pane: 'overlayPane',
+        interactive: false,
+        keyboard: false,
+      }).addTo(surveyFlightPlaneGroup);
+      surveyFlightState.planeMarker = marker;
+      return marker;
+    }
+
+    function setSurveyPlaneHeading(headingDeg) {
+      if (!surveyFlightState.planeMarker || typeof surveyFlightState.planeMarker.getElement !== 'function') {
+        return;
+      }
+      const root = surveyFlightState.planeMarker.getElement();
+      if (!root) {
+        return;
+      }
+      const glyph = root.querySelector('.survey-flight-plane-glyph');
+      if (!glyph) {
+        return;
+      }
+      glyph.style.setProperty('--survey-plane-rot', `${normalizeHeadingDeg(headingDeg).toFixed(2)}deg`);
+    }
+
+    function clearSurveyFlightOverlay() {
+      if (surveyFlightState.animation.frameId) {
+        window.cancelAnimationFrame(surveyFlightState.animation.frameId);
+      }
+      surveyFlightState.animation.running = false;
+      surveyFlightState.animation.frameId = 0;
+      surveyFlightState.animation.lastTimestamp = 0;
+      surveyFlightState.animation.distanceMeters = 0;
+      surveyFlightState.lines = [];
+      surveyFlightState.turns = [];
+      surveyFlightState.pathCoords = [];
+      surveyFlightState.cumulativeMeters = [];
+      surveyFlightState.totalDistanceMeters = 0;
+      surveyFlightDirectionGroup.clearLayers();
+      surveyFlightTurnArcGroup.clearLayers();
+      surveyFlightPlaneGroup.clearLayers();
+      surveyFlightState.planeMarker = null;
+      updateSurveyFlightControlUI();
+    }
+
+    function calculateSurveyCumulativeDistances(coords) {
+      if (!Array.isArray(coords) || coords.length < 2) {
+        return { cumulative: [], total: 0 };
+      }
+      const cumulative = [0];
+      let total = 0;
+      for (let index = 1; index < coords.length; index += 1) {
+        total += coordDistanceMeters(coords[index - 1], coords[index]);
+        cumulative.push(total);
+      }
+      return { cumulative, total };
+    }
+
+    function updateSurveyPlanePosition(distanceMeters = 0) {
+      const path = surveyFlightState.pathCoords;
+      const cumulative = surveyFlightState.cumulativeMeters;
+      const totalDistance = Number(surveyFlightState.totalDistanceMeters) || 0;
+      if (!Array.isArray(path) || path.length < 2 || !Array.isArray(cumulative) || cumulative.length !== path.length || totalDistance <= 0) {
+        surveyFlightPlaneGroup.clearLayers();
+        surveyFlightState.planeMarker = null;
+        return;
+      }
+      const clampedDistance = clamp(Number(distanceMeters) || 0, 0, totalDistance);
+      let segmentIndex = 1;
+      while (segmentIndex < cumulative.length && cumulative[segmentIndex] < clampedDistance) {
+        segmentIndex += 1;
+      }
+      if (segmentIndex >= cumulative.length) {
+        segmentIndex = cumulative.length - 1;
+      }
+      const prevIndex = Math.max(0, segmentIndex - 1);
+      const segmentStart = path[prevIndex];
+      const segmentEnd = path[Math.min(path.length - 1, segmentIndex)];
+      const segmentDistance = Math.max(0.001, cumulative[segmentIndex] - cumulative[prevIndex]);
+      const localRatio = clamp((clampedDistance - cumulative[prevIndex]) / segmentDistance, 0, 1);
+      const point = interpolateCoord(segmentStart, segmentEnd, localRatio);
+      const marker = ensureSurveyPlaneMarker();
+      marker.setLatLng([point.latitude, point.longitude]);
+      setSurveyPlaneHeading(bearingDeg(segmentStart, segmentEnd));
+    }
+
+    function setSurveyAnimationRunning(running) {
+      const enabled = !!running && surveyFlightState.totalDistanceMeters > 0;
+      surveyFlightState.animation.running = enabled;
+      surveyFlightState.animation.lastTimestamp = 0;
+      if (!enabled && surveyFlightState.animation.frameId) {
+        window.cancelAnimationFrame(surveyFlightState.animation.frameId);
+        surveyFlightState.animation.frameId = 0;
+      }
+      updateSurveyFlightControlUI();
+    }
+
+    function handleSurveyAnimationFrame(timestamp) {
+      if (!surveyFlightState.animation.running) {
+        surveyFlightState.animation.frameId = 0;
+        return;
+      }
+      if (!surveyFlightState.animation.lastTimestamp) {
+        surveyFlightState.animation.lastTimestamp = timestamp;
+      }
+      const deltaSec = Math.max(0, (timestamp - surveyFlightState.animation.lastTimestamp) / 1000);
+      surveyFlightState.animation.lastTimestamp = timestamp;
+      const speedMps = Math.max(3, surveyFlightState.animation.baseSpeedMps * surveyFlightState.animation.speedMultiplier);
+      surveyFlightState.animation.distanceMeters = Math.min(
+        surveyFlightState.totalDistanceMeters,
+        surveyFlightState.animation.distanceMeters + (speedMps * deltaSec)
+      );
+      updateSurveyPlanePosition(surveyFlightState.animation.distanceMeters);
+      if (surveyFlightState.animation.distanceMeters >= surveyFlightState.totalDistanceMeters) {
+        setSurveyAnimationRunning(false);
+        return;
+      }
+      surveyFlightState.animation.frameId = window.requestAnimationFrame(handleSurveyAnimationFrame);
+    }
+
+    function startSurveyAnimation() {
+      if (surveyFlightState.totalDistanceMeters <= 0) {
+        return;
+      }
+      if (surveyFlightState.animation.distanceMeters >= surveyFlightState.totalDistanceMeters - 0.5) {
+        surveyFlightState.animation.distanceMeters = 0;
+        updateSurveyPlanePosition(0);
+      }
+      setSurveyAnimationRunning(true);
+      surveyFlightState.animation.frameId = window.requestAnimationFrame(handleSurveyAnimationFrame);
+    }
+
+    function pauseSurveyAnimation() {
+      setSurveyAnimationRunning(false);
+    }
+
+    function resetSurveyAnimation() {
+      setSurveyAnimationRunning(false);
+      surveyFlightState.animation.distanceMeters = 0;
+      updateSurveyPlanePosition(0);
+      updateSurveyFlightControlUI();
+    }
+
+    function updateSurveyFlightControlUI() {
+      const control = surveyFlightState.control;
+      const hasPath = surveyFlightState.totalDistanceMeters > 0 && Array.isArray(surveyFlightState.pathCoords) && surveyFlightState.pathCoords.length > 1;
+      if (!control || !control.container) {
+        return;
+      }
+      control.container.style.display = hasPath ? '' : 'none';
+      if (control.startButton) {
+        control.startButton.disabled = !hasPath || surveyFlightState.animation.running;
+      }
+      if (control.pauseButton) {
+        control.pauseButton.disabled = !hasPath || !surveyFlightState.animation.running;
+      }
+      if (control.resetButton) {
+        control.resetButton.disabled = !hasPath;
+      }
+      if (control.speedValue) {
+        control.speedValue.textContent = `${surveyFlightState.animation.speedMultiplier.toFixed(1)}x`;
+      }
+      if (control.speedInput && document.activeElement !== control.speedInput) {
+        control.speedInput.value = String(surveyFlightState.animation.speedMultiplier);
+      }
+    }
+
+    function ensureSurveyFlightControl() {
+      if (surveyFlightState.control.container) {
+        updateSurveyFlightControlUI();
+        return;
+      }
+      ensureSurveyFlightStyles();
+      const leafletControl = L.control({ position: 'bottomleft' });
+      leafletControl.onAdd = () => {
+        const container = L.DomUtil.create('div', 'survey-flight-control');
+        container.innerHTML = `
+          <p class="survey-flight-control__title">Survey Flight Simulation</p>
+          <div class="survey-flight-control__buttons">
+            <button type="button" data-action="start">▶ Start</button>
+            <button type="button" data-action="pause">⏸ Pause</button>
+            <button type="button" data-action="reset">⏹ Reset</button>
+          </div>
+          <label class="survey-flight-control__speed">
+            <span>속도</span>
+            <input type="range" min="0.4" max="4.0" step="0.1" value="1.0" data-action="speed">
+            <strong class="survey-flight-control__speed-value" data-role="speedValue">1.0x</strong>
+          </label>
+        `;
+        L.DomEvent.disableClickPropagation(container);
+        L.DomEvent.disableScrollPropagation(container);
+
+        const startButton = container.querySelector('button[data-action="start"]');
+        const pauseButton = container.querySelector('button[data-action="pause"]');
+        const resetButton = container.querySelector('button[data-action="reset"]');
+        const speedInput = container.querySelector('input[data-action="speed"]');
+        const speedValue = container.querySelector('[data-role="speedValue"]');
+        if (startButton) {
+          startButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            startSurveyAnimation();
+          });
+        }
+        if (pauseButton) {
+          pauseButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            pauseSurveyAnimation();
+          });
+        }
+        if (resetButton) {
+          resetButton.addEventListener('click', (event) => {
+            event.preventDefault();
+            resetSurveyAnimation();
+          });
+        }
+        if (speedInput) {
+          speedInput.addEventListener('input', () => {
+            surveyFlightState.animation.speedMultiplier = clamp(Number(speedInput.value) || 1, 0.4, 4);
+            updateSurveyFlightControlUI();
+          });
+        }
+
+        surveyFlightState.control.container = container;
+        surveyFlightState.control.startButton = startButton;
+        surveyFlightState.control.pauseButton = pauseButton;
+        surveyFlightState.control.resetButton = resetButton;
+        surveyFlightState.control.speedInput = speedInput;
+        surveyFlightState.control.speedValue = speedValue;
+        updateSurveyFlightControlUI();
+        return container;
+      };
+      leafletControl.addTo(map);
+      surveyFlightState.control.leaflet = leafletControl;
+      updateSurveyFlightControlUI();
+    }
+
+    function renderSurveyLineDirectionAndLabels(lines) {
+      surveyFlightDirectionGroup.clearLayers();
+      lines.forEach((line) => {
+        const heading = normalizeHeadingDeg(line.headingDeg);
+        const labelAnchor = offsetCoordByMeters(line.start, heading, Math.min(220, Math.max(60, line.lengthMeters * 0.08)));
+        L.marker([labelAnchor.latitude, labelAnchor.longitude], {
+          pane: 'overlayPane',
+          icon: createSurveyLineLabelIcon(line.lineNo),
+          interactive: false,
+          keyboard: false,
+        }).addTo(surveyFlightDirectionGroup);
+
+        const arrowCount = Math.max(1, Math.min(4, Math.round((line.lengthMeters || 0) / 2500)));
+        for (let index = 1; index <= arrowCount; index += 1) {
+          const ratio = index / (arrowCount + 1);
+          const point = interpolateCoord(line.start, line.end, ratio);
+          L.marker([point.latitude, point.longitude], {
+            pane: 'overlayPane',
+            icon: createSurveyArrowIcon(heading),
+            interactive: false,
+            keyboard: false,
+          }).addTo(surveyFlightDirectionGroup);
+        }
+      });
+    }
+
+    function rebuildSurveyFlightOverlay() {
+      clearSurveyFlightOverlay();
+      ensureSurveyFlightControl();
+      const lines = buildSurveyFlightLineSequence();
+      if (!lines.length) {
+        updateSurveyFlightControlUI();
+        return;
+      }
+      surveyFlightState.lines = lines;
+      renderSurveyLineDirectionAndLabels(lines);
+
+      const fullPath = [];
+      const turns = [];
+      lines.forEach((line, index) => {
+        appendUniqueCoords(fullPath, buildSurveyLinearCoords(line.start, line.end, SURVEY_LINE_STEP_METERS));
+        const nextLine = lines[index + 1];
+        if (!nextLine) {
+          return;
+        }
+        const arcCoords = buildSurveyTurnArcCoords(line, nextLine);
+        if (!Array.isArray(arcCoords) || arcCoords.length < 2) {
+          return;
+        }
+        turns.push({
+          fromLineNo: line.lineNo,
+          toLineNo: nextLine.lineNo,
+          coords: arcCoords,
+        });
+        L.polyline(arcCoords.map((coord) => [coord.latitude, coord.longitude]), {
+          color: SURVEY_TURN_COLOR,
+          weight: SURVEY_TURN_WEIGHT,
+          opacity: 0.95,
+          dashArray: SURVEY_TURN_DASH,
+          lineCap: 'round',
+          lineJoin: 'round',
+          interactive: false,
+          bubblingMouseEvents: false,
+          renderer,
+          smoothFactor: 1.1,
+        }).addTo(surveyFlightTurnArcGroup);
+        appendUniqueCoords(fullPath, arcCoords);
+      });
+
+      surveyFlightState.turns = turns;
+      surveyFlightState.pathCoords = fullPath;
+      const cumulativeData = calculateSurveyCumulativeDistances(fullPath);
+      surveyFlightState.cumulativeMeters = cumulativeData.cumulative;
+      surveyFlightState.totalDistanceMeters = cumulativeData.total;
+      surveyFlightState.animation.distanceMeters = 0;
+      updateSurveyPlanePosition(0);
+      updateSurveyFlightControlUI();
     }
 
     function refreshSimulationWarningStyles(persist = true) {
@@ -5529,6 +6247,8 @@
       if (!timelineElement) {
         return;
       }
+      timelineElement.style.display = 'none';
+      return;
       if (
         !weatherOverlayState.enabled ||
         !weatherOverlayState.options.timeline ||
@@ -8725,6 +9445,8 @@
     function renderResults() {
       hideSimulationOverlay(true);
       setSimPanelVisible(false);
+      clearSurveyFlightOverlay();
+      ensureSurveyFlightControl();
       if (simButton) {
         simButton.disabled = true;
       }
@@ -8759,6 +9481,7 @@
         numWrap.style.display = 'none';
         numControls.style.display = 'none';
         updateCompletionSummary();
+        updateSurveyFlightControlUI();
         return;
       }
 
@@ -8868,6 +9591,7 @@
       if (simButton) {
         simButton.disabled = resultLineEntries.length < 1;
       }
+      rebuildSurveyFlightOverlay();
     }
 
     function applyBaseMapTone() {
@@ -9293,10 +10017,10 @@
         syncWeatherOverlayControlUi();
         return;
       }
-      weatherOverlayState.options.marker = savedOverlay.marker !== false;
-      weatherOverlayState.options.badge = savedOverlay.badge !== false;
-      weatherOverlayState.options.wind = savedOverlay.wind !== false;
-      weatherOverlayState.options.timeline = savedOverlay.timeline !== false;
+      weatherOverlayState.options.marker = true;
+      weatherOverlayState.options.badge = true;
+      weatherOverlayState.options.wind = true;
+      weatherOverlayState.options.timeline = false;
       weatherOverlayState.timelineCollapsed = savedOverlay.timelineCollapsed !== false;
       if (Number.isFinite(savedOverlay.timelineDayIndex)) {
         weatherOverlayState.timelineDayIndex = Math.max(0, Math.round(savedOverlay.timelineDayIndex));
@@ -11700,6 +12424,7 @@
         }
       });
     }
+    applySimpleSimPanelLayout();
     if (simButton) {
       simButton.addEventListener('click', (event) => {
         event.stopPropagation();
@@ -11782,6 +12507,36 @@
             const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
             window.alert(message);
           }
+        });
+      }
+      if (simSimpleDistanceSelect && simMaxDeviationNmInput) {
+        simSimpleDistanceSelect.addEventListener('change', () => {
+          const value = clamp(Number(simSimpleDistanceSelect.value) || SIM_DEFAULTS.maxDeviationNm, 2, 7);
+          simMaxDeviationNmInput.value = String(value);
+          if (simState.visible || simState.items.length > 0) {
+            try {
+              showSimulationOverlay();
+            } catch (error) {
+              const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+              window.alert(message);
+            }
+          } else {
+            scheduleViewerStateSave();
+          }
+        });
+      }
+      if (simDeleteButton) {
+        simDeleteButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (deleteSelectedSimulationSegment()) {
+            return;
+          }
+          if (!simState.items.length) {
+            return;
+          }
+          clearSimulationSegments(true);
+          hideSimulationOverlay(false);
         });
       }
     }
