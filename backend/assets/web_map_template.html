@@ -122,6 +122,48 @@
       color: #c9d1d9;
       font-size: 12px;
     }
+    .completion-summary {
+      margin-top: 8px;
+      padding: 0 10px;
+      border-radius: 10px;
+      border: 1px solid rgba(146, 214, 255, 0.18);
+      background: rgba(7, 16, 26, 0.62);
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transform: translateY(-6px);
+      transition:
+        max-height 280ms ease,
+        opacity 240ms ease,
+        transform 260ms ease,
+        padding 200ms ease;
+      pointer-events: none;
+    }
+    .completion-summary.is-visible {
+      max-height: 120px;
+      opacity: 1;
+      transform: translateY(0);
+      padding: 8px 10px;
+    }
+    .completion-summary-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #d2deed;
+      font-size: 12px;
+      line-height: 1.5;
+      white-space: nowrap;
+    }
+    .completion-summary-row + .completion-summary-row {
+      margin-top: 4px;
+    }
+    .completion-summary-row strong {
+      color: #b7ff3c;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
     .toolbar {
       --tool-card-width: clamp(44px, 2.9vw, 52px);
       --tool-card-height: clamp(32px, 2.2vw, 39px);
@@ -2049,11 +2091,12 @@
       <circle cx="68" cy="18" r="6" fill="#ffe37b" stroke="#17324b" stroke-width="2.4"></circle>
     </symbol>
     <symbol id="toolIconMeasure" viewBox="0 0 96 72">
-      <g transform="rotate(-32 49 36)">
-        <rect x="27" y="20" width="44" height="32" rx="8" fill="#f7fbff" stroke="#17324b" stroke-width="3"></rect>
-        <path d="M37 24v8M44 24v13M51 24v8M58 24v13M65 24v8" stroke="#3c7bb7" stroke-width="2.6" stroke-linecap="round"></path>
-        <path d="M37 40v8M44 40v12M51 40v8M58 40v12M65 40v8" stroke="#17324b" stroke-width="2.2" stroke-linecap="round"></path>
+      <g transform="rotate(-28 49 36)">
+        <rect x="20" y="22" width="56" height="26" rx="6" fill="#ffce67" stroke="#17324b" stroke-width="2.8"></rect>
+        <path d="M29 24v8M35 24v5M41 24v8M47 24v5M53 24v8M59 24v5M65 24v8M71 24v5" stroke="#17324b" stroke-width="2" stroke-linecap="round"></path>
+        <path d="M29 40v6M35 40v4M41 40v6M47 40v4M53 40v6M59 40v4M65 40v6M71 40v4" stroke="#17324b" stroke-width="1.8" stroke-linecap="round"></path>
       </g>
+      <text x="23" y="26" fill="#d63636" font-size="12" font-weight="800" transform="rotate(-18 23 26)">자</text>
     </symbol>
     <symbol id="toolIconText" viewBox="0 0 96 72">
       <path d="M22 16h36M40 16v38M30 54h20" stroke="#17324b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -2068,12 +2111,16 @@
       <path d="M53 47 73 36" stroke="#b8ff67" stroke-width="10" stroke-linecap="round" opacity="0.72"></path>
     </symbol>
     <symbol id="toolIconForce" viewBox="0 0 96 72">
-      <path d="M28 55c0-7 6-12 13-12h15c7 0 13 5 13 12v3H28z" fill="#b5804f" stroke="#17324b" stroke-width="2.6" stroke-linejoin="round"></path>
-      <path d="M48 43v15" stroke="#8b5e34" stroke-width="3.2" stroke-linecap="round"></path>
-      <path d="M53 17 69 34l-6 6-18-15z" fill="#9ed0ff" stroke="#17324b" stroke-width="2.8" stroke-linejoin="round"></path>
-      <path d="M43 10 58 25" stroke="#5f4326" stroke-width="5.2" stroke-linecap="round"></path>
-      <path d="M44 32 50 38" stroke="#ffcc58" stroke-width="3" stroke-linecap="round"></path>
-      <path d="M54 29 61 35" stroke="#ffcc58" stroke-width="3" stroke-linecap="round"></path>
+      <rect x="17" y="14" width="62" height="42" rx="10" fill="#f6fbff" stroke="#17324b" stroke-width="2.6"></rect>
+      <circle cx="33" cy="47" r="8.4" fill="#9ec8ff" stroke="#17324b" stroke-width="2"></circle>
+      <circle cx="49" cy="47" r="8.4" fill="#ffe27a" stroke="#17324b" stroke-width="2"></circle>
+      <circle cx="65" cy="47" r="8.4" fill="#ffc9bf" stroke="#17324b" stroke-width="2"></circle>
+      <text x="29" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">3</text>
+      <text x="45" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">4</text>
+      <text x="61" y="50.7" fill="#17324b" font-size="9.5" font-weight="800">5</text>
+      <path d="M30 21c2-3 6-4 9-2l4 3 2-3c2-3 7-3 9 0l2 3 3-2c3-2 7-1 9 2l-4 5-7 11-30 1-10-11z" fill="#f4dccd" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
+      <path d="M30 37h36" stroke="#17324b" stroke-width="2"></path>
+      <path d="M40 27h16" stroke="#17324b" stroke-width="1.8" stroke-linecap="round"></path>
     </symbol>
     <symbol id="toolIconCamera" viewBox="0 0 96 72">
       <rect x="18" y="24" width="60" height="28" rx="9" fill="#d7e8f9" stroke="#17324b" stroke-width="2.8"></rect>
@@ -2120,6 +2167,16 @@
   <div id="titlebar" class="panel titlebar">
     <h1 id="projectName"></h1>
     <p id="projectMeta"></p>
+    <div id="completionSummary" class="completion-summary" aria-live="polite">
+      <div class="completion-summary-row">
+        <span>완료된 라인</span>
+        <strong id="completionCountText">0 / 0</strong>
+      </div>
+      <div class="completion-summary-row">
+        <span>공정률</span>
+        <strong id="completionPercentText">0.0%</strong>
+      </div>
+    </div>
   </div>
   <div class="panel toolbar">
     <div class="toolbar-row">
@@ -2593,7 +2650,7 @@
     const layerCatalog = rawLayerCatalog;
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
-      { key: 'satellite', label: '위성영상', note: '천리안2A 실시간(가시/적외 자동)', badge: 'SAT' },
+      { key: 'satellite', label: '위성영상', note: 'RainViewer 레이더 오버레이', badge: 'RV' },
     ];
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -2659,6 +2716,9 @@
     const tilePane = map.getPane('tilePane');
     const toolbar = document.querySelector('.toolbar');
     const titlebar = document.getElementById('titlebar');
+    const completionSummary = document.getElementById('completionSummary');
+    const completionCountText = document.getElementById('completionCountText');
+    const completionPercentText = document.getElementById('completionPercentText');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
     const weatherButton = document.getElementById('weatherButton');
@@ -2772,6 +2832,11 @@
       acgz: L.layerGroup(),
     };
     const weatherConfigState = {
+      data: null,
+      fetchedAt: 0,
+      promise: null,
+    };
+    const rainViewerMapsState = {
       data: null,
       fetchedAt: 0,
       promise: null,
@@ -4638,6 +4703,131 @@
       return weatherConfigState.promise;
     }
 
+    function pickRainViewerFrame(radarRoot) {
+      if (!radarRoot || typeof radarRoot !== 'object') {
+        return null;
+      }
+      const pastFrames = Array.isArray(radarRoot.past) ? radarRoot.past : [];
+      const nowcastFrames = Array.isArray(radarRoot.nowcast) ? radarRoot.nowcast : [];
+      const frames = [...pastFrames, ...nowcastFrames].filter((frame) => frame && typeof frame === 'object');
+      if (!frames.length) {
+        return null;
+      }
+      let selected = frames[frames.length - 1];
+      let selectedTime = Number(selected.time);
+      selectedTime = Number.isFinite(selectedTime) ? selectedTime : -Infinity;
+      frames.forEach((frame) => {
+        const frameTime = Number(frame.time);
+        if (!Number.isFinite(frameTime)) {
+          return;
+        }
+        if (frameTime >= selectedTime) {
+          selected = frame;
+          selectedTime = frameTime;
+        }
+      });
+      return selected;
+    }
+
+    function buildRainViewerLayerConfig(mapsData) {
+      if (!mapsData || typeof mapsData !== 'object') {
+        return null;
+      }
+      const hostRaw = String(mapsData.host || 'https://tilecache.rainviewer.com').trim();
+      const host = hostRaw.replace(/\/+$/, '');
+      if (!host) {
+        return null;
+      }
+      const radarRoot = mapsData.radar && typeof mapsData.radar === 'object' ? mapsData.radar : {};
+      const frame = pickRainViewerFrame(radarRoot);
+      if (!frame || typeof frame !== 'object') {
+        return null;
+      }
+      const pathRaw = String(frame.path || '').trim();
+      if (!pathRaw) {
+        return null;
+      }
+      const path = pathRaw.startsWith('/') ? pathRaw : `/${pathRaw}`;
+      const tileUrl = `${host}${path}/256/{z}/{x}/{y}/6/1_1.png`;
+      const frameTime = Number(frame.time);
+      const updatedAt = Number.isFinite(frameTime) && frameTime > 0
+        ? new Date(frameTime * 1000).toISOString()
+        : '';
+      return {
+        tile_url: tileUrl,
+        updated_at: updatedAt,
+        attribution: 'RainViewer',
+        opacity: 0.68,
+        max_zoom: 12,
+        refresh_seconds: 300,
+      };
+    }
+
+    function ensureRainViewerMaps(forceReload = false) {
+      if (forceReload) {
+        rainViewerMapsState.fetchedAt = 0;
+      }
+      const stillFresh = rainViewerMapsState.data && (Date.now() - rainViewerMapsState.fetchedAt) < 300000;
+      if (stillFresh) {
+        return Promise.resolve(rainViewerMapsState.data);
+      }
+      if (!rainViewerMapsState.promise) {
+        rainViewerMapsState.promise = fetchJson('https://api.rainviewer.com/public/weather-maps.json')
+          .then((data) => {
+            rainViewerMapsState.data = data;
+            rainViewerMapsState.fetchedAt = Date.now();
+            return data;
+          })
+          .finally(() => {
+            rainViewerMapsState.promise = null;
+          });
+      }
+      return rainViewerMapsState.promise;
+    }
+
+    async function resolveRainViewerLayerConfig(configKey = 'satellite', forceReload = false) {
+      if (forceReload) {
+        weatherConfigState.fetchedAt = 0;
+        rainViewerMapsState.fetchedAt = 0;
+      }
+
+      let lastError = null;
+      try {
+        const config = await ensureWeatherConfig();
+        const preferredLayerConfig = config && config[configKey] ? config[configKey] : null;
+        const radarLayerConfig = config && config.radar ? config.radar : null;
+        const serverLayerConfig = (preferredLayerConfig && preferredLayerConfig.tile_url)
+          ? preferredLayerConfig
+          : radarLayerConfig;
+        if (serverLayerConfig && serverLayerConfig.tile_url) {
+          const opacity = Number(serverLayerConfig.opacity);
+          const maxZoom = Number(serverLayerConfig.max_zoom);
+          const refreshSeconds = Number(serverLayerConfig.refresh_seconds);
+          return {
+            tile_url: String(serverLayerConfig.tile_url),
+            updated_at: String(serverLayerConfig.updated_at || ''),
+            attribution: String(serverLayerConfig.attribution || 'RainViewer'),
+            opacity: Number.isFinite(opacity) ? opacity : 0.68,
+            max_zoom: Number.isFinite(maxZoom) ? maxZoom : 12,
+            refresh_seconds: Number.isFinite(refreshSeconds) && refreshSeconds >= 60 ? refreshSeconds : 300,
+          };
+        }
+        lastError = new Error('rainviewer tile unavailable');
+      } catch (error) {
+        lastError = error;
+      }
+
+      const mapsData = await ensureRainViewerMaps(forceReload);
+      const fallbackLayerConfig = buildRainViewerLayerConfig(mapsData);
+      if (fallbackLayerConfig && fallbackLayerConfig.tile_url) {
+        return fallbackLayerConfig;
+      }
+      if (lastError) {
+        throw lastError;
+      }
+      throw new Error('rainviewer tile unavailable');
+    }
+
     function labelIcon(text, kind, inlineStyle = '') {
       return L.divIcon({
         className: '',
@@ -5740,9 +5930,46 @@
       }
     }
 
+    function getLineLengthMeters(entry) {
+      const value = Number(entry && entry.lengthMeters);
+      return Number.isFinite(value) && value > 0 ? value : 0;
+    }
+
+    function updateCompletionSummary() {
+      if (!completionSummary || !completionCountText || !completionPercentText) {
+        return;
+      }
+      const totalCount = resultLineEntries.length;
+      if (!totalCount) {
+        completionSummary.classList.remove('is-visible');
+        completionCountText.textContent = '0 / 0';
+        completionPercentText.textContent = '0.0%';
+        return;
+      }
+
+      let completedCount = 0;
+      let totalMeters = 0;
+      let completedMeters = 0;
+      resultLineEntries.forEach((entry) => {
+        const lengthMeters = getLineLengthMeters(entry);
+        totalMeters += lengthMeters;
+        if (entry.completed) {
+          completedCount += 1;
+          completedMeters += lengthMeters;
+        }
+      });
+      const progressPercent = totalMeters > 0
+        ? (completedMeters / totalMeters) * 100
+        : (completedCount / totalCount) * 100;
+      completionCountText.textContent = `${completedCount} / ${totalCount}`;
+      completionPercentText.textContent = `${progressPercent.toFixed(1)}%`;
+      completionSummary.classList.toggle('is-visible', completedCount > 0);
+    }
+
     function setLineCompleted(entry, completed) {
       entry.completed = !!completed;
       applyLineVisual(entry, false);
+      updateCompletionSummary();
       scheduleViewerStateSave();
     }
 
@@ -5777,6 +6004,7 @@
         forceControls.style.display = 'none';
         numWrap.style.display = 'none';
         numControls.style.display = 'none';
+        updateCompletionSummary();
         return;
       }
 
@@ -5834,6 +6062,7 @@
           hitLine,
           halo,
           labelPoint: lineLabelPoint(row),
+          lengthMeters: map.distance(L.latLng(start[0], start[1]), L.latLng(end[0], end[1])),
           completed: false,
         };
 
@@ -5881,6 +6110,7 @@
       setNumControlsEnabled(numToggle.checked);
       refreshKmlLabels();
       refreshForceLabels();
+      updateCompletionSummary();
     }
 
     function applyBaseMapTone() {
@@ -6426,6 +6656,7 @@
           entry.row.force_assigned = null;
           applyLineVisual(entry, false);
         });
+        updateCompletionSummary();
 
         const completedIds = new Set(Array.isArray(saved.completedLineIds) ? saved.completedLineIds : []);
         resultLineEntries.forEach((entry) => {
@@ -6433,6 +6664,7 @@
             setLineCompleted(entry, true);
           }
         });
+        updateCompletionSummary();
 
         if (Array.isArray(saved.forceAssignments)) {
           const assignedMap = new Map();
@@ -7230,18 +7462,39 @@
       setWeatherBadge(key, '로딩', 'loading');
       try {
         weatherButton.disabled = true;
-        const config = await ensureWeatherConfig();
-        if (!controls.toggle.checked) {
-          return;
-        }
-        const layerConfig = config && config[configKey] ? config[configKey] : {};
-        await refreshGk2aSatelliteOverlay(layerConfig, paneName, key);
-        syncBaseMapForSatelliteMode();
+        const syncRainViewerTile = async (forceReload = false) => {
+          const layerConfig = await resolveRainViewerLayerConfig(configKey, forceReload);
+          if (!controls.toggle.checked) {
+            return null;
+          }
 
+          if (!weatherTiles[key]) {
+            weatherTiles[key] = weatherTileLayer(layerConfig.tile_url, {
+              pane: paneName,
+              opacity: Number.isFinite(Number(layerConfig.opacity)) ? Number(layerConfig.opacity) : 0.72,
+              attribution: layerConfig.attribution || 'RainViewer',
+              maxZoom: layerConfig.max_zoom || 12,
+            });
+          } else if (typeof weatherTiles[key].setUrl === 'function') {
+            weatherTiles[key].setUrl(layerConfig.tile_url);
+            if (typeof weatherTiles[key].setOpacity === 'function' && Number.isFinite(Number(layerConfig.opacity))) {
+              weatherTiles[key].setOpacity(Number(layerConfig.opacity));
+            }
+          }
+          if (!map.hasLayer(weatherTiles[key])) {
+            weatherTiles[key].addTo(map);
+          }
+          hideSatelliteTimeLabel();
+          syncBaseMapForSatelliteMode();
+          setWeatherBadge(key, controls.definition.badge, 'live');
+          return layerConfig;
+        };
+
+        const layerConfig = await syncRainViewerTile(false);
         const refreshSecondsRaw = Number(layerConfig && layerConfig.refresh_seconds);
-        const refreshMs = Number.isFinite(refreshSecondsRaw) && refreshSecondsRaw >= 30
+        const refreshMs = Number.isFinite(refreshSecondsRaw) && refreshSecondsRaw >= 60
           ? Math.round(refreshSecondsRaw * 1000)
-          : 120000;
+          : 300000;
         stopSatelliteRefreshTimer();
         satelliteRefreshTimer = window.setInterval(async () => {
           const liveControls = weatherControls.get(key);
@@ -7249,10 +7502,7 @@
             return;
           }
           try {
-            const liveConfig = await ensureWeatherConfig();
-            const liveLayerConfig = liveConfig && liveConfig[configKey] ? liveConfig[configKey] : {};
-            await refreshGk2aSatelliteOverlay(liveLayerConfig, paneName, key);
-            syncBaseMapForSatelliteMode();
+            await syncRainViewerTile(true);
           } catch (error) {
             if (liveControls.toggle.checked) {
               setWeatherBadge(key, '오류', 'error');
