@@ -535,6 +535,17 @@
         0 14px 28px rgba(0, 0, 0, 0.28);
       animation: activeToolPulse 1.08s ease-in-out infinite;
     }
+    .tool-button--art.is-sim-on .tool-card {
+      filter: hue-rotate(38deg) saturate(1.28) brightness(1.04);
+      border-color: rgba(177, 147, 255, 0.96);
+      box-shadow:
+        inset 0 1px 0 rgba(239, 232, 255, 0.92),
+        inset 0 -8px 16px rgba(82, 39, 158, 0.2),
+        0 0 0 1px rgba(187, 158, 255, 0.24),
+        0 0 22px rgba(145, 95, 255, 0.52),
+        0 14px 28px rgba(0, 0, 0, 0.28);
+      animation: none;
+    }
     .tool-button--art.is-active:hover .tool-card,
     .tool-button--art.measure-active:hover .tool-card {
       transform: translateY(-1px);
@@ -945,6 +956,22 @@
       display: none;
       gap: 10px;
     }
+    .gpx-panel {
+      top: 88px;
+      right: 16px;
+      width: min(86vw, 360px);
+      padding: 12px;
+      display: none;
+      gap: 10px;
+    }
+    .sim-panel {
+      top: 88px;
+      right: 16px;
+      width: min(88vw, 380px);
+      padding: 12px;
+      display: none;
+      gap: 10px;
+    }
     .layer-panel.is-visible,
     .weather-panel.is-visible {
       display: block;
@@ -956,6 +983,12 @@
       display: grid;
     }
     .force-panel.is-visible {
+      display: grid;
+    }
+    .gpx-panel.is-visible {
+      display: grid;
+    }
+    .sim-panel.is-visible {
       display: grid;
     }
     .done-title {
@@ -982,6 +1015,13 @@
       font-size: 13px;
       font-weight: 700;
     }
+    .gpx-title,
+    .sim-title {
+      margin: 0;
+      color: #79c0ff;
+      font-size: 13px;
+      font-weight: 700;
+    }
     .force-help {
       margin: 0;
       color: #9fb3c8;
@@ -993,6 +1033,58 @@
       color: #9fb3c8;
       font-size: 11px;
       line-height: 1.55;
+    }
+    .gpx-help,
+    .sim-help {
+      margin: 0;
+      color: #9fb3c8;
+      font-size: 11px;
+      line-height: 1.55;
+    }
+    .gpx-style-wrap {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 8px 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-controls {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 8px 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+    .sim-apply-button {
+      min-width: 110px;
+    }
+    .sim-toggle-button {
+      min-width: 110px;
+    }
+    .sim-toggle-button.is-on {
+      background: linear-gradient(180deg, #efdfff 0%, #ceb4ff 100%);
+      border-color: rgba(172, 129, 255, 0.9);
+      color: #2f145e;
+      box-shadow:
+        0 0 0 1px rgba(222, 204, 255, 0.84) inset,
+        0 0 18px rgba(145, 95, 255, 0.34);
+    }
+    .gpx-open-button {
+      justify-self: end;
+    }
+    .gpx-selected-status {
+      margin: 0;
+      color: #c9d1d9;
+      font-size: 11px;
+      line-height: 1.5;
+      letter-spacing: 0.01em;
     }
     .done-row {
       display: grid;
@@ -1033,6 +1125,18 @@
       background: rgba(13, 17, 23, 0.78);
       color: #e6edf3;
       font-size: 14px;
+      outline: none;
+      box-sizing: border-box;
+    }
+    .gpx-size-input,
+    .sim-size-input {
+      width: 100%;
+      padding: 5px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.22);
+      background: rgba(13, 17, 23, 0.78);
+      color: #e6edf3;
+      font-size: 13px;
       outline: none;
       box-sizing: border-box;
     }
@@ -1634,7 +1738,9 @@
       }
       .done-panel,
       .measure-panel,
-      .force-panel {
+      .force-panel,
+      .gpx-panel,
+      .sim-panel {
         top: 126px;
         right: 10px;
       }
@@ -2146,6 +2252,13 @@
       <circle cx="73" cy="34" r="2.4" fill="#7b3ff2"></circle>
       <text x="48" y="31" text-anchor="middle" fill="#4d1fa8" font-size="15.5" font-weight="800" font-family="Arial, sans-serif">GPX</text>
     </symbol>
+    <symbol id="toolIconSim" viewBox="0 0 96 72">
+      <rect x="18" y="14" width="60" height="44" rx="10" fill="#f2ecff" stroke="#17324b" stroke-width="2.8"></rect>
+      <path d="M24 46 35 34 47 39 60 27 73 34" fill="none" stroke="#783cdc" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      <circle cx="24" cy="46" r="2.3" fill="#783cdc"></circle>
+      <circle cx="73" cy="34" r="2.3" fill="#783cdc"></circle>
+      <text x="48" y="31" text-anchor="middle" fill="#5f2bb8" font-size="15.2" font-weight="900" font-family="Arial, sans-serif">SIM</text>
+    </symbol>
     <symbol id="toolIconHide" viewBox="0 0 96 72">
       <path d="M70 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
       <path d="M76 21c4-5 8-2 8 3" stroke="#17324b" stroke-width="2.6" stroke-linecap="round"></path>
@@ -2213,6 +2326,9 @@
       </button>
       <button id="gpxButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="gpx파일" title="gpx파일">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconGpx"></use></svg></span>
+      </button>
+      <button id="simButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="시뮬레이션" title="시뮬레이션">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconSim"></use></svg></span>
       </button>
       <button id="notamButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="NOTAM" title="NOTAM">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconNotam"></use></svg></span>
@@ -2322,6 +2438,51 @@
       <label class="force-field">색상
         <input id="numColorInput" type="color" value="#cc2200">
       </label>
+    </div>
+  </div>
+  <div id="gpxPanel" class="panel gpx-panel">
+    <p class="gpx-title">GPX 경로 옵션</p>
+    <p class="gpx-help">GPX 파일을 누적으로 불러오고, 선택한 GPX 궤적의 색상과 굵기를 바꿀 수 있습니다.</p>
+    <button id="gpxOpenButton" class="mini-button gpx-open-button" type="button">GPX 파일 열기</button>
+    <p id="gpxSelectedStatus" class="gpx-selected-status">선택된 GPX 객체 없음</p>
+    <div class="gpx-style-wrap">
+      <label class="force-field">색상
+        <input id="gpxColorInput" type="color" value="#7b3ff2" aria-label="선택 GPX 색상">
+      </label>
+      <label class="force-field">굵기
+        <input id="gpxWeightInput" class="gpx-size-input" type="number" value="6" min="1" max="20" step="0.5" aria-label="선택 GPX 굵기">
+      </label>
+    </div>
+  </div>
+  <div id="simPanel" class="panel sim-panel">
+    <p class="sim-title">시뮬레이션 조건</p>
+    <p class="sim-help">값을 수정한 뒤 재계산을 누르면 궤적이 즉시 갱신됩니다. (단위: NM, 각도: 도)</p>
+    <div class="sim-controls">
+      <label class="force-field">편향각
+        <input id="simOffsetAngleInput" class="sim-size-input" type="number" value="30" min="0" max="89" step="1" aria-label="편향각">
+      </label>
+      <label class="force-field">이탈 거리
+        <input id="simDepartureNmInput" class="sim-size-input" type="number" value="1" min="0.1" max="20" step="0.1" aria-label="이탈 거리">
+      </label>
+      <label class="force-field">직진 거리
+        <input id="simStraightNmInput" class="sim-size-input" type="number" value="2" min="0.1" max="30" step="0.1" aria-label="직진 거리">
+      </label>
+      <label class="force-field">선회 반경
+        <input id="simTurnRadiusNmInput" class="sim-size-input" type="number" value="3" min="0.2" max="30" step="0.1" aria-label="선회 반경">
+      </label>
+      <label class="force-field">진입 거리
+        <input id="simInboundNmInput" class="sim-size-input" type="number" value="2" min="0.1" max="30" step="0.1" aria-label="진입 거리">
+      </label>
+      <label class="force-field">복귀 거리
+        <input id="simRecoverNmInput" class="sim-size-input" type="number" value="1" min="0.1" max="20" step="0.1" aria-label="복귀 거리">
+      </label>
+      <label class="force-field">반원 분할
+        <input id="simArcSplitsInput" class="sim-size-input" type="number" value="20" min="8" max="72" step="1" aria-label="반원 분할 수">
+      </label>
+    </div>
+    <div class="sim-actions">
+      <button id="simToggleOverlayButton" class="mini-button sim-toggle-button" type="button">시뮬레이션 ON</button>
+      <button id="simApplyButton" class="mini-button sim-apply-button" type="button">재계산</button>
     </div>
   </div>
   <div id="hintPanel" class="panel hint">휠 또는 트랙패드로 부드럽게 확대/축소 · 드래그 이동 · 겹 토글/색상 변경 · 측정 또는 T 글자 입력 가능</div>
@@ -2727,6 +2888,7 @@
     const measureGroup = L.layerGroup().addTo(map);
     const textGroup = L.layerGroup().addTo(map);
     const gpxRouteGroup = L.layerGroup().addTo(map);
+    const simulationRouteGroup = L.layerGroup();
     const bounds = L.latLngBounds([]);
     const tilePane = map.getPane('tilePane');
     const toolbar = document.querySelector('.toolbar');
@@ -2742,6 +2904,8 @@
     const doneButton = document.getElementById('doneButton');
     const donePanel = document.getElementById('donePanel');
     const measurePanel = document.getElementById('measurePanel');
+    const gpxPanel = document.getElementById('gpxPanel');
+    const simPanel = document.getElementById('simPanel');
     const measureColorInput = document.getElementById('measureColorInput');
     const measureWeightInput = document.getElementById('measureWeightInput');
     const measureWeightValue = document.getElementById('measureWeightValue');
@@ -2756,6 +2920,20 @@
     const captureButton = document.getElementById('captureButton');
     const gpxButton = document.getElementById('gpxButton');
     const gpxFileInput = document.getElementById('gpxFileInput');
+    const gpxOpenButton = document.getElementById('gpxOpenButton');
+    const gpxSelectedStatus = document.getElementById('gpxSelectedStatus');
+    const gpxColorInput = document.getElementById('gpxColorInput');
+    const gpxWeightInput = document.getElementById('gpxWeightInput');
+    const simButton = document.getElementById('simButton');
+    const simOffsetAngleInput = document.getElementById('simOffsetAngleInput');
+    const simDepartureNmInput = document.getElementById('simDepartureNmInput');
+    const simStraightNmInput = document.getElementById('simStraightNmInput');
+    const simTurnRadiusNmInput = document.getElementById('simTurnRadiusNmInput');
+    const simInboundNmInput = document.getElementById('simInboundNmInput');
+    const simRecoverNmInput = document.getElementById('simRecoverNmInput');
+    const simArcSplitsInput = document.getElementById('simArcSplitsInput');
+    const simToggleOverlayButton = document.getElementById('simToggleOverlayButton');
+    const simApplyButton = document.getElementById('simApplyButton');
     const notamButton = document.getElementById('notamButton');
     const planInfoButton = document.getElementById('planInfoButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
@@ -2951,15 +3129,45 @@
     const GPX_LINE_COLOR = '#7b3ff2';
     const GPX_LINE_WEIGHT = 6;
     const GPX_LINE_OPACITY = 0.92;
+    const GPX_SELECTED_OPACITY = 1;
     const GPX_MAX_AUTO_FIT_ZOOM = 16;
+    const SIM_COLOR = 'rgba(120, 60, 220, 0.85)';
+    const SIM_WEIGHT = 2;
+    const SIM_NM_TO_METERS = 1852;
+    const SIM_DEFAULTS = {
+      offsetAngleDeg: 30,
+      departureNm: 1,
+      straightNm: 2,
+      turnRadiusNm: 3,
+      inboundNm: 2,
+      recoverNm: 1,
+      arcSplits: 20,
+    };
+    const gpxState = {
+      items: [],
+      nextId: 1,
+      selectedRouteId: null,
+      defaultColor: GPX_LINE_COLOR,
+      defaultWeight: GPX_LINE_WEIGHT,
+    };
+    const simState = {
+      visible: false,
+      generatedSegmentCount: 0,
+      panelVisible: false,
+      settings: {
+        ...SIM_DEFAULTS,
+      },
+    };
     const TOOL_MODE_KEYS = new Set(['measure', 'text', 'done', 'force']);
     const menuButtonsByKey = {
       layer: layerButton,
       weather: weatherButton,
+      gpx: gpxButton,
       measure: measureButton,
       text: textButton,
       done: doneButton,
       force: forceButton,
+      sim: simButton,
       capture: captureButton,
       notam: notamButton,
     };
@@ -3036,6 +3244,9 @@
       if (weatherPanel.classList.contains('is-visible')) {
         return 'weather';
       }
+      if (gpxPanel.classList.contains('is-visible')) {
+        return 'gpx';
+      }
       if (measureState.active) {
         return 'measure';
       }
@@ -3047,6 +3258,9 @@
       }
       if (forceState.active) {
         return 'force';
+      }
+      if (simState.panelVisible || simState.visible) {
+        return 'sim';
       }
       if (isAnyNotamVisible()) {
         return 'notam';
@@ -3070,6 +3284,9 @@
       }
       if (except !== 'force' && forceState.active) {
         setForceActive(false, true);
+      }
+      if (except !== 'sim' && (simState.panelVisible || simState.visible)) {
+        setSimActive(false, true);
       }
     }
 
@@ -3113,30 +3330,186 @@
       return segments;
     }
 
+    function normalizeGpxColor(value, fallback = GPX_LINE_COLOR) {
+      const raw = String(value || '').trim();
+      return /^#[0-9a-f]{6}$/i.test(raw) ? raw : fallback;
+    }
+
+    function normalizeGpxWeight(value, fallback = GPX_LINE_WEIGHT) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return clamp(Number(fallback) || GPX_LINE_WEIGHT, 1, 20);
+      }
+      return clamp(numeric, 1, 20);
+    }
+
+    function getGpxItemById(routeId) {
+      return gpxState.items.find((item) => item.id === routeId) || null;
+    }
+
+    function syncGpxStyleControls() {
+      if (!gpxColorInput || !gpxWeightInput || !gpxSelectedStatus) {
+        return;
+      }
+      const selectedItem = getGpxItemById(gpxState.selectedRouteId);
+      if (!selectedItem) {
+        gpxColorInput.value = normalizeGpxColor(gpxState.defaultColor, GPX_LINE_COLOR);
+        gpxWeightInput.value = String(normalizeGpxWeight(gpxState.defaultWeight, GPX_LINE_WEIGHT));
+        gpxColorInput.disabled = true;
+        gpxWeightInput.disabled = true;
+        gpxSelectedStatus.textContent = '선택된 GPX 객체 없음';
+        return;
+      }
+      gpxColorInput.value = normalizeGpxColor(selectedItem.color, GPX_LINE_COLOR);
+      gpxWeightInput.value = String(normalizeGpxWeight(selectedItem.weight, GPX_LINE_WEIGHT));
+      gpxColorInput.disabled = false;
+      gpxWeightInput.disabled = false;
+      gpxSelectedStatus.textContent = `선택된 GPX 객체 #${selectedItem.id}`;
+    }
+
+    function applyGpxRouteStyle(item, selected = false) {
+      if (!item || !item.layer || typeof item.layer.setStyle !== 'function') {
+        return;
+      }
+      const baseColor = normalizeGpxColor(item.color, gpxState.defaultColor);
+      const baseWeight = normalizeGpxWeight(item.weight, gpxState.defaultWeight);
+      item.layer.setStyle({
+        color: baseColor,
+        weight: selected ? Math.min(24, Math.max(baseWeight + 1.8, baseWeight)) : baseWeight,
+        opacity: selected ? GPX_SELECTED_OPACITY : GPX_LINE_OPACITY,
+        dashArray: selected ? '10 6' : null,
+      });
+    }
+
+    function syncGpxRouteSelections() {
+      gpxState.items.forEach((item) => {
+        applyGpxRouteStyle(item, item.id === gpxState.selectedRouteId);
+      });
+      syncGpxStyleControls();
+    }
+
+    function deselectGpxRoute() {
+      if (!Number.isFinite(gpxState.selectedRouteId)) {
+        syncGpxStyleControls();
+        return;
+      }
+      gpxState.selectedRouteId = null;
+      syncGpxRouteSelections();
+    }
+
+    function selectGpxRoute(routeId) {
+      if (!Number.isFinite(routeId)) {
+        return;
+      }
+      deselectTextMarker();
+      deselectNumberLabel();
+      gpxState.selectedRouteId = routeId;
+      syncGpxRouteSelections();
+      const selectedItem = getGpxItemById(routeId);
+      if (selectedItem && selectedItem.layer && selectedItem.layer.bringToFront) {
+        selectedItem.layer.bringToFront();
+      }
+      if (gpxPanel && !gpxPanel.classList.contains('is-visible')) {
+        setGpxPanelVisible(true);
+      }
+    }
+
+    function setGpxPanelVisible(visible) {
+      if (!gpxPanel) {
+        return;
+      }
+      const isVisible = !!visible;
+      if (isVisible) {
+        deactivateToolModes();
+        layerPanel.classList.remove('is-visible');
+        weatherPanel.classList.remove('is-visible');
+        if (simState.panelVisible || simState.visible) {
+          setSimActive(false, true);
+        }
+      }
+      gpxPanel.classList.toggle('is-visible', isVisible);
+      if (isVisible) {
+        syncGpxStyleControls();
+      }
+      syncMenuButtonActiveState();
+    }
+
+    function removeGpxRouteById(routeId, persist = true) {
+      const index = gpxState.items.findIndex((item) => item.id === routeId);
+      if (index < 0) {
+        return false;
+      }
+      const [target] = gpxState.items.splice(index, 1);
+      if (target && target.layer) {
+        gpxRouteGroup.removeLayer(target.layer);
+      }
+      if (gpxState.selectedRouteId === routeId) {
+        gpxState.selectedRouteId = null;
+      }
+      syncGpxRouteSelections();
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+      return true;
+    }
+
+    function deleteSelectedGpxRoute() {
+      if (!Number.isFinite(gpxState.selectedRouteId)) {
+        return false;
+      }
+      return removeGpxRouteById(gpxState.selectedRouteId, true);
+    }
+
     function drawGpxSegments(segments) {
-      gpxRouteGroup.clearLayers();
       const gpxBounds = L.latLngBounds([]);
       let pointCount = 0;
+      let addedCount = 0;
+      const defaultColor = normalizeGpxColor(gpxColorInput && gpxColorInput.value, gpxState.defaultColor);
+      const defaultWeight = normalizeGpxWeight(gpxWeightInput && gpxWeightInput.value, gpxState.defaultWeight);
+      gpxState.defaultColor = defaultColor;
+      gpxState.defaultWeight = defaultWeight;
+
       segments.forEach((segment) => {
         pointCount += segment.length;
         segment.forEach((point) => {
           gpxBounds.extend(point);
         });
-        L.polyline(segment, {
-          color: GPX_LINE_COLOR,
-          weight: GPX_LINE_WEIGHT,
+        const routeId = gpxState.nextId++;
+        const layer = L.polyline(segment, {
+          color: defaultColor,
+          weight: defaultWeight,
           opacity: GPX_LINE_OPACITY,
           lineCap: 'round',
           lineJoin: 'round',
           pane: 'overlayPane',
-          interactive: false,
+          interactive: true,
           renderer,
         }).addTo(gpxRouteGroup);
+        const item = {
+          id: routeId,
+          layer,
+          color: defaultColor,
+          weight: defaultWeight,
+        };
+        layer.on('click', (event) => {
+          if (event && event.originalEvent) {
+            L.DomEvent.stop(event.originalEvent);
+          }
+          selectGpxRoute(routeId);
+        });
+        gpxState.items.push(item);
+        addedCount += 1;
       });
       if (gpxBounds.isValid()) {
         map.fitBounds(gpxBounds.pad(0.16), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
       }
-      return { segmentCount: segments.length, pointCount };
+      syncGpxRouteSelections();
+      return {
+        segmentCount: segments.length,
+        pointCount,
+        totalSegmentCount: gpxState.items.length,
+        addedCount,
+      };
     }
 
     function loadGpxFromText(gpxText) {
@@ -3153,6 +3526,259 @@
         throw new Error('GPX에서 경로(trk/rte)를 찾지 못했습니다.');
       }
       return drawGpxSegments(segments);
+    }
+
+    function normalizeHeadingDeg(value) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return 0;
+      }
+      return ((numeric % 360) + 360) % 360;
+    }
+
+    function signedHeadingDeltaDeg(fromDeg, toDeg) {
+      return ((normalizeHeadingDeg(toDeg) - normalizeHeadingDeg(fromDeg) + 540) % 360) - 180;
+    }
+
+    function coordToLatLng(coord) {
+      return [coord.latitude, coord.longitude];
+    }
+
+    function appendSimulationSegment(segments, boundsObj, coords) {
+      if (!Array.isArray(coords) || coords.length < 2) {
+        return;
+      }
+      const latlngs = [];
+      coords.forEach((coord) => {
+        if (!coord || !Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+          return;
+        }
+        const latlng = coordToLatLng(coord);
+        latlngs.push(latlng);
+        boundsObj.extend(latlng);
+      });
+      if (latlngs.length >= 2) {
+        segments.push(latlngs);
+      }
+    }
+
+    function syncSimPanelInputs() {
+      if (!simOffsetAngleInput) {
+        return;
+      }
+      simOffsetAngleInput.value = String(simState.settings.offsetAngleDeg);
+      simDepartureNmInput.value = String(simState.settings.departureNm);
+      simStraightNmInput.value = String(simState.settings.straightNm);
+      simTurnRadiusNmInput.value = String(simState.settings.turnRadiusNm);
+      simInboundNmInput.value = String(simState.settings.inboundNm);
+      simRecoverNmInput.value = String(simState.settings.recoverNm);
+      simArcSplitsInput.value = String(simState.settings.arcSplits);
+    }
+
+    function readSimSettingsFromInputs() {
+      const nextSettings = {
+        offsetAngleDeg: clamp(Number(simOffsetAngleInput ? simOffsetAngleInput.value : simState.settings.offsetAngleDeg) || SIM_DEFAULTS.offsetAngleDeg, 0, 89),
+        departureNm: clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20),
+        straightNm: clamp(Number(simStraightNmInput ? simStraightNmInput.value : simState.settings.straightNm) || SIM_DEFAULTS.straightNm, 0.1, 30),
+        turnRadiusNm: clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30),
+        inboundNm: clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30),
+        recoverNm: clamp(Number(simRecoverNmInput ? simRecoverNmInput.value : simState.settings.recoverNm) || SIM_DEFAULTS.recoverNm, 0.1, 20),
+        arcSplits: Math.round(clamp(Number(simArcSplitsInput ? simArcSplitsInput.value : simState.settings.arcSplits) || SIM_DEFAULTS.arcSplits, 8, 72)),
+      };
+      simState.settings = nextSettings;
+      syncSimPanelInputs();
+      return nextSettings;
+    }
+
+    function setSimPanelVisible(visible) {
+      if (!simPanel) {
+        return;
+      }
+      const isVisible = !!visible;
+      simState.panelVisible = isVisible;
+      simPanel.classList.toggle('is-visible', isVisible);
+      if (isVisible) {
+        syncSimPanelInputs();
+      }
+      syncMenuButtonActiveState();
+    }
+
+    function setSimulationVisible(visible) {
+      const enabled = !!visible;
+      simState.visible = enabled;
+      if (simButton) {
+        simButton.classList.toggle('is-sim-on', enabled);
+      }
+      if (simToggleOverlayButton) {
+        simToggleOverlayButton.classList.toggle('is-on', enabled);
+        simToggleOverlayButton.textContent = enabled ? '시뮬레이션 OFF' : '시뮬레이션 ON';
+      }
+      if (enabled) {
+        if (!map.hasLayer(simulationRouteGroup)) {
+          map.addLayer(simulationRouteGroup);
+        }
+      } else if (map.hasLayer(simulationRouteGroup)) {
+        map.removeLayer(simulationRouteGroup);
+      }
+      syncMenuButtonActiveState();
+    }
+
+    function hideSimulationOverlay(clearLayers = false) {
+      if (clearLayers) {
+        simulationRouteGroup.clearLayers();
+        simState.generatedSegmentCount = 0;
+      }
+      setSimulationVisible(false);
+    }
+
+    function buildSimulationLineSequence() {
+      const lines = [];
+      resultLineEntries.forEach((entry, index) => {
+        const row = entry && entry.row ? entry.row : null;
+        if (!row) {
+          return;
+        }
+        const sLat = Number(row.s_lat);
+        const sLng = Number(row.s_lon);
+        const eLat = Number(row.e_lat);
+        const eLng = Number(row.e_lon);
+        if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || !Number.isFinite(eLat) || !Number.isFinite(eLng)) {
+          return;
+        }
+        const isOdd = ((index + 1) % 2) === 1;
+        const start = isOdd
+          ? { latitude: sLat, longitude: sLng }
+          : { latitude: eLat, longitude: eLng };
+        const end = isOdd
+          ? { latitude: eLat, longitude: eLng }
+          : { latitude: sLat, longitude: sLng };
+        lines.push({ index, start, end });
+      });
+      return lines;
+    }
+
+    function buildSimulationSegments(lines, settings) {
+      const segments = [];
+      const simulationBounds = L.latLngBounds([]);
+      const offsetAngleDeg = Number(settings.offsetAngleDeg);
+      const departureMeters = Number(settings.departureNm) * SIM_NM_TO_METERS;
+      const straightMeters = Number(settings.straightNm) * SIM_NM_TO_METERS;
+      const turnRadiusMeters = Number(settings.turnRadiusNm) * SIM_NM_TO_METERS;
+      const inboundMeters = Number(settings.inboundNm) * SIM_NM_TO_METERS;
+      const recoverMeters = Number(settings.recoverNm) * SIM_NM_TO_METERS;
+      const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits)));
+
+      for (let index = 0; index < lines.length; index += 1) {
+        const current = lines[index];
+        if (!current) {
+          continue;
+        }
+        appendSimulationSegment(segments, simulationBounds, [current.start, current.end]);
+        const next = lines[index + 1];
+        if (!next) {
+          continue;
+        }
+
+        const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
+        const nextEntryHeading = normalizeHeadingDeg(bearingDeg(current.end, next.start));
+        let turnSign = signedHeadingDeltaDeg(currentHeading, nextEntryHeading) >= 0 ? 1 : -1;
+        if (Math.abs(signedHeadingDeltaDeg(currentHeading, nextEntryHeading)) < 0.001) {
+          turnSign = (next.start.latitude - current.end.latitude) >= 0 ? -1 : 1;
+        }
+
+        const departureHeading = normalizeHeadingDeg(currentHeading + (turnSign * offsetAngleDeg));
+        const leaveEnd = offsetCoordByMeters(current.end, departureHeading, departureMeters);
+        appendSimulationSegment(segments, simulationBounds, [current.end, leaveEnd]);
+
+        const straightEnd = offsetCoordByMeters(leaveEnd, currentHeading, straightMeters);
+        appendSimulationSegment(segments, simulationBounds, [leaveEnd, straightEnd]);
+
+        const centerHeading = normalizeHeadingDeg(currentHeading + (turnSign * 90));
+        const turnCenter = offsetCoordByMeters(straightEnd, centerHeading, turnRadiusMeters);
+        const arcStartBearing = normalizeHeadingDeg(bearingDeg(turnCenter, straightEnd));
+        const arcCoords = [straightEnd];
+        for (let step = 1; step <= arcSplits; step += 1) {
+          const ratio = step / arcSplits;
+          const arcBearing = normalizeHeadingDeg(arcStartBearing + (turnSign * 180 * ratio));
+          arcCoords.push(offsetCoordByMeters(turnCenter, arcBearing, turnRadiusMeters));
+        }
+        appendSimulationSegment(segments, simulationBounds, arcCoords);
+
+        const arcEnd = arcCoords[arcCoords.length - 1];
+        const inboundHeading = normalizeHeadingDeg(currentHeading + 180);
+        const inboundEnd = offsetCoordByMeters(arcEnd, inboundHeading, inboundMeters);
+        appendSimulationSegment(segments, simulationBounds, [arcEnd, inboundEnd]);
+
+        const recoverHeading = normalizeHeadingDeg(inboundHeading - (turnSign * offsetAngleDeg));
+        const recoverEnd = offsetCoordByMeters(inboundEnd, recoverHeading, recoverMeters);
+        appendSimulationSegment(segments, simulationBounds, [inboundEnd, recoverEnd]);
+
+        appendSimulationSegment(segments, simulationBounds, [recoverEnd, next.start]);
+      }
+      return { segments, simulationBounds };
+    }
+
+    function showSimulationOverlay() {
+      const settings = readSimSettingsFromInputs();
+      const lines = buildSimulationLineSequence();
+      if (!lines.length) {
+        throw new Error('시뮬레이션할 라인 데이터가 없습니다.');
+      }
+      const generated = buildSimulationSegments(lines, settings);
+      if (!generated.segments.length) {
+        throw new Error('시뮬레이션 경로를 생성하지 못했습니다.');
+      }
+      simulationRouteGroup.clearLayers();
+      generated.segments.forEach((latlngs) => {
+        L.polyline(latlngs, {
+          color: SIM_COLOR,
+          weight: SIM_WEIGHT,
+          opacity: 1,
+          lineCap: 'round',
+          lineJoin: 'round',
+          pane: 'overlayPane',
+          interactive: false,
+          renderer,
+          smoothFactor: 1,
+        }).addTo(simulationRouteGroup);
+      });
+      simState.generatedSegmentCount = generated.segments.length;
+      setSimulationVisible(true);
+      if (generated.simulationBounds.isValid()) {
+        map.fitBounds(generated.simulationBounds.pad(0.08), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
+      }
+      scheduleViewerStateSave();
+    }
+
+    function setSimActive(active, fromOtherTool = false) {
+      const enabled = !!active;
+      if (enabled) {
+        if (!fromOtherTool) {
+          deactivateToolModes('sim');
+          setLayerPanelVisible(false);
+          setWeatherPanelVisible(false);
+          setGpxPanelVisible(false);
+        }
+        setSimPanelVisible(true);
+        try {
+          showSimulationOverlay();
+        } catch (error) {
+          hideSimulationOverlay(true);
+          setSimPanelVisible(false);
+          if (!fromOtherTool) {
+            const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+            window.alert(message);
+          }
+          return false;
+        }
+      } else {
+        setSimPanelVisible(false);
+        hideSimulationOverlay(true);
+      }
+      if (!fromOtherTool) {
+        scheduleViewerStateSave();
+      }
+      return true;
     }
 
     let planRestrictionAlertAt = 0;
@@ -5228,6 +5854,7 @@
         return;
       }
       deselectNumberLabel();
+      deselectGpxRoute();
       const previous = textState.selectedMarker;
       textState.selectedMarker = marker;
       if (previous) {
@@ -5523,6 +6150,8 @@
       if (active && !fromOtherTool) {
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
       }
       syncMenuButtonActiveState();
       scheduleViewerStateSave();
@@ -5602,6 +6231,8 @@
         }
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
       }
       syncMenuButtonActiveState();
       scheduleViewerStateSave();
@@ -5903,6 +6534,7 @@
         return;
       }
       deselectTextMarker();
+      deselectGpxRoute();
       numberLabelState.kind = kind;
       numberLabelState.entryId = entryId;
       syncNumberMarkerSelections();
@@ -6009,6 +6641,8 @@
         }
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
       }
       setForceControlsEnabled(true);
       setNumControlsEnabled(numToggle.checked);
@@ -6186,6 +6820,11 @@
     }
 
     function renderResults() {
+      hideSimulationOverlay(true);
+      setSimPanelVisible(false);
+      if (simButton) {
+        simButton.disabled = true;
+      }
       if (isPolygonMode) {
         payload.polygons.forEach((row) => {
           const polygon = L.polygon(row.points, {
@@ -6323,6 +6962,9 @@
       refreshKmlLabels();
       refreshForceLabels();
       updateCompletionSummary();
+      if (simButton) {
+        simButton.disabled = resultLineEntries.length < 1;
+      }
     }
 
     function applyBaseMapTone() {
@@ -6792,6 +7434,8 @@
 
       viewerStateRestoring = true;
       try {
+        hideSimulationOverlay(true);
+        setSimPanelVisible(false);
         setMeasureActive(false, true);
         setTextActive(false, true);
         setDoneActive(false, true);
@@ -8145,6 +8789,7 @@
       layerPanel.classList.toggle('is-visible', isVisible);
       if (isVisible) {
         weatherPanel.classList.remove('is-visible');
+        setGpxPanelVisible(false);
       }
       syncMenuButtonActiveState();
     }
@@ -8163,6 +8808,7 @@
       weatherPanel.classList.toggle('is-visible', isVisible);
       if (isVisible) {
         layerPanel.classList.remove('is-visible');
+        setGpxPanelVisible(false);
       }
       syncMenuButtonActiveState();
     }
@@ -8180,6 +8826,8 @@
       if (collapsed) {
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
       }
     }
 
@@ -8960,13 +9608,48 @@
       event.stopPropagation();
       setLayerPanelVisible(false);
       setWeatherPanelVisible(false);
+      setGpxPanelVisible(false);
+      setSimActive(false, true);
       await toggleNotamOverlay();
     });
     if (gpxButton && gpxFileInput) {
       gpxButton.addEventListener('click', (event) => {
         event.stopPropagation();
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
+        setSimActive(false, true);
+        setGpxPanelVisible(!gpxPanel.classList.contains('is-visible'));
+      });
+      const openGpxPicker = () => {
         gpxFileInput.value = '';
         gpxFileInput.click();
+      };
+      if (gpxOpenButton) {
+        gpxOpenButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          openGpxPicker();
+        });
+      }
+      gpxColorInput.addEventListener('input', () => {
+        const selectedItem = getGpxItemById(gpxState.selectedRouteId);
+        if (!selectedItem) {
+          syncGpxStyleControls();
+          return;
+        }
+        selectedItem.color = normalizeGpxColor(gpxColorInput.value, selectedItem.color || gpxState.defaultColor);
+        applyGpxRouteStyle(selectedItem, true);
+        scheduleViewerStateSave();
+      });
+      gpxWeightInput.addEventListener('input', () => {
+        const selectedItem = getGpxItemById(gpxState.selectedRouteId);
+        if (!selectedItem) {
+          syncGpxStyleControls();
+          return;
+        }
+        selectedItem.weight = normalizeGpxWeight(gpxWeightInput.value, selectedItem.weight || gpxState.defaultWeight);
+        applyGpxRouteStyle(selectedItem, true);
+        scheduleViewerStateSave();
       });
       gpxFileInput.addEventListener('change', async () => {
         const file = gpxFileInput.files && gpxFileInput.files[0];
@@ -8974,24 +9657,75 @@
           return;
         }
         gpxButton.disabled = true;
+        if (gpxOpenButton) {
+          gpxOpenButton.disabled = true;
+        }
         try {
           const gpxText = await file.text();
           const result = loadGpxFromText(gpxText);
-          window.alert(`GPX 경로를 불러왔습니다.\n세그먼트 ${result.segmentCount}개 · 좌표 ${result.pointCount}개`);
+          setGpxPanelVisible(true);
+          window.alert(`GPX 경로를 불러왔습니다.\n이번 파일 ${result.segmentCount}개 · 좌표 ${result.pointCount}개\n현재 누적 ${result.totalSegmentCount}개`);
         } catch (error) {
           const message = error && error.message ? String(error.message) : 'GPX 파일 처리에 실패했습니다.';
           window.alert(message);
         } finally {
           gpxButton.disabled = false;
+          if (gpxOpenButton) {
+            gpxOpenButton.disabled = false;
+          }
           gpxFileInput.value = '';
         }
       });
+    }
+    if (simButton) {
+      simButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        setLayerPanelVisible(false);
+        setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        if (simButton.disabled) {
+          return;
+        }
+        const shouldOpen = !(simState.panelVisible || simState.visible);
+        setSimActive(shouldOpen, false);
+      });
+      if (simToggleOverlayButton) {
+        simToggleOverlayButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          if (simState.visible) {
+            hideSimulationOverlay(false);
+            scheduleViewerStateSave();
+            return;
+          }
+          try {
+            showSimulationOverlay();
+          } catch (error) {
+            const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+            window.alert(message);
+          }
+        });
+      }
+      if (simApplyButton) {
+        simApplyButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          try {
+            showSimulationOverlay();
+          } catch (error) {
+            const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+            window.alert(message);
+          }
+        });
+      }
     }
     if (planInfoButton) {
       planInfoButton.addEventListener('click', (event) => {
         event.stopPropagation();
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
         setPlanGuideModalVisible(true);
       });
     }
@@ -9012,10 +9746,21 @@
     forcePanel.addEventListener('click', (event) => {
       event.stopPropagation();
     });
+    if (gpxPanel) {
+      gpxPanel.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+    }
+    if (simPanel) {
+      simPanel.addEventListener('click', (event) => {
+        event.stopPropagation();
+      });
+    }
 
     document.addEventListener('click', () => {
       setLayerPanelVisible(false);
       setWeatherPanelVisible(false);
+      setGpxPanelVisible(false);
     });
     captureCard.addEventListener('click', (event) => {
       event.stopPropagation();
@@ -9261,8 +10006,25 @@
       }
       refreshDoneSettings();
     });
+    [
+      simOffsetAngleInput,
+      simDepartureNmInput,
+      simStraightNmInput,
+      simTurnRadiusNmInput,
+      simInboundNmInput,
+      simRecoverNmInput,
+      simArcSplitsInput,
+    ].filter((input) => !!input).forEach((input) => {
+      input.addEventListener('change', () => {
+        readSimSettingsFromInputs();
+        scheduleViewerStateSave();
+      });
+    });
     syncInlineTextFontControl();
     syncInlineMeasureUnitControl();
+    syncGpxStyleControls();
+    syncSimPanelInputs();
+    setSimulationVisible(false);
     applySharedNumberLabelSize(NUMBER_LABEL_SIZE_DEFAULT, false);
     refreshMeasureSettings(false);
     refreshDoneSettings(false);
@@ -9370,6 +10132,10 @@
           return;
         }
         if (!isTypingField && deleteSelectedNumberLabel()) {
+          event.preventDefault();
+          return;
+        }
+        if (!isTypingField && deleteSelectedGpxRoute()) {
           event.preventDefault();
           return;
         }
@@ -9598,6 +10364,8 @@
       if (active && !fromOtherTool) {
         setLayerPanelVisible(false);
         setWeatherPanelVisible(false);
+        setGpxPanelVisible(false);
+        setSimActive(false, true);
       }
       syncMenuButtonActiveState();
       scheduleViewerStateSave();
@@ -9618,6 +10386,7 @@
 
     map.on('click', async (event) => {
       deselectNumberLabel();
+      deselectGpxRoute();
       if (!textState.active) {
         deselectTextMarker();
       }
