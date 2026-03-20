@@ -105,7 +105,8 @@ def build_weather_config() -> dict[str, Any]:
             "updated_at": radar_generated,
             "attribution": "RainViewer",
             "opacity": 0.68,
-            "max_zoom": 12,
+            "max_zoom": 19,
+            "max_native_zoom": 7,
         },
         "satellite": {
             "provider": "gk2a",

@@ -2650,7 +2650,7 @@
     const layerCatalog = rawLayerCatalog;
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
-      { key: 'satellite', label: '위성영상', note: 'RainViewer 레이더 오버레이', badge: 'RV' },
+      { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -2837,6 +2837,11 @@
       promise: null,
     };
     const rainViewerMapsState = {
+      data: null,
+      fetchedAt: 0,
+      promise: null,
+    };
+    const himawariTimesState = {
       data: null,
       fetchedAt: 0,
       promise: null,
@@ -4057,15 +4062,18 @@
     }
 
     function weatherTileLayer(url, options) {
+      const maxZoom = Number(options.maxZoom);
+      const maxNativeZoom = Number(options.maxNativeZoom);
       return L.tileLayer(url, {
         opacity: options.opacity,
         pane: options.pane,
-        maxZoom: options.maxZoom || 12,
+        maxZoom: Number.isFinite(maxZoom) ? maxZoom : 19,
+        maxNativeZoom: Number.isFinite(maxNativeZoom) ? maxNativeZoom : undefined,
         minZoom: 2,
         keepBuffer: 8,
         updateWhenIdle: false,
         updateWhenZooming: true,
-        detectRetina: true,
+        detectRetina: false,
         crossOrigin: true,
         attribution: options.attribution || '',
       });
@@ -4207,7 +4215,7 @@
         return;
       }
       const channelLabel = String(channel || 'ir105').trim().toLowerCase();
-      element.textContent = `🛰️ 천리안2A  ${formatKstTimestamp(utcDate)} KST (${channelLabel})`;
+      element.textContent = `🛰️ 위성영상  ${formatKstTimestamp(utcDate)} KST (${channelLabel})`;
       element.style.display = '';
     }
 
@@ -4703,6 +4711,99 @@
       return weatherConfigState.promise;
     }
 
+    function parseCompactUtcTimestamp(rawValue) {
+      const value = String(rawValue || '').trim();
+      if (!/^\d{14}$/.test(value)) {
+        return null;
+      }
+      const year = Number(value.slice(0, 4));
+      const month = Number(value.slice(4, 6));
+      const day = Number(value.slice(6, 8));
+      const hour = Number(value.slice(8, 10));
+      const minute = Number(value.slice(10, 12));
+      const second = Number(value.slice(12, 14));
+      if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)
+        || !Number.isFinite(hour) || !Number.isFinite(minute) || !Number.isFinite(second)) {
+        return null;
+      }
+      return new Date(Date.UTC(year, month - 1, day, hour, minute, second, 0));
+    }
+
+    function ensureHimawariTimes(forceReload = false) {
+      if (forceReload) {
+        himawariTimesState.fetchedAt = 0;
+      }
+      const stillFresh = himawariTimesState.data && (Date.now() - himawariTimesState.fetchedAt) < 300000;
+      if (stillFresh) {
+        return Promise.resolve(himawariTimesState.data);
+      }
+      if (!himawariTimesState.promise) {
+        himawariTimesState.promise = fetchJson('https://www.jma.go.jp/bosai/himawari/data/satimg/targetTimes_fd.json')
+          .then((data) => {
+            himawariTimesState.data = data;
+            himawariTimesState.fetchedAt = Date.now();
+            return data;
+          })
+          .finally(() => {
+            himawariTimesState.promise = null;
+          });
+      }
+      return himawariTimesState.promise;
+    }
+
+    function resolveLatestHimawariTimestamp(times) {
+      if (!Array.isArray(times) || !times.length) {
+        return null;
+      }
+      let selectedRaw = '';
+      let selectedDate = null;
+      times.forEach((entry) => {
+        if (!entry || typeof entry !== 'object') {
+          return;
+        }
+        const candidateRaw = String(entry.validtime || entry.basetime || '').trim();
+        const candidateDate = parseCompactUtcTimestamp(candidateRaw);
+        if (!candidateDate || Number.isNaN(candidateDate.getTime())) {
+          return;
+        }
+        if (!selectedDate || candidateDate.getTime() >= selectedDate.getTime()) {
+          selectedRaw = candidateRaw;
+          selectedDate = candidateDate;
+        }
+      });
+      if (!selectedRaw || !selectedDate) {
+        return null;
+      }
+      return { raw: selectedRaw, date: selectedDate };
+    }
+
+    async function resolveHimawariLayerConfig(forceReload = false) {
+      const times = await ensureHimawariTimes(forceReload);
+      const latest = resolveLatestHimawariTimestamp(times);
+      if (!latest) {
+        throw new Error('himawari timestamp unavailable');
+      }
+
+      const koreaBounds = [[33.0, 124.0], [39.0, 132.0]];
+      const isDay = isDaylightOverKorea(latest.date, koreaBounds);
+      const bandPath = isDay ? 'B03/ALBD' : 'B13/TBB';
+      const channel = isDay ? 'vi006' : 'ir105';
+      const root = `https://www.jma.go.jp/bosai/himawari/data/satimg/${latest.raw}/fd/${latest.raw}/${bandPath}`;
+      const tileUrl = `${root}/{z}/{x}/{y}.jpg`;
+
+      return {
+        provider: 'himawari',
+        tile_url: tileUrl,
+        updated_at: latest.date.toISOString(),
+        channel,
+        attribution: 'JMA Himawari',
+        opacity: 0.78,
+        max_zoom: 19,
+        max_native_zoom: 5,
+        refresh_seconds: 600,
+      };
+    }
+
     function pickRainViewerFrame(radarRoot) {
       if (!radarRoot || typeof radarRoot !== 'object') {
         return null;
@@ -4754,11 +4855,14 @@
         ? new Date(frameTime * 1000).toISOString()
         : '';
       return {
+        provider: 'rainviewer',
         tile_url: tileUrl,
         updated_at: updatedAt,
+        channel: 'radar',
         attribution: 'RainViewer',
         opacity: 0.68,
-        max_zoom: 12,
+        max_zoom: 19,
+        max_native_zoom: 7,
         refresh_seconds: 300,
       };
     }
@@ -4804,11 +4908,16 @@
           const maxZoom = Number(serverLayerConfig.max_zoom);
           const refreshSeconds = Number(serverLayerConfig.refresh_seconds);
           return {
+            provider: 'rainviewer',
             tile_url: String(serverLayerConfig.tile_url),
             updated_at: String(serverLayerConfig.updated_at || ''),
+            channel: 'radar',
             attribution: String(serverLayerConfig.attribution || 'RainViewer'),
             opacity: Number.isFinite(opacity) ? opacity : 0.68,
-            max_zoom: Number.isFinite(maxZoom) ? maxZoom : 12,
+            max_zoom: Number.isFinite(maxZoom) ? maxZoom : 19,
+            max_native_zoom: Number.isFinite(Number(serverLayerConfig.max_native_zoom))
+              ? Number(serverLayerConfig.max_native_zoom)
+              : 7,
             refresh_seconds: Number.isFinite(refreshSeconds) && refreshSeconds >= 60 ? refreshSeconds : 300,
           };
         }
@@ -7462,8 +7571,15 @@
       setWeatherBadge(key, '로딩', 'loading');
       try {
         weatherButton.disabled = true;
-        const syncRainViewerTile = async (forceReload = false) => {
-          const layerConfig = await resolveRainViewerLayerConfig(configKey, forceReload);
+        const syncSatelliteTile = async (forceReload = false) => {
+          let layerConfig = null;
+          let provider = 'himawari';
+          try {
+            layerConfig = await resolveHimawariLayerConfig(forceReload);
+          } catch (himawariError) {
+            layerConfig = await resolveRainViewerLayerConfig(configKey, forceReload);
+            provider = 'rainviewer';
+          }
           if (!controls.toggle.checked) {
             return null;
           }
@@ -7472,8 +7588,9 @@
             weatherTiles[key] = weatherTileLayer(layerConfig.tile_url, {
               pane: paneName,
               opacity: Number.isFinite(Number(layerConfig.opacity)) ? Number(layerConfig.opacity) : 0.72,
-              attribution: layerConfig.attribution || 'RainViewer',
-              maxZoom: layerConfig.max_zoom || 12,
+              attribution: layerConfig.attribution || (provider === 'himawari' ? 'JMA Himawari' : 'RainViewer'),
+              maxZoom: Number.isFinite(Number(layerConfig.max_zoom)) ? Number(layerConfig.max_zoom) : 19,
+              maxNativeZoom: Number.isFinite(Number(layerConfig.max_native_zoom)) ? Number(layerConfig.max_native_zoom) : 7,
             });
           } else if (typeof weatherTiles[key].setUrl === 'function') {
             weatherTiles[key].setUrl(layerConfig.tile_url);
@@ -7484,13 +7601,20 @@
           if (!map.hasLayer(weatherTiles[key])) {
             weatherTiles[key].addTo(map);
           }
-          hideSatelliteTimeLabel();
+          const updatedAtRaw = String(layerConfig.updated_at || '').trim();
+          const updatedAtDate = updatedAtRaw ? new Date(updatedAtRaw) : null;
+          if (updatedAtDate && !Number.isNaN(updatedAtDate.getTime())) {
+            setSatelliteTimeLabel(updatedAtDate, String(layerConfig.channel || provider));
+          } else {
+            hideSatelliteTimeLabel();
+          }
           syncBaseMapForSatelliteMode();
-          setWeatherBadge(key, controls.definition.badge, 'live');
+          const liveBadge = provider === 'himawari' ? 'HIMA' : 'RV';
+          setWeatherBadge(key, liveBadge, 'live');
           return layerConfig;
         };
 
-        const layerConfig = await syncRainViewerTile(false);
+        const layerConfig = await syncSatelliteTile(false);
         const refreshSecondsRaw = Number(layerConfig && layerConfig.refresh_seconds);
         const refreshMs = Number.isFinite(refreshSecondsRaw) && refreshSecondsRaw >= 60
           ? Math.round(refreshSecondsRaw * 1000)
@@ -7502,7 +7626,7 @@
             return;
           }
           try {
-            await syncRainViewerTile(true);
+            await syncSatelliteTile(true);
           } catch (error) {
             if (liveControls.toggle.checked) {
               setWeatherBadge(key, '오류', 'error');
