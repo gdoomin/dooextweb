@@ -21,6 +21,8 @@ GK2A_FETCH_TIMEOUT_SECONDS = 6
 GK2A_API_FAILURE_COOLDOWN_SECONDS = 90
 GK2A_DAILY_LIMIT_COOLDOWN_SECONDS = 900
 GK2A_CACHE_KEEP_PER_CHANNEL = 8
+GK2A_SUPABASE_DEFAULT_BUCKET = "doo-weather-satellite-cache"
+GK2A_SUPABASE_LIST_TTL_SECONDS = 60
 GK2A_TIMESTAMP_RE = re.compile(r"^\d{12}$")
 GK2A_CHANNEL_MAP = {
     "vi006": "VI006",
@@ -32,6 +34,9 @@ _GK2A_CACHE_DIR: Path | None = None
 _GK2A_FETCH_LOCK = threading.Lock()
 _GK2A_FAILURE_CACHE: dict[str, float] = {}
 _GK2A_BLOCKED_UNTIL_TS = 0.0
+_GK2A_SUPABASE_CONFIG: dict[str, str] | None = None
+_GK2A_SUPABASE_BUCKET_READY = False
+_GK2A_SUPABASE_LIST_CACHE: dict[str, tuple[float, list[str]]] = {}
 
 
 class WeatherProviderError(RuntimeError):
@@ -334,13 +339,68 @@ def configure_gk2a_cache_dir(path: str | Path | None) -> Path | None:
     return target
 
 
+def _gk2a_is_http_url(value: str) -> bool:
+    normalized = str(value or "").strip().lower()
+    return normalized.startswith("http://") or normalized.startswith("https://")
+
+
+def configure_gk2a_supabase_cache_from_env() -> dict[str, str] | None:
+    global _GK2A_SUPABASE_CONFIG, _GK2A_SUPABASE_BUCKET_READY, _GK2A_SUPABASE_LIST_CACHE
+
+    backend = str(os.getenv("DOO_GK2A_CACHE_BACKEND") or "supabase").strip().lower()
+    if backend in {"local", "filesystem", "file", "none", "off"}:
+        _GK2A_SUPABASE_CONFIG = None
+        _GK2A_SUPABASE_BUCKET_READY = False
+        _GK2A_SUPABASE_LIST_CACHE = {}
+        return None
+
+    supabase_url = str(os.getenv("SUPABASE_URL") or os.getenv("NEXT_PUBLIC_SUPABASE_URL") or "").strip().rstrip("/")
+    service_role_key = str(os.getenv("SUPABASE_SERVICE_ROLE_KEY") or "").strip()
+    bucket_name = str(os.getenv("DOO_GK2A_SUPABASE_BUCKET") or GK2A_SUPABASE_DEFAULT_BUCKET).strip()
+    if not supabase_url or not service_role_key or not bucket_name or not _gk2a_is_http_url(supabase_url):
+        _GK2A_SUPABASE_CONFIG = None
+        _GK2A_SUPABASE_BUCKET_READY = False
+        _GK2A_SUPABASE_LIST_CACHE = {}
+        return None
+
+    _GK2A_SUPABASE_CONFIG = {
+        "supabase_url": supabase_url,
+        "service_role_key": service_role_key,
+        "bucket_name": bucket_name,
+    }
+    _GK2A_SUPABASE_BUCKET_READY = False
+    _GK2A_SUPABASE_LIST_CACHE = {}
+    return dict(_GK2A_SUPABASE_CONFIG)
+
+
+def _gk2a_supabase_enabled() -> bool:
+    return bool(_GK2A_SUPABASE_CONFIG)
+
+
+def _gk2a_supabase_headers(*, content_type: str = "", accept: str = "application/json") -> dict[str, str]:
+    config = _GK2A_SUPABASE_CONFIG or {}
+    token = str(config.get("service_role_key") or "").strip()
+    headers = {
+        "apikey": token,
+        "Authorization": f"Bearer {token}",
+        "Accept": accept,
+    }
+    if content_type:
+        headers["Content-Type"] = content_type
+    return headers
+
+
+def _gk2a_supabase_object_path(channel: str, timestamp: str) -> str:
+    return f"gk2a/{channel}_{timestamp}.png"
+
+
 def _gk2a_cache_file(channel: str, timestamp: str) -> Path | None:
     if _GK2A_CACHE_DIR is None:
         return None
     return _GK2A_CACHE_DIR / f"{channel}_{timestamp}.png"
 
 
-def _gk2a_read_cached_png(channel: str, timestamp: str) -> bytes | None:
+def _gk2a_read_local_png(channel: str, timestamp: str) -> bytes | None:
     path = _gk2a_cache_file(channel, timestamp)
     if path is None or not path.exists():
         return None
@@ -353,7 +413,7 @@ def _gk2a_read_cached_png(channel: str, timestamp: str) -> bytes | None:
     return None
 
 
-def _gk2a_write_cached_png(channel: str, timestamp: str, payload: bytes) -> None:
+def _gk2a_write_local_png(channel: str, timestamp: str, payload: bytes) -> None:
     path = _gk2a_cache_file(channel, timestamp)
     if path is None:
         return
@@ -362,6 +422,176 @@ def _gk2a_write_cached_png(channel: str, timestamp: str, payload: bytes) -> None
     except OSError:
         return
     _gk2a_trim_cache(channel)
+
+
+def _gk2a_supabase_ensure_bucket() -> bool:
+    global _GK2A_SUPABASE_BUCKET_READY
+    if not _gk2a_supabase_enabled():
+        return False
+    if _GK2A_SUPABASE_BUCKET_READY:
+        return True
+
+    config = _GK2A_SUPABASE_CONFIG or {}
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    bucket_name = str(config.get("bucket_name") or "").strip()
+    if not supabase_url or not bucket_name:
+        return False
+
+    bucket_url = f"{supabase_url}/storage/v1/bucket/{quote(bucket_name, safe='-_.')}"
+    check_request = Request(url=bucket_url, method="GET", headers=_gk2a_supabase_headers())
+    try:
+        with urlopen(check_request, timeout=GK2A_FETCH_TIMEOUT_SECONDS):
+            _GK2A_SUPABASE_BUCKET_READY = True
+            return True
+    except HTTPError as error:
+        if error.code != 404:
+            return False
+    except (URLError, TimeoutError):
+        return False
+
+    payload = json.dumps({"id": bucket_name, "name": bucket_name, "public": False}).encode("utf-8")
+    create_request = Request(
+        url=f"{supabase_url}/storage/v1/bucket",
+        method="POST",
+        data=payload,
+        headers=_gk2a_supabase_headers(content_type="application/json"),
+    )
+    try:
+        with urlopen(create_request, timeout=GK2A_FETCH_TIMEOUT_SECONDS):
+            _GK2A_SUPABASE_BUCKET_READY = True
+            return True
+    except HTTPError as error:
+        if error.code == 409:
+            _GK2A_SUPABASE_BUCKET_READY = True
+            return True
+        return False
+    except (URLError, TimeoutError):
+        return False
+
+
+def _gk2a_supabase_download_png(channel: str, timestamp: str) -> bytes | None:
+    if not _gk2a_supabase_enabled() or not _gk2a_supabase_ensure_bucket():
+        return None
+
+    config = _GK2A_SUPABASE_CONFIG or {}
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    bucket_name = str(config.get("bucket_name") or "").strip()
+    object_path = _gk2a_supabase_object_path(channel, timestamp)
+    object_url = f"{supabase_url}/storage/v1/object/{quote(bucket_name, safe='-_.')}/{quote(object_path, safe='-_.~/')}"
+    request = Request(url=object_url, method="GET", headers=_gk2a_supabase_headers(accept="*/*"))
+    try:
+        with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS) as response:
+            payload = response.read()
+    except HTTPError as error:
+        if error.code == 403:
+            _gk2a_mark_daily_limited()
+        return None
+    except (URLError, TimeoutError):
+        return None
+
+    if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        return payload
+    return None
+
+
+def _gk2a_supabase_upload_png(channel: str, timestamp: str, payload: bytes) -> None:
+    if not _gk2a_supabase_enabled() or not _gk2a_supabase_ensure_bucket():
+        return
+
+    config = _GK2A_SUPABASE_CONFIG or {}
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    bucket_name = str(config.get("bucket_name") or "").strip()
+    object_path = _gk2a_supabase_object_path(channel, timestamp)
+    object_url = f"{supabase_url}/storage/v1/object/{quote(bucket_name, safe='-_.')}/{quote(object_path, safe='-_.~/')}"
+    headers = _gk2a_supabase_headers(content_type="image/png", accept="application/json")
+    headers["x-upsert"] = "true"
+    headers["cache-control"] = "public, max-age=600"
+    request = Request(url=object_url, method="POST", data=payload, headers=headers)
+    try:
+        with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS):
+            _GK2A_SUPABASE_LIST_CACHE.pop(channel, None)
+    except (HTTPError, URLError, TimeoutError):
+        return
+
+
+def _gk2a_supabase_list_timestamps(channel: str) -> list[str]:
+    if not _gk2a_supabase_enabled() or not _gk2a_supabase_ensure_bucket():
+        return []
+
+    cached = _GK2A_SUPABASE_LIST_CACHE.get(channel)
+    if cached and cached[0] > time.time():
+        return list(cached[1])
+
+    config = _GK2A_SUPABASE_CONFIG or {}
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    bucket_name = str(config.get("bucket_name") or "").strip()
+    list_url = f"{supabase_url}/storage/v1/object/list/{quote(bucket_name, safe='-_.')}"
+    body = json.dumps(
+        {
+            "prefix": "gk2a/",
+            "limit": max(20, GK2A_CACHE_KEEP_PER_CHANNEL * 8),
+            "offset": 0,
+            "sortBy": {"column": "name", "order": "desc"},
+        }
+    ).encode("utf-8")
+    request = Request(
+        url=list_url,
+        method="POST",
+        data=body,
+        headers=_gk2a_supabase_headers(content_type="application/json"),
+    )
+    try:
+        with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except HTTPError as error:
+        if error.code == 403:
+            _gk2a_mark_daily_limited()
+        return []
+    except (URLError, TimeoutError):
+        return []
+
+    try:
+        rows = json.loads(raw.decode("utf-8", errors="ignore"))
+    except json.JSONDecodeError:
+        return []
+    if not isinstance(rows, list):
+        return []
+
+    prefix = f"{channel}_"
+    timestamps: list[str] = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = str(row.get("name") or "").strip()
+        if "/" in name:
+            name = name.rsplit("/", 1)[-1]
+        if not name.startswith(prefix) or not name.endswith(".png"):
+            continue
+        timestamp = name[len(prefix):-4]
+        if not GK2A_TIMESTAMP_RE.match(timestamp):
+            continue
+        timestamps.append(timestamp)
+
+    unique = sorted(set(timestamps), reverse=True)
+    _GK2A_SUPABASE_LIST_CACHE[channel] = (time.time() + GK2A_SUPABASE_LIST_TTL_SECONDS, unique)
+    return list(unique)
+
+
+def _gk2a_read_cached_png(channel: str, timestamp: str) -> bytes | None:
+    local = _gk2a_read_local_png(channel, timestamp)
+    if local is not None:
+        return local
+
+    remote = _gk2a_supabase_download_png(channel, timestamp)
+    if remote is not None:
+        _gk2a_write_local_png(channel, timestamp, remote)
+        return remote
+    return None
+
+
+def _gk2a_write_cached_png(channel: str, timestamp: str, payload: bytes) -> None:
+    _gk2a_write_local_png(channel, timestamp, payload)
+    _gk2a_supabase_upload_png(channel, timestamp, payload)
 
 
 def _gk2a_trim_cache(channel: str) -> None:
@@ -377,32 +607,36 @@ def _gk2a_trim_cache(channel: str) -> None:
 
 
 def _gk2a_cached_fallback(channel: str, requested_timestamp: str) -> tuple[bytes, str] | None:
-    if _GK2A_CACHE_DIR is None:
-        return None
+    if _GK2A_CACHE_DIR is not None:
+        candidates: list[tuple[str, Path]] = []
+        for path in _GK2A_CACHE_DIR.glob(f"{channel}_*.png"):
+            name = path.stem
+            prefix = f"{channel}_"
+            if not name.startswith(prefix):
+                continue
+            timestamp = name[len(prefix):]
+            if not GK2A_TIMESTAMP_RE.match(timestamp):
+                continue
+            candidates.append((timestamp, path))
+        if candidates:
+            older = [(ts, p) for ts, p in candidates if ts <= requested_timestamp]
+            ordered = sorted(older or candidates, key=lambda item: item[0], reverse=True)
+            for timestamp, path in ordered:
+                try:
+                    payload = path.read_bytes()
+                except OSError:
+                    continue
+                if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+                    return payload, timestamp
 
-    candidates: list[tuple[str, Path]] = []
-    for path in _GK2A_CACHE_DIR.glob(f"{channel}_*.png"):
-        name = path.stem
-        prefix = f"{channel}_"
-        if not name.startswith(prefix):
+    for timestamp in _gk2a_supabase_list_timestamps(channel):
+        if timestamp > requested_timestamp:
             continue
-        timestamp = name[len(prefix):]
-        if not GK2A_TIMESTAMP_RE.match(timestamp):
+        payload = _gk2a_supabase_download_png(channel, timestamp)
+        if payload is None:
             continue
-        candidates.append((timestamp, path))
-    if not candidates:
-        return None
-
-    # Prefer same/older frame than requested timestamp.
-    older = [(ts, p) for ts, p in candidates if ts <= requested_timestamp]
-    ordered = sorted(older or candidates, key=lambda item: item[0], reverse=True)
-    for timestamp, path in ordered:
-        try:
-            payload = path.read_bytes()
-        except OSError:
-            continue
-        if payload.startswith(b"\x89PNG\r\n\x1a\n"):
-            return payload, timestamp
+        _gk2a_write_local_png(channel, timestamp, payload)
+        return payload, timestamp
     return None
 
 

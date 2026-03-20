@@ -34,6 +34,7 @@ from .weather import (
     build_weather_config,
     build_weather_grid,
     configure_gk2a_cache_dir,
+    configure_gk2a_supabase_cache_from_env,
     fetch_gk2a_image,
     normalize_gk2a_channel,
     parse_bbox_param,
@@ -275,6 +276,7 @@ for path in (
 
 FONTS_DIR.mkdir(parents=True, exist_ok=True)
 configure_gk2a_cache_dir(WEATHER_SATELLITE_CACHE_DIR)
+configure_gk2a_supabase_cache_from_env()
 
 
 def _same_path(a: Path, b: Path) -> bool:
