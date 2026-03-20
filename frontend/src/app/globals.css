@@ -714,7 +714,7 @@ textarea {
 
 .doo-result-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1.65fr) minmax(420px, 1fr);
   gap: 14px;
   flex: 1 1 auto;
   min-height: 0;
@@ -1021,12 +1021,21 @@ textarea {
 .doo-history-body strong {
   color: #e6edf3;
   font-size: 13px;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .doo-history-body span {
   color: #8b949e;
   font-size: 12px;
-  word-break: break-word;
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .doo-history-open {
