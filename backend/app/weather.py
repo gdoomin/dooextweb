@@ -17,7 +17,7 @@ DEFAULT_WEATHER_BBOX = (33.0, 124.0, 39.0, 132.0)
 GK2A_IMAGE_PROXY_PATH = "/api/weather/satellite-image"
 GK2A_API_BASE_URL = "https://apihub.kma.go.kr/api/typ05/api/GK2A/LE1B"
 GK2A_DEFAULT_AUTH_KEY = "essYXrddTSaLGF63Xc0mAw"
-GK2A_FETCH_TIMEOUT_SECONDS = 12
+GK2A_FETCH_TIMEOUT_SECONDS = 6
 GK2A_API_FAILURE_COOLDOWN_SECONDS = 90
 GK2A_DAILY_LIMIT_COOLDOWN_SECONDS = 900
 GK2A_CACHE_KEEP_PER_CHANNEL = 8
@@ -84,7 +84,7 @@ def build_weather_config() -> dict[str, Any]:
     gk2a_refresh_seconds = 120
     gk2a_day_channel = "vi006"
     gk2a_night_channel = "ir105"
-    gk2a_fallback_steps = 4
+    gk2a_fallback_steps = 0
     capture_utc = datetime.now(timezone.utc) - timedelta(minutes=gk2a_delay_minutes)
     capture_utc = capture_utc.replace(minute=(capture_utc.minute // 2) * 2, second=0, microsecond=0)
     capture_yyyymmdd = capture_utc.strftime("%Y%m%d")
@@ -429,6 +429,12 @@ def _gk2a_mark_daily_limited() -> None:
     _GK2A_BLOCKED_UNTIL_TS = time.time() + GK2A_DAILY_LIMIT_COOLDOWN_SECONDS
 
 
+def _gk2a_mark_temporarily_blocked(cooldown_seconds: int = GK2A_API_FAILURE_COOLDOWN_SECONDS) -> None:
+    global _GK2A_BLOCKED_UNTIL_TS
+    next_until = time.time() + max(1, int(cooldown_seconds))
+    _GK2A_BLOCKED_UNTIL_TS = max(_GK2A_BLOCKED_UNTIL_TS, next_until)
+
+
 def _gk2a_parse_error_payload(payload: bytes) -> tuple[int, str]:
     try:
         decoded = payload.decode("utf-8", errors="ignore")
@@ -522,6 +528,8 @@ def fetch_gk2a_image(
                 raise WeatherProviderError("image not found") from error
             if error.code == 403:
                 _gk2a_mark_daily_limited()
+            else:
+                _gk2a_mark_temporarily_blocked()
             if allow_stale_fallback:
                 fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
                 if fallback is not None:
@@ -530,6 +538,7 @@ def fetch_gk2a_image(
             raise WeatherProviderError(f"gk2a request failed: http {error.code}") from error
         except (URLError, TimeoutError) as error:
             _gk2a_mark_failure(normalized_channel, timestamp)
+            _gk2a_mark_temporarily_blocked()
             if allow_stale_fallback:
                 fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
                 if fallback is not None:
@@ -545,6 +554,8 @@ def fetch_gk2a_image(
         _gk2a_mark_failure(normalized_channel, timestamp)
         if status_code == 403:
             _gk2a_mark_daily_limited()
+        else:
+            _gk2a_mark_temporarily_blocked()
         if allow_stale_fallback:
             fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
             if fallback is not None:
