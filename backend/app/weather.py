@@ -444,7 +444,21 @@ def _gk2a_supabase_ensure_bucket() -> bool:
             _GK2A_SUPABASE_BUCKET_READY = True
             return True
     except HTTPError as error:
-        if error.code != 404:
+        not_found = error.code == 404
+        if not not_found:
+            try:
+                payload = error.read().decode("utf-8", errors="ignore")
+            except Exception:
+                payload = ""
+            if payload:
+                try:
+                    parsed = json.loads(payload)
+                except json.JSONDecodeError:
+                    parsed = {}
+                status_code = str(parsed.get("statusCode") or "").strip()
+                message = str(parsed.get("message") or parsed.get("error") or "").lower()
+                not_found = status_code == "404" or "bucket not found" in message
+        if not not_found:
             return False
     except (URLError, TimeoutError):
         return False
