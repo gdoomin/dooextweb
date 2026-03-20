@@ -20,6 +20,7 @@ const AIRCRAFT_SPEED_KNOTS = 130;
 const KNOT_TO_KMH = 1.852;
 const TURN_MINUTES_PER_LINE = 3;
 const GENERIC_LINE_NAMES = new Set(["line", "linestring", "flight line"]);
+const NUMERIC_POINT_LABEL_RE = /^\s*([+-])?\s*(\d+)\s*$/;
 
 export type KmlWorkerRequest = {
   type: "parse";
@@ -271,6 +272,18 @@ type PlacemarkContext = {
   folderNames: string[];
 };
 
+type LineEndpointCandidate = {
+  rowIndex: number;
+  start: [number, number];
+  end: [number, number];
+};
+
+type NumericPointLabel = {
+  value: number;
+  point: [number, number];
+  signed: boolean;
+};
+
 function extractLineRowsWithFolderContext(features: GeometryFeature[], xmlDoc: XMLDocument): LineStorageRow[] {
   const rowsFromDom = extractLineRowsFromKmlDom(xmlDoc);
   if (rowsFromDom.length > 0) {
@@ -286,6 +299,7 @@ function extractLineRowsFromKmlDom(xmlDoc: XMLDocument): LineStorageRow[] {
   }
 
   const rows: LineStorageRow[] = [];
+  const endpointCandidates: LineEndpointCandidate[] = [];
   const placemarkContexts = collectPlacemarksWithContext(root);
   placemarkContexts.forEach(({ placemark, folderNames }) => {
     const rawName = findDirectChildText(placemark, "name");
@@ -305,6 +319,7 @@ function extractLineRowsFromKmlDom(xmlDoc: XMLDocument): LineStorageRow[] {
 
       const [startLon, startLat] = points[0];
       const [endLon, endLat] = points[points.length - 1];
+      const rowIndex = rows.length;
       rows.push({
         num: resolvedName,
         s_lat: startLat,
@@ -312,8 +327,14 @@ function extractLineRowsFromKmlDom(xmlDoc: XMLDocument): LineStorageRow[] {
         e_lat: endLat,
         e_lon: endLon,
       });
+      endpointCandidates.push({
+        rowIndex,
+        start: [startLon, startLat],
+        end: [endLon, endLat],
+      });
     });
   });
+  applyNumericPointLabelNames(rows, endpointCandidates, root);
 
   return rows;
 }
@@ -349,13 +370,21 @@ function collectPlacemarksWithContext(root: Element): PlacemarkContext[] {
 
 function resolveLineName(rawName: string, folderNames: string[]): string {
   const cleaned = rawName.trim();
-  const normalized = cleaned.replace(/\s+/g, " ").toLowerCase();
-  if (cleaned && !GENERIC_LINE_NAMES.has(normalized)) {
+  if (isMeaningfulLineName(cleaned)) {
     return cleaned;
   }
 
   const contextName = extractContextLineName(folderNames);
   return contextName || cleaned;
+}
+
+function isMeaningfulLineName(value: string): boolean {
+  const cleaned = value.trim();
+  if (!cleaned) {
+    return false;
+  }
+  const normalized = cleaned.replace(/\s+/g, " ").toLowerCase();
+  return !GENERIC_LINE_NAMES.has(normalized);
 }
 
 function extractContextLineName(folderNames: string[]): string {
@@ -380,6 +409,147 @@ function extractContextLineName(folderNames: string[]): string {
     }
   }
   return "";
+}
+
+function applyNumericPointLabelNames(rows: LineStorageRow[], candidates: LineEndpointCandidate[], root: Element): void {
+  if (!rows.length || !candidates.length) {
+    return;
+  }
+
+  const unresolved = candidates.filter((candidate) => {
+    const row = rows[candidate.rowIndex];
+    return row && !isMeaningfulLineName(String(row.num || ""));
+  });
+  if (!unresolved.length) {
+    return;
+  }
+
+  const labels = collectNumericPointLabels(root);
+  if (!labels.length) {
+    return;
+  }
+
+  const grouped = new Map<number, NumericPointLabel[]>();
+  labels.forEach((label) => {
+    if (label.value <= 0) {
+      return;
+    }
+    const existing = grouped.get(label.value) ?? [];
+    existing.push(label);
+    grouped.set(label.value, existing);
+  });
+
+  if (!grouped.size) {
+    return;
+  }
+
+  const signedLabelCount = labels.filter((label) => label.signed).length;
+  if (signedLabelCount < Math.floor(labels.length * 0.35)) {
+    return;
+  }
+
+  const requiredGroups = Math.max(3, Math.floor(unresolved.length * 0.3));
+  if (grouped.size < requiredGroups) {
+    return;
+  }
+
+  const pairedGroupCount = Array.from(grouped.values()).filter((items) => items.length >= 2).length;
+  if (pairedGroupCount < Math.max(3, Math.floor(grouped.size * 0.7))) {
+    return;
+  }
+
+  const usedRows = new Set<number>();
+  const orderedGroups = Array.from(grouped.entries()).sort((left, right) => left[0] - right[0]);
+  orderedGroups.forEach(([lineNumber, points]) => {
+    if (!points.length) {
+      return;
+    }
+
+    let bestRowIndex = -1;
+    let bestScore = Number.POSITIVE_INFINITY;
+    unresolved.forEach((candidate) => {
+      if (usedRows.has(candidate.rowIndex)) {
+        return;
+      }
+      const score = lineLabelMatchScore(candidate, points);
+      if (score < bestScore) {
+        bestScore = score;
+        bestRowIndex = candidate.rowIndex;
+      }
+    });
+
+    if (bestRowIndex < 0) {
+      return;
+    }
+
+    rows[bestRowIndex].num = String(lineNumber);
+    usedRows.add(bestRowIndex);
+  });
+}
+
+function collectNumericPointLabels(root: Element): NumericPointLabel[] {
+  const labels: NumericPointLabel[] = [];
+  const placemarks = findDescendantsByLocalName(root, "Placemark");
+  placemarks.forEach((placemark) => {
+    const name = findDirectChildText(placemark, "name");
+    const parsed = name.match(NUMERIC_POINT_LABEL_RE);
+    if (!parsed) {
+      return;
+    }
+
+    const value = Number(parsed[2]);
+    if (!Number.isFinite(value) || value <= 0) {
+      return;
+    }
+
+    const points = findDescendantsByLocalName(placemark, "Point");
+    if (!points.length) {
+      return;
+    }
+
+    const coordinateText = findDescendantText(points[0], "coordinates");
+    const parsedPoints = parseKmlCoordinateText(coordinateText);
+    if (!parsedPoints.length) {
+      return;
+    }
+
+    labels.push({
+      value: Math.round(value),
+      point: parsedPoints[0],
+      signed: Boolean(parsed[1]),
+    });
+  });
+  return labels;
+}
+
+function lineLabelMatchScore(candidate: LineEndpointCandidate, points: NumericPointLabel[]): number {
+  if (!points.length) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const [startLon, startLat] = candidate.start;
+  const [endLon, endLat] = candidate.end;
+  const [firstPoint] = points;
+  const firstDistanceToStart = squaredDistance(firstPoint.point[0], firstPoint.point[1], startLon, startLat);
+  const firstDistanceToEnd = squaredDistance(firstPoint.point[0], firstPoint.point[1], endLon, endLat);
+
+  if (points.length < 2) {
+    return Math.min(firstDistanceToStart, firstDistanceToEnd);
+  }
+
+  const secondPoint = points[1];
+  const secondDistanceToStart = squaredDistance(secondPoint.point[0], secondPoint.point[1], startLon, startLat);
+  const secondDistanceToEnd = squaredDistance(secondPoint.point[0], secondPoint.point[1], endLon, endLat);
+
+  const direct = firstDistanceToStart + secondDistanceToEnd;
+  const swapped = firstDistanceToEnd + secondDistanceToStart;
+  return Math.min(direct, swapped);
+}
+
+function squaredDistance(lonA: number, latA: number, lonB: number, latB: number): number {
+  const dLon = lonA - lonB;
+  const dLat = latA - latB;
+  return dLon * dLon + dLat * dLat;
 }
 
 function parseKmlCoordinateText(raw: string): [number, number][] {

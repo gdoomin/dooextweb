@@ -10,6 +10,7 @@ import {
   type BillingStatusResponse,
   type ConvertResponse,
   type ServerHistoryItem,
+  deleteHistoryItem,
   cancelBillingSubscription,
   fetchBillingStatus,
   fetchUserHistory,
@@ -147,6 +148,7 @@ export function HomeScreen({
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
   const [isLoading, setIsLoading] = useState(false);
   const [historyOpeningId, setHistoryOpeningId] = useState("");
+  const [historyDeletingId, setHistoryDeletingId] = useState("");
   const [userEmail, setUserEmail] = useState(initialUserEmail);
   const [userId, setUserId] = useState(initialUserId);
   const [accessToken, setAccessToken] = useState("");
@@ -515,6 +517,39 @@ export function HomeScreen({
     }
   }
 
+  async function handleHistoryDelete(item: ServerHistoryItem) {
+    if (!canUseHistory) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 히스토리 삭제를 사용할 수 없습니다.");
+      return;
+    }
+    if (!requireAuth("개인 히스토리를 삭제하려면 로그인해 주세요.")) {
+      return;
+    }
+
+    const targetName = item.project_name || item.filename || item.job_id;
+    const confirmed = window.confirm(`히스토리에서 \"${targetName}\" 항목을 삭제할까요?`);
+    if (!confirmed) {
+      return;
+    }
+
+    setHistoryDeletingId(item.job_id);
+    setStatusTone("loading");
+    setStatusMessage(`${targetName} 항목을 삭제하는 중입니다...`);
+
+    try {
+      await deleteHistoryItem(item.job_id, userId, userEmail, accessToken);
+      await refreshHistory();
+      setStatusTone("success");
+      setStatusMessage(`${targetName} 항목을 삭제했습니다.`);
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 삭제하지 못했습니다."));
+    } finally {
+      setHistoryDeletingId("");
+    }
+  }
+
   async function copyClipboard() {
     if (!response?.text_output) {
       setStatusTone("error");
@@ -762,8 +797,9 @@ export function HomeScreen({
               {isAuthenticated ? (
                 <div className="doo-billing-card">
                   <div className="doo-billing-head">
-                    <strong>구독 상태</strong>
-                    {billingLoading ? <span>확인 중...</span> : <span>{billingStatus?.plan_code || "free"}</span>}
+                    <button type="button" className="doo-billing-status-button" disabled>
+                      구독 상태 {billingLoading ? "확인 중..." : (billingStatus?.plan_code || "free").toUpperCase()}
+                    </button>
                   </div>
 
                   {billingStatus?.billing_enabled ? (
@@ -887,6 +923,7 @@ export function HomeScreen({
                     {historyItems.map((item) => {
                       const isCurrent = response?.job_id === item.job_id;
                       const isOpening = historyOpeningId === item.job_id;
+                      const isDeleting = historyDeletingId === item.job_id;
                       return (
                         <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
                           <div className="doo-history-body">
@@ -896,14 +933,26 @@ export function HomeScreen({
                               {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 · {formatHistorySavedAt(item.uploaded_at)}
                             </span>
                           </div>
-                          <button
-                            type="button"
-                            className="doo-history-open"
-                            onClick={() => handleHistoryOpen(item)}
-                            disabled={isOpening}
-                          >
-                            {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
-                          </button>
+                          <div className="doo-history-actions">
+                            <button
+                              type="button"
+                              className="doo-history-open"
+                              onClick={() => handleHistoryOpen(item)}
+                              disabled={isOpening || isDeleting}
+                            >
+                              {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
+                            </button>
+                            <button
+                              type="button"
+                              className="doo-history-delete"
+                              title="히스토리 삭제"
+                              aria-label="히스토리 삭제"
+                              onClick={() => handleHistoryDelete(item)}
+                              disabled={isOpening || isDeleting}
+                            >
+                              {isDeleting ? "..." : "🗑"}
+                            </button>
+                          </div>
                         </article>
                       );
                     })}

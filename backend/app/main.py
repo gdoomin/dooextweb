@@ -623,6 +623,50 @@ def _history_supabase_upsert(user_id: str, user_email: str, entry: dict, access_
         return False
 
 
+def _history_supabase_delete(user_id: str, user_email: str, job_id: str, access_token: str = "") -> bool:
+    config = _history_supabase_config()
+    if config is None:
+        return False
+
+    normalized_job_id = str(job_id or "").strip()
+    if not normalized_job_id:
+        return False
+
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    if not normalized_user_id and not normalized_email:
+        return False
+
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    if not supabase_url or not table_name:
+        return False
+
+    query_items: list[tuple[str, str]] = [("job_id", f"eq.{quote(normalized_job_id, safe='-_')}")]
+    if normalized_user_id:
+        query_items.append(("user_id", f"eq.{quote(normalized_user_id, safe='-_')}"))
+    else:
+        query_items.append(("user_email", f"eq.{quote(normalized_email, safe='@-_.')}"))
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}",
+        method="DELETE",
+        headers={
+            **headers,
+            "Prefer": "return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except Exception:
+        return False
+
+
 def _job_payload_supabase_config() -> dict[str, str] | None:
     base = _history_supabase_config()
     if base is None:
@@ -2392,6 +2436,35 @@ def _record_user_history(
         _save_json(path, trimmed_items[:USER_HISTORY_LIMIT])
 
 
+def _remove_user_history_item(user_id: str, user_email: str, job_id: str) -> bool:
+    normalized_job_id = str(job_id or "").strip()
+    if not normalized_job_id:
+        return False
+
+    removed = False
+    history_paths = _history_paths_for_identity(user_id, user_email)
+    for path in history_paths:
+        existing = _load_json(path, [])
+        if not isinstance(existing, list):
+            continue
+
+        filtered: list[dict] = []
+        changed = False
+        for item in existing:
+            if not isinstance(item, dict):
+                continue
+            if str(item.get("job_id") or "").strip() == normalized_job_id:
+                changed = True
+                continue
+            filtered.append(item)
+
+        if changed:
+            _save_json(path, filtered[:USER_HISTORY_LIMIT])
+            removed = True
+
+    return removed
+
+
 def _load_user_history(
     user_id: str,
     user_email: str = "",
@@ -2825,6 +2898,25 @@ def get_history_item(job_id: str, request: Request):
     if not (matches_id or matches_email):
         raise HTTPException(status_code=404, detail="history item not found")
     return JSONResponse(_job_response(job, _external_base_url(request)))
+
+
+@app.delete("/api/history/{job_id}")
+def delete_history_item(job_id: str, request: Request):
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    access_token = _extract_bearer_token(request)
+    status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    items = _load_user_history(user_id, user_email, billing_status=status, access_token=access_token)
+
+    target_job_id = str(job_id or "").strip()
+    if not target_job_id:
+        raise HTTPException(status_code=400, detail="job_id is required")
+
+    if not any(str(item.get("job_id") or "").strip() == target_job_id for item in items):
+        raise HTTPException(status_code=404, detail="history item not found")
+
+    removed_local = _remove_user_history_item(user_id, user_email, target_job_id)
+    removed_supabase = _history_supabase_delete(user_id, user_email, target_job_id, access_token=access_token)
+    return JSONResponse({"ok": True, "deleted": bool(removed_local or removed_supabase), "job_id": target_job_id})
 
 
 @app.get("/api/billing/plans")

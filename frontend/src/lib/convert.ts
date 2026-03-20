@@ -379,6 +379,17 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
   return body as ConvertResponse;
 }
 
+export async function deleteHistoryItem(jobId: string, userId: string, userEmail = "", accessToken = ""): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/history/${jobId}`, {
+    method: "DELETE",
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "히스토리 항목을 삭제하지 못했습니다."));
+  }
+}
+
 export async function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
   const response = await fetch(`${API_BASE_URL}/api/billing/status`, {
     headers: buildUserHeaders(userId, userEmail, accessToken),
