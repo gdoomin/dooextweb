@@ -4207,10 +4207,11 @@
         return a.id - b.id;
       });
 
-      const entryFromWest = settings.entryDirection !== 'east';
+      const firstEntryFromWest = settings.entryDirection !== 'east';
       return lines.map((line, index) => {
         let start = { ...line.startRaw };
         let end = { ...line.endRaw };
+        const entryFromWest = (index % 2 === 0) ? firstEntryFromWest : !firstEntryFromWest;
         if (entryFromWest && start.longitude > end.longitude) {
           const temp = start;
           start = end;
@@ -4392,56 +4393,104 @@
       return { outOfBounds, sea, maxDeviationMeters };
     }
 
-    function buildArcPathByRadius(startCoord, endCoord, radiusMeters, turnSign, splits = 20) {
+    function resolveTurnSignTowardTarget(startCoord, startHeadingDeg, targetCoord) {
+      if (!startCoord || !targetCoord) {
+        return 1;
+      }
+      const refLat = Number(startCoord.latitude);
+      const refLng = Number(startCoord.longitude);
+      if (!Number.isFinite(refLat) || !Number.isFinite(refLng)) {
+        return 1;
+      }
+      const localTarget = toLocalMeters(targetCoord, refLat, refLng);
+      const headingRad = toRadians(normalizeHeadingDeg(startHeadingDeg));
+      const dirX = Math.sin(headingRad);
+      const dirY = Math.cos(headingRad);
+      const cross = (dirX * localTarget.y) - (dirY * localTarget.x);
+      if (Math.abs(cross) > 1e-3) {
+        return cross > 0 ? -1 : 1;
+      }
+      const delta = signedHeadingDeltaDeg(startHeadingDeg, bearingDeg(startCoord, targetCoord));
+      if (Math.abs(delta) > 1e-3) {
+        return delta > 0 ? 1 : -1;
+      }
+      return (targetCoord.latitude - startCoord.latitude) >= 0 ? -1 : 1;
+    }
+
+    function buildArcPathByRadius(
+      startCoord,
+      endCoord,
+      radiusMeters,
+      turnSign,
+      splits = 20,
+      startHeadingDeg = null,
+      endHeadingDeg = null,
+      startControlMeters = null,
+      endControlMeters = null
+    ) {
       const safeRadius = Math.max(100, Number(radiusMeters) || 0);
-      const stepCount = Math.max(8, Math.round(Number(splits) || 20));
-      const refLat = (startCoord.latitude + endCoord.latitude) / 2;
-      const refLng = (startCoord.longitude + endCoord.longitude) / 2;
-      const start = toLocalMeters(startCoord, refLat, refLng);
-      const end = toLocalMeters(endCoord, refLat, refLng);
-      const dx = end.x - start.x;
-      const dy = end.y - start.y;
-      const chord = Math.hypot(dx, dy);
-      if (chord < 1e-3) {
+      const stepCount = Math.max(12, Math.round(Number(splits) || 20));
+      const chordMeters = coordDistanceMeters(startCoord, endCoord);
+      if (!Number.isFinite(chordMeters) || chordMeters < 0.5) {
         return [
           { latitude: startCoord.latitude, longitude: startCoord.longitude },
           { latitude: endCoord.latitude, longitude: endCoord.longitude },
         ];
       }
 
-      const effectiveRadius = Math.max(safeRadius, (chord / 2) + 1);
-      const midX = (start.x + end.x) / 2;
-      const midY = (start.y + end.y) / 2;
-      const normX = -dy / chord;
-      const normY = dx / chord;
-      const sideSign = turnSign >= 0 ? 1 : -1;
-      const centerOffset = Math.sqrt(Math.max(0, (effectiveRadius * effectiveRadius) - ((chord * chord) / 4)));
-      const centerX = midX + (normX * centerOffset * sideSign);
-      const centerY = midY + (normY * centerOffset * sideSign);
+      const startHeading = Number.isFinite(Number(startHeadingDeg))
+        ? normalizeHeadingDeg(Number(startHeadingDeg))
+        : normalizeHeadingDeg(bearingDeg(startCoord, endCoord));
+      const endHeading = Number.isFinite(Number(endHeadingDeg))
+        ? normalizeHeadingDeg(Number(endHeadingDeg))
+        : normalizeHeadingDeg(startHeading + ((turnSign >= 0) ? 180 : -180));
 
-      let startAngle = Math.atan2(start.y - centerY, start.x - centerX);
-      let endAngle = Math.atan2(end.y - centerY, end.x - centerX);
-      if (sideSign >= 0) {
-        while (endAngle <= startAngle) {
-          endAngle += Math.PI * 2;
-        }
-      } else {
-        while (endAngle >= startAngle) {
-          endAngle -= Math.PI * 2;
-        }
-      }
-
+      const refLat = (startCoord.latitude + endCoord.latitude) / 2;
+      const refLng = (startCoord.longitude + endCoord.longitude) / 2;
       const latScale = 111320;
       const lngScale = 111320 * Math.cos(toRadians(refLat));
+      const safeLngScale = Math.abs(lngScale) > 1e-8 ? lngScale : 1e-8;
+
+      const p0 = toLocalMeters(startCoord, refLat, refLng);
+      const p3 = toLocalMeters(endCoord, refLat, refLng);
+      const controlStart = Number.isFinite(Number(startControlMeters))
+        ? Math.max(60, Number(startControlMeters))
+        : Math.max(120, safeRadius * 0.9);
+      const controlEnd = Number.isFinite(Number(endControlMeters))
+        ? Math.max(60, Number(endControlMeters))
+        : Math.max(120, safeRadius * 0.9);
+      const c1Base = offsetCoordByMeters(startCoord, startHeading, controlStart);
+      const c2Base = offsetCoordByMeters(endCoord, normalizeHeadingDeg(endHeading + 180), controlEnd);
+      const p1 = toLocalMeters(c1Base, refLat, refLng);
+      const p2 = toLocalMeters(c2Base, refLat, refLng);
+
+      const controlBase = Math.max(safeRadius * 0.45, chordMeters * 0.12);
+      const controlLimit = Math.max(chordMeters * 0.35, safeRadius * 0.6, 200);
+      const sideBias = clamp(controlBase, 40, controlLimit);
+      const headingRad = toRadians(startHeading);
+      const rightX = Math.cos(headingRad);
+      const rightY = -Math.sin(headingRad);
+      const sideSign = turnSign >= 0 ? 1 : -1;
+      p1.x += rightX * sideBias * sideSign;
+      p1.y += rightY * sideBias * sideSign;
+      p2.x += rightX * sideBias * sideSign;
+      p2.y += rightY * sideBias * sideSign;
+
       const coords = [];
       for (let index = 0; index <= stepCount; index += 1) {
-        const ratio = index / stepCount;
-        const angle = startAngle + ((endAngle - startAngle) * ratio);
-        const x = centerX + (effectiveRadius * Math.cos(angle));
-        const y = centerY + (effectiveRadius * Math.sin(angle));
+        const t = index / stepCount;
+        const u = 1 - t;
+        const x = (u * u * u * p0.x)
+          + (3 * u * u * t * p1.x)
+          + (3 * u * t * t * p2.x)
+          + (t * t * t * p3.x);
+        const y = (u * u * u * p0.y)
+          + (3 * u * u * t * p1.y)
+          + (3 * u * t * t * p2.y)
+          + (t * t * t * p3.y);
         coords.push({
           latitude: refLat + (y / latScale),
-          longitude: refLng + (x / lngScale),
+          longitude: refLng + (x / safeLngScale),
         });
       }
       return coords;
@@ -4453,8 +4502,8 @@
       const workBounds = getSimulationWorkBounds();
       const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits) || SIM_DEFAULTS.arcSplits));
       const turnRadiusMeters = Math.max(100, Number(settings.turnRadiusNm) * SIM_NM_TO_METERS);
-      const departureMeters = Math.max(100, Number(settings.departureNm) * SIM_NM_TO_METERS);
-      const inboundMeters = Math.max(100, Number(settings.inboundNm) * SIM_NM_TO_METERS);
+      const departureMeters = Math.max(60, Number(settings.departureNm) * SIM_NM_TO_METERS);
+      const inboundMeters = Math.max(60, Number(settings.inboundNm) * SIM_NM_TO_METERS);
       const pattern = settings.turnPattern === 'direct' ? 'direct' : 'standard';
 
       let planDistanceMeters = 0;
@@ -4483,28 +4532,36 @@
         }
 
         const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
-        const toNextHeading = normalizeHeadingDeg(bearingDeg(current.end, next.start));
-        let turnSign = signedHeadingDeltaDeg(currentHeading, toNextHeading) >= 0 ? 1 : -1;
-        if (Math.abs(signedHeadingDeltaDeg(currentHeading, toNextHeading)) < 0.001) {
-          turnSign = (next.start.latitude - current.end.latitude) >= 0 ? -1 : 1;
-        }
+        const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
+        const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
 
         const turnSegments = [];
         if (pattern === 'standard') {
           const departureHeading = normalizeHeadingDeg(currentHeading + (turnSign * settings.offsetAngleDeg));
-          const departureEnd = offsetCoordByMeters(current.end, departureHeading, departureMeters);
-          const approachStart = offsetCoordByMeters(departureEnd, currentHeading, inboundMeters);
-          turnSegments.push([
-            { latitude: current.end.latitude, longitude: current.end.longitude },
-            { latitude: departureEnd.latitude, longitude: departureEnd.longitude },
-          ]);
-          turnSegments.push([
-            { latitude: departureEnd.latitude, longitude: departureEnd.longitude },
-            { latitude: approachStart.latitude, longitude: approachStart.longitude },
-          ]);
-          turnSegments.push(buildArcPathByRadius(approachStart, next.start, turnRadiusMeters, turnSign, arcSplits));
+          const curve = buildArcPathByRadius(
+            current.end,
+            next.start,
+            turnRadiusMeters,
+            turnSign,
+            arcSplits + 8,
+            departureHeading,
+            nextHeading,
+            departureMeters,
+            inboundMeters
+          );
+          turnSegments.push(curve);
         } else {
-          turnSegments.push(buildArcPathByRadius(current.end, next.start, turnRadiusMeters, turnSign, arcSplits));
+          turnSegments.push(buildArcPathByRadius(
+            current.end,
+            next.start,
+            turnRadiusMeters,
+            turnSign,
+            arcSplits + 6,
+            currentHeading,
+            nextHeading,
+            turnRadiusMeters * 0.7,
+            turnRadiusMeters * 0.7
+          ));
         }
 
         turnSegments.forEach((turnCoords) => {
