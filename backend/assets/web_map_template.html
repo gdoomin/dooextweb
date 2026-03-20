@@ -2139,6 +2139,13 @@
       <path d="M63 20 70 29l8 2-6 7 1 10-9-4-9 5 1-11-7-6 9-3z" fill="#ffd86d" stroke="#17324b" stroke-width="2.4" stroke-linejoin="round"></path>
       <path d="M62 31h9M62 36h7" stroke="#17324b" stroke-width="2.2" stroke-linecap="round"></path>
     </symbol>
+    <symbol id="toolIconGpx" viewBox="0 0 96 72">
+      <rect x="18" y="14" width="60" height="44" rx="10" fill="#f5eeff" stroke="#17324b" stroke-width="2.8"></rect>
+      <path d="M24 47 36 39 46 44 58 29 73 34" fill="none" stroke="#7b3ff2" stroke-width="4.6" stroke-linecap="round" stroke-linejoin="round"></path>
+      <circle cx="24" cy="47" r="2.4" fill="#7b3ff2"></circle>
+      <circle cx="73" cy="34" r="2.4" fill="#7b3ff2"></circle>
+      <text x="48" y="31" text-anchor="middle" fill="#4d1fa8" font-size="15.5" font-weight="800" font-family="Arial, sans-serif">GPX</text>
+    </symbol>
     <symbol id="toolIconHide" viewBox="0 0 96 72">
       <path d="M70 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
       <path d="M76 21c4-5 8-2 8 3" stroke="#17324b" stroke-width="2.6" stroke-linecap="round"></path>
@@ -2204,6 +2211,9 @@
       <button id="captureButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="카메라" title="카메라">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconCamera"></use></svg></span>
       </button>
+      <button id="gpxButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="gpx파일" title="gpx파일">
+        <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconGpx"></use></svg></span>
+      </button>
       <button id="notamButton" class="tool-button tool-button--art toolbar-collapse-hide" type="button" aria-label="NOTAM" title="NOTAM">
         <span class="tool-card" aria-hidden="true"><svg class="tool-art" viewBox="0 0 96 72"><use href="#toolIconNotam"></use></svg></span>
       </button>
@@ -2246,6 +2256,7 @@
       </button>
     </div>
   </div>
+  <input id="gpxFileInput" type="file" accept=".gpx,application/gpx+xml,text/xml,application/xml" hidden>
   <div id="layerPanel" class="panel layer-panel">
     <p class="layer-title">겹</p>
     <div id="layerRows"></div>
@@ -2715,6 +2726,7 @@
     const kmlLabelGroup = L.layerGroup();
     const measureGroup = L.layerGroup().addTo(map);
     const textGroup = L.layerGroup().addTo(map);
+    const gpxRouteGroup = L.layerGroup().addTo(map);
     const bounds = L.latLngBounds([]);
     const tilePane = map.getPane('tilePane');
     const toolbar = document.querySelector('.toolbar');
@@ -2742,6 +2754,8 @@
     const forceModeNewButton = document.getElementById('forceModeNewButton');
     const forceModeExistingButton = document.getElementById('forceModeExistingButton');
     const captureButton = document.getElementById('captureButton');
+    const gpxButton = document.getElementById('gpxButton');
+    const gpxFileInput = document.getElementById('gpxFileInput');
     const notamButton = document.getElementById('notamButton');
     const planInfoButton = document.getElementById('planInfoButton');
     const collapseToolbarButton = document.getElementById('collapseToolbarButton');
@@ -2934,6 +2948,10 @@
     let viewerStatePendingRemoteSave = null;
     const undoHistory = [];
     let undoApplying = false;
+    const GPX_LINE_COLOR = '#7b3ff2';
+    const GPX_LINE_WEIGHT = 6;
+    const GPX_LINE_OPACITY = 0.92;
+    const GPX_MAX_AUTO_FIT_ZOOM = 16;
     const TOOL_MODE_KEYS = new Set(['measure', 'text', 'done', 'force']);
     const menuButtonsByKey = {
       layer: layerButton,
@@ -3053,6 +3071,88 @@
       if (except !== 'force' && forceState.active) {
         setForceActive(false, true);
       }
+    }
+
+    function parseGpxCoordinatePoint(node) {
+      if (!node || !node.getAttribute) {
+        return null;
+      }
+      const lat = Number.parseFloat(node.getAttribute('lat'));
+      const lng = Number.parseFloat(node.getAttribute('lon'));
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+      }
+      if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+        return null;
+      }
+      return [lat, lng];
+    }
+
+    function extractGpxSegments(xmlDoc) {
+      const segments = [];
+      const trackSegments = Array.from(xmlDoc.querySelectorAll('trk > trkseg'));
+      trackSegments.forEach((segmentNode) => {
+        const points = Array.from(segmentNode.querySelectorAll('trkpt'))
+          .map(parseGpxCoordinatePoint)
+          .filter((point) => Array.isArray(point));
+        if (points.length >= 2) {
+          segments.push(points);
+        }
+      });
+
+      const routeNodes = Array.from(xmlDoc.querySelectorAll('rte'));
+      routeNodes.forEach((routeNode) => {
+        const points = Array.from(routeNode.querySelectorAll('rtept'))
+          .map(parseGpxCoordinatePoint)
+          .filter((point) => Array.isArray(point));
+        if (points.length >= 2) {
+          segments.push(points);
+        }
+      });
+
+      return segments;
+    }
+
+    function drawGpxSegments(segments) {
+      gpxRouteGroup.clearLayers();
+      const gpxBounds = L.latLngBounds([]);
+      let pointCount = 0;
+      segments.forEach((segment) => {
+        pointCount += segment.length;
+        segment.forEach((point) => {
+          gpxBounds.extend(point);
+        });
+        L.polyline(segment, {
+          color: GPX_LINE_COLOR,
+          weight: GPX_LINE_WEIGHT,
+          opacity: GPX_LINE_OPACITY,
+          lineCap: 'round',
+          lineJoin: 'round',
+          pane: 'overlayPane',
+          interactive: false,
+          renderer,
+        }).addTo(gpxRouteGroup);
+      });
+      if (gpxBounds.isValid()) {
+        map.fitBounds(gpxBounds.pad(0.16), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
+      }
+      return { segmentCount: segments.length, pointCount };
+    }
+
+    function loadGpxFromText(gpxText) {
+      const raw = String(gpxText || '').trim();
+      if (!raw) {
+        throw new Error('빈 GPX 파일입니다.');
+      }
+      const xmlDoc = new DOMParser().parseFromString(raw, 'application/xml');
+      if (xmlDoc.querySelector('parsererror')) {
+        throw new Error('GPX 형식 파싱에 실패했습니다.');
+      }
+      const segments = extractGpxSegments(xmlDoc);
+      if (!segments.length) {
+        throw new Error('GPX에서 경로(trk/rte)를 찾지 못했습니다.');
+      }
+      return drawGpxSegments(segments);
     }
 
     let planRestrictionAlertAt = 0;
@@ -8862,6 +8962,31 @@
       setWeatherPanelVisible(false);
       await toggleNotamOverlay();
     });
+    if (gpxButton && gpxFileInput) {
+      gpxButton.addEventListener('click', (event) => {
+        event.stopPropagation();
+        gpxFileInput.value = '';
+        gpxFileInput.click();
+      });
+      gpxFileInput.addEventListener('change', async () => {
+        const file = gpxFileInput.files && gpxFileInput.files[0];
+        if (!file) {
+          return;
+        }
+        gpxButton.disabled = true;
+        try {
+          const gpxText = await file.text();
+          const result = loadGpxFromText(gpxText);
+          window.alert(`GPX 경로를 불러왔습니다.\n세그먼트 ${result.segmentCount}개 · 좌표 ${result.pointCount}개`);
+        } catch (error) {
+          const message = error && error.message ? String(error.message) : 'GPX 파일 처리에 실패했습니다.';
+          window.alert(message);
+        } finally {
+          gpxButton.disabled = false;
+          gpxFileInput.value = '';
+        }
+      });
+    }
     if (planInfoButton) {
       planInfoButton.addEventListener('click', (event) => {
         event.stopPropagation();
