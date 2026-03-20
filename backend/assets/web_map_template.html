@@ -1263,6 +1263,9 @@
     .sim-panel--minimal .sim-actions {
       margin-top: 12px;
     }
+    .sim-panel--minimal .sim-apply-button {
+      display: none !important;
+    }
     .sim-simple-section {
       display: grid;
       gap: 8px;
@@ -2955,10 +2958,10 @@
     </div>
 
     <div class="sim-actions">
-      <button id="simToggleOverlayButton" class="mini-button sim-toggle-button" type="button">시뮬레이션 ON</button>
-      <button id="simApplyButton" class="mini-button sim-apply-button" type="button">재계산</button>
-    </div>
-  </div>
+          <button id="simToggleOverlayButton" class="mini-button sim-toggle-button" type="button">시뮬레이션 라인 ON</button>
+          <button id="simApplyButton" class="mini-button sim-apply-button" type="button">재계산</button>
+        </div>
+      </div>
   <div id="hintPanel" class="panel hint">휠 또는 트랙패드로 부드럽게 확대/축소 · 드래그 이동 · 겹 토글/색상 변경 · 측정 또는 T 글자 입력 가능</div>
   <div id="captureModal" class="capture-modal">
     <div id="captureCard" class="capture-card">
@@ -4047,6 +4050,80 @@
       syncMenuButtonActiveState();
     }
 
+    function normalizeGpxPointsArray(points) {
+      if (!Array.isArray(points)) {
+        return [];
+      }
+      return points
+        .map((point) => {
+          if (!Array.isArray(point) || point.length < 2) {
+            return null;
+          }
+          const lat = Number(point[0]);
+          const lng = Number(point[1]);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return null;
+          }
+          if (Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+            return null;
+          }
+          return [lat, lng];
+        })
+        .filter((point) => Array.isArray(point));
+    }
+
+    function createGpxRouteItem(points, options = {}) {
+      const normalizedPoints = normalizeGpxPointsArray(points);
+      if (normalizedPoints.length < 2) {
+        return null;
+      }
+      const routeColor = normalizeGpxColor(options.color, gpxState.defaultColor);
+      const routeWeight = normalizeGpxWeight(options.weight, gpxState.defaultWeight);
+      const explicitId = Number.isFinite(options.id) ? Math.max(1, Math.round(options.id)) : null;
+      const routeId = explicitId != null ? explicitId : gpxState.nextId++;
+      if (explicitId != null) {
+        gpxState.nextId = Math.max(gpxState.nextId, routeId + 1);
+      }
+      const layer = L.polyline(normalizedPoints, {
+        color: routeColor,
+        weight: routeWeight,
+        opacity: GPX_LINE_OPACITY,
+        lineCap: 'round',
+        lineJoin: 'round',
+        pane: 'overlayPane',
+        interactive: true,
+        bubblingMouseEvents: false,
+        renderer,
+      }).addTo(gpxRouteGroup);
+      const item = {
+        id: routeId,
+        layer,
+        points: normalizedPoints.map((point) => [point[0], point[1]]),
+        color: routeColor,
+        weight: routeWeight,
+      };
+      layer.on('click', (event) => {
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        selectGpxRoute(routeId);
+      });
+      gpxState.items.push(item);
+      applyGpxRouteStyle(item, false);
+      return item;
+    }
+
+    function clearGpxRoutes(persist = false) {
+      gpxRouteGroup.clearLayers();
+      gpxState.items = [];
+      gpxState.nextId = 1;
+      gpxState.selectedRouteId = null;
+      syncGpxRouteSelections();
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
     function removeGpxRouteById(routeId, persist = true) {
       const index = gpxState.items.findIndex((item) => item.id === routeId);
       if (index < 0) {
@@ -4070,7 +4147,12 @@
       if (!Number.isFinite(gpxState.selectedRouteId)) {
         return false;
       }
-      return removeGpxRouteById(gpxState.selectedRouteId, true);
+      primeUndoBeforeMutation();
+      const deleted = removeGpxRouteById(gpxState.selectedRouteId, false);
+      if (deleted) {
+        commitViewerStateForUndo();
+      }
+      return deleted;
     }
 
     function normalizeSimColor(value, fallback = SIM_BASE_COLOR) {
@@ -4193,7 +4275,12 @@
       if (!Number.isFinite(simState.selectedSegmentId)) {
         return false;
       }
-      return removeSimulationSegmentById(simState.selectedSegmentId, true);
+      primeUndoBeforeMutation();
+      const deleted = removeSimulationSegmentById(simState.selectedSegmentId, false);
+      if (deleted) {
+        commitViewerStateForUndo();
+      }
+      return deleted;
     }
 
     function clearSimulationSegments(persist = false) {
@@ -4228,7 +4315,11 @@
         renderer,
         smoothFactor: 1,
       }).addTo(simulationRouteGroup);
-      const segmentId = simState.nextId++;
+      const explicitId = Number.isFinite(meta.id) ? Math.max(1, Math.round(meta.id)) : null;
+      const segmentId = explicitId != null ? explicitId : simState.nextId++;
+      if (explicitId != null) {
+        simState.nextId = Math.max(simState.nextId, segmentId + 1);
+      }
       const item = {
         id: segmentId,
         layer,
@@ -4238,8 +4329,8 @@
         warningSea: !!meta.warningSea,
         color: initialColor,
         weight: initialWeight,
-        manualColor: false,
-        manualWeight: false,
+        manualColor: !!meta.manualColor,
+        manualWeight: !!meta.manualWeight,
       };
       layer.on('click', (event) => {
         if (event && event.originalEvent) {
@@ -4265,36 +4356,18 @@
       gpxState.defaultWeight = defaultWeight;
 
       segments.forEach((segment) => {
-        pointCount += segment.length;
-        segment.forEach((point) => {
+        const normalizedPoints = normalizeGpxPointsArray(segment);
+        pointCount += normalizedPoints.length;
+        normalizedPoints.forEach((point) => {
           gpxBounds.extend(point);
         });
-        const routeId = gpxState.nextId++;
-        const layer = L.polyline(segment, {
+        const created = createGpxRouteItem(normalizedPoints, {
           color: defaultColor,
           weight: defaultWeight,
-          opacity: GPX_LINE_OPACITY,
-          lineCap: 'round',
-          lineJoin: 'round',
-          pane: 'overlayPane',
-          interactive: true,
-          bubblingMouseEvents: false,
-          renderer,
-        }).addTo(gpxRouteGroup);
-        const item = {
-          id: routeId,
-          layer,
-          color: defaultColor,
-          weight: defaultWeight,
-        };
-        layer.on('click', (event) => {
-          if (event && event.originalEvent) {
-            L.DomEvent.stop(event.originalEvent);
-          }
-          selectGpxRoute(routeId);
         });
-        gpxState.items.push(item);
-        addedCount += 1;
+        if (created) {
+          addedCount += 1;
+        }
       });
       if (gpxBounds.isValid()) {
         map.fitBounds(gpxBounds.pad(0.16), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
@@ -4546,6 +4619,9 @@
         const normalized = String(clamp(Number(simMaxDeviationNmInput.value) || SIM_DEFAULTS.maxDeviationNm, 2, 7));
         simSimpleDistanceSelect.value = normalized;
       }
+      if (simApplyButton) {
+        simApplyButton.style.display = 'none';
+      }
       syncSimulationSegmentSelections();
     }
 
@@ -4591,7 +4667,7 @@
       }
       if (simToggleOverlayButton) {
         simToggleOverlayButton.classList.toggle('is-on', enabled);
-        simToggleOverlayButton.textContent = enabled ? '시뮬레이션 OFF' : '시뮬레이션 ON';
+        simToggleOverlayButton.textContent = enabled ? '시뮬레이션 라인 OFF' : '시뮬레이션 라인 ON';
       }
       if (enabled) {
         if (!map.hasLayer(simulationRouteGroup)) {
@@ -8650,7 +8726,9 @@
       if (!textState.selectedMarker) {
         return false;
       }
+      primeUndoBeforeMutation();
       removeTextMarker(textState.selectedMarker);
+      commitViewerStateForUndo();
       return true;
     }
 
@@ -9309,6 +9387,7 @@
       if (!hasSelectedNumberLabel()) {
         return false;
       }
+      primeUndoBeforeMutation();
       const selectedKind = numberLabelState.kind;
       const selectedEntryId = numberLabelState.entryId;
       deselectNumberLabel();
@@ -9324,7 +9403,7 @@
         }
         targetEntry.row.force_assigned = null;
         refreshForceLabels();
-        scheduleViewerStateSave();
+        commitViewerStateForUndo();
         return true;
       }
 
@@ -9334,7 +9413,7 @@
         selectedKmlLabelIds.delete(selectedEntryId);
         refreshKmlLabels();
         syncKmlLabelVisibility();
-        scheduleViewerStateSave();
+        commitViewerStateForUndo();
         return true;
       }
 
@@ -9436,7 +9515,7 @@
       const labelText = forceText
         ? (row.num ? `${row.num} (${forceText})` : forceText)
         : (row.num || 'Line');
-      return `<strong>Line ${escapeHtml(labelText)}</strong><br>시작 ${escapeHtml(row.s_text)}<br>끝 ${escapeHtml(row.e_text)}`;
+      return `<strong>Line ${escapeHtml(labelText)}</strong>`;
     }
 
     function refreshForceLabels() {
@@ -9791,6 +9870,48 @@
             color: getTextMarkerColor(marker),
           };
         }),
+        gpx: {
+          defaultColor: normalizeGpxColor(gpxState.defaultColor, GPX_LINE_COLOR),
+          defaultWeight: normalizeGpxWeight(gpxState.defaultWeight, GPX_LINE_WEIGHT),
+          selectedRouteId: Number.isFinite(gpxState.selectedRouteId) ? gpxState.selectedRouteId : null,
+          items: gpxState.items.map((item) => ({
+            id: item.id,
+            color: normalizeGpxColor(item.color, gpxState.defaultColor),
+            weight: normalizeGpxWeight(item.weight, gpxState.defaultWeight),
+            points: (
+              Array.isArray(item.points) && item.points.length
+                ? item.points
+                : (
+                  item.layer && typeof item.layer.getLatLngs === 'function'
+                    ? item.layer.getLatLngs().map((latlng) => [Number(latlng.lat), Number(latlng.lng)])
+                    : []
+                )
+            ).map((point) => [Number(point[0]), Number(point[1])]),
+          })),
+        },
+        sim: {
+          visible: !!simState.visible,
+          panelVisible: !!simState.panelVisible,
+          selectedSegmentId: Number.isFinite(simState.selectedSegmentId) ? simState.selectedSegmentId : null,
+          settings: { ...simState.settings },
+          stats: simState.stats ? { ...simState.stats } : null,
+          items: simState.items.map((item) => ({
+            id: item.id,
+            coords: Array.isArray(item.coords)
+              ? item.coords.map((coord) => ({
+                latitude: Number(coord.latitude),
+                longitude: Number(coord.longitude),
+              }))
+              : [],
+            isTurnSegment: !!item.isTurnSegment,
+            warningOutOfBounds: !!item.warningOutOfBounds,
+            warningSea: !!item.warningSea,
+            color: normalizeSimColor(item.color, SIM_BASE_COLOR),
+            weight: normalizeSimWeight(item.weight, SIM_WEIGHT),
+            manualColor: !!item.manualColor,
+            manualWeight: !!item.manualWeight,
+          })),
+        },
         measure: {
           active: measureState.active,
           unit: measureState.unit,
@@ -9825,6 +9946,27 @@
       while (undoHistory.length > UNDO_LIMIT + 1) {
         undoHistory.shift();
       }
+    }
+
+    function primeUndoBeforeMutation() {
+      if (viewerStateRestoring || undoApplying) {
+        return;
+      }
+      window.clearTimeout(viewerStateSaveTimer);
+      const snapshot = collectViewerState();
+      const serialized = JSON.stringify(snapshot);
+      recordUndoState(false, snapshot, serialized);
+    }
+
+    function commitViewerStateForUndo(options = {}) {
+      if (viewerStateRestoring || undoApplying) {
+        return;
+      }
+      window.clearTimeout(viewerStateSaveTimer);
+      const snapshot = collectViewerState();
+      const serialized = JSON.stringify(snapshot);
+      recordUndoState(false, snapshot, serialized);
+      persistViewerStateSnapshot(snapshot, serialized, options);
     }
 
     function parseViewerStateObject(value) {
@@ -10186,6 +10328,108 @@
       syncAllNotamGroups();
     }
 
+    function applySavedGpxState(savedGpx) {
+      clearGpxRoutes(false);
+      if (!savedGpx || typeof savedGpx !== 'object') {
+        return;
+      }
+      const nextDefaultColor = normalizeGpxColor(savedGpx.defaultColor, gpxState.defaultColor);
+      const nextDefaultWeight = normalizeGpxWeight(savedGpx.defaultWeight, gpxState.defaultWeight);
+      gpxState.defaultColor = nextDefaultColor;
+      gpxState.defaultWeight = nextDefaultWeight;
+      if (gpxColorInput) {
+        gpxColorInput.value = nextDefaultColor;
+      }
+      if (gpxWeightInput) {
+        gpxWeightInput.value = String(nextDefaultWeight);
+      }
+      if (Array.isArray(savedGpx.items)) {
+        savedGpx.items.forEach((item) => {
+          if (!item || !Array.isArray(item.points)) {
+            return;
+          }
+          createGpxRouteItem(item.points, {
+            id: item.id,
+            color: item.color,
+            weight: item.weight,
+          });
+        });
+      }
+      const selectedRouteId = Number.isFinite(savedGpx.selectedRouteId) ? Math.max(1, Math.round(savedGpx.selectedRouteId)) : null;
+      if (selectedRouteId != null && getGpxItemById(selectedRouteId)) {
+        gpxState.selectedRouteId = selectedRouteId;
+      } else {
+        gpxState.selectedRouteId = null;
+      }
+      syncGpxRouteSelections();
+    }
+
+    function applySavedSimState(savedSim) {
+      clearSimulationSegments(false);
+      setSimulationVisible(false);
+      setSimPanelVisible(false);
+      if (!savedSim || typeof savedSim !== 'object') {
+        return;
+      }
+      if (savedSim.settings && typeof savedSim.settings === 'object') {
+        simState.settings = {
+          ...SIM_DEFAULTS,
+          ...simState.settings,
+          ...savedSim.settings,
+        };
+      }
+      const savedStats = savedSim.stats && typeof savedSim.stats === 'object' ? savedSim.stats : null;
+      simState.stats = savedStats
+        ? {
+          planDistanceMeters: Number(savedStats.planDistanceMeters) || 0,
+          turnDistanceMeters: Number(savedStats.turnDistanceMeters) || 0,
+          totalDistanceMeters: Number(savedStats.totalDistanceMeters) || 0,
+          turnCount: Number(savedStats.turnCount) || 0,
+          maxDeviationMeters: Number(savedStats.maxDeviationMeters) || 0,
+          speedKnots: Number(savedStats.speedKnots) || 0,
+          estimatedHours: Number(savedStats.estimatedHours) || 0,
+        }
+        : null;
+      if (Array.isArray(savedSim.items)) {
+        savedSim.items.forEach((item) => {
+          if (!item || !Array.isArray(item.coords)) {
+            return;
+          }
+          createSimulationSegmentItem({
+            id: item.id,
+            coords: item.coords
+              .map((coord) => ({
+                latitude: Number(coord && coord.latitude),
+                longitude: Number(coord && coord.longitude),
+              }))
+              .filter((coord) => Number.isFinite(coord.latitude) && Number.isFinite(coord.longitude)),
+            isTurnSegment: !!item.isTurnSegment,
+            warningOutOfBounds: !!item.warningOutOfBounds,
+            warningSea: !!item.warningSea,
+            color: item.color,
+            weight: item.weight,
+            manualColor: !!item.manualColor,
+            manualWeight: !!item.manualWeight,
+          }, false);
+        });
+      }
+      simState.generatedSegmentCount = simState.items.length;
+      const selectedSegmentId = Number.isFinite(savedSim.selectedSegmentId) ? Math.max(1, Math.round(savedSim.selectedSegmentId)) : null;
+      if (selectedSegmentId != null && getSimSegmentById(selectedSegmentId)) {
+        simState.selectedSegmentId = selectedSegmentId;
+      } else {
+        simState.selectedSegmentId = null;
+      }
+      syncSimPanelInputs();
+      updateSimStatsDisplay(simState.stats);
+      syncSimulationSegmentSelections();
+      const shouldShowLines = !!savedSim.visible && simState.items.length > 0;
+      setSimulationVisible(shouldShowLines);
+      if (savedSim.panelVisible) {
+        setSimPanelVisible(true);
+      }
+    }
+
     async function applyViewerStateSnapshot(saved) {
       if (!saved || typeof saved !== 'object') {
         return false;
@@ -10203,6 +10447,8 @@
       try {
         hideSimulationOverlay(true);
         setSimPanelVisible(false);
+        clearGpxRoutes(false);
+        setGpxPanelVisible(false);
         await setWeatherOverlayEnabled(false, { persist: false, silentFail: true });
         setMeasureActive(false, true);
         setTextActive(false, true);
@@ -10332,6 +10578,9 @@
           });
           deselectTextMarker();
         }
+
+        applySavedGpxState(saved.gpx);
+        applySavedSimState(saved.sim);
 
         await applySavedLayerState(saved.layers);
 
@@ -10473,6 +10722,10 @@
     }
 
     async function undoLastAction() {
+      window.clearTimeout(viewerStateSaveTimer);
+      const currentSnapshot = collectViewerState();
+      const currentSerialized = JSON.stringify(currentSnapshot);
+      recordUndoState(false, currentSnapshot, currentSerialized);
       if (undoHistory.length <= 1) {
         return;
       }
