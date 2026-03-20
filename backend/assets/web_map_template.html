@@ -2873,6 +2873,9 @@
       <label class="force-field">반원 분할
         <input id="simArcSplitsInput" class="sim-size-input" type="number" value="20" min="8" max="72" step="1" aria-label="반원 분할 수">
       </label>
+      <label class="force-field">최대 이탈(NM)
+        <input id="simMaxDeviationNmInput" class="sim-size-input" type="number" value="6" min="1" max="20" step="0.1" aria-label="최대 이탈 거리">
+      </label>
       <label id="simCustomSpeedWrap" class="force-field sim-span-two is-hidden">순항속도(knots)
         <input id="simCustomSpeedInput" class="sim-size-input" type="number" value="185" min="80" max="420" step="1" aria-label="직접입력 순항속도">
       </label>
@@ -3361,6 +3364,7 @@
     const simTurnRadiusNmInput = document.getElementById('simTurnRadiusNmInput');
     const simInboundNmInput = document.getElementById('simInboundNmInput');
     const simArcSplitsInput = document.getElementById('simArcSplitsInput');
+    const simMaxDeviationNmInput = document.getElementById('simMaxDeviationNmInput');
     const simCustomSpeedWrap = document.getElementById('simCustomSpeedWrap');
     const simCustomSpeedInput = document.getElementById('simCustomSpeedInput');
     const simSelectedStatus = document.getElementById('simSelectedStatus');
@@ -3651,6 +3655,7 @@
       turnRadiusNm: SIM_AIRCRAFT_PRESETS.caravan.turnRadiusNm,
       inboundNm: SIM_AIRCRAFT_PRESETS.caravan.inboundNm,
       arcSplits: 20,
+      maxDeviationNm: 6,
       customSpeedKnots: 185,
     };
     const gpxState = {
@@ -4304,17 +4309,31 @@
     }
 
     function setSimDirectInputEnabled() {
-      const isCustom = simState.settings.aircraftPreset === 'custom';
-      [simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput].forEach((input) => {
+      [simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput, simMaxDeviationNmInput].forEach((input) => {
         if (input) {
-          input.disabled = !isCustom;
+          input.disabled = false;
         }
       });
+      if (simAircraftPresetSelect) {
+        simAircraftPresetSelect.disabled = true;
+      }
+      if (simTurnPatternStandard) {
+        simTurnPatternStandard.disabled = true;
+      }
+      if (simTurnPatternDirect) {
+        simTurnPatternDirect.disabled = true;
+      }
+      if (simFirstLineStartSelect) {
+        simFirstLineStartSelect.disabled = true;
+      }
+      if (simEntryDirectionSelect) {
+        simEntryDirectionSelect.disabled = true;
+      }
       if (simCustomSpeedWrap) {
-        simCustomSpeedWrap.classList.toggle('is-hidden', !isCustom);
+        simCustomSpeedWrap.classList.add('is-hidden');
       }
       if (simCustomSpeedInput) {
-        simCustomSpeedInput.disabled = !isCustom;
+        simCustomSpeedInput.disabled = true;
       }
     }
 
@@ -4372,6 +4391,9 @@
       simTurnRadiusNmInput.value = String(settings.turnRadiusNm);
       simInboundNmInput.value = String(settings.inboundNm);
       simArcSplitsInput.value = String(settings.arcSplits);
+      if (simMaxDeviationNmInput) {
+        simMaxDeviationNmInput.value = String(settings.maxDeviationNm || SIM_DEFAULTS.maxDeviationNm);
+      }
       if (simCustomSpeedInput) {
         simCustomSpeedInput.value = String(clamp(Number(settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420));
       }
@@ -4381,29 +4403,19 @@
     }
 
     function readSimSettingsFromInputs() {
-      const presetKey = String(simAircraftPresetSelect ? simAircraftPresetSelect.value : simState.settings.aircraftPreset).toLowerCase();
-      simState.settings.aircraftPreset = presetKey === 'custom' ? 'custom' : (SIM_AIRCRAFT_PRESETS[presetKey] ? presetKey : SIM_DEFAULTS.aircraftPreset);
-      simState.settings.turnPattern = simTurnPatternDirect && simTurnPatternDirect.checked ? 'direct' : 'standard';
-      simState.settings.firstLineStart = (simFirstLineStartSelect && simFirstLineStartSelect.value === 'south') ? 'south' : 'north';
-      simState.settings.entryDirection = (simEntryDirectionSelect && simEntryDirectionSelect.value === 'east') ? 'east' : 'west';
+      simState.settings.aircraftPreset = 'custom';
+      simState.settings.turnPattern = 'standard';
+      simState.settings.firstLineStart = 'north';
+      simState.settings.entryDirection = 'west';
       simState.settings.warnOutOfBounds = !!(simWarnBoundsToggle && simWarnBoundsToggle.checked);
       simState.settings.warnSea = !!(simWarnSeaToggle && simWarnSeaToggle.checked);
       simState.settings.arcSplits = Math.round(clamp(Number(simArcSplitsInput ? simArcSplitsInput.value : simState.settings.arcSplits) || SIM_DEFAULTS.arcSplits, 8, 72));
-
-      if (simState.settings.aircraftPreset === 'custom') {
-        simState.settings.offsetAngleDeg = clamp(Number(simOffsetAngleInput ? simOffsetAngleInput.value : simState.settings.offsetAngleDeg) || SIM_DEFAULTS.offsetAngleDeg, 0, 89);
-        simState.settings.departureNm = clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20);
-        simState.settings.turnRadiusNm = clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30);
-        simState.settings.inboundNm = clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30);
-        simState.settings.customSpeedKnots = clamp(Number(simCustomSpeedInput ? simCustomSpeedInput.value : simState.settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
-      } else {
-        const preset = SIM_AIRCRAFT_PRESETS[simState.settings.aircraftPreset] || SIM_AIRCRAFT_PRESETS.caravan;
-        simState.settings.offsetAngleDeg = preset.offsetAngleDeg;
-        simState.settings.departureNm = preset.departureNm;
-        simState.settings.turnRadiusNm = preset.turnRadiusNm;
-        simState.settings.inboundNm = preset.inboundNm;
-        simState.settings.customSpeedKnots = preset.speedKnots;
-      }
+      simState.settings.offsetAngleDeg = clamp(Number(simOffsetAngleInput ? simOffsetAngleInput.value : simState.settings.offsetAngleDeg) || SIM_DEFAULTS.offsetAngleDeg, 0, 89);
+      simState.settings.departureNm = clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20);
+      simState.settings.turnRadiusNm = clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30);
+      simState.settings.inboundNm = clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30);
+      simState.settings.maxDeviationNm = clamp(Number(simMaxDeviationNmInput ? simMaxDeviationNmInput.value : simState.settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 1, 20);
+      simState.settings.customSpeedKnots = clamp(Number(simCustomSpeedInput ? simCustomSpeedInput.value : simState.settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
       setSimDirectInputEnabled();
       return { ...simState.settings };
     }
@@ -4473,19 +4485,17 @@
         });
       });
 
-      const orderDescending = settings.firstLineStart !== 'south';
       lines.sort((a, b) => {
         if (Math.abs(a.midLat - b.midLat) > 1e-8) {
-          return orderDescending ? (b.midLat - a.midLat) : (a.midLat - b.midLat);
+          return b.midLat - a.midLat;
         }
         return a.id - b.id;
       });
 
-      const firstEntryFromWest = settings.entryDirection !== 'east';
       return lines.map((line, index) => {
         let start = { ...line.startRaw };
         let end = { ...line.endRaw };
-        const entryFromWest = (index % 2 === 0) ? firstEntryFromWest : !firstEntryFromWest;
+        const entryFromWest = index % 2 === 0;
         if (entryFromWest && start.longitude > end.longitude) {
           const temp = start;
           start = end;
@@ -4862,87 +4872,137 @@
 
     function resolveSimTransitionMetrics(lines, settings) {
       const spacingMeters = clamp(estimateSimLineSpacingMeters(lines), 120, 4000);
+      const maxDeviationNm = clamp(Number(settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 1, 20);
+      const maxDeviationMeters = maxDeviationNm * SIM_NM_TO_METERS;
       const departureRaw = Math.max(60, Number(settings.departureNm) * SIM_NM_TO_METERS);
       const inboundRaw = Math.max(60, Number(settings.inboundNm) * SIM_NM_TO_METERS);
-      const radiusRaw = Math.max(100, Number(settings.turnRadiusNm) * SIM_NM_TO_METERS);
       const departureMeters = clamp(
         departureRaw,
-        Math.max(70, spacingMeters * 0.35),
-        Math.max(150, spacingMeters * 1.25)
+        Math.max(70, spacingMeters * 0.25),
+        Math.max(140, maxDeviationMeters * 0.85)
       );
       const inboundMeters = clamp(
         inboundRaw,
-        Math.max(70, spacingMeters * 0.35),
-        Math.max(150, spacingMeters * 1.25)
-      );
-      const turnRadiusMeters = clamp(
-        radiusRaw,
-        Math.max(140, spacingMeters * 0.75),
-        Math.max(280, spacingMeters * 2.4)
+        Math.max(70, spacingMeters * 0.2),
+        Math.max(140, maxDeviationMeters * 0.8)
       );
       return {
         spacingMeters,
         departureMeters,
         inboundMeters,
-        turnRadiusMeters,
+        maxDeviationMeters,
       };
     }
 
-    function buildTeardropTransitionCoords(current, next, settings, metrics, arcSplits) {
-      const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
-      const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
-      const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
-      const departureTip = offsetCoordByMeters(current.end, currentHeading, metrics.departureMeters);
-      const approachStart = offsetCoordByMeters(next.start, normalizeHeadingDeg(nextHeading + 180), metrics.inboundMeters);
-      const baseAngle = clamp(Number(settings.offsetAngleDeg) || 25, 8, 78);
-      const controlAngle = clamp(baseAngle * 0.9, 18, 72);
-      const controlDistance = Math.max(120, metrics.turnRadiusMeters * 0.85);
-      const control1 = offsetCoordByMeters(
-        departureTip,
-        normalizeHeadingDeg(currentHeading + (turnSign * controlAngle)),
-        controlDistance
-      );
-      const control2 = offsetCoordByMeters(
-        approachStart,
-        normalizeHeadingDeg(nextHeading + 180 - (turnSign * controlAngle)),
-        controlDistance
-      );
-      const curve = buildCubicBezierPath(
-        departureTip,
-        control1,
-        control2,
-        approachStart,
-        Math.max(16, arcSplits + 8)
-      );
-      return mergeCoordSegments([
-        [{ latitude: current.end.latitude, longitude: current.end.longitude }, departureTip],
-        curve,
-        [approachStart, { latitude: next.start.latitude, longitude: next.start.longitude }],
-      ]);
+    function coordToHeadingFrameMeters(baseCoord, headingDeg, targetCoord) {
+      if (!baseCoord || !targetCoord) {
+        return { forward: 0, right: 0 };
+      }
+      const local = toLocalMeters(targetCoord, baseCoord.latitude, baseCoord.longitude);
+      const heading = toRadians(normalizeHeadingDeg(headingDeg));
+      return {
+        forward: (local.x * Math.sin(heading)) + (local.y * Math.cos(heading)),
+        right: (local.x * Math.cos(heading)) - (local.y * Math.sin(heading)),
+      };
     }
 
-    function buildDirectTransitionCoords(current, next, metrics, arcSplits) {
+    function offsetByHeadingFrameMeters(baseCoord, headingDeg, forwardMeters, rightMeters) {
+      let point = offsetCoordByMeters(baseCoord, headingDeg, Number(forwardMeters) || 0);
+      const rightValue = Number(rightMeters) || 0;
+      if (Math.abs(rightValue) > 0.001) {
+        point = offsetCoordByMeters(point, normalizeHeadingDeg(headingDeg + 90), rightValue);
+      }
+      return point;
+    }
+
+    function clampHeadingFramePoint(point, maxRadiusMeters) {
+      const target = point && typeof point === 'object' ? point : { forward: 0, right: 0 };
+      const radius = Math.hypot(Number(target.forward) || 0, Number(target.right) || 0);
+      if (!Number.isFinite(maxRadiusMeters) || maxRadiusMeters <= 0 || radius <= maxRadiusMeters || radius < 1e-6) {
+        return { forward: Number(target.forward) || 0, right: Number(target.right) || 0 };
+      }
+      const scale = maxRadiusMeters / radius;
+      return {
+        forward: (Number(target.forward) || 0) * scale,
+        right: (Number(target.right) || 0) * scale,
+      };
+    }
+
+    function buildSmoothHeadingSpline(points, stepsPerSegment = 10) {
+      if (!Array.isArray(points) || points.length < 2) {
+        return [];
+      }
+      const result = [];
+      const segmentSteps = Math.max(4, Math.round(Number(stepsPerSegment) || 10));
+      for (let index = 0; index < points.length - 1; index += 1) {
+        const p0 = points[Math.max(0, index - 1)];
+        const p1 = points[index];
+        const p2 = points[index + 1];
+        const p3 = points[Math.min(points.length - 1, index + 2)];
+        for (let step = 0; step <= segmentSteps; step += 1) {
+          if (index > 0 && step === 0) {
+            continue;
+          }
+          const t = step / segmentSteps;
+          const t2 = t * t;
+          const t3 = t2 * t;
+          const forward = 0.5 * (
+            (2 * p1.forward)
+            + ((-p0.forward + p2.forward) * t)
+            + ((2 * p0.forward - (5 * p1.forward) + (4 * p2.forward) - p3.forward) * t2)
+            + ((-p0.forward + (3 * p1.forward) - (3 * p2.forward) + p3.forward) * t3)
+          );
+          const right = 0.5 * (
+            (2 * p1.right)
+            + ((-p0.right + p2.right) * t)
+            + ((2 * p0.right - (5 * p1.right) + (4 * p2.right) - p3.right) * t2)
+            + ((-p0.right + (3 * p1.right) - (3 * p2.right) + p3.right) * t3)
+          );
+          result.push({ forward, right });
+        }
+      }
+      return result;
+    }
+
+    function buildTeardropTransitionCoords(current, next, settings, metrics, arcSplits, legIndex) {
       const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
-      const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
-      const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
-      const controlDistance = Math.max(100, metrics.turnRadiusMeters * 0.66);
-      const control1 = offsetCoordByMeters(
-        current.end,
-        normalizeHeadingDeg(currentHeading + (turnSign * 26)),
-        controlDistance
-      );
-      const control2 = offsetCoordByMeters(
-        next.start,
-        normalizeHeadingDeg(nextHeading + 180 - (turnSign * 26)),
-        controlDistance
-      );
-      return buildCubicBezierPath(
-        current.end,
-        control1,
-        control2,
-        next.start,
-        Math.max(14, arcSplits + 4)
-      );
+      const endpoint = { latitude: current.end.latitude, longitude: current.end.longitude };
+      const nextStart = { latitude: next.start.latitude, longitude: next.start.longitude };
+      const turnSign = legIndex % 2 === 0 ? -1 : 1;
+      const nextFrame = coordToHeadingFrameMeters(endpoint, currentHeading, nextStart);
+      const maxDeviationMeters = Math.max(100, Number(metrics.maxDeviationMeters) || (6 * SIM_NM_TO_METERS));
+      const departureMeters = Math.max(80, Number(metrics.departureMeters) || (maxDeviationMeters * 0.45));
+      const inboundMeters = Math.max(80, Number(metrics.inboundMeters) || (maxDeviationMeters * 0.35));
+      const steps = Math.max(8, Math.round((Number(arcSplits) || 20) * 0.7));
+
+      const p0 = { forward: 0, right: 0 };
+      const p1 = clampHeadingFramePoint({ forward: departureMeters * 0.35, right: turnSign * maxDeviationMeters * 0.12 }, maxDeviationMeters);
+      const p2 = clampHeadingFramePoint({ forward: departureMeters * 0.8, right: turnSign * maxDeviationMeters * 0.56 }, maxDeviationMeters);
+      const p3 = clampHeadingFramePoint({ forward: departureMeters * 0.22, right: turnSign * maxDeviationMeters * 0.96 }, maxDeviationMeters);
+      const p4 = clampHeadingFramePoint({ forward: -departureMeters * 0.45, right: turnSign * maxDeviationMeters * 0.44 }, maxDeviationMeters);
+      const p5 = clampHeadingFramePoint({
+        forward: nextFrame.forward - inboundMeters,
+        right: nextFrame.right + (turnSign * maxDeviationMeters * 0.08),
+      }, maxDeviationMeters);
+      const p6 = { forward: nextFrame.forward, right: nextFrame.right };
+
+      const smoothFramePoints = buildSmoothHeadingSpline([p0, p1, p2, p3, p4, p5, p6], steps);
+      const normalizedFramePoints = smoothFramePoints.map((item, index) => {
+        if (index === smoothFramePoints.length - 1) {
+          return item;
+        }
+        return clampHeadingFramePoint(item, maxDeviationMeters);
+      });
+
+      const coords = normalizedFramePoints.map((item) => (
+        offsetByHeadingFrameMeters(endpoint, currentHeading, item.forward, item.right)
+      ));
+      if (!coords.length || coordDistanceMeters(coords[coords.length - 1], nextStart) > 0.5) {
+        coords.push(nextStart);
+      } else {
+        coords[coords.length - 1] = nextStart;
+      }
+      return mergeCoordSegments([coords]);
     }
 
     function buildSimulationSegments(lines, settings) {
@@ -4951,7 +5011,6 @@
       const workBounds = getSimulationWorkBounds();
       const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits) || SIM_DEFAULTS.arcSplits));
       const transitionMetrics = resolveSimTransitionMetrics(lines, settings);
-      const pattern = settings.turnPattern === 'direct' ? 'direct' : 'standard';
 
       let planDistanceMeters = 0;
       let turnDistanceMeters = 0;
@@ -4979,12 +5038,8 @@
         }
 
         const turnSegments = [];
-        if (pattern === 'standard') {
-          const curve = buildTeardropTransitionCoords(current, next, settings, transitionMetrics, arcSplits);
-          turnSegments.push(curve);
-        } else {
-          turnSegments.push(buildDirectTransitionCoords(current, next, transitionMetrics, arcSplits));
-        }
+        const curve = buildTeardropTransitionCoords(current, next, settings, transitionMetrics, arcSplits, index);
+        turnSegments.push(curve);
 
         turnSegments.forEach((turnCoords) => {
           const warning = analyzeSimulationWarning(turnCoords, settings, workBounds);
@@ -12056,7 +12111,7 @@
         }
       });
     }
-    [simFirstLineStartSelect, simEntryDirectionSelect, simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput, simCustomSpeedInput]
+    [simFirstLineStartSelect, simEntryDirectionSelect, simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput, simMaxDeviationNmInput, simCustomSpeedInput]
       .filter((input) => !!input)
       .forEach((input) => {
         input.addEventListener('change', () => {
