@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import time
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote
@@ -16,6 +18,9 @@ GK2A_IMAGE_PROXY_PATH = "/api/weather/satellite-image"
 GK2A_API_BASE_URL = "https://apihub.kma.go.kr/api/typ05/api/GK2A/LE1B"
 GK2A_DEFAULT_AUTH_KEY = "essYXrddTSaLGF63Xc0mAw"
 GK2A_FETCH_TIMEOUT_SECONDS = 12
+GK2A_API_FAILURE_COOLDOWN_SECONDS = 90
+GK2A_DAILY_LIMIT_COOLDOWN_SECONDS = 900
+GK2A_CACHE_KEEP_PER_CHANNEL = 8
 GK2A_TIMESTAMP_RE = re.compile(r"^\d{12}$")
 GK2A_CHANNEL_MAP = {
     "vi006": "VI006",
@@ -23,6 +28,10 @@ GK2A_CHANNEL_MAP = {
 }
 _CACHE: dict[str, tuple[float, Any]] = {}
 _USER_AGENT = "dooextweb-weather/0.1"
+_GK2A_CACHE_DIR: Path | None = None
+_GK2A_FETCH_LOCK = threading.Lock()
+_GK2A_FAILURE_CACHE: dict[str, float] = {}
+_GK2A_BLOCKED_UNTIL_TS = 0.0
 
 
 class WeatherProviderError(RuntimeError):
@@ -313,6 +322,131 @@ def _pick_radar_frame(radar_root: dict[str, Any]) -> dict[str, Any] | None:
     return None
 
 
+def configure_gk2a_cache_dir(path: str | Path | None) -> Path | None:
+    global _GK2A_CACHE_DIR
+    if path is None:
+        _GK2A_CACHE_DIR = None
+        return None
+
+    target = Path(path).expanduser()
+    target.mkdir(parents=True, exist_ok=True)
+    _GK2A_CACHE_DIR = target
+    return target
+
+
+def _gk2a_cache_file(channel: str, timestamp: str) -> Path | None:
+    if _GK2A_CACHE_DIR is None:
+        return None
+    return _GK2A_CACHE_DIR / f"{channel}_{timestamp}.png"
+
+
+def _gk2a_read_cached_png(channel: str, timestamp: str) -> bytes | None:
+    path = _gk2a_cache_file(channel, timestamp)
+    if path is None or not path.exists():
+        return None
+    try:
+        payload = path.read_bytes()
+    except OSError:
+        return None
+    if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+        return payload
+    return None
+
+
+def _gk2a_write_cached_png(channel: str, timestamp: str, payload: bytes) -> None:
+    path = _gk2a_cache_file(channel, timestamp)
+    if path is None:
+        return
+    try:
+        path.write_bytes(payload)
+    except OSError:
+        return
+    _gk2a_trim_cache(channel)
+
+
+def _gk2a_trim_cache(channel: str) -> None:
+    if _GK2A_CACHE_DIR is None:
+        return
+    files = sorted(_GK2A_CACHE_DIR.glob(f"{channel}_*.png"), reverse=True)
+    keep = max(1, GK2A_CACHE_KEEP_PER_CHANNEL)
+    for stale in files[keep:]:
+        try:
+            stale.unlink()
+        except OSError:
+            continue
+
+
+def _gk2a_cached_fallback(channel: str, requested_timestamp: str) -> tuple[bytes, str] | None:
+    if _GK2A_CACHE_DIR is None:
+        return None
+
+    candidates: list[tuple[str, Path]] = []
+    for path in _GK2A_CACHE_DIR.glob(f"{channel}_*.png"):
+        name = path.stem
+        prefix = f"{channel}_"
+        if not name.startswith(prefix):
+            continue
+        timestamp = name[len(prefix):]
+        if not GK2A_TIMESTAMP_RE.match(timestamp):
+            continue
+        candidates.append((timestamp, path))
+    if not candidates:
+        return None
+
+    # Prefer same/older frame than requested timestamp.
+    older = [(ts, p) for ts, p in candidates if ts <= requested_timestamp]
+    ordered = sorted(older or candidates, key=lambda item: item[0], reverse=True)
+    for timestamp, path in ordered:
+        try:
+            payload = path.read_bytes()
+        except OSError:
+            continue
+        if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+            return payload, timestamp
+    return None
+
+
+def _gk2a_is_temporarily_blocked() -> bool:
+    return _GK2A_BLOCKED_UNTIL_TS > time.time()
+
+
+def _gk2a_mark_failure(channel: str, timestamp: str, cooldown_seconds: int = GK2A_API_FAILURE_COOLDOWN_SECONDS) -> None:
+    key = f"{channel}:{timestamp}"
+    _GK2A_FAILURE_CACHE[key] = time.time() + max(1, int(cooldown_seconds))
+
+
+def _gk2a_failure_active(channel: str, timestamp: str) -> bool:
+    key = f"{channel}:{timestamp}"
+    expires_at = _GK2A_FAILURE_CACHE.get(key, 0.0)
+    if expires_at <= time.time():
+        _GK2A_FAILURE_CACHE.pop(key, None)
+        return False
+    return True
+
+
+def _gk2a_mark_daily_limited() -> None:
+    global _GK2A_BLOCKED_UNTIL_TS
+    _GK2A_BLOCKED_UNTIL_TS = time.time() + GK2A_DAILY_LIMIT_COOLDOWN_SECONDS
+
+
+def _gk2a_parse_error_payload(payload: bytes) -> tuple[int, str]:
+    try:
+        decoded = payload.decode("utf-8", errors="ignore")
+        parsed = json.loads(decoded)
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return 0, ""
+    result = parsed.get("result") if isinstance(parsed, dict) else {}
+    if not isinstance(result, dict):
+        return 0, ""
+    status = result.get("status")
+    message = str(result.get("message") or "").strip()
+    try:
+        status_code = int(status)
+    except (TypeError, ValueError):
+        status_code = 0
+    return status_code, message
+
+
 def parse_gk2a_capture_datetime(raw: str | None, default_delay_minutes: int = 4) -> datetime:
     value = str(raw or "").strip()
     if not value:
@@ -332,13 +466,30 @@ def normalize_gk2a_channel(raw: str | None) -> str:
     raise ValueError("channel must be vi006 or ir105")
 
 
-def fetch_gk2a_image(channel: str, capture_utc: datetime) -> tuple[bytes, str, str]:
+def fetch_gk2a_image(
+    channel: str,
+    capture_utc: datetime,
+    *,
+    allow_stale_fallback: bool = True,
+) -> tuple[bytes, str, str]:
     normalized_channel = normalize_gk2a_channel(channel)
     source_channel = GK2A_CHANNEL_MAP[normalized_channel]
     timestamp = capture_utc.strftime("%Y%m%d%H%M")
     auth_key = str(os.getenv("KMA_APIHUB_AUTH_KEY") or GK2A_DEFAULT_AUTH_KEY).strip()
     if not auth_key:
         raise WeatherProviderError("missing KMA_APIHUB_AUTH_KEY")
+
+    cached = _gk2a_read_cached_png(normalized_channel, timestamp)
+    if cached is not None:
+        return cached, normalized_channel, timestamp
+
+    if _gk2a_failure_active(normalized_channel, timestamp) or _gk2a_is_temporarily_blocked():
+        if allow_stale_fallback:
+            fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
+            if fallback is not None:
+                payload, fallback_timestamp = fallback
+                return payload, normalized_channel, fallback_timestamp
+        raise WeatherProviderError("gk2a request temporarily throttled")
 
     url = (
         f"{GK2A_API_BASE_URL}/{source_channel}/KO/image"
@@ -352,20 +503,56 @@ def fetch_gk2a_image(channel: str, capture_utc: datetime) -> tuple[bytes, str, s
             "Accept": "image/png,image/*;q=0.9,*/*;q=0.5",
         },
     )
-    try:
-        with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS) as response:
-            payload = response.read()
-    except HTTPError as error:
-        if error.code == 404:
-            raise WeatherProviderError("image not found") from error
-        raise WeatherProviderError(f"gk2a request failed: http {error.code}") from error
-    except (URLError, TimeoutError) as error:
-        raise WeatherProviderError(f"gk2a request failed: {error}") from error
+    with _GK2A_FETCH_LOCK:
+        cached_after_lock = _gk2a_read_cached_png(normalized_channel, timestamp)
+        if cached_after_lock is not None:
+            return cached_after_lock, normalized_channel, timestamp
 
-    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
-        raise WeatherProviderError("invalid gk2a image payload")
+        try:
+            with urlopen(request, timeout=GK2A_FETCH_TIMEOUT_SECONDS) as response:
+                payload = response.read()
+        except HTTPError as error:
+            _gk2a_mark_failure(normalized_channel, timestamp)
+            if error.code == 404:
+                if allow_stale_fallback:
+                    fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
+                    if fallback is not None:
+                        fallback_payload, fallback_timestamp = fallback
+                        return fallback_payload, normalized_channel, fallback_timestamp
+                raise WeatherProviderError("image not found") from error
+            if error.code == 403:
+                _gk2a_mark_daily_limited()
+            if allow_stale_fallback:
+                fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
+                if fallback is not None:
+                    fallback_payload, fallback_timestamp = fallback
+                    return fallback_payload, normalized_channel, fallback_timestamp
+            raise WeatherProviderError(f"gk2a request failed: http {error.code}") from error
+        except (URLError, TimeoutError) as error:
+            _gk2a_mark_failure(normalized_channel, timestamp)
+            if allow_stale_fallback:
+                fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
+                if fallback is not None:
+                    fallback_payload, fallback_timestamp = fallback
+                    return fallback_payload, normalized_channel, fallback_timestamp
+            raise WeatherProviderError(f"gk2a request failed: {error}") from error
 
-    return payload, normalized_channel, timestamp
+        if payload.startswith(b"\x89PNG\r\n\x1a\n"):
+            _gk2a_write_cached_png(normalized_channel, timestamp, payload)
+            return payload, normalized_channel, timestamp
+
+        status_code, message = _gk2a_parse_error_payload(payload)
+        _gk2a_mark_failure(normalized_channel, timestamp)
+        if status_code == 403:
+            _gk2a_mark_daily_limited()
+        if allow_stale_fallback:
+            fallback = _gk2a_cached_fallback(normalized_channel, timestamp)
+            if fallback is not None:
+                fallback_payload, fallback_timestamp = fallback
+                return fallback_payload, normalized_channel, fallback_timestamp
+
+        detail = message or "invalid gk2a image payload"
+        raise WeatherProviderError(detail)
 
 
 def _sample_grid_points(
