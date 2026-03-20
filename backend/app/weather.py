@@ -594,6 +594,39 @@ def _gk2a_write_cached_png(channel: str, timestamp: str, payload: bytes) -> None
     _gk2a_supabase_upload_png(channel, timestamp, payload)
 
 
+def sync_gk2a_local_cache_to_supabase(max_files: int = 32) -> int:
+    if _GK2A_CACHE_DIR is None or not _gk2a_supabase_enabled() or not _gk2a_supabase_ensure_bucket():
+        return 0
+
+    try:
+        limit = max(1, int(max_files))
+    except (TypeError, ValueError):
+        limit = 32
+
+    uploaded = 0
+    pattern = re.compile(r"^(vi006|ir105)_(\d{12})\.png$")
+    files = sorted(
+        _GK2A_CACHE_DIR.glob("*.png"),
+        key=lambda item: item.stat().st_mtime if item.exists() else 0.0,
+        reverse=True,
+    )
+    for path in files[:limit]:
+        match = pattern.match(path.name)
+        if match is None:
+            continue
+        channel, timestamp = match.group(1), match.group(2)
+        try:
+            payload = path.read_bytes()
+        except OSError:
+            continue
+        if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
+            continue
+        _gk2a_supabase_upload_png(channel, timestamp, payload)
+        uploaded += 1
+
+    return uploaded
+
+
 def _gk2a_trim_cache(channel: str) -> None:
     if _GK2A_CACHE_DIR is None:
         return

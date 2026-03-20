@@ -39,6 +39,7 @@ from .weather import (
     normalize_gk2a_channel,
     parse_bbox_param,
     parse_gk2a_capture_datetime,
+    sync_gk2a_local_cache_to_supabase,
 )
 
 
@@ -277,6 +278,7 @@ for path in (
 FONTS_DIR.mkdir(parents=True, exist_ok=True)
 configure_gk2a_cache_dir(WEATHER_SATELLITE_CACHE_DIR)
 configure_gk2a_supabase_cache_from_env()
+sync_gk2a_local_cache_to_supabase()
 
 
 def _same_path(a: Path, b: Path) -> bool:
