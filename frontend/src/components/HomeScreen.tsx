@@ -785,13 +785,15 @@ export function HomeScreen({
                   {isAuthenticated ? <div className="doo-auth-state">로그인됨</div> : null}
                 </div>
                 <code>{isAuthenticated ? userEmail : "비회원 미리보기 모드"}</code>
-                <button
-                  type="button"
-                  className={`doo-auth-button ${isAuthenticated ? "doo-auth-button-logout" : "doo-auth-button-login"}`}
-                  onClick={handleAuthButton}
-                >
-                  {isAuthenticated ? "로그아웃" : "회원가입 / 로그인"}
-                </button>
+                {!isAuthenticated ? (
+                  <button
+                    type="button"
+                    className="doo-auth-button doo-auth-button-login"
+                    onClick={handleAuthButton}
+                  >
+                    회원가입 / 로그인
+                  </button>
+                ) : null}
               </div>
 
               {isAuthenticated ? (
@@ -862,6 +864,16 @@ export function HomeScreen({
                     <p className="doo-billing-help">결제 기능 준비 중입니다.</p>
                   )}
                 </div>
+              ) : null}
+
+              {isAuthenticated ? (
+                <button
+                  type="button"
+                  className="doo-auth-button doo-auth-button-logout"
+                  onClick={handleAuthButton}
+                >
+                  로그아웃
+                </button>
               ) : null}
             </div>
           </aside>
