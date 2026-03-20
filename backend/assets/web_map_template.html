@@ -4770,14 +4770,187 @@
       return coords;
     }
 
+    function buildCubicBezierPath(startCoord, control1Coord, control2Coord, endCoord, steps = 20) {
+      if (!startCoord || !endCoord || !control1Coord || !control2Coord) {
+        return [];
+      }
+      const stepCount = Math.max(8, Math.round(Number(steps) || 20));
+      const refLat = (startCoord.latitude + endCoord.latitude) / 2;
+      const refLng = (startCoord.longitude + endCoord.longitude) / 2;
+      const latScale = 111320;
+      const lngScale = 111320 * Math.cos(toRadians(refLat));
+      const safeLngScale = Math.abs(lngScale) > 1e-8 ? lngScale : 1e-8;
+
+      const p0 = toLocalMeters(startCoord, refLat, refLng);
+      const p1 = toLocalMeters(control1Coord, refLat, refLng);
+      const p2 = toLocalMeters(control2Coord, refLat, refLng);
+      const p3 = toLocalMeters(endCoord, refLat, refLng);
+
+      const coords = [];
+      for (let index = 0; index <= stepCount; index += 1) {
+        const t = index / stepCount;
+        const u = 1 - t;
+        const x = (u * u * u * p0.x)
+          + (3 * u * u * t * p1.x)
+          + (3 * u * t * t * p2.x)
+          + (t * t * t * p3.x);
+        const y = (u * u * u * p0.y)
+          + (3 * u * u * t * p1.y)
+          + (3 * u * t * t * p2.y)
+          + (t * t * t * p3.y);
+        coords.push({
+          latitude: refLat + (y / latScale),
+          longitude: refLng + (x / safeLngScale),
+        });
+      }
+      return coords;
+    }
+
+    function mergeCoordSegments(parts) {
+      const merged = [];
+      if (!Array.isArray(parts)) {
+        return merged;
+      }
+      parts.forEach((part) => {
+        if (!Array.isArray(part)) {
+          return;
+        }
+        part.forEach((coord) => {
+          if (!coord || !Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+            return;
+          }
+          if (!merged.length) {
+            merged.push({ latitude: coord.latitude, longitude: coord.longitude });
+            return;
+          }
+          const last = merged[merged.length - 1];
+          if (coordDistanceMeters(last, coord) < 0.5) {
+            return;
+          }
+          merged.push({ latitude: coord.latitude, longitude: coord.longitude });
+        });
+      });
+      return merged;
+    }
+
+    function estimateSimLineSpacingMeters(lines) {
+      if (!Array.isArray(lines) || lines.length < 2) {
+        return 420;
+      }
+      const gaps = [];
+      for (let index = 0; index < lines.length - 1; index += 1) {
+        const current = lines[index];
+        const next = lines[index + 1];
+        if (!current || !next) {
+          continue;
+        }
+        const distance = coordDistanceMeters(current.end, next.start);
+        if (Number.isFinite(distance) && distance > 1) {
+          gaps.push(distance);
+        }
+      }
+      if (!gaps.length) {
+        return 420;
+      }
+      gaps.sort((a, b) => a - b);
+      const mid = Math.floor(gaps.length / 2);
+      if (gaps.length % 2 === 0) {
+        return (gaps[mid - 1] + gaps[mid]) / 2;
+      }
+      return gaps[mid];
+    }
+
+    function resolveSimTransitionMetrics(lines, settings) {
+      const spacingMeters = clamp(estimateSimLineSpacingMeters(lines), 120, 4000);
+      const departureRaw = Math.max(60, Number(settings.departureNm) * SIM_NM_TO_METERS);
+      const inboundRaw = Math.max(60, Number(settings.inboundNm) * SIM_NM_TO_METERS);
+      const radiusRaw = Math.max(100, Number(settings.turnRadiusNm) * SIM_NM_TO_METERS);
+      const departureMeters = clamp(
+        departureRaw,
+        Math.max(70, spacingMeters * 0.35),
+        Math.max(150, spacingMeters * 1.25)
+      );
+      const inboundMeters = clamp(
+        inboundRaw,
+        Math.max(70, spacingMeters * 0.35),
+        Math.max(150, spacingMeters * 1.25)
+      );
+      const turnRadiusMeters = clamp(
+        radiusRaw,
+        Math.max(140, spacingMeters * 0.75),
+        Math.max(280, spacingMeters * 2.4)
+      );
+      return {
+        spacingMeters,
+        departureMeters,
+        inboundMeters,
+        turnRadiusMeters,
+      };
+    }
+
+    function buildTeardropTransitionCoords(current, next, settings, metrics, arcSplits) {
+      const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
+      const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
+      const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
+      const departureTip = offsetCoordByMeters(current.end, currentHeading, metrics.departureMeters);
+      const approachStart = offsetCoordByMeters(next.start, normalizeHeadingDeg(nextHeading + 180), metrics.inboundMeters);
+      const baseAngle = clamp(Number(settings.offsetAngleDeg) || 25, 8, 78);
+      const controlAngle = clamp(baseAngle * 0.9, 18, 72);
+      const controlDistance = Math.max(120, metrics.turnRadiusMeters * 0.85);
+      const control1 = offsetCoordByMeters(
+        departureTip,
+        normalizeHeadingDeg(currentHeading + (turnSign * controlAngle)),
+        controlDistance
+      );
+      const control2 = offsetCoordByMeters(
+        approachStart,
+        normalizeHeadingDeg(nextHeading + 180 - (turnSign * controlAngle)),
+        controlDistance
+      );
+      const curve = buildCubicBezierPath(
+        departureTip,
+        control1,
+        control2,
+        approachStart,
+        Math.max(16, arcSplits + 8)
+      );
+      return mergeCoordSegments([
+        [{ latitude: current.end.latitude, longitude: current.end.longitude }, departureTip],
+        curve,
+        [approachStart, { latitude: next.start.latitude, longitude: next.start.longitude }],
+      ]);
+    }
+
+    function buildDirectTransitionCoords(current, next, metrics, arcSplits) {
+      const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
+      const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
+      const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
+      const controlDistance = Math.max(100, metrics.turnRadiusMeters * 0.66);
+      const control1 = offsetCoordByMeters(
+        current.end,
+        normalizeHeadingDeg(currentHeading + (turnSign * 26)),
+        controlDistance
+      );
+      const control2 = offsetCoordByMeters(
+        next.start,
+        normalizeHeadingDeg(nextHeading + 180 - (turnSign * 26)),
+        controlDistance
+      );
+      return buildCubicBezierPath(
+        current.end,
+        control1,
+        control2,
+        next.start,
+        Math.max(14, arcSplits + 4)
+      );
+    }
+
     function buildSimulationSegments(lines, settings) {
       const segments = [];
       const simulationBounds = L.latLngBounds([]);
       const workBounds = getSimulationWorkBounds();
       const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits) || SIM_DEFAULTS.arcSplits));
-      const turnRadiusMeters = Math.max(100, Number(settings.turnRadiusNm) * SIM_NM_TO_METERS);
-      const departureMeters = Math.max(60, Number(settings.departureNm) * SIM_NM_TO_METERS);
-      const inboundMeters = Math.max(60, Number(settings.inboundNm) * SIM_NM_TO_METERS);
+      const transitionMetrics = resolveSimTransitionMetrics(lines, settings);
       const pattern = settings.turnPattern === 'direct' ? 'direct' : 'standard';
 
       let planDistanceMeters = 0;
@@ -4805,37 +4978,12 @@
           continue;
         }
 
-        const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
-        const nextHeading = normalizeHeadingDeg(bearingDeg(next.start, next.end));
-        const turnSign = resolveTurnSignTowardTarget(current.end, currentHeading, next.start);
-
         const turnSegments = [];
         if (pattern === 'standard') {
-          const departureHeading = normalizeHeadingDeg(currentHeading + (turnSign * settings.offsetAngleDeg));
-          const curve = buildArcPathByRadius(
-            current.end,
-            next.start,
-            turnRadiusMeters,
-            turnSign,
-            arcSplits + 8,
-            departureHeading,
-            nextHeading,
-            departureMeters,
-            inboundMeters
-          );
+          const curve = buildTeardropTransitionCoords(current, next, settings, transitionMetrics, arcSplits);
           turnSegments.push(curve);
         } else {
-          turnSegments.push(buildArcPathByRadius(
-            current.end,
-            next.start,
-            turnRadiusMeters,
-            turnSign,
-            arcSplits + 6,
-            currentHeading,
-            nextHeading,
-            turnRadiusMeters * 0.7,
-            turnRadiusMeters * 0.7
-          ));
+          turnSegments.push(buildDirectTransitionCoords(current, next, transitionMetrics, arcSplits));
         }
 
         turnSegments.forEach((turnCoords) => {
