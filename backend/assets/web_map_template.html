@@ -971,6 +971,8 @@
       padding: 12px;
       display: none;
       gap: 10px;
+      max-height: min(76vh, 760px);
+      overflow: auto;
     }
     .layer-panel.is-visible,
     .weather-panel.is-visible {
@@ -1057,8 +1059,117 @@
       border-radius: 12px;
       background: rgba(255, 255, 255, 0.04);
     }
+    .sim-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .sim-subhead {
+      margin: 0;
+      color: #d6e6fb;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .sim-divider {
+      border: 0;
+      border-top: 1px solid rgba(121, 192, 255, 0.2);
+      margin: 2px 0 0;
+    }
+    .sim-grid-two {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 8px 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-span-two {
+      grid-column: 1 / -1;
+    }
+    .sim-grid-single {
+      display: grid;
+      gap: 7px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-radio-row,
+    .sim-check-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #dfe8f2;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .sim-radio-row input,
+    .sim-check-row input {
+      accent-color: #58a6ff;
+    }
+    .sim-preset-select {
+      width: 100%;
+      padding: 7px 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(121, 192, 255, 0.24);
+      background: rgba(13, 17, 23, 0.86);
+      color: #e6edf3;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .sim-preset-select:focus {
+      border-color: rgba(88, 166, 255, 0.78);
+      box-shadow: 0 0 0 2px rgba(47, 129, 247, 0.15);
+      outline: none;
+    }
+    .sim-preset-select:disabled,
+    .sim-size-input:disabled {
+      color: #9fb3c8;
+      border-color: rgba(120, 149, 180, 0.24);
+      background: rgba(52, 67, 84, 0.46);
+      cursor: not-allowed;
+    }
+    .sim-style-wrap {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(120px, 1fr));
+      gap: 8px 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-selected-status {
+      margin: 0;
+      color: #c9d1d9;
+      font-size: 11px;
+      line-height: 1.5;
+      letter-spacing: 0.01em;
+    }
+    .sim-stats {
+      display: grid;
+      gap: 6px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .sim-stat-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 11px;
+      line-height: 1.45;
+      color: #c8d9eb;
+    }
+    .sim-stat-row strong {
+      color: #f6fbff;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
     .sim-actions {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       justify-content: flex-end;
     }
@@ -2253,11 +2364,7 @@
       <text x="48" y="31" text-anchor="middle" fill="#4d1fa8" font-size="15.5" font-weight="800" font-family="Arial, sans-serif">GPX</text>
     </symbol>
     <symbol id="toolIconSim" viewBox="0 0 96 72">
-      <rect x="18" y="14" width="60" height="44" rx="10" fill="#f2ecff" stroke="#17324b" stroke-width="2.8"></rect>
-      <path d="M24 46 35 34 47 39 60 27 73 34" fill="none" stroke="#783cdc" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
-      <circle cx="24" cy="46" r="2.3" fill="#783cdc"></circle>
-      <circle cx="73" cy="34" r="2.3" fill="#783cdc"></circle>
-      <text x="48" y="31" text-anchor="middle" fill="#5f2bb8" font-size="15.2" font-weight="900" font-family="Arial, sans-serif">SIM</text>
+      <text x="48" y="45" text-anchor="middle" fill="#5f2bb8" font-size="28" font-weight="900" font-family="Arial, sans-serif" letter-spacing="1.2">SIM</text>
     </symbol>
     <symbol id="toolIconHide" viewBox="0 0 96 72">
       <path d="M70 18c4 0 7 3 7 7s-3 7-7 7-7-3-7-7 3-7 7-7Z" fill="#17324b"></path>
@@ -2455,31 +2562,107 @@
     </div>
   </div>
   <div id="simPanel" class="panel sim-panel">
-    <p class="sim-title">시뮬레이션 조건</p>
-    <p class="sim-help">값을 수정한 뒤 재계산을 누르면 궤적이 즉시 갱신됩니다. (단위: NM, 각도: 도)</p>
+    <div class="sim-head">
+      <p class="sim-title">시뮬레이션 조건</p>
+      <button id="simClosePanelButton" class="mini-button" type="button">닫기</button>
+    </div>
+    <p class="sim-help">프리셋/패턴/진입방향 변경 시 궤적이 즉시 다시 계산됩니다. 경고 토글은 색상만 갱신합니다.</p>
+
+    <p class="sim-subhead">항공기 프리셋</p>
+    <div class="sim-grid-single">
+      <label class="force-field">기종
+        <select id="simAircraftPresetSelect" class="sim-preset-select" aria-label="항공기 프리셋">
+          <option value="caravan">Cessna 208B Caravan</option>
+          <option value="kingair">King Air 200</option>
+          <option value="atr42">ATR 42</option>
+          <option value="custom">직접입력</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="sim-subhead">선회 패턴</p>
+    <div class="sim-grid-single">
+      <label class="sim-radio-row">
+        <input id="simTurnPatternStandard" type="radio" name="simTurnPattern" value="standard" checked>
+        표준 절차선회
+      </label>
+      <label class="sim-radio-row">
+        <input id="simTurnPatternDirect" type="radio" name="simTurnPattern" value="direct">
+        직접선회
+      </label>
+    </div>
+
+    <p class="sim-subhead">진입 방향</p>
+    <div class="sim-grid-two">
+      <label class="force-field">첫 라인 시작
+        <select id="simFirstLineStartSelect" class="sim-preset-select" aria-label="첫 라인 시작">
+          <option value="north">최북단부터</option>
+          <option value="south">최남단부터</option>
+        </select>
+      </label>
+      <label class="force-field">진입 방향
+        <select id="simEntryDirectionSelect" class="sim-preset-select" aria-label="진입 방향">
+          <option value="west">서쪽에서 진입</option>
+          <option value="east">동쪽에서 진입</option>
+        </select>
+      </label>
+    </div>
+
+    <p class="sim-subhead">경고 표시</p>
+    <div class="sim-grid-single">
+      <label class="sim-check-row">
+        <input id="simWarnBoundsToggle" type="checkbox" checked>
+        선회구간이 작업구역(KML 바운딩박스) 밖으로 나가면 빨간색 표시
+      </label>
+      <label class="sim-check-row">
+        <input id="simWarnSeaToggle" type="checkbox" checked>
+        선회구간이 해상으로 나가면 주황색 표시
+      </label>
+    </div>
+
+    <p class="sim-subhead">직접입력 값</p>
     <div class="sim-controls">
-      <label class="force-field">편향각
-        <input id="simOffsetAngleInput" class="sim-size-input" type="number" value="30" min="0" max="89" step="1" aria-label="편향각">
+      <label class="force-field">편향각(도)
+        <input id="simOffsetAngleInput" class="sim-size-input" type="number" value="20" min="0" max="89" step="1" aria-label="편향각">
       </label>
-      <label class="force-field">이탈 거리
-        <input id="simDepartureNmInput" class="sim-size-input" type="number" value="1" min="0.1" max="20" step="0.1" aria-label="이탈 거리">
+      <label class="force-field">직진 거리(NM)
+        <input id="simDepartureNmInput" class="sim-size-input" type="number" value="1" min="0.1" max="20" step="0.1" aria-label="직진 거리">
       </label>
-      <label class="force-field">직진 거리
-        <input id="simStraightNmInput" class="sim-size-input" type="number" value="2" min="0.1" max="30" step="0.1" aria-label="직진 거리">
+      <label class="force-field">선회 반경(NM)
+        <input id="simTurnRadiusNmInput" class="sim-size-input" type="number" value="2" min="0.2" max="30" step="0.1" aria-label="선회 반경">
       </label>
-      <label class="force-field">선회 반경
-        <input id="simTurnRadiusNmInput" class="sim-size-input" type="number" value="3" min="0.2" max="30" step="0.1" aria-label="선회 반경">
-      </label>
-      <label class="force-field">진입 거리
+      <label class="force-field">진입 거리(NM)
         <input id="simInboundNmInput" class="sim-size-input" type="number" value="2" min="0.1" max="30" step="0.1" aria-label="진입 거리">
-      </label>
-      <label class="force-field">복귀 거리
-        <input id="simRecoverNmInput" class="sim-size-input" type="number" value="1" min="0.1" max="20" step="0.1" aria-label="복귀 거리">
       </label>
       <label class="force-field">반원 분할
         <input id="simArcSplitsInput" class="sim-size-input" type="number" value="20" min="8" max="72" step="1" aria-label="반원 분할 수">
       </label>
+      <label id="simCustomSpeedWrap" class="force-field sim-span-two is-hidden">순항속도(knots)
+        <input id="simCustomSpeedInput" class="sim-size-input" type="number" value="185" min="80" max="420" step="1" aria-label="직접입력 순항속도">
+      </label>
     </div>
+
+    <hr class="sim-divider">
+    <p id="simSelectedStatus" class="sim-selected-status">선택된 SIM 객체 없음</p>
+    <div class="sim-style-wrap">
+      <label class="force-field">색상
+        <input id="simColorInput" type="color" value="#7b3ff2" aria-label="선택 SIM 색상">
+      </label>
+      <label class="force-field">굵기
+        <input id="simWeightInput" class="sim-size-input" type="number" value="2" min="1" max="20" step="0.5" aria-label="선택 SIM 굵기">
+      </label>
+    </div>
+
+    <hr class="sim-divider">
+    <p class="sim-subhead">시뮬레이션 통계</p>
+    <div class="sim-stats">
+      <div class="sim-stat-row"><span>총 비행거리</span><strong id="simStatTotalDistance">-</strong></div>
+      <div class="sim-stat-row"><span>선회구간 거리</span><strong id="simStatTurnDistance">-</strong></div>
+      <div class="sim-stat-row"><span>선회 횟수</span><strong id="simStatTurnCount">-</strong></div>
+      <div class="sim-stat-row"><span>최대 이탈거리</span><strong id="simStatMaxDeviation">-</strong></div>
+      <div class="sim-stat-row"><span>예상 비행시간</span><strong id="simStatEstimatedTime">-</strong></div>
+    </div>
+
     <div class="sim-actions">
       <button id="simToggleOverlayButton" class="mini-button sim-toggle-button" type="button">시뮬레이션 ON</button>
       <button id="simApplyButton" class="mini-button sim-apply-button" type="button">재계산</button>
@@ -2925,13 +3108,29 @@
     const gpxColorInput = document.getElementById('gpxColorInput');
     const gpxWeightInput = document.getElementById('gpxWeightInput');
     const simButton = document.getElementById('simButton');
+    const simClosePanelButton = document.getElementById('simClosePanelButton');
+    const simAircraftPresetSelect = document.getElementById('simAircraftPresetSelect');
+    const simTurnPatternStandard = document.getElementById('simTurnPatternStandard');
+    const simTurnPatternDirect = document.getElementById('simTurnPatternDirect');
+    const simFirstLineStartSelect = document.getElementById('simFirstLineStartSelect');
+    const simEntryDirectionSelect = document.getElementById('simEntryDirectionSelect');
+    const simWarnBoundsToggle = document.getElementById('simWarnBoundsToggle');
+    const simWarnSeaToggle = document.getElementById('simWarnSeaToggle');
     const simOffsetAngleInput = document.getElementById('simOffsetAngleInput');
     const simDepartureNmInput = document.getElementById('simDepartureNmInput');
-    const simStraightNmInput = document.getElementById('simStraightNmInput');
     const simTurnRadiusNmInput = document.getElementById('simTurnRadiusNmInput');
     const simInboundNmInput = document.getElementById('simInboundNmInput');
-    const simRecoverNmInput = document.getElementById('simRecoverNmInput');
     const simArcSplitsInput = document.getElementById('simArcSplitsInput');
+    const simCustomSpeedWrap = document.getElementById('simCustomSpeedWrap');
+    const simCustomSpeedInput = document.getElementById('simCustomSpeedInput');
+    const simSelectedStatus = document.getElementById('simSelectedStatus');
+    const simColorInput = document.getElementById('simColorInput');
+    const simWeightInput = document.getElementById('simWeightInput');
+    const simStatTotalDistance = document.getElementById('simStatTotalDistance');
+    const simStatTurnDistance = document.getElementById('simStatTurnDistance');
+    const simStatTurnCount = document.getElementById('simStatTurnCount');
+    const simStatMaxDeviation = document.getElementById('simStatMaxDeviation');
+    const simStatEstimatedTime = document.getElementById('simStatEstimatedTime');
     const simToggleOverlayButton = document.getElementById('simToggleOverlayButton');
     const simApplyButton = document.getElementById('simApplyButton');
     const notamButton = document.getElementById('notamButton');
@@ -3131,17 +3330,56 @@
     const GPX_LINE_OPACITY = 0.92;
     const GPX_SELECTED_OPACITY = 1;
     const GPX_MAX_AUTO_FIT_ZOOM = 16;
-    const SIM_COLOR = 'rgba(120, 60, 220, 0.85)';
+    const SIM_BASE_COLOR = '#7b3ff2';
+    const SIM_WARNING_BOUNDS_COLOR = '#ff4d4f';
+    const SIM_WARNING_SEA_COLOR = '#ff9f2d';
     const SIM_WEIGHT = 2;
+    const SIM_LINE_OPACITY = 0.9;
+    const SIM_SELECTED_OPACITY = 1;
+    const SIM_MAX_AUTO_FIT_ZOOM = 16;
     const SIM_NM_TO_METERS = 1852;
+    const SIM_AIRCRAFT_PRESETS = {
+      caravan: {
+        key: 'caravan',
+        label: 'Cessna 208B Caravan',
+        offsetAngleDeg: 20,
+        departureNm: 1,
+        turnRadiusNm: 2,
+        inboundNm: 2,
+        speedKnots: 185,
+      },
+      kingair: {
+        key: 'kingair',
+        label: 'King Air 200',
+        offsetAngleDeg: 25,
+        departureNm: 1,
+        turnRadiusNm: 3,
+        inboundNm: 2,
+        speedKnots: 270,
+      },
+      atr42: {
+        key: 'atr42',
+        label: 'ATR 42',
+        offsetAngleDeg: 30,
+        departureNm: 2,
+        turnRadiusNm: 4,
+        inboundNm: 3,
+        speedKnots: 300,
+      },
+    };
     const SIM_DEFAULTS = {
-      offsetAngleDeg: 30,
-      departureNm: 1,
-      straightNm: 2,
-      turnRadiusNm: 3,
-      inboundNm: 2,
-      recoverNm: 1,
+      aircraftPreset: 'caravan',
+      turnPattern: 'standard',
+      firstLineStart: 'north',
+      entryDirection: 'west',
+      warnOutOfBounds: true,
+      warnSea: true,
+      offsetAngleDeg: SIM_AIRCRAFT_PRESETS.caravan.offsetAngleDeg,
+      departureNm: SIM_AIRCRAFT_PRESETS.caravan.departureNm,
+      turnRadiusNm: SIM_AIRCRAFT_PRESETS.caravan.turnRadiusNm,
+      inboundNm: SIM_AIRCRAFT_PRESETS.caravan.inboundNm,
       arcSplits: 20,
+      customSpeedKnots: 185,
     };
     const gpxState = {
       items: [],
@@ -3154,6 +3392,10 @@
       visible: false,
       generatedSegmentCount: 0,
       panelVisible: false,
+      nextId: 1,
+      selectedSegmentId: null,
+      items: [],
+      stats: null,
       settings: {
         ...SIM_DEFAULTS,
       },
@@ -3403,6 +3645,7 @@
       }
       deselectTextMarker();
       deselectNumberLabel();
+      deselectSimulationSegment();
       gpxState.selectedRouteId = routeId;
       syncGpxRouteSelections();
       const selectedItem = getGpxItemById(routeId);
@@ -3458,6 +3701,185 @@
         return false;
       }
       return removeGpxRouteById(gpxState.selectedRouteId, true);
+    }
+
+    function normalizeSimColor(value, fallback = SIM_BASE_COLOR) {
+      const raw = String(value || '').trim();
+      return /^#[0-9a-f]{6}$/i.test(raw) ? raw : fallback;
+    }
+
+    function normalizeSimWeight(value, fallback = SIM_WEIGHT) {
+      const numeric = Number(value);
+      if (!Number.isFinite(numeric)) {
+        return clamp(Number(fallback) || SIM_WEIGHT, 1, 20);
+      }
+      return clamp(numeric, 1, 20);
+    }
+
+    function getSimSegmentById(segmentId) {
+      return simState.items.find((item) => item.id === segmentId) || null;
+    }
+
+    function resolveSimulationSegmentColor(item) {
+      if (!item) {
+        return SIM_BASE_COLOR;
+      }
+      if (item.manualColor) {
+        return normalizeSimColor(item.color, SIM_BASE_COLOR);
+      }
+      if (item.isTurnSegment && simState.settings.warnSea && item.warningSea) {
+        return SIM_WARNING_SEA_COLOR;
+      }
+      if (item.isTurnSegment && simState.settings.warnOutOfBounds && item.warningOutOfBounds) {
+        return SIM_WARNING_BOUNDS_COLOR;
+      }
+      return normalizeSimColor(item.color, SIM_BASE_COLOR);
+    }
+
+    function applySimulationSegmentStyle(item, selected = false) {
+      if (!item || !item.layer || typeof item.layer.setStyle !== 'function') {
+        return;
+      }
+      const baseWeight = normalizeSimWeight(item.weight, SIM_WEIGHT);
+      item.layer.setStyle({
+        color: resolveSimulationSegmentColor(item),
+        weight: selected ? Math.min(24, Math.max(baseWeight + 1.8, baseWeight)) : baseWeight,
+        opacity: selected ? SIM_SELECTED_OPACITY : SIM_LINE_OPACITY,
+        dashArray: selected ? '10 6' : null,
+      });
+    }
+
+    function syncSimulationSegmentSelections() {
+      simState.items.forEach((item) => {
+        applySimulationSegmentStyle(item, item.id === simState.selectedSegmentId);
+      });
+      if (!simColorInput || !simWeightInput || !simSelectedStatus) {
+        return;
+      }
+      const selectedItem = getSimSegmentById(simState.selectedSegmentId);
+      if (!selectedItem) {
+        simColorInput.value = SIM_BASE_COLOR;
+        simWeightInput.value = String(SIM_WEIGHT);
+        simColorInput.disabled = true;
+        simWeightInput.disabled = true;
+        simSelectedStatus.textContent = '선택된 SIM 객체 없음';
+        return;
+      }
+      simColorInput.disabled = false;
+      simWeightInput.disabled = false;
+      simColorInput.value = normalizeSimColor(selectedItem.color, SIM_BASE_COLOR);
+      simWeightInput.value = String(normalizeSimWeight(selectedItem.weight, SIM_WEIGHT));
+      simSelectedStatus.textContent = `선택된 SIM 객체 #${selectedItem.id}`;
+    }
+
+    function deselectSimulationSegment() {
+      if (!Number.isFinite(simState.selectedSegmentId)) {
+        syncSimulationSegmentSelections();
+        return;
+      }
+      simState.selectedSegmentId = null;
+      syncSimulationSegmentSelections();
+    }
+
+    function selectSimulationSegment(segmentId) {
+      if (!Number.isFinite(segmentId)) {
+        return;
+      }
+      deselectTextMarker();
+      deselectNumberLabel();
+      deselectGpxRoute();
+      simState.selectedSegmentId = segmentId;
+      syncSimulationSegmentSelections();
+      const selectedItem = getSimSegmentById(segmentId);
+      if (selectedItem && selectedItem.layer && selectedItem.layer.bringToFront) {
+        selectedItem.layer.bringToFront();
+      }
+      if (simPanel && !simPanel.classList.contains('is-visible')) {
+        setSimPanelVisible(true);
+      }
+    }
+
+    function removeSimulationSegmentById(segmentId, persist = true) {
+      const index = simState.items.findIndex((item) => item.id === segmentId);
+      if (index < 0) {
+        return false;
+      }
+      const [item] = simState.items.splice(index, 1);
+      if (item && item.layer) {
+        simulationRouteGroup.removeLayer(item.layer);
+      }
+      if (simState.selectedSegmentId === segmentId) {
+        simState.selectedSegmentId = null;
+      }
+      simState.generatedSegmentCount = simState.items.length;
+      syncSimulationSegmentSelections();
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+      return true;
+    }
+
+    function deleteSelectedSimulationSegment() {
+      if (!Number.isFinite(simState.selectedSegmentId)) {
+        return false;
+      }
+      return removeSimulationSegmentById(simState.selectedSegmentId, true);
+    }
+
+    function clearSimulationSegments(persist = false) {
+      simulationRouteGroup.clearLayers();
+      simState.items = [];
+      simState.nextId = 1;
+      simState.generatedSegmentCount = 0;
+      simState.selectedSegmentId = null;
+      simState.stats = null;
+      syncSimulationSegmentSelections();
+      updateSimStatsDisplay(null);
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
+    function createSimulationSegmentItem(meta, persist = false) {
+      if (!meta || !Array.isArray(meta.coords) || meta.coords.length < 2) {
+        return null;
+      }
+      const layer = L.polyline(meta.coords.map((coord) => [coord.latitude, coord.longitude]), {
+        color: SIM_BASE_COLOR,
+        weight: SIM_WEIGHT,
+        opacity: SIM_LINE_OPACITY,
+        lineCap: 'round',
+        lineJoin: 'round',
+        pane: 'overlayPane',
+        interactive: true,
+        renderer,
+        smoothFactor: 1,
+      }).addTo(simulationRouteGroup);
+      const segmentId = simState.nextId++;
+      const item = {
+        id: segmentId,
+        layer,
+        coords: meta.coords.map((coord) => ({ latitude: coord.latitude, longitude: coord.longitude })),
+        isTurnSegment: !!meta.isTurnSegment,
+        warningOutOfBounds: !!meta.warningOutOfBounds,
+        warningSea: !!meta.warningSea,
+        color: SIM_BASE_COLOR,
+        weight: SIM_WEIGHT,
+        manualColor: false,
+        manualWeight: false,
+      };
+      layer.on('click', (event) => {
+        if (event && event.originalEvent) {
+          L.DomEvent.stop(event.originalEvent);
+        }
+        selectSimulationSegment(segmentId);
+      });
+      simState.items.push(item);
+      applySimulationSegmentStyle(item, false);
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+      return item;
     }
 
     function drawGpxSegments(segments) {
@@ -3562,32 +3984,154 @@
       }
     }
 
+    function formatSimDistanceKm(meters) {
+      return `${(Math.max(0, Number(meters) || 0) / 1000).toFixed(2)} km`;
+    }
+
+    function formatSimDistanceNm(meters) {
+      return `${(Math.max(0, Number(meters) || 0) / SIM_NM_TO_METERS).toFixed(2)} NM`;
+    }
+
+    function formatSimDuration(hours) {
+      const totalHours = Math.max(0, Number(hours) || 0);
+      const totalMinutes = Math.round(totalHours * 60);
+      const hh = Math.floor(totalMinutes / 60);
+      const mm = totalMinutes % 60;
+      return `${hh}h ${String(mm).padStart(2, '0')}m`;
+    }
+
+    function getSimCruiseSpeedKnots(settings = simState.settings) {
+      if (settings.aircraftPreset !== 'custom' && SIM_AIRCRAFT_PRESETS[settings.aircraftPreset]) {
+        return SIM_AIRCRAFT_PRESETS[settings.aircraftPreset].speedKnots;
+      }
+      return clamp(Number(settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
+    }
+
+    function updateSimStatsDisplay(stats = simState.stats) {
+      if (!simStatTotalDistance || !simStatTurnDistance || !simStatTurnCount || !simStatMaxDeviation || !simStatEstimatedTime) {
+        return;
+      }
+      if (!stats) {
+        simStatTotalDistance.textContent = '-';
+        simStatTurnDistance.textContent = '-';
+        simStatTurnCount.textContent = '-';
+        simStatMaxDeviation.textContent = '-';
+        simStatEstimatedTime.textContent = '-';
+        return;
+      }
+      const totalDistanceMeters = Number(stats.totalDistanceMeters) || 0;
+      const turnDistanceMeters = Number(stats.turnDistanceMeters) || 0;
+      const turnPercent = totalDistanceMeters > 0 ? (turnDistanceMeters / totalDistanceMeters) * 100 : 0;
+      simStatTotalDistance.textContent = formatSimDistanceKm(totalDistanceMeters);
+      simStatTurnDistance.textContent = `${formatSimDistanceKm(turnDistanceMeters)} (${turnPercent.toFixed(1)}%)`;
+      simStatTurnCount.textContent = `${Number(stats.turnCount) || 0}회`;
+      simStatMaxDeviation.textContent = formatSimDistanceNm(Number(stats.maxDeviationMeters) || 0);
+      simStatEstimatedTime.textContent = formatSimDuration(Number(stats.estimatedHours) || 0);
+    }
+
+    function setSimDirectInputEnabled() {
+      const isCustom = simState.settings.aircraftPreset === 'custom';
+      [simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput].forEach((input) => {
+        if (input) {
+          input.disabled = !isCustom;
+        }
+      });
+      if (simCustomSpeedWrap) {
+        simCustomSpeedWrap.classList.toggle('is-hidden', !isCustom);
+      }
+      if (simCustomSpeedInput) {
+        simCustomSpeedInput.disabled = !isCustom;
+      }
+    }
+
+    function applySimPreset(presetKey, persist = true) {
+      const key = String(presetKey || '').toLowerCase();
+      if (key === 'custom') {
+        simState.settings.aircraftPreset = 'custom';
+        setSimDirectInputEnabled();
+        if (persist) {
+          scheduleViewerStateSave();
+        }
+        return;
+      }
+      const preset = SIM_AIRCRAFT_PRESETS[key] || SIM_AIRCRAFT_PRESETS.caravan;
+      simState.settings.aircraftPreset = preset.key;
+      simState.settings.offsetAngleDeg = preset.offsetAngleDeg;
+      simState.settings.departureNm = preset.departureNm;
+      simState.settings.turnRadiusNm = preset.turnRadiusNm;
+      simState.settings.inboundNm = preset.inboundNm;
+      simState.settings.customSpeedKnots = preset.speedKnots;
+      setSimDirectInputEnabled();
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
     function syncSimPanelInputs() {
       if (!simOffsetAngleInput) {
         return;
       }
-      simOffsetAngleInput.value = String(simState.settings.offsetAngleDeg);
-      simDepartureNmInput.value = String(simState.settings.departureNm);
-      simStraightNmInput.value = String(simState.settings.straightNm);
-      simTurnRadiusNmInput.value = String(simState.settings.turnRadiusNm);
-      simInboundNmInput.value = String(simState.settings.inboundNm);
-      simRecoverNmInput.value = String(simState.settings.recoverNm);
-      simArcSplitsInput.value = String(simState.settings.arcSplits);
+      const settings = simState.settings;
+      if (simAircraftPresetSelect) {
+        simAircraftPresetSelect.value = settings.aircraftPreset;
+      }
+      if (simTurnPatternStandard) {
+        simTurnPatternStandard.checked = settings.turnPattern !== 'direct';
+      }
+      if (simTurnPatternDirect) {
+        simTurnPatternDirect.checked = settings.turnPattern === 'direct';
+      }
+      if (simFirstLineStartSelect) {
+        simFirstLineStartSelect.value = settings.firstLineStart === 'south' ? 'south' : 'north';
+      }
+      if (simEntryDirectionSelect) {
+        simEntryDirectionSelect.value = settings.entryDirection === 'east' ? 'east' : 'west';
+      }
+      if (simWarnBoundsToggle) {
+        simWarnBoundsToggle.checked = !!settings.warnOutOfBounds;
+      }
+      if (simWarnSeaToggle) {
+        simWarnSeaToggle.checked = !!settings.warnSea;
+      }
+      simOffsetAngleInput.value = String(settings.offsetAngleDeg);
+      simDepartureNmInput.value = String(settings.departureNm);
+      simTurnRadiusNmInput.value = String(settings.turnRadiusNm);
+      simInboundNmInput.value = String(settings.inboundNm);
+      simArcSplitsInput.value = String(settings.arcSplits);
+      if (simCustomSpeedInput) {
+        simCustomSpeedInput.value = String(clamp(Number(settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420));
+      }
+      setSimDirectInputEnabled();
+      syncSimulationSegmentSelections();
+      updateSimStatsDisplay(simState.stats);
     }
 
     function readSimSettingsFromInputs() {
-      const nextSettings = {
-        offsetAngleDeg: clamp(Number(simOffsetAngleInput ? simOffsetAngleInput.value : simState.settings.offsetAngleDeg) || SIM_DEFAULTS.offsetAngleDeg, 0, 89),
-        departureNm: clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20),
-        straightNm: clamp(Number(simStraightNmInput ? simStraightNmInput.value : simState.settings.straightNm) || SIM_DEFAULTS.straightNm, 0.1, 30),
-        turnRadiusNm: clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30),
-        inboundNm: clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30),
-        recoverNm: clamp(Number(simRecoverNmInput ? simRecoverNmInput.value : simState.settings.recoverNm) || SIM_DEFAULTS.recoverNm, 0.1, 20),
-        arcSplits: Math.round(clamp(Number(simArcSplitsInput ? simArcSplitsInput.value : simState.settings.arcSplits) || SIM_DEFAULTS.arcSplits, 8, 72)),
-      };
-      simState.settings = nextSettings;
-      syncSimPanelInputs();
-      return nextSettings;
+      const presetKey = String(simAircraftPresetSelect ? simAircraftPresetSelect.value : simState.settings.aircraftPreset).toLowerCase();
+      simState.settings.aircraftPreset = presetKey === 'custom' ? 'custom' : (SIM_AIRCRAFT_PRESETS[presetKey] ? presetKey : SIM_DEFAULTS.aircraftPreset);
+      simState.settings.turnPattern = simTurnPatternDirect && simTurnPatternDirect.checked ? 'direct' : 'standard';
+      simState.settings.firstLineStart = (simFirstLineStartSelect && simFirstLineStartSelect.value === 'south') ? 'south' : 'north';
+      simState.settings.entryDirection = (simEntryDirectionSelect && simEntryDirectionSelect.value === 'east') ? 'east' : 'west';
+      simState.settings.warnOutOfBounds = !!(simWarnBoundsToggle && simWarnBoundsToggle.checked);
+      simState.settings.warnSea = !!(simWarnSeaToggle && simWarnSeaToggle.checked);
+      simState.settings.arcSplits = Math.round(clamp(Number(simArcSplitsInput ? simArcSplitsInput.value : simState.settings.arcSplits) || SIM_DEFAULTS.arcSplits, 8, 72));
+
+      if (simState.settings.aircraftPreset === 'custom') {
+        simState.settings.offsetAngleDeg = clamp(Number(simOffsetAngleInput ? simOffsetAngleInput.value : simState.settings.offsetAngleDeg) || SIM_DEFAULTS.offsetAngleDeg, 0, 89);
+        simState.settings.departureNm = clamp(Number(simDepartureNmInput ? simDepartureNmInput.value : simState.settings.departureNm) || SIM_DEFAULTS.departureNm, 0.1, 20);
+        simState.settings.turnRadiusNm = clamp(Number(simTurnRadiusNmInput ? simTurnRadiusNmInput.value : simState.settings.turnRadiusNm) || SIM_DEFAULTS.turnRadiusNm, 0.2, 30);
+        simState.settings.inboundNm = clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30);
+        simState.settings.customSpeedKnots = clamp(Number(simCustomSpeedInput ? simCustomSpeedInput.value : simState.settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
+      } else {
+        const preset = SIM_AIRCRAFT_PRESETS[simState.settings.aircraftPreset] || SIM_AIRCRAFT_PRESETS.caravan;
+        simState.settings.offsetAngleDeg = preset.offsetAngleDeg;
+        simState.settings.departureNm = preset.departureNm;
+        simState.settings.turnRadiusNm = preset.turnRadiusNm;
+        simState.settings.inboundNm = preset.inboundNm;
+        simState.settings.customSpeedKnots = preset.speedKnots;
+      }
+      setSimDirectInputEnabled();
+      return { ...simState.settings };
     }
 
     function setSimPanelVisible(visible) {
@@ -3600,6 +4144,9 @@
       if (isVisible) {
         syncSimPanelInputs();
       }
+      if (simButton) {
+        simButton.classList.toggle('is-sim-on', simState.visible || isVisible);
+      }
       syncMenuButtonActiveState();
     }
 
@@ -3607,7 +4154,7 @@
       const enabled = !!visible;
       simState.visible = enabled;
       if (simButton) {
-        simButton.classList.toggle('is-sim-on', enabled);
+        simButton.classList.toggle('is-sim-on', enabled || simState.panelVisible);
       }
       if (simToggleOverlayButton) {
         simToggleOverlayButton.classList.toggle('is-on', enabled);
@@ -3625,15 +4172,14 @@
 
     function hideSimulationOverlay(clearLayers = false) {
       if (clearLayers) {
-        simulationRouteGroup.clearLayers();
-        simState.generatedSegmentCount = 0;
+        clearSimulationSegments(false);
       }
       setSimulationVisible(false);
     }
 
-    function buildSimulationLineSequence() {
+    function buildSimulationLineSequence(settings = simState.settings) {
       const lines = [];
-      resultLineEntries.forEach((entry, index) => {
+      resultLineEntries.forEach((entry) => {
         const row = entry && entry.row ? entry.row : null;
         if (!row) {
           return;
@@ -3645,82 +4191,361 @@
         if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || !Number.isFinite(eLat) || !Number.isFinite(eLng)) {
           return;
         }
-        const isOdd = ((index + 1) % 2) === 1;
-        const start = isOdd
-          ? { latitude: sLat, longitude: sLng }
-          : { latitude: eLat, longitude: eLng };
-        const end = isOdd
-          ? { latitude: eLat, longitude: eLng }
-          : { latitude: sLat, longitude: sLng };
-        lines.push({ index, start, end });
+        lines.push({
+          id: entry.id,
+          startRaw: { latitude: sLat, longitude: sLng },
+          endRaw: { latitude: eLat, longitude: eLng },
+          midLat: (sLat + eLat) / 2,
+        });
       });
-      return lines;
+
+      const orderDescending = settings.firstLineStart !== 'south';
+      lines.sort((a, b) => {
+        if (Math.abs(a.midLat - b.midLat) > 1e-8) {
+          return orderDescending ? (b.midLat - a.midLat) : (a.midLat - b.midLat);
+        }
+        return a.id - b.id;
+      });
+
+      const entryFromWest = settings.entryDirection !== 'east';
+      return lines.map((line, index) => {
+        let start = { ...line.startRaw };
+        let end = { ...line.endRaw };
+        if (entryFromWest && start.longitude > end.longitude) {
+          const temp = start;
+          start = end;
+          end = temp;
+        }
+        if (!entryFromWest && start.longitude < end.longitude) {
+          const temp = start;
+          start = end;
+          end = temp;
+        }
+        return {
+          id: line.id,
+          index,
+          start,
+          end,
+        };
+      });
+    }
+
+    function coordDistanceMeters(a, b) {
+      if (!a || !b || !Number.isFinite(a.latitude) || !Number.isFinite(a.longitude) || !Number.isFinite(b.latitude) || !Number.isFinite(b.longitude)) {
+        return 0;
+      }
+      return L.latLng(a.latitude, a.longitude).distanceTo(L.latLng(b.latitude, b.longitude));
+    }
+
+    function coordsPathDistanceMeters(coords) {
+      if (!Array.isArray(coords) || coords.length < 2) {
+        return 0;
+      }
+      let total = 0;
+      for (let index = 1; index < coords.length; index += 1) {
+        total += coordDistanceMeters(coords[index - 1], coords[index]);
+      }
+      return total;
+    }
+
+    function appendSimulationSegmentMeta(segments, boundsObj, meta) {
+      if (!meta || !Array.isArray(meta.coords)) {
+        return;
+      }
+      const coords = meta.coords
+        .map((coord) => {
+          if (!coord || !Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+            return null;
+          }
+          return {
+            latitude: Number(coord.latitude),
+            longitude: Number(coord.longitude),
+          };
+        })
+        .filter((coord) => !!coord);
+      if (coords.length < 2) {
+        return;
+      }
+      coords.forEach((coord) => {
+        boundsObj.extend([coord.latitude, coord.longitude]);
+      });
+      segments.push({
+        coords,
+        isTurnSegment: !!meta.isTurnSegment,
+        warningOutOfBounds: !!meta.warningOutOfBounds,
+        warningSea: !!meta.warningSea,
+      });
+    }
+
+    function getSimulationWorkBounds() {
+      const boundsObj = L.latLngBounds([]);
+      resultLineEntries.forEach((entry) => {
+        const row = entry && entry.row ? entry.row : null;
+        if (!row) {
+          return;
+        }
+        const sLat = Number(row.s_lat);
+        const sLng = Number(row.s_lon);
+        const eLat = Number(row.e_lat);
+        const eLng = Number(row.e_lon);
+        if (!Number.isFinite(sLat) || !Number.isFinite(sLng) || !Number.isFinite(eLat) || !Number.isFinite(eLng)) {
+          return;
+        }
+        boundsObj.extend([sLat, sLng]);
+        boundsObj.extend([eLat, eLng]);
+      });
+      return boundsObj.isValid() ? boundsObj : null;
+    }
+
+    function distanceToBoundsMeters(coord, boundsObj) {
+      if (!coord || !boundsObj || !boundsObj.isValid()) {
+        return 0;
+      }
+      const latlng = L.latLng(coord.latitude, coord.longitude);
+      if (boundsObj.contains(latlng)) {
+        return 0;
+      }
+      const nearestLat = clamp(latlng.lat, boundsObj.getSouth(), boundsObj.getNorth());
+      const nearestLng = clamp(latlng.lng, boundsObj.getWest(), boundsObj.getEast());
+      return latlng.distanceTo(L.latLng(nearestLat, nearestLng));
+    }
+
+    function toLocalMeters(coord, refLat, refLng) {
+      const latScale = 111320;
+      const lngScale = 111320 * Math.cos(toRadians(refLat));
+      return {
+        x: (coord.longitude - refLng) * lngScale,
+        y: (coord.latitude - refLat) * latScale,
+      };
+    }
+
+    function distancePointToSegmentMeters(point, segStart, segEnd) {
+      const refLat = point.latitude;
+      const refLng = point.longitude;
+      const p = toLocalMeters(point, refLat, refLng);
+      const a = toLocalMeters(segStart, refLat, refLng);
+      const b = toLocalMeters(segEnd, refLat, refLng);
+      const abx = b.x - a.x;
+      const aby = b.y - a.y;
+      const apx = p.x - a.x;
+      const apy = p.y - a.y;
+      const denom = (abx * abx) + (aby * aby);
+      if (denom <= 1e-9) {
+        return Math.hypot(apx, apy);
+      }
+      const t = clamp(((apx * abx) + (apy * aby)) / denom, 0, 1);
+      const cx = a.x + (abx * t);
+      const cy = a.y + (aby * t);
+      return Math.hypot(p.x - cx, p.y - cy);
+    }
+
+    function getNearestWorkLineDistanceMeters(coord) {
+      let minDistance = Infinity;
+      resultLineEntries.forEach((entry) => {
+        const row = entry && entry.row ? entry.row : null;
+        if (!row) {
+          return;
+        }
+        const start = { latitude: Number(row.s_lat), longitude: Number(row.s_lon) };
+        const end = { latitude: Number(row.e_lat), longitude: Number(row.e_lon) };
+        if (!Number.isFinite(start.latitude) || !Number.isFinite(start.longitude) || !Number.isFinite(end.latitude) || !Number.isFinite(end.longitude)) {
+          return;
+        }
+        const distance = distancePointToSegmentMeters(coord, start, end);
+        if (distance < minDistance) {
+          minDistance = distance;
+        }
+      });
+      return Number.isFinite(minDistance) ? minDistance : Infinity;
+    }
+
+    function estimateSeaWarning(coord, workBounds) {
+      const outsideDistance = distanceToBoundsMeters(coord, workBounds);
+      if (outsideDistance <= 320) {
+        return false;
+      }
+      return getNearestWorkLineDistanceMeters(coord) > 2400;
+    }
+
+    function analyzeSimulationWarning(coords, settings, workBounds) {
+      if (!Array.isArray(coords) || coords.length < 2) {
+        return { outOfBounds: false, sea: false, maxDeviationMeters: 0 };
+      }
+      let outOfBounds = false;
+      let sea = false;
+      let maxDeviationMeters = 0;
+      coords.forEach((coord) => {
+        const latlng = L.latLng(coord.latitude, coord.longitude);
+        const outside = !!workBounds && workBounds.isValid() && !workBounds.contains(latlng);
+        if (!outside) {
+          return;
+        }
+        outOfBounds = true;
+        const deviation = distanceToBoundsMeters(coord, workBounds);
+        if (deviation > maxDeviationMeters) {
+          maxDeviationMeters = deviation;
+        }
+        if (settings.warnSea && estimateSeaWarning(coord, workBounds)) {
+          sea = true;
+        }
+      });
+      return { outOfBounds, sea, maxDeviationMeters };
+    }
+
+    function buildArcPathByRadius(startCoord, endCoord, radiusMeters, turnSign, splits = 20) {
+      const safeRadius = Math.max(100, Number(radiusMeters) || 0);
+      const stepCount = Math.max(8, Math.round(Number(splits) || 20));
+      const refLat = (startCoord.latitude + endCoord.latitude) / 2;
+      const refLng = (startCoord.longitude + endCoord.longitude) / 2;
+      const start = toLocalMeters(startCoord, refLat, refLng);
+      const end = toLocalMeters(endCoord, refLat, refLng);
+      const dx = end.x - start.x;
+      const dy = end.y - start.y;
+      const chord = Math.hypot(dx, dy);
+      if (chord < 1e-3) {
+        return [
+          { latitude: startCoord.latitude, longitude: startCoord.longitude },
+          { latitude: endCoord.latitude, longitude: endCoord.longitude },
+        ];
+      }
+
+      const effectiveRadius = Math.max(safeRadius, (chord / 2) + 1);
+      const midX = (start.x + end.x) / 2;
+      const midY = (start.y + end.y) / 2;
+      const normX = -dy / chord;
+      const normY = dx / chord;
+      const sideSign = turnSign >= 0 ? 1 : -1;
+      const centerOffset = Math.sqrt(Math.max(0, (effectiveRadius * effectiveRadius) - ((chord * chord) / 4)));
+      const centerX = midX + (normX * centerOffset * sideSign);
+      const centerY = midY + (normY * centerOffset * sideSign);
+
+      let startAngle = Math.atan2(start.y - centerY, start.x - centerX);
+      let endAngle = Math.atan2(end.y - centerY, end.x - centerX);
+      if (sideSign >= 0) {
+        while (endAngle <= startAngle) {
+          endAngle += Math.PI * 2;
+        }
+      } else {
+        while (endAngle >= startAngle) {
+          endAngle -= Math.PI * 2;
+        }
+      }
+
+      const latScale = 111320;
+      const lngScale = 111320 * Math.cos(toRadians(refLat));
+      const coords = [];
+      for (let index = 0; index <= stepCount; index += 1) {
+        const ratio = index / stepCount;
+        const angle = startAngle + ((endAngle - startAngle) * ratio);
+        const x = centerX + (effectiveRadius * Math.cos(angle));
+        const y = centerY + (effectiveRadius * Math.sin(angle));
+        coords.push({
+          latitude: refLat + (y / latScale),
+          longitude: refLng + (x / lngScale),
+        });
+      }
+      return coords;
     }
 
     function buildSimulationSegments(lines, settings) {
       const segments = [];
       const simulationBounds = L.latLngBounds([]);
-      const offsetAngleDeg = Number(settings.offsetAngleDeg);
-      const departureMeters = Number(settings.departureNm) * SIM_NM_TO_METERS;
-      const straightMeters = Number(settings.straightNm) * SIM_NM_TO_METERS;
-      const turnRadiusMeters = Number(settings.turnRadiusNm) * SIM_NM_TO_METERS;
-      const inboundMeters = Number(settings.inboundNm) * SIM_NM_TO_METERS;
-      const recoverMeters = Number(settings.recoverNm) * SIM_NM_TO_METERS;
-      const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits)));
+      const workBounds = getSimulationWorkBounds();
+      const arcSplits = Math.max(8, Math.round(Number(settings.arcSplits) || SIM_DEFAULTS.arcSplits));
+      const turnRadiusMeters = Math.max(100, Number(settings.turnRadiusNm) * SIM_NM_TO_METERS);
+      const departureMeters = Math.max(100, Number(settings.departureNm) * SIM_NM_TO_METERS);
+      const inboundMeters = Math.max(100, Number(settings.inboundNm) * SIM_NM_TO_METERS);
+      const pattern = settings.turnPattern === 'direct' ? 'direct' : 'standard';
+
+      let planDistanceMeters = 0;
+      let turnDistanceMeters = 0;
+      let turnCount = 0;
+      let maxDeviationMeters = 0;
 
       for (let index = 0; index < lines.length; index += 1) {
         const current = lines[index];
         if (!current) {
           continue;
         }
-        appendSimulationSegment(segments, simulationBounds, [current.start, current.end]);
+        const planCoords = [
+          { latitude: current.start.latitude, longitude: current.start.longitude },
+          { latitude: current.end.latitude, longitude: current.end.longitude },
+        ];
+        appendSimulationSegmentMeta(segments, simulationBounds, {
+          coords: planCoords,
+          isTurnSegment: false,
+        });
+        planDistanceMeters += coordsPathDistanceMeters(planCoords);
+
         const next = lines[index + 1];
         if (!next) {
           continue;
         }
 
         const currentHeading = normalizeHeadingDeg(bearingDeg(current.start, current.end));
-        const nextEntryHeading = normalizeHeadingDeg(bearingDeg(current.end, next.start));
-        let turnSign = signedHeadingDeltaDeg(currentHeading, nextEntryHeading) >= 0 ? 1 : -1;
-        if (Math.abs(signedHeadingDeltaDeg(currentHeading, nextEntryHeading)) < 0.001) {
+        const toNextHeading = normalizeHeadingDeg(bearingDeg(current.end, next.start));
+        let turnSign = signedHeadingDeltaDeg(currentHeading, toNextHeading) >= 0 ? 1 : -1;
+        if (Math.abs(signedHeadingDeltaDeg(currentHeading, toNextHeading)) < 0.001) {
           turnSign = (next.start.latitude - current.end.latitude) >= 0 ? -1 : 1;
         }
 
-        const departureHeading = normalizeHeadingDeg(currentHeading + (turnSign * offsetAngleDeg));
-        const leaveEnd = offsetCoordByMeters(current.end, departureHeading, departureMeters);
-        appendSimulationSegment(segments, simulationBounds, [current.end, leaveEnd]);
-
-        const straightEnd = offsetCoordByMeters(leaveEnd, currentHeading, straightMeters);
-        appendSimulationSegment(segments, simulationBounds, [leaveEnd, straightEnd]);
-
-        const centerHeading = normalizeHeadingDeg(currentHeading + (turnSign * 90));
-        const turnCenter = offsetCoordByMeters(straightEnd, centerHeading, turnRadiusMeters);
-        const arcStartBearing = normalizeHeadingDeg(bearingDeg(turnCenter, straightEnd));
-        const arcCoords = [straightEnd];
-        for (let step = 1; step <= arcSplits; step += 1) {
-          const ratio = step / arcSplits;
-          const arcBearing = normalizeHeadingDeg(arcStartBearing + (turnSign * 180 * ratio));
-          arcCoords.push(offsetCoordByMeters(turnCenter, arcBearing, turnRadiusMeters));
+        const turnSegments = [];
+        if (pattern === 'standard') {
+          const departureHeading = normalizeHeadingDeg(currentHeading + (turnSign * settings.offsetAngleDeg));
+          const departureEnd = offsetCoordByMeters(current.end, departureHeading, departureMeters);
+          const approachStart = offsetCoordByMeters(departureEnd, currentHeading, inboundMeters);
+          turnSegments.push([
+            { latitude: current.end.latitude, longitude: current.end.longitude },
+            { latitude: departureEnd.latitude, longitude: departureEnd.longitude },
+          ]);
+          turnSegments.push([
+            { latitude: departureEnd.latitude, longitude: departureEnd.longitude },
+            { latitude: approachStart.latitude, longitude: approachStart.longitude },
+          ]);
+          turnSegments.push(buildArcPathByRadius(approachStart, next.start, turnRadiusMeters, turnSign, arcSplits));
+        } else {
+          turnSegments.push(buildArcPathByRadius(current.end, next.start, turnRadiusMeters, turnSign, arcSplits));
         }
-        appendSimulationSegment(segments, simulationBounds, arcCoords);
 
-        const arcEnd = arcCoords[arcCoords.length - 1];
-        const inboundHeading = normalizeHeadingDeg(currentHeading + 180);
-        const inboundEnd = offsetCoordByMeters(arcEnd, inboundHeading, inboundMeters);
-        appendSimulationSegment(segments, simulationBounds, [arcEnd, inboundEnd]);
-
-        const recoverHeading = normalizeHeadingDeg(inboundHeading - (turnSign * offsetAngleDeg));
-        const recoverEnd = offsetCoordByMeters(inboundEnd, recoverHeading, recoverMeters);
-        appendSimulationSegment(segments, simulationBounds, [inboundEnd, recoverEnd]);
-
-        appendSimulationSegment(segments, simulationBounds, [recoverEnd, next.start]);
+        turnSegments.forEach((turnCoords) => {
+          const warning = analyzeSimulationWarning(turnCoords, settings, workBounds);
+          if (warning.maxDeviationMeters > maxDeviationMeters) {
+            maxDeviationMeters = warning.maxDeviationMeters;
+          }
+          appendSimulationSegmentMeta(segments, simulationBounds, {
+            coords: turnCoords,
+            isTurnSegment: true,
+            warningOutOfBounds: warning.outOfBounds,
+            warningSea: warning.sea,
+          });
+          turnDistanceMeters += coordsPathDistanceMeters(turnCoords);
+        });
+        turnCount += 1;
       }
-      return { segments, simulationBounds };
+
+      const totalDistanceMeters = planDistanceMeters + turnDistanceMeters;
+      const speedKnots = getSimCruiseSpeedKnots(settings);
+      const totalDistanceNm = totalDistanceMeters / SIM_NM_TO_METERS;
+      const estimatedHours = speedKnots > 0 ? (totalDistanceNm / speedKnots) : 0;
+
+      return {
+        segments,
+        simulationBounds,
+        stats: {
+          planDistanceMeters,
+          turnDistanceMeters,
+          totalDistanceMeters,
+          turnCount,
+          maxDeviationMeters,
+          speedKnots,
+          estimatedHours,
+        },
+      };
     }
 
     function showSimulationOverlay() {
       const settings = readSimSettingsFromInputs();
-      const lines = buildSimulationLineSequence();
+      const lines = buildSimulationLineSequence(settings);
       if (!lines.length) {
         throw new Error('시뮬레이션할 라인 데이터가 없습니다.');
       }
@@ -3728,25 +4553,18 @@
       if (!generated.segments.length) {
         throw new Error('시뮬레이션 경로를 생성하지 못했습니다.');
       }
-      simulationRouteGroup.clearLayers();
-      generated.segments.forEach((latlngs) => {
-        L.polyline(latlngs, {
-          color: SIM_COLOR,
-          weight: SIM_WEIGHT,
-          opacity: 1,
-          lineCap: 'round',
-          lineJoin: 'round',
-          pane: 'overlayPane',
-          interactive: false,
-          renderer,
-          smoothFactor: 1,
-        }).addTo(simulationRouteGroup);
+      clearSimulationSegments(false);
+      generated.segments.forEach((segmentMeta) => {
+        createSimulationSegmentItem(segmentMeta, false);
       });
-      simState.generatedSegmentCount = generated.segments.length;
+      simState.generatedSegmentCount = simState.items.length;
+      simState.stats = generated.stats;
+      updateSimStatsDisplay(generated.stats);
       setSimulationVisible(true);
       if (generated.simulationBounds.isValid()) {
-        map.fitBounds(generated.simulationBounds.pad(0.08), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
+        map.fitBounds(generated.simulationBounds.pad(0.08), { animate: true, maxZoom: SIM_MAX_AUTO_FIT_ZOOM });
       }
+      syncSimulationSegmentSelections();
       scheduleViewerStateSave();
     }
 
@@ -3760,25 +4578,35 @@
           setGpxPanelVisible(false);
         }
         setSimPanelVisible(true);
-        try {
-          showSimulationOverlay();
-        } catch (error) {
-          hideSimulationOverlay(true);
-          setSimPanelVisible(false);
-          if (!fromOtherTool) {
-            const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
-            window.alert(message);
+        if (!simState.items.length) {
+          try {
+            showSimulationOverlay();
+          } catch (error) {
+            hideSimulationOverlay(true);
+            setSimPanelVisible(false);
+            if (!fromOtherTool) {
+              const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+              window.alert(message);
+            }
+            return false;
           }
-          return false;
         }
       } else {
         setSimPanelVisible(false);
-        hideSimulationOverlay(true);
       }
       if (!fromOtherTool) {
         scheduleViewerStateSave();
       }
       return true;
+    }
+
+    function refreshSimulationWarningStyles(persist = true) {
+      simState.items.forEach((item) => {
+        applySimulationSegmentStyle(item, item.id === simState.selectedSegmentId);
+      });
+      if (persist) {
+        scheduleViewerStateSave();
+      }
     }
 
     let planRestrictionAlertAt = 0;
@@ -9686,9 +10514,21 @@
         if (simButton.disabled) {
           return;
         }
-        const shouldOpen = !(simState.panelVisible || simState.visible);
-        setSimActive(shouldOpen, false);
+        if (simState.panelVisible) {
+          setSimPanelVisible(false);
+          scheduleViewerStateSave();
+          return;
+        }
+        setSimActive(true, false);
       });
+      if (simClosePanelButton) {
+        simClosePanelButton.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setSimPanelVisible(false);
+          scheduleViewerStateSave();
+        });
+      }
       if (simToggleOverlayButton) {
         simToggleOverlayButton.addEventListener('click', (event) => {
           event.preventDefault();
@@ -9698,12 +10538,43 @@
             scheduleViewerStateSave();
             return;
           }
+          if (simState.items.length > 0) {
+            setSimulationVisible(true);
+            scheduleViewerStateSave();
+            return;
+          }
           try {
             showSimulationOverlay();
           } catch (error) {
             const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
             window.alert(message);
           }
+        });
+      }
+      if (simColorInput) {
+        simColorInput.addEventListener('input', () => {
+          const selectedItem = getSimSegmentById(simState.selectedSegmentId);
+          if (!selectedItem) {
+            syncSimulationSegmentSelections();
+            return;
+          }
+          selectedItem.color = normalizeSimColor(simColorInput.value, selectedItem.color || SIM_BASE_COLOR);
+          selectedItem.manualColor = true;
+          applySimulationSegmentStyle(selectedItem, true);
+          scheduleViewerStateSave();
+        });
+      }
+      if (simWeightInput) {
+        simWeightInput.addEventListener('input', () => {
+          const selectedItem = getSimSegmentById(simState.selectedSegmentId);
+          if (!selectedItem) {
+            syncSimulationSegmentSelections();
+            return;
+          }
+          selectedItem.weight = normalizeSimWeight(simWeightInput.value, selectedItem.weight || SIM_WEIGHT);
+          selectedItem.manualWeight = true;
+          applySimulationSegmentStyle(selectedItem, true);
+          scheduleViewerStateSave();
         });
       }
       if (simApplyButton) {
@@ -10006,20 +10877,59 @@
       }
       refreshDoneSettings();
     });
-    [
-      simOffsetAngleInput,
-      simDepartureNmInput,
-      simStraightNmInput,
-      simTurnRadiusNmInput,
-      simInboundNmInput,
-      simRecoverNmInput,
-      simArcSplitsInput,
-    ].filter((input) => !!input).forEach((input) => {
-      input.addEventListener('change', () => {
-        readSimSettingsFromInputs();
-        scheduleViewerStateSave();
+    const handleSimAutoRecalc = (refreshOnly = false) => {
+      readSimSettingsFromInputs();
+      syncSimPanelInputs();
+      if (refreshOnly) {
+        refreshSimulationWarningStyles(true);
+        return;
+      }
+      if (simState.visible || simState.items.length > 0) {
+        try {
+          showSimulationOverlay();
+        } catch (error) {
+          const message = error && error.message ? String(error.message) : '시뮬레이션 경로 생성에 실패했습니다.';
+          window.alert(message);
+        }
+        return;
+      }
+      scheduleViewerStateSave();
+    };
+
+    if (simAircraftPresetSelect) {
+      simAircraftPresetSelect.addEventListener('change', () => {
+        applySimPreset(simAircraftPresetSelect.value, false);
+        handleSimAutoRecalc(false);
       });
-    });
+    }
+    if (simTurnPatternStandard) {
+      simTurnPatternStandard.addEventListener('change', () => {
+        if (simTurnPatternStandard.checked) {
+          handleSimAutoRecalc(false);
+        }
+      });
+    }
+    if (simTurnPatternDirect) {
+      simTurnPatternDirect.addEventListener('change', () => {
+        if (simTurnPatternDirect.checked) {
+          handleSimAutoRecalc(false);
+        }
+      });
+    }
+    [simFirstLineStartSelect, simEntryDirectionSelect, simOffsetAngleInput, simDepartureNmInput, simTurnRadiusNmInput, simInboundNmInput, simArcSplitsInput, simCustomSpeedInput]
+      .filter((input) => !!input)
+      .forEach((input) => {
+        input.addEventListener('change', () => {
+          handleSimAutoRecalc(false);
+        });
+      });
+    [simWarnBoundsToggle, simWarnSeaToggle]
+      .filter((input) => !!input)
+      .forEach((input) => {
+        input.addEventListener('change', () => {
+          handleSimAutoRecalc(true);
+        });
+      });
     syncInlineTextFontControl();
     syncInlineMeasureUnitControl();
     syncGpxStyleControls();
@@ -10132,6 +11042,10 @@
           return;
         }
         if (!isTypingField && deleteSelectedNumberLabel()) {
+          event.preventDefault();
+          return;
+        }
+        if (!isTypingField && deleteSelectedSimulationSegment()) {
           event.preventDefault();
           return;
         }
@@ -10387,6 +11301,7 @@
     map.on('click', async (event) => {
       deselectNumberLabel();
       deselectGpxRoute();
+      deselectSimulationSegment();
       if (!textState.active) {
         deselectTextMarker();
       }
