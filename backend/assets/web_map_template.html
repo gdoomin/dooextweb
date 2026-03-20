@@ -173,7 +173,7 @@
       padding: 8px 14px;
       display: grid;
       gap: 5px;
-      width: min(96vw, 980px);
+      width: min(98vw, 1480px);
       max-width: calc(100vw - 32px);
       box-sizing: border-box;
     }
@@ -196,11 +196,14 @@
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       min-width: 0;
     }
     .toolbar > .toolbar-row:first-child {
-      flex-wrap: wrap;
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
     }
     .toolbar-banner {
       margin-left: auto;
@@ -213,7 +216,7 @@
     .toolbar-banner img {
       display: block;
       width: auto;
-      max-width: 200px;
+      max-width: 180px;
       height: var(--tool-banner-height);
       border-radius: 12px;
       border: 1px solid rgba(121, 192, 255, 0.28);
