@@ -3666,6 +3666,8 @@
     const SIM_SELECTED_OPACITY = 1;
     const SIM_MAX_AUTO_FIT_ZOOM = 16;
     const SIM_NM_TO_METERS = 1852;
+    const SIM_ENDPOINT_EXTENSION_NM = 6;
+    const SIM_ENDPOINT_EXTENSION_WEIGHT = 9;
     const SURVEY_ARROW_COLOR = '#4bd2ff';
     const SURVEY_TURN_COLOR = '#ffd24a';
     const SURVEY_TURN_WEIGHT = 2.4;
@@ -4205,9 +4207,11 @@
       if (!meta || !Array.isArray(meta.coords) || meta.coords.length < 2) {
         return null;
       }
+      const initialColor = normalizeSimColor(meta.color, SIM_BASE_COLOR);
+      const initialWeight = normalizeSimWeight(meta.weight, SIM_WEIGHT);
       const layer = L.polyline(meta.coords.map((coord) => [coord.latitude, coord.longitude]), {
-        color: SIM_BASE_COLOR,
-        weight: SIM_WEIGHT,
+        color: initialColor,
+        weight: initialWeight,
         opacity: SIM_LINE_OPACITY,
         lineCap: 'round',
         lineJoin: 'round',
@@ -4225,8 +4229,8 @@
         isTurnSegment: !!meta.isTurnSegment,
         warningOutOfBounds: !!meta.warningOutOfBounds,
         warningSea: !!meta.warningSea,
-        color: SIM_BASE_COLOR,
-        weight: SIM_WEIGHT,
+        color: initialColor,
+        weight: initialWeight,
         manualColor: false,
         manualWeight: false,
       };
@@ -4705,6 +4709,8 @@
         isTurnSegment: !!meta.isTurnSegment,
         warningOutOfBounds: !!meta.warningOutOfBounds,
         warningSea: !!meta.warningSea,
+        color: normalizeSimColor(meta.color, SIM_BASE_COLOR),
+        weight: normalizeSimWeight(meta.weight, SIM_WEIGHT),
       });
     }
 
@@ -5223,15 +5229,70 @@
       };
     }
 
+    function buildSimEndpointExtensionSegments() {
+      const extensionMeters = SIM_ENDPOINT_EXTENSION_NM * SIM_NM_TO_METERS;
+      const segments = [];
+      const simulationBounds = L.latLngBounds([]);
+      let totalDistanceMeters = 0;
+
+      resultLineEntries.forEach((entry) => {
+        const row = entry && entry.row ? entry.row : null;
+        if (!row) {
+          return;
+        }
+        const start = {
+          latitude: Number(row.s_lat),
+          longitude: Number(row.s_lon),
+        };
+        const end = {
+          latitude: Number(row.e_lat),
+          longitude: Number(row.e_lon),
+        };
+        if (!Number.isFinite(start.latitude) || !Number.isFinite(start.longitude) || !Number.isFinite(end.latitude) || !Number.isFinite(end.longitude)) {
+          return;
+        }
+        const heading = normalizeHeadingDeg(bearingDeg(start, end));
+        const startOuter = offsetCoordByMeters(start, normalizeHeadingDeg(heading + 180), extensionMeters);
+        const endOuter = offsetCoordByMeters(end, heading, extensionMeters);
+
+        const startSegment = [startOuter, start];
+        const endSegment = [end, endOuter];
+        appendSimulationSegmentMeta(segments, simulationBounds, {
+          coords: startSegment,
+          isTurnSegment: false,
+          color: SIM_BASE_COLOR,
+          weight: SIM_ENDPOINT_EXTENSION_WEIGHT,
+        });
+        appendSimulationSegmentMeta(segments, simulationBounds, {
+          coords: endSegment,
+          isTurnSegment: false,
+          color: SIM_BASE_COLOR,
+          weight: SIM_ENDPOINT_EXTENSION_WEIGHT,
+        });
+        totalDistanceMeters += coordsPathDistanceMeters(startSegment);
+        totalDistanceMeters += coordsPathDistanceMeters(endSegment);
+      });
+
+      return {
+        segments,
+        simulationBounds,
+        stats: {
+          planDistanceMeters: 0,
+          turnDistanceMeters: 0,
+          totalDistanceMeters,
+          turnCount: 0,
+          maxDeviationMeters: extensionMeters,
+          speedKnots: getSimCruiseSpeedKnots(),
+          estimatedHours: 0,
+        },
+      };
+    }
+
     function showSimulationOverlay() {
-      const settings = readSimSettingsFromInputs();
-      const lines = buildSimulationLineSequence(settings);
-      if (!lines.length) {
-        throw new Error('시뮬레이션할 라인 데이터가 없습니다.');
-      }
-      const generated = buildSimulationSegments(lines, settings);
+      readSimSettingsFromInputs();
+      const generated = buildSimEndpointExtensionSegments();
       if (!generated.segments.length) {
-        throw new Error('시뮬레이션 경로를 생성하지 못했습니다.');
+        throw new Error('SIM 표시할 라인 데이터가 없습니다.');
       }
       clearSimulationSegments(false);
       generated.segments.forEach((segmentMeta) => {
@@ -9445,8 +9506,6 @@
     function renderResults() {
       hideSimulationOverlay(true);
       setSimPanelVisible(false);
-      clearSurveyFlightOverlay();
-      ensureSurveyFlightControl();
       if (simButton) {
         simButton.disabled = true;
       }
@@ -9481,7 +9540,6 @@
         numWrap.style.display = 'none';
         numControls.style.display = 'none';
         updateCompletionSummary();
-        updateSurveyFlightControlUI();
         return;
       }
 
@@ -9591,7 +9649,6 @@
       if (simButton) {
         simButton.disabled = resultLineEntries.length < 1;
       }
-      rebuildSurveyFlightOverlay();
     }
 
     function applyBaseMapTone() {
