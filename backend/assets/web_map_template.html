@@ -2140,6 +2140,16 @@
       }
       .toolbar-row {
         gap: 6px;
+        flex-wrap: wrap;
+        justify-content: flex-start;
+        align-items: center;
+      }
+      .toolbar > .toolbar-row:first-child {
+        overflow-x: visible;
+        overflow-y: visible;
+      }
+      .toolbar-banner {
+        display: none !important;
       }
       .tool-button--art .tool-card {
         border-color: rgba(104, 170, 230, 0.48);
@@ -3342,6 +3352,7 @@
       return layerKey === 'moa';
     }
     const isPolygonMode = payload.mode === 'polygon';
+    const sourceFormat = String(payload && payload.source_format ? payload.source_format : 'kml').trim().toLowerCase();
     const kmzVisual = payload && payload.kmz_visual && typeof payload.kmz_visual === 'object'
       ? payload.kmz_visual
       : null;
@@ -3412,6 +3423,7 @@
 
     const resultLineGroup = L.layerGroup().addTo(map);
     const resultPolygonGroup = L.layerGroup().addTo(map);
+    const sourceGeoJsonGroup = L.layerGroup().addTo(map);
     const kmzGroundOverlayGroup = L.layerGroup().addTo(map);
     const kmzPointGroup = L.layerGroup().addTo(map);
     const endpointGroup = L.layerGroup().addTo(map);
@@ -9881,6 +9893,171 @@
       });
     }
 
+    function shouldRenderSourceGeoJson() {
+      return sourceFormat === 'gpx' || sourceFormat === 'geojson' || sourceFormat === 'csv' || sourceFormat === 'txt';
+    }
+
+    function resolveFeatureVectorStyle(feature) {
+      const geometryType = feature && feature.geometry ? String(feature.geometry.type || '') : '';
+      const properties = feature && feature.properties && typeof feature.properties === 'object'
+        ? feature.properties
+        : {};
+      const style = properties.style && typeof properties.style === 'object' ? properties.style : {};
+      if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
+        const weightRaw = Number(style.weight);
+        return {
+          color: String(style.color || '#2563eb'),
+          weight: Number.isFinite(weightRaw) && weightRaw > 0 ? weightRaw : 2,
+          opacity: 0.95,
+        };
+      }
+      return {
+        color: String(style.color || style.stroke || '#f97316'),
+        weight: 2,
+        fillColor: String(style.fillColor || style.fill || '#f97316'),
+        fillOpacity: 0.3,
+      };
+    }
+
+    function resolveFeaturePopupHtml(properties) {
+      if (!properties || typeof properties !== 'object') {
+        return '';
+      }
+      const name = String(properties.name || properties.label || '').trim();
+      const description = String(properties.description || properties.desc || '').trim();
+      if (!name && !description) {
+        return '';
+      }
+      const chunks = [];
+      if (name) {
+        chunks.push(`<strong>${escapeHtml(name)}</strong>`);
+      }
+      if (description) {
+        chunks.push(`<div>${escapeHtml(description).replace(/\n/g, '<br>')}</div>`);
+      }
+      return chunks.join('');
+    }
+
+    function renderSourceGeoJson() {
+      sourceGeoJsonGroup.clearLayers();
+      if (!shouldRenderSourceGeoJson()) {
+        return;
+      }
+      const featureCollection = payload && payload.geojson && payload.geojson.type === 'FeatureCollection'
+        ? payload.geojson
+        : null;
+      if (!featureCollection || !Array.isArray(featureCollection.features) || !featureCollection.features.length) {
+        return;
+      }
+
+      const overlayFeatures = [];
+      const vectorFeatures = [];
+      featureCollection.features.forEach((feature) => {
+        if (!feature || typeof feature !== 'object') {
+          return;
+        }
+        const properties = feature.properties && typeof feature.properties === 'object' ? feature.properties : {};
+        if (properties.overlay_url) {
+          overlayFeatures.push(feature);
+        } else {
+          vectorFeatures.push(feature);
+        }
+      });
+
+      overlayFeatures.forEach((feature) => {
+        const properties = feature.properties && typeof feature.properties === 'object' ? feature.properties : {};
+        const imageHref = String(properties.overlay_url || '').trim();
+        if (!imageHref) {
+          return;
+        }
+
+        let overlayBounds = null;
+        const rawBounds = properties.overlay_bounds;
+        if (Array.isArray(rawBounds) && rawBounds.length === 2) {
+          overlayBounds = normalizeKmzBounds(rawBounds);
+        }
+        if (!overlayBounds) {
+          const geometry = feature.geometry && typeof feature.geometry === 'object' ? feature.geometry : null;
+          if (geometry && geometry.type === 'Polygon' && Array.isArray(geometry.coordinates) && geometry.coordinates[0]) {
+            const ring = geometry.coordinates[0];
+            let south = Number.POSITIVE_INFINITY;
+            let north = Number.NEGATIVE_INFINITY;
+            let west = Number.POSITIVE_INFINITY;
+            let east = Number.NEGATIVE_INFINITY;
+            ring.forEach((position) => {
+              if (!Array.isArray(position) || position.length < 2) {
+                return;
+              }
+              const lng = Number(position[0]);
+              const lat = Number(position[1]);
+              if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+                return;
+              }
+              south = Math.min(south, lat);
+              north = Math.max(north, lat);
+              west = Math.min(west, lng);
+              east = Math.max(east, lng);
+            });
+            if (Number.isFinite(south) && Number.isFinite(north) && Number.isFinite(west) && Number.isFinite(east)) {
+              overlayBounds = [[south, west], [north, east]];
+            }
+          }
+        }
+        if (!overlayBounds) {
+          return;
+        }
+        const overlay = L.imageOverlay(imageHref, overlayBounds, {
+          pane: 'kmzGroundPane',
+          opacity: 0.75,
+          interactive: false,
+          crossOrigin: true,
+        }).addTo(sourceGeoJsonGroup);
+        const popupHtml = resolveFeaturePopupHtml(properties);
+        if (popupHtml) {
+          overlay.bindTooltip(popupHtml, {
+            sticky: true,
+            className: 'doo-tooltip',
+            direction: 'top',
+            opacity: 0.98,
+          });
+        }
+        bounds.extend(overlayBounds[0]);
+        bounds.extend(overlayBounds[1]);
+      });
+
+      if (vectorFeatures.length) {
+        const vectorLayer = L.geoJSON(
+          {
+            type: 'FeatureCollection',
+            features: vectorFeatures,
+          },
+          {
+            style: (feature) => resolveFeatureVectorStyle(feature),
+            pointToLayer: (_feature, latlng) => L.circleMarker(latlng, {
+              radius: 6,
+              color: '#dc2626',
+              weight: 1.6,
+              fillColor: '#ef4444',
+              fillOpacity: 0.95,
+            }),
+            onEachFeature: (feature, layer) => {
+              const popupHtml = resolveFeaturePopupHtml(feature && feature.properties ? feature.properties : null);
+              if (popupHtml) {
+                layer.bindPopup(popupHtml);
+              }
+            },
+          }
+        ).addTo(sourceGeoJsonGroup);
+        if (vectorLayer && typeof vectorLayer.getBounds === 'function') {
+          const vectorBounds = vectorLayer.getBounds();
+          if (vectorBounds && typeof vectorBounds.isValid === 'function' && vectorBounds.isValid()) {
+            bounds.extend(vectorBounds.getSouthWest());
+            bounds.extend(vectorBounds.getNorthEast());
+          }
+        }
+      }
+    }
+
     function syncGroup(toggle, group, visible) {
       toggle.checked = visible;
       const apply = () => {
@@ -10054,6 +10231,7 @@
         numWrap.style.display = 'none';
         numControls.style.display = 'none';
         renderKmzVisuals();
+        renderSourceGeoJson();
         updateCompletionSummary();
         return;
       }
@@ -10154,6 +10332,7 @@
       });
 
       renderKmzVisuals();
+      renderSourceGeoJson();
       map.addLayer(forceLabelGroup);
       setForceControlsEnabled(true);
       numToggle.checked = payload.has_kml_num ? payload.default_show_num : false;
@@ -13202,11 +13381,6 @@
           event.stopPropagation();
           if (simState.visible) {
             hideSimulationOverlay(false);
-            scheduleViewerStateSave();
-            return;
-          }
-          if (simState.items.length > 0) {
-            setSimulationVisible(true);
             scheduleViewerStateSave();
             return;
           }

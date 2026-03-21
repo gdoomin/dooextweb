@@ -2,8 +2,11 @@ import type { ClientConvertRequestBody, KmzVisualPayload } from "@/lib/convert";
 import type { KmlWorkerRequest, KmlWorkerResponse } from "@/lib/kml-client-convert-core";
 import { buildClientConvertRequestFromKmlText } from "@/lib/kml-client-convert-core";
 import { extractKmzForConversion } from "@/lib/kmz-client-extract";
+import { convertNonKmlFileInBrowser, type NonKmlSourceFormat } from "@/lib/nonkml-client-convert";
 
 const WORKER_TIMEOUT_MS = 45000;
+
+type SourceFormat = "kml" | "kmz" | NonKmlSourceFormat;
 
 function toReadableErrorMessage(value: unknown, fallback: string): string {
   const isObjectObjectText = (text: string) => text.trim() === "[object Object]";
@@ -34,16 +37,27 @@ function toReadableErrorMessage(value: unknown, fallback: string): string {
   return fallback;
 }
 
-type SourceFormat = "kml" | "kmz";
-
 function detectSourceFormat(file: File): SourceFormat {
   const lowerName = String(file.name || "").trim().toLowerCase();
-  const lowerType = String(file.type || "").trim().toLowerCase();
-
-  if (lowerName.endsWith(".kmz") || lowerType.includes("kmz")) {
+  if (lowerName.endsWith(".kmz")) {
     return "kmz";
   }
-  return "kml";
+  if (lowerName.endsWith(".kml")) {
+    return "kml";
+  }
+  if (lowerName.endsWith(".gpx")) {
+    return "gpx";
+  }
+  if (lowerName.endsWith(".geojson") || lowerName.endsWith(".json")) {
+    return "geojson";
+  }
+  if (lowerName.endsWith(".csv")) {
+    return "csv";
+  }
+  if (lowerName.endsWith(".txt")) {
+    return "txt";
+  }
+  throw new Error("지원하지 않는 파일 형식입니다. KML/KMZ/GPX/GeoJSON/CSV/TXT 파일만 업로드해 주세요.");
 }
 
 function hasKmzVisualData(visual: KmzVisualPayload): boolean {
@@ -89,15 +103,21 @@ export async function convertKmlFileInBrowser(file: File): Promise<ClientConvert
     }
   }
 
-  const text = await file.text();
-  const sourceHash = await computeSha256Hex(text);
-  try {
-    const parsed = await parseWithWorker(text, file.name);
-    return attachSourceMetadata(parsed, "kml", sourceHash);
-  } catch {
-    const parsed = buildClientConvertRequestFromKmlText(text, file.name);
-    return attachSourceMetadata(parsed, "kml", sourceHash);
+  if (sourceFormat === "kml") {
+    const text = await file.text();
+    const sourceHash = await computeSha256Hex(text);
+    try {
+      const parsed = await parseWithWorker(text, file.name);
+      return attachSourceMetadata(parsed, "kml", sourceHash);
+    } catch {
+      const parsed = buildClientConvertRequestFromKmlText(text, file.name);
+      return attachSourceMetadata(parsed, "kml", sourceHash);
+    }
   }
+
+  const converted = await convertNonKmlFileInBrowser(file, sourceFormat);
+  const sourceHash = await computeSha256Hex(converted.sourceText);
+  return attachSourceMetadata(converted.payload, sourceFormat, sourceHash);
 }
 
 async function computeSha256Hex(text: string): Promise<string> {

@@ -143,7 +143,7 @@ export function HomeScreen({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [statusMessage, setStatusMessage] = useState(
-    restored ? "이전 변환 결과를 복원했습니다." : "KML/KMZ 파일을 불러와 주세요.",
+    restored ? "이전 변환 결과를 복원했습니다." : "지원 파일을 불러와 주세요.",
   );
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
   const [isLoading, setIsLoading] = useState(false);
@@ -162,7 +162,16 @@ export function HomeScreen({
 
   const isAuthenticated = Boolean(userId);
   const pathLabel = useMemo(() => response?.filename || "", [response]);
-  const modeText = response ? modeLabel[response.mode] : "KML/KMZ를 업로드하면 변환 결과가 표시됩니다.";
+  const modeText = useMemo(() => {
+    if (!response) {
+      return "지원 파일을 업로드하면 변환 결과가 표시됩니다.";
+    }
+    const sourceFormat = String(response.map_payload?.source_format || "").trim().toLowerCase();
+    if (sourceFormat && sourceFormat !== "kml" && sourceFormat !== "kmz") {
+      return `${sourceFormat.toUpperCase()} 파일 변환 결과`;
+    }
+    return modeLabel[response.mode];
+  }, [response]);
   const canUseHistory = isAuthenticated;
   const canOpenViewer = Boolean(response?.job_id);
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
@@ -441,7 +450,7 @@ export function HomeScreen({
 
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage("브라우저에서 KML/KMZ 파일을 변환하는 중입니다...");
+    setStatusMessage("브라우저에서 파일을 변환하는 중입니다...");
 
     try {
       const convertedForUpload = await convertKmlFileInBrowser(file);
@@ -476,7 +485,7 @@ export function HomeScreen({
     } catch (error) {
       console.error("[KML convert] failed", error);
       setStatusTone("error");
-      setStatusMessage("KML 변환에 실패했습니다. 파일을 다시 확인해 주세요.");
+      setStatusMessage("파일 변환에 실패했습니다. 형식과 내용을 다시 확인해 주세요.");
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -553,7 +562,7 @@ export function HomeScreen({
   async function copyClipboard() {
     if (!response?.text_output) {
       setStatusTone("error");
-      setStatusMessage("먼저 KML/KMZ 파일을 불러와 주세요.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
     if (!requireAuth("클립보드 복사는 로그인 후 사용할 수 있습니다.")) {
@@ -596,7 +605,7 @@ export function HomeScreen({
   function downloadText() {
     if (!response?.txt_download_url) {
       setStatusTone("error");
-      setStatusMessage("먼저 KML/KMZ 파일을 불러와 주세요.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
     if (!requireAuth("텍스트 다운로드는 로그인 후 사용할 수 있습니다.")) {
@@ -616,7 +625,7 @@ export function HomeScreen({
   function downloadExcel() {
     if (!response?.xlsx_download_url) {
       setStatusTone("error");
-      setStatusMessage("먼저 KML/KMZ 파일을 불러와 주세요.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
     if (response.mode === "polygon") {
@@ -743,7 +752,7 @@ export function HomeScreen({
                 className="doo-info-button"
                 title="메뉴"
                 onClick={() =>
-                  window.alert("DOO Extractor\n\n버전: 3.0 web ver\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
+                  window.alert("DOO Extractor\n\n버전: 4.0.0 WEB Version\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
                 }
               >
                 ☰
@@ -880,13 +889,19 @@ export function HomeScreen({
 
           <section className="doo-main">
             <div className="doo-top-panel">
-              <label className="doo-top-label">KML / KMZ 파일</label>
+              <label className="doo-top-label">KML / KMZ / GPX / GEOJSON 파일</label>
               <div className="doo-path-row">
                 <input className="doo-path-input" value={pathLabel} readOnly placeholder="선택된 파일이 없습니다." />
                 <button type="button" className="doo-open-button" onClick={openFileDialog} disabled={isLoading}>
                   {isLoading ? "불러오는 중..." : "파일 열기"}
                 </button>
-                <input ref={fileInputRef} type="file" accept=".kml,.kmz" className="doo-hidden-input" onChange={handleFilePicked} />
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".kml,.kmz,.gpx,.geojson,.json,.csv,.txt"
+                  className="doo-hidden-input"
+                  onChange={handleFilePicked}
+                />
               </div>
             </div>
 
@@ -906,7 +921,7 @@ export function HomeScreen({
                 <div className="doo-panel-head">
                   <div>
                     <div className="doo-panel-title">변환 결과</div>
-                    <div className="doo-panel-subtitle">{response ? `${response.result_count}개 결과를 표시 중입니다.` : "KML/KMZ 업로드를 기다리고 있습니다."}</div>
+                    <div className="doo-panel-subtitle">{response ? `${response.result_count}개 결과를 표시 중입니다.` : "파일 업로드를 기다리고 있습니다."}</div>
                   </div>
                 </div>
                 <div className="doo-text-panel">
@@ -970,7 +985,7 @@ export function HomeScreen({
                     })}
                   </div>
                 ) : (
-                  <p className="doo-history-empty">아직 저장된 KML/KMZ 업로드 기록이 없습니다. 로그인한 상태에서 파일을 열면 여기에 쌓입니다.</p>
+                  <p className="doo-history-empty">아직 저장된 업로드 기록이 없습니다. 로그인한 상태에서 파일을 열면 여기에 쌓입니다.</p>
                 )}
               </aside>
             </div>

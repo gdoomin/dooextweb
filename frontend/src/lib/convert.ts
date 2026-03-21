@@ -56,7 +56,7 @@ export type MapPayload = {
   default_gray_map?: boolean;
   meta_text?: string;
   geojson?: FeatureCollection<Geometry | null>;
-  source_format?: "kml" | "kmz";
+  source_format?: "kml" | "kmz" | "gpx" | "geojson" | "csv" | "txt";
   kmz_visual?: KmzVisualPayload;
   simplify_tolerance?: number;
   coordinate_count?: number;
