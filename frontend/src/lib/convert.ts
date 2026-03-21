@@ -18,6 +18,31 @@ export type PolygonResult = {
   points: [number, number][];
 };
 
+export type KmzGroundOverlay = {
+  id: string;
+  name?: string;
+  image_href: string;
+  bounds: [[number, number], [number, number]];
+  opacity?: number;
+  rotation?: number;
+  draw_order?: number;
+};
+
+export type KmzPointMarker = {
+  id: string;
+  name?: string;
+  description?: string;
+  lat: number;
+  lng: number;
+  icon_href?: string;
+  icon_scale?: number;
+};
+
+export type KmzVisualPayload = {
+  ground_overlays?: KmzGroundOverlay[];
+  point_markers?: KmzPointMarker[];
+};
+
 export type MapPayload = {
   project_name: string;
   mode: "linestring" | "polygon";
@@ -31,7 +56,8 @@ export type MapPayload = {
   default_gray_map?: boolean;
   meta_text?: string;
   geojson?: FeatureCollection<Geometry | null>;
-  source_format?: "kml";
+  source_format?: "kml" | "kmz";
+  kmz_visual?: KmzVisualPayload;
   simplify_tolerance?: number;
   coordinate_count?: number;
 };

@@ -2191,6 +2191,19 @@
       font-size: 22px;
       font-weight: 800;
     }
+    .kmz-point-fallback {
+      min-width: 18px;
+      min-height: 18px;
+      border-radius: 999px;
+      border: 2px solid rgba(255, 255, 255, 0.95);
+      background: radial-gradient(circle at 30% 30%, rgba(125, 195, 255, 0.98), rgba(41, 113, 219, 0.98));
+      box-shadow:
+        0 0 0 1px rgba(16, 39, 74, 0.72),
+        0 6px 14px rgba(0, 0, 0, 0.34);
+    }
+    .kmz-point-icon {
+      filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+    }
     .leaflet-tooltip.doo-tooltip {
       background: rgba(15, 25, 35, 0.92);
       border: 1px solid rgba(121, 192, 255, 0.18);
@@ -3329,6 +3342,9 @@
       return layerKey === 'moa';
     }
     const isPolygonMode = payload.mode === 'polygon';
+    const kmzVisual = payload && payload.kmz_visual && typeof payload.kmz_visual === 'object'
+      ? payload.kmz_visual
+      : null;
     const layerCatalog = rawLayerCatalog;
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
@@ -3370,6 +3386,10 @@
     });
     map.createPane('completionPane');
     map.getPane('completionPane').style.zIndex = '360';
+    map.createPane('kmzGroundPane');
+    map.getPane('kmzGroundPane').style.zIndex = '238';
+    map.createPane('kmzPointPane');
+    map.getPane('kmzPointPane').style.zIndex = '640';
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
     map.createPane('weatherOverlayPane');
@@ -3392,6 +3412,8 @@
 
     const resultLineGroup = L.layerGroup().addTo(map);
     const resultPolygonGroup = L.layerGroup().addTo(map);
+    const kmzGroundOverlayGroup = L.layerGroup().addTo(map);
+    const kmzPointGroup = L.layerGroup().addTo(map);
     const endpointGroup = L.layerGroup().addTo(map);
     const completedHaloGroup = L.layerGroup().addTo(map);
     const forceLabelGroup = L.layerGroup();
@@ -9727,6 +9749,138 @@
       points.forEach((point) => bounds.extend(point));
     }
 
+    function normalizeKmzBounds(rawBounds) {
+      if (!Array.isArray(rawBounds) || rawBounds.length !== 2) {
+        return null;
+      }
+      const southWest = rawBounds[0];
+      const northEast = rawBounds[1];
+      if (!Array.isArray(southWest) || !Array.isArray(northEast)) {
+        return null;
+      }
+      const south = Number(southWest[0]);
+      const west = Number(southWest[1]);
+      const north = Number(northEast[0]);
+      const east = Number(northEast[1]);
+      if (![south, west, north, east].every((value) => Number.isFinite(value))) {
+        return null;
+      }
+      if (Math.abs(south) > 90 || Math.abs(north) > 90 || Math.abs(west) > 180 || Math.abs(east) > 180) {
+        return null;
+      }
+      return [[south, west], [north, east]];
+    }
+
+    function renderKmzVisuals() {
+      kmzGroundOverlayGroup.clearLayers();
+      kmzPointGroup.clearLayers();
+
+      if (!kmzVisual || typeof kmzVisual !== 'object') {
+        return;
+      }
+
+      const groundOverlays = Array.isArray(kmzVisual.ground_overlays) ? kmzVisual.ground_overlays : [];
+      groundOverlays.forEach((item) => {
+        if (!item || typeof item !== 'object') {
+          return;
+        }
+        const imageHref = String(item.image_href || '').trim();
+        const overlayBounds = normalizeKmzBounds(item.bounds);
+        if (!imageHref || !overlayBounds) {
+          return;
+        }
+        const opacityRaw = Number(item.opacity);
+        const overlay = L.imageOverlay(imageHref, overlayBounds, {
+          pane: 'kmzGroundPane',
+          opacity: Number.isFinite(opacityRaw)
+            ? Math.max(0.05, Math.min(1, opacityRaw))
+            : 0.75,
+          interactive: false,
+          crossOrigin: true,
+        }).addTo(kmzGroundOverlayGroup);
+        const overlayName = String(item.name || '').trim();
+        if (overlayName) {
+          overlay.bindTooltip(escapeHtml(overlayName), {
+            sticky: true,
+            className: 'doo-tooltip',
+            direction: 'top',
+            opacity: 0.98,
+          });
+        }
+        bounds.extend(overlayBounds[0]);
+        bounds.extend(overlayBounds[1]);
+      });
+
+      const pointMarkers = Array.isArray(kmzVisual.point_markers) ? kmzVisual.point_markers : [];
+      pointMarkers.forEach((item) => {
+        if (!item || typeof item !== 'object') {
+          return;
+        }
+        const lat = Number(item.lat);
+        const lng = Number(item.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180) {
+          return;
+        }
+
+        const markerOptions = {
+          pane: 'kmzPointPane',
+          keyboard: false,
+          riseOnHover: true,
+        };
+        const iconHref = String(item.icon_href || '').trim();
+        const iconScaleRaw = Number(item.icon_scale);
+        const iconScale = Number.isFinite(iconScaleRaw) && iconScaleRaw > 0 ? iconScaleRaw : 1;
+        let marker = null;
+
+        if (iconHref) {
+          const iconSize = Math.max(14, Math.min(72, Math.round(26 * iconScale)));
+          marker = L.marker([lat, lng], {
+            ...markerOptions,
+            icon: L.icon({
+              iconUrl: iconHref,
+              iconSize: [iconSize, iconSize],
+              iconAnchor: [Math.round(iconSize / 2), Math.round(iconSize / 2)],
+              popupAnchor: [0, Math.round(-iconSize * 0.42)],
+              className: 'kmz-point-icon',
+            }),
+          });
+        } else {
+          marker = L.marker([lat, lng], {
+            ...markerOptions,
+            icon: L.divIcon({
+              className: 'kmz-point-fallback',
+              iconSize: [16, 16],
+              iconAnchor: [8, 8],
+            }),
+          });
+        }
+
+        const name = String(item.name || '').trim();
+        const description = String(item.description || '').trim();
+        const popupParts = [];
+        if (name) {
+          popupParts.push(`<strong>${escapeHtml(name)}</strong>`);
+        }
+        if (description) {
+          popupParts.push(`<div>${escapeHtml(description).replace(/\n/g, '<br>')}</div>`);
+        }
+        if (!popupParts.length) {
+          popupParts.push('<strong>KMZ 포인트</strong>');
+        }
+        marker.bindPopup(popupParts.join(''));
+        if (name) {
+          marker.bindTooltip(escapeHtml(name), {
+            sticky: true,
+            className: 'doo-tooltip',
+            direction: 'top',
+            opacity: 0.98,
+          });
+        }
+        marker.addTo(kmzPointGroup);
+        bounds.extend([lat, lng]);
+      });
+    }
+
     function syncGroup(toggle, group, visible) {
       toggle.checked = visible;
       const apply = () => {
@@ -9899,6 +10053,7 @@
         forceControls.style.display = 'none';
         numWrap.style.display = 'none';
         numControls.style.display = 'none';
+        renderKmzVisuals();
         updateCompletionSummary();
         return;
       }
@@ -9998,6 +10153,7 @@
         bounds.extend(end);
       });
 
+      renderKmzVisuals();
       map.addLayer(forceLabelGroup);
       setForceControlsEnabled(true);
       numToggle.checked = payload.has_kml_num ? payload.default_show_num : false;

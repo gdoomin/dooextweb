@@ -1,6 +1,7 @@
-import type { ClientConvertRequestBody } from "@/lib/convert";
+import type { ClientConvertRequestBody, KmzVisualPayload } from "@/lib/convert";
 import type { KmlWorkerRequest, KmlWorkerResponse } from "@/lib/kml-client-convert-core";
 import { buildClientConvertRequestFromKmlText } from "@/lib/kml-client-convert-core";
+import { extractKmzForConversion } from "@/lib/kmz-client-extract";
 
 const WORKER_TIMEOUT_MS = 45000;
 
@@ -33,20 +34,69 @@ function toReadableErrorMessage(value: unknown, fallback: string): string {
   return fallback;
 }
 
+type SourceFormat = "kml" | "kmz";
+
+function detectSourceFormat(file: File): SourceFormat {
+  const lowerName = String(file.name || "").trim().toLowerCase();
+  const lowerType = String(file.type || "").trim().toLowerCase();
+
+  if (lowerName.endsWith(".kmz") || lowerType.includes("kmz")) {
+    return "kmz";
+  }
+  return "kml";
+}
+
+function hasKmzVisualData(visual: KmzVisualPayload): boolean {
+  const overlayCount = Array.isArray(visual.ground_overlays) ? visual.ground_overlays.length : 0;
+  const markerCount = Array.isArray(visual.point_markers) ? visual.point_markers.length : 0;
+  return overlayCount > 0 || markerCount > 0;
+}
+
+function attachSourceMetadata(
+  parsed: ClientConvertRequestBody,
+  sourceFormat: SourceFormat,
+  sourceHash: string,
+  visual?: KmzVisualPayload,
+): ClientConvertRequestBody {
+  const nextPayload = {
+    ...(parsed.map_payload || {}),
+    source_format: sourceFormat,
+  } as ClientConvertRequestBody["map_payload"];
+
+  if (sourceFormat === "kmz" && visual && hasKmzVisualData(visual)) {
+    nextPayload.kmz_visual = visual;
+  }
+
+  return {
+    ...parsed,
+    map_payload: nextPayload,
+    source_hash: sourceHash,
+  };
+}
+
 export async function convertKmlFileInBrowser(file: File): Promise<ClientConvertRequestBody> {
+  const sourceFormat = detectSourceFormat(file);
+
+  if (sourceFormat === "kmz") {
+    const extracted = await extractKmzForConversion(file);
+    const sourceHash = await computeSha256Hex(extracted.kmlText);
+    try {
+      const parsed = await parseWithWorker(extracted.kmlText, file.name);
+      return attachSourceMetadata(parsed, "kmz", sourceHash, extracted.visual);
+    } catch {
+      const parsed = buildClientConvertRequestFromKmlText(extracted.kmlText, file.name);
+      return attachSourceMetadata(parsed, "kmz", sourceHash, extracted.visual);
+    }
+  }
+
   const text = await file.text();
   const sourceHash = await computeSha256Hex(text);
   try {
     const parsed = await parseWithWorker(text, file.name);
-    return {
-      ...parsed,
-      source_hash: sourceHash,
-    };
+    return attachSourceMetadata(parsed, "kml", sourceHash);
   } catch {
-    return {
-      ...buildClientConvertRequestFromKmlText(text, file.name),
-      source_hash: sourceHash,
-    };
+    const parsed = buildClientConvertRequestFromKmlText(text, file.name);
+    return attachSourceMetadata(parsed, "kml", sourceHash);
   }
 }
 
