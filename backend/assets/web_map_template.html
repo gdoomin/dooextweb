@@ -3652,8 +3652,6 @@
     const VIEWER_STATE_SAVE_DEBOUNCE_MS = 420;
     const VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS = 1300;
     const UNDO_LIMIT = 10;
-    const LONG_PRESS_DELETE_MS = 700;
-    const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
     let viewerStateSaveTimer = null;
     let viewerStateRemoteSaveTimer = null;
     let viewerStateRestoring = false;
@@ -3907,95 +3905,6 @@
       }
     }
 
-    function getClientPointFromOriginalEvent(originalEvent) {
-      if (!originalEvent) {
-        return null;
-      }
-      const touch = (
-        (originalEvent.touches && originalEvent.touches[0]) ||
-        (originalEvent.changedTouches && originalEvent.changedTouches[0]) ||
-        null
-      );
-      const source = touch || originalEvent;
-      const x = Number(source.clientX);
-      const y = Number(source.clientY);
-      if (!Number.isFinite(x) || !Number.isFinite(y)) {
-        return null;
-      }
-      return { x, y };
-    }
-
-    function bindLayerLongPressDelete(layer, onDelete) {
-      if (!layer || typeof layer.on !== 'function' || typeof onDelete !== 'function') {
-        return;
-      }
-      let timerId = 0;
-      let pressing = false;
-      let startPoint = null;
-
-      const clearPress = () => {
-        if (timerId) {
-          window.clearTimeout(timerId);
-          timerId = 0;
-        }
-        pressing = false;
-        startPoint = null;
-      };
-
-      const startPress = (event) => {
-        clearPress();
-        const nativeEvent = event && event.originalEvent ? event.originalEvent : null;
-        if (nativeEvent && Number.isFinite(nativeEvent.button) && nativeEvent.button !== 0) {
-          return;
-        }
-        pressing = true;
-        startPoint = getClientPointFromOriginalEvent(nativeEvent);
-        timerId = window.setTimeout(() => {
-          timerId = 0;
-          if (!pressing) {
-            return;
-          }
-          pressing = false;
-          if (nativeEvent) {
-            L.DomEvent.stop(nativeEvent);
-          }
-          try {
-            onDelete();
-          } catch (error) {
-            // Ignore deletion errors from stale layers.
-          }
-          startPoint = null;
-        }, LONG_PRESS_DELETE_MS);
-      };
-
-      const updatePress = (event) => {
-        if (!pressing || !startPoint) {
-          return;
-        }
-        const nativeEvent = event && event.originalEvent ? event.originalEvent : null;
-        const point = getClientPointFromOriginalEvent(nativeEvent);
-        if (!point) {
-          return;
-        }
-        const dx = point.x - startPoint.x;
-        const dy = point.y - startPoint.y;
-        if (Math.hypot(dx, dy) > LONG_PRESS_MOVE_TOLERANCE_PX) {
-          clearPress();
-        }
-      };
-
-      layer.on('mousedown', startPress);
-      layer.on('touchstart', startPress);
-      layer.on('mousemove', updatePress);
-      layer.on('touchmove', updatePress);
-      layer.on('mouseup', clearPress);
-      layer.on('touchend', clearPress);
-      layer.on('touchcancel', clearPress);
-      layer.on('mouseout', clearPress);
-      layer.on('dragstart', clearPress);
-      layer.on('remove', clearPress);
-    }
-
     function parseGpxCoordinatePoint(node) {
       if (!node || !node.getAttribute) {
         return null;
@@ -4198,10 +4107,6 @@
           L.DomEvent.stop(event.originalEvent);
         }
         selectGpxRoute(routeId);
-      });
-      bindLayerLongPressDelete(layer, () => {
-        selectGpxRoute(routeId);
-        return deleteSelectedGpxRoute();
       });
       gpxState.items.push(item);
       applyGpxRouteStyle(item, false);
@@ -4432,10 +4337,6 @@
           L.DomEvent.stop(event.originalEvent);
         }
         selectSimulationSegment(segmentId);
-      });
-      bindLayerLongPressDelete(layer, () => {
-        selectSimulationSegment(segmentId);
-        return deleteSelectedSimulationSegment();
       });
       simState.items.push(item);
       applySimulationSegmentStyle(item, false);
@@ -9466,10 +9367,6 @@
       marker.on('add', () => {
         syncNumberMarkerSelections();
       });
-      bindLayerLongPressDelete(marker, () => {
-        selectNumberLabel(kind, entryId);
-        return deleteSelectedNumberLabel();
-      });
     }
 
     function clearMissingNumberLabelSelection() {
@@ -12777,10 +12674,6 @@
         syncWeatherOverlayControlUi();
         scheduleViewerStateSave();
       });
-      bindLayerLongPressDelete(marker, () => {
-        selectTextMarker(marker);
-        return deleteSelectedTextMarker();
-      });
     }
     if (weatherOverlayBadgeToggle) {
       weatherOverlayBadgeToggle.addEventListener('change', () => {
@@ -13613,7 +13506,6 @@
         }
         removeMeasurementItem(itemId, true);
       });
-      bindLayerLongPressDelete(line, () => removeMeasurementItem(itemId, true));
 
       label.on('click', (event) => {
         if ((Date.now() - (item.lastLabelDragAt || 0)) < measureLabelDragCooldownMs) {
@@ -13626,12 +13518,6 @@
           L.DomEvent.stop(event.originalEvent);
         }
         removeMeasurementItem(itemId, true);
-      });
-      bindLayerLongPressDelete(label, () => {
-        if ((Date.now() - (item.lastLabelDragAt || 0)) < measureLabelDragCooldownMs) {
-          return false;
-        }
-        return removeMeasurementItem(itemId, true);
       });
       label.on('dragend', (event) => {
         const marker = event && event.target ? event.target : label;
