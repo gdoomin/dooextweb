@@ -48,6 +48,17 @@ const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
+const DEFAULT_FILE_ACCEPT = ".kml,.kmz,.gpx,.geojson,.json,.csv,.txt";
+
+function isIOSLikeDevice(): boolean {
+  if (typeof navigator === "undefined") {
+    return false;
+  }
+  const userAgent = navigator.userAgent || "";
+  const platform = navigator.platform || "";
+  const maxTouchPoints = typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
+  return /iPad|iPhone|iPod/i.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
+}
 
 function describeUnknownError(error: unknown, fallback: string): string {
   const isObjectObjectText = (value: string) => value.trim() === "[object Object]";
@@ -145,6 +156,7 @@ export function HomeScreen({
   const [statusMessage, setStatusMessage] = useState(
     restored ? "이전 변환 결과를 복원했습니다." : "지원 파일을 불러와 주세요.",
   );
+  const [fileAccept, setFileAccept] = useState(DEFAULT_FILE_ACCEPT);
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
   const [isLoading, setIsLoading] = useState(false);
   const [historyOpeningId, setHistoryOpeningId] = useState("");
@@ -275,6 +287,14 @@ export function HomeScreen({
       unsubscribe?.();
     };
   }, [authAvailable]);
+
+  useEffect(() => {
+    if (isIOSLikeDevice()) {
+      // iOS Files picker can disable KML/KMZ entries when accept is strict.
+      // Keep picker broad on iOS and validate actual file type in parser flow.
+      setFileAccept("*/*");
+    }
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -898,7 +918,7 @@ export function HomeScreen({
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".kml,.kmz,.gpx,.geojson,.json,.csv,.txt"
+                  accept={fileAccept}
                   className="doo-hidden-input"
                   onChange={handleFilePicked}
                 />

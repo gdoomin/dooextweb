@@ -3714,7 +3714,8 @@
     };
     const VIEWER_STATE_VERSION = 5;
     const VIEWER_STATE_SAVE_DEBOUNCE_MS = 420;
-    const VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS = 1300;
+    const VIEWER_STATE_VIEW_SAVE_DEBOUNCE_MS = 180;
+    const VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS = 2000;
     const UNDO_LIMIT = 10;
     const LONG_PRESS_DELETE_MS = 700;
     const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
@@ -3727,6 +3728,8 @@
     let viewerStateLastRemoteSavedAt = 0;
     let viewerStateRemoteSaveInFlight = null;
     let viewerStatePendingRemoteSave = null;
+    let viewerStateSnapshotCache = null;
+    let zoomVisualRefreshRaf = null;
     const undoHistory = [];
     let undoApplying = false;
     const GPX_LINE_COLOR = '#7b3ff2';
@@ -10497,6 +10500,29 @@
       };
     }
 
+    function collectViewerStateForMode(mode = 'full') {
+      if (mode !== 'view') {
+        return collectViewerState();
+      }
+      const baseState = (
+        viewerStateSnapshotCache &&
+        typeof viewerStateSnapshotCache === 'object' &&
+        Object.keys(viewerStateSnapshotCache).length
+      )
+        ? viewerStateSnapshotCache
+        : collectViewerState();
+      return {
+        ...baseState,
+        gray: grayToggle.checked,
+        numVisible: numToggle.checked,
+        toolbarCollapsed: toolbar.classList.contains('is-collapsed'),
+        view: {
+          center: [map.getCenter().lat, map.getCenter().lng],
+          zoom: map.getZoom(),
+        },
+      };
+    }
+
     function recordUndoState(force = false, snapshot = null, serialized = '') {
       if (viewerStateRestoring || undoApplying) {
         return;
@@ -10683,18 +10709,22 @@
       }
       const force = !!options.force;
       const keepalive = !!options.keepalive;
+      const shouldQueueRemote = options.remote !== false;
       const baseSerialized = serialized || JSON.stringify(snapshot);
       if (!force && viewerStateLastSerialized === baseSerialized) {
         return;
       }
 
       viewerStateLastSerialized = baseSerialized;
+      viewerStateSnapshotCache = snapshot;
       const statePayload = {
         ...snapshot,
         savedAt: Date.now(),
       };
       saveViewerStateToLocal(statePayload);
-      queueRemoteViewerStateSave(statePayload, baseSerialized, force, keepalive);
+      if (shouldQueueRemote) {
+        queueRemoteViewerStateSave(statePayload, baseSerialized, force, keepalive);
+      }
     }
 
     async function saveViewerStateNow(options = {}) {
@@ -10705,6 +10735,7 @@
       const serialized = JSON.stringify(snapshot);
       if (options.force && options.keepalive) {
         viewerStateLastSerialized = serialized;
+        viewerStateSnapshotCache = snapshot;
         const statePayload = {
           ...snapshot,
           savedAt: Date.now(),
@@ -10735,17 +10766,26 @@
       }
     }
 
-    function scheduleViewerStateSave() {
+    function scheduleViewerStateSave(options = {}) {
       if (viewerStateRestoring || undoApplying) {
         return;
       }
+      const mode = options.mode === 'view' ? 'view' : 'full';
+      const shouldRecordUndo = options.recordUndo !== false && mode !== 'view';
+      const debounceMs = Number.isFinite(options.debounceMs)
+        ? Math.max(32, Number(options.debounceMs))
+        : (mode === 'view' ? VIEWER_STATE_VIEW_SAVE_DEBOUNCE_MS : VIEWER_STATE_SAVE_DEBOUNCE_MS);
       window.clearTimeout(viewerStateSaveTimer);
       viewerStateSaveTimer = window.setTimeout(() => {
-        const snapshot = collectViewerState();
+        const snapshot = collectViewerStateForMode(mode);
         const serialized = JSON.stringify(snapshot);
-        recordUndoState(false, snapshot, serialized);
-        persistViewerStateSnapshot(snapshot, serialized);
-      }, VIEWER_STATE_SAVE_DEBOUNCE_MS);
+        if (shouldRecordUndo) {
+          recordUndoState(false, snapshot, serialized);
+        }
+        persistViewerStateSnapshot(snapshot, serialized, {
+          remote: options.remote !== false,
+        });
+      }, debounceMs);
     }
 
     async function loadViewerStateFromServer() {
@@ -11263,6 +11303,7 @@
       if (localState && Object.keys(localState).length) {
         const localSerialized = JSON.stringify(localState);
         viewerStateLastSerialized = localSerialized;
+        viewerStateSnapshotCache = localState;
         restored = await applyViewerStateSnapshot(localState);
       }
 
@@ -11275,6 +11316,7 @@
         if (shouldApplyRemote) {
           restored = await applyViewerStateSnapshot(remoteState);
           viewerStateLastSerialized = remoteSerialized;
+          viewerStateSnapshotCache = remoteState;
           saveViewerStateToLocal({
             ...remoteState,
             savedAt: remoteSavedAt || Date.now(),
@@ -13876,12 +13918,26 @@
     captureLockRatio.addEventListener('change', () => {
       drawCapturePreview();
     });
+    function scheduleZoomVisualRefresh() {
+      if (zoomVisualRefreshRaf != null) {
+        return;
+      }
+      zoomVisualRefreshRaf = window.requestAnimationFrame(() => {
+        zoomVisualRefreshRaf = null;
+        refreshTextMarkerZoomStyles();
+        applyWeatherOverlayMarkerScale();
+      });
+    }
+
     map.on('zoom', () => {
-      refreshTextMarkerZoomStyles();
-      applyWeatherOverlayMarkerScale();
+      scheduleZoomVisualRefresh();
     });
     map.on('moveend zoomend', () => {
-      scheduleViewerStateSave();
+      scheduleViewerStateSave({
+        mode: 'view',
+        recordUndo: false,
+        remote: false,
+      });
     });
     window.addEventListener('beforeunload', () => {
       saveViewerStateNow({ force: true, keepalive: true });
