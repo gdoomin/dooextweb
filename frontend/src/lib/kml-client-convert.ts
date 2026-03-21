@@ -63,7 +63,7 @@ async function computeSha256Hex(text: string): Promise<string> {
 
 async function parseWithWorker(text: string, filename: string): Promise<ClientConvertRequestBody> {
   if (typeof window === "undefined" || typeof Worker === "undefined") {
-    throw new Error("worker unavailable");
+    throw new Error("브라우저 워커를 사용할 수 없습니다.");
   }
 
   const worker = new Worker(new URL("../workers/kml-parse.worker.ts", import.meta.url), { type: "module" });
@@ -76,26 +76,26 @@ async function parseWithWorker(text: string, filename: string): Promise<ClientCo
   return new Promise<ClientConvertRequestBody>((resolve, reject) => {
     const timer = window.setTimeout(() => {
       worker.terminate();
-      reject(new Error("KML parsing timed out."));
+      reject(new Error("KML 파싱 시간이 초과되었습니다."));
     }, WORKER_TIMEOUT_MS);
 
     worker.onmessage = (event: MessageEvent<KmlWorkerResponse>) => {
       const message = event.data;
       cleanup();
       if (!message) {
-        reject(new Error("Worker returned an empty payload."));
+        reject(new Error("워커 응답이 비어 있습니다."));
         return;
       }
       if (message.type === "success") {
         resolve(message.payload);
         return;
       }
-      reject(new Error(toReadableErrorMessage(message.message, "KML conversion failed in worker.")));
+      reject(new Error(toReadableErrorMessage(message.message, "워커에서 KML 변환에 실패했습니다.")));
     };
 
     worker.onerror = (event) => {
       cleanup();
-      reject(new Error(toReadableErrorMessage(event.message, "Worker execution failed.")));
+      reject(new Error(toReadableErrorMessage(event.message, "워커 실행 중 오류가 발생했습니다.")));
     };
 
     worker.postMessage(payload);

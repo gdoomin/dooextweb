@@ -340,10 +340,10 @@ export async function persistConvertedJob(
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "Failed to persist converted data."));
+    throw new Error(extractErrorMessage(body, rawText, "변환 결과 저장에 실패했습니다."));
   }
   if (!body || typeof body !== "object") {
-    throw new Error("Server returned an invalid conversion response.");
+    throw new Error("서버가 올바른 변환 응답을 반환하지 않았습니다.");
   }
   return body as ConvertResponse;
 }

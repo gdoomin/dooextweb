@@ -64,7 +64,7 @@ self.onmessage = (event: MessageEvent<KmlWorkerRequest>) => {
   } catch (error) {
     const response: KmlWorkerResponse = {
       type: "error",
-      message: normalizeWorkerError(error) || "KML conversion failed.",
+      message: normalizeWorkerError(error) || "KML 변환에 실패했습니다.",
     };
     self.postMessage(response);
   }

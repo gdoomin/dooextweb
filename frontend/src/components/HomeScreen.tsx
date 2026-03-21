@@ -441,11 +441,11 @@ export function HomeScreen({
 
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage("Converting KML in your browser...");
+    setStatusMessage("브라우저에서 KML 파일을 변환하는 중입니다...");
 
     try {
       const convertedForUpload = await convertKmlFileInBrowser(file);
-      setStatusMessage("Local conversion complete. Saving to server...");
+      setStatusMessage("변환이 완료되어 서버에 저장하는 중입니다...");
 
       const identity = await resolveCurrentIdentity();
       const uploadAuthenticated = Boolean(identity.id);
@@ -470,13 +470,13 @@ export function HomeScreen({
       setStatusTone("success");
       setStatusMessage(
         uploadAuthenticated
-          ? `${converted.result_count} results converted and saved to your history.`
-          : `${converted.result_count} results converted. Log in to use history and reopen.`,
+          ? `${converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
+          : `${converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
     } catch (error) {
       console.error("[KML convert] failed", error);
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "Conversion failed."));
+      setStatusMessage("KML 변환에 실패했습니다. 파일을 다시 확인해 주세요.");
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
