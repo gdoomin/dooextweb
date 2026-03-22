@@ -14,6 +14,7 @@ type CoupangConfig = {
   width: string;
   height: string;
   tsource: string;
+  container?: HTMLElement | string;
 };
 
 declare global {
@@ -83,9 +84,14 @@ export function CoupangPartnersSlot({ className = "", minHeight = 650 }: Coupang
           return;
         }
 
-        const inlineScript = document.createElement("script");
-        inlineScript.text = `new PartnersCoupang.G(${JSON.stringify(COUPANG_CONFIG)});`;
-        container.appendChild(inlineScript);
+        if (!window.PartnersCoupang?.G) {
+          throw new Error("쿠팡 광고 생성기를 찾을 수 없습니다.");
+        }
+        // container를 명시하지 않으면 스크립트의 마지막 위치에 삽입되어 의도치 않은 위치에 렌더링될 수 있다.
+        new window.PartnersCoupang.G({
+          ...COUPANG_CONFIG,
+          container,
+        });
       } catch {
         if (cancelled) {
           return;
