@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
-import type { FeatureCollection, Geometry } from "geojson";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { LoginForm } from "@/components/LoginForm";
@@ -224,12 +224,14 @@ function extractPolygonResults(response: ConvertResponse): PolygonResult[] {
   return rows.map((row, index) => normalizePolygonResult(row, index)).filter((row): row is PolygonResult => Boolean(row));
 }
 
-function extractGeoJsonFeatures(response: ConvertResponse): Array<Record<string, unknown>> {
+function extractGeoJsonFeatures(response: ConvertResponse): Array<Feature<Geometry | null>> {
   const geojson = response.map_payload?.geojson;
   if (!geojson || geojson.type !== "FeatureCollection" || !Array.isArray(geojson.features)) {
     return [];
   }
-  return geojson.features.filter((feature) => Boolean(feature) && typeof feature === "object") as Array<Record<string, unknown>>;
+  return geojson.features.filter(
+    (feature): feature is Feature<Geometry | null> => Boolean(feature) && typeof feature === "object",
+  );
 }
 
 function stackEntryId(response: ConvertResponse): string {
