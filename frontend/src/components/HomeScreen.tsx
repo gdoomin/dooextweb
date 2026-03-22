@@ -148,6 +148,8 @@ function parseLooseBoolean(value: unknown, defaultValue = false): boolean {
 type StackEntry = {
   id: string;
   response: ConvertResponse;
+  lineCount: number;
+  polygonCount: number;
 };
 
 type Identity = {
@@ -248,10 +250,23 @@ function stackEntryId(response: ConvertResponse): string {
 }
 
 function createStackEntry(response: ConvertResponse): StackEntry {
+  const lineCount = extractLineResults(response).length;
+  const polygonCount = extractPolygonResults(response).length;
   return {
     id: stackEntryId(response),
     response,
+    lineCount,
+    polygonCount,
   };
+}
+
+function waitForNextPaint(): Promise<void> {
+  if (typeof window === "undefined") {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => resolve());
+  });
 }
 
 function buildStackTextOutput(projectName: string, stack: StackEntry[], lineResults: LineResult[], polygons: PolygonResult[]): string {
@@ -379,8 +394,8 @@ export function HomeScreen({
     if (!stackItems.length) {
       return "파일 스택이 비어 있습니다.";
     }
-    const lineCount = stackItems.reduce((sum, entry) => sum + extractLineResults(entry.response).length, 0);
-    const polygonCount = stackItems.reduce((sum, entry) => sum + extractPolygonResults(entry.response).length, 0);
+    const lineCount = stackItems.reduce((sum, entry) => sum + entry.lineCount, 0);
+    const polygonCount = stackItems.reduce((sum, entry) => sum + entry.polygonCount, 0);
     return `${stackItems.length}개 파일 중첩 · 라인 ${lineCount}개 · 폴리곤 ${polygonCount}개`;
   }, [stackItems]);
 
@@ -681,9 +696,21 @@ export function HomeScreen({
     if (!identity.id) {
       return;
     }
-    await refreshHistory(identity.id, identity.email, identity.token);
-    const latestBilling = await fetchBillingStatus(identity.id, identity.email, identity.token);
-    setBillingStatus(latestBilling);
+    const [historyResult, billingResult] = await Promise.allSettled([
+      fetchUserHistory(identity.id, identity.email, identity.token),
+      fetchBillingStatus(identity.id, identity.email, identity.token),
+    ]);
+
+    if (historyResult.status === "fulfilled") {
+      setHistoryItems(historyResult.value);
+      setHistoryError("");
+    } else {
+      setHistoryError(describeUnknownError(historyResult.reason, "히스토리를 불러오지 못했습니다."));
+    }
+
+    if (billingResult.status === "fulfilled") {
+      setBillingStatus(billingResult.value);
+    }
   }
 
   async function materializeStackResponse(nextStack: StackEntry[], identity: Identity): Promise<ConvertResponse | null> {
@@ -718,6 +745,7 @@ export function HomeScreen({
     setIsLoading(true);
     setStatusTone("loading");
     setStatusMessage("브라우저에서 파일을 변환하는 중입니다...");
+    await waitForNextPaint();
 
     try {
       const convertedForUpload = await convertKmlFileInBrowser(file);
@@ -739,10 +767,6 @@ export function HomeScreen({
         : [createStackEntry(converted)];
       const stackedResponse = await applyStack(nextStack, identity);
 
-      if (uploadAuthenticated) {
-        await refreshAccountState(identity);
-      }
-
       setStatusTone("success");
       setStatusMessage(
         uploadAuthenticated
@@ -753,6 +777,10 @@ export function HomeScreen({
             ? `${nextStack.length}개 파일을 중첩했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`
             : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
+
+      if (uploadAuthenticated) {
+        void refreshAccountState(identity);
+      }
     } catch (error) {
       console.error("[KML convert] failed", error);
       setStatusTone("error");
@@ -783,6 +811,7 @@ export function HomeScreen({
     setHistoryOpeningId(item.job_id);
     setStatusTone("loading");
     setStatusMessage(`${item.project_name || item.filename} 결과를 다시 불러오는 중입니다...`);
+    await waitForNextPaint();
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
@@ -812,15 +841,16 @@ export function HomeScreen({
     setHistoryAppendingId(item.job_id);
     setStatusTone("loading");
     setStatusMessage(`${item.project_name || item.filename} 파일을 스택에 추가하는 중입니다...`);
+    await waitForNextPaint();
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
       const nextStack = [...stackItems, createStackEntry(reopened)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
-      await refreshAccountState(identity);
       setStatusTone("success");
       setStatusMessage(`${nextStack.length}개 파일 중첩이 완료되었습니다.`);
+      void refreshAccountState(identity);
     } catch (error) {
       setStatusTone("error");
       setStatusMessage(describeUnknownError(error, "히스토리 항목을 스택에 추가하지 못했습니다."));
@@ -833,9 +863,12 @@ export function HomeScreen({
     const nextStack = stackItems.filter((entry) => entry.id !== entryId);
     const identity = await resolveCurrentIdentity();
     try {
+      setStatusTone("loading");
+      setStatusMessage("중첩 스택을 갱신하는 중입니다...");
+      await waitForNextPaint();
       await applyStack(nextStack, identity);
       if (identity.id) {
-        await refreshAccountState(identity);
+        void refreshAccountState(identity);
       }
       if (!nextStack.length) {
         setStatusTone("idle");
@@ -860,9 +893,12 @@ export function HomeScreen({
     }
     const identity = await resolveCurrentIdentity();
     try {
+      setStatusTone("loading");
+      setStatusMessage("파일 스택을 비우는 중입니다...");
+      await waitForNextPaint();
       await applyStack([], identity);
       if (identity.id) {
-        await refreshAccountState(identity);
+        void refreshAccountState(identity);
       }
       setStatusTone("idle");
       setStatusMessage("파일 스택을 비웠습니다.");
@@ -891,6 +927,7 @@ export function HomeScreen({
     setHistoryDeletingId(item.job_id);
     setStatusTone("loading");
     setStatusMessage(`${targetName} 항목을 삭제하는 중입니다...`);
+    await waitForNextPaint();
 
     try {
       await deleteHistoryItem(item.job_id, userId, userEmail, accessToken);
