@@ -5,6 +5,7 @@ import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 import { AdSenseSlot } from "@/components/AdSenseSlot";
+import { CoupangPartnersSlot } from "@/components/CoupangPartnersSlot";
 import { LoginForm } from "@/components/LoginForm";
 import {
   API_BASE_URL,
@@ -51,7 +52,6 @@ type PopupNoticeResponse = {
 
 const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
-const RIGHT_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_RIGHT_SLOT ?? "";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const DEFAULT_FILE_ACCEPT = ".kml,.kmz,.gpx,.geojson,.json,.csv,.txt";
 
@@ -1475,9 +1475,9 @@ export function HomeScreen({
             </div>
           </section>
 
-          <aside className="doo-ad-rail" aria-label="Google AdSense">
+          <aside className="doo-ad-rail" aria-label="Coupang Partners">
             <div className="doo-ad-rail-inner">
-              <AdSenseSlot slot={RIGHT_AD_SLOT} className="doo-ad-unit doo-ad-unit-right" minHeight={600} />
+              <CoupangPartnersSlot className="doo-ad-unit doo-ad-unit-right" minHeight={650} />
             </div>
           </aside>
         </div>

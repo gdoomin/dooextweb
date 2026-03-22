@@ -532,8 +532,8 @@ textarea {
 }
 
 .doo-ad-rail {
-  width: 320px;
-  flex: 0 0 320px;
+  width: 372px;
+  flex: 0 0 372px;
   display: flex;
   background: #161b22;
   border-left: 1px solid #30363d;
@@ -543,10 +543,13 @@ textarea {
 .doo-ad-rail-inner {
   width: 100%;
   min-height: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
   border-radius: 16px;
   border: 1px solid rgba(121, 192, 255, 0.12);
   background: rgba(18, 34, 48, 0.72);
-  padding: 10px;
+  padding: 8px;
 }
 
 .doo-top-panel {
@@ -966,7 +969,9 @@ textarea {
 }
 
 .doo-ad-unit-right {
-  min-height: 600px;
+  width: 320px;
+  min-height: 650px;
+  margin: 0 auto;
 }
 
 .doo-ad-unit-bottom {
