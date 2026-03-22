@@ -563,14 +563,95 @@ textarea {
   font-weight: 700;
 }
 
+.doo-stack-row {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+}
+
+.doo-stack-empty {
+  width: 100%;
+  border: 1px dashed rgba(121, 192, 255, 0.24);
+  border-radius: 12px;
+  background: rgba(13, 21, 31, 0.72);
+  color: #8b949e;
+  padding: 10px 12px;
+  font-size: 13px;
+}
+
+.doo-stack-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  width: 100%;
+}
+
+.doo-stack-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  min-width: 148px;
+  max-width: 260px;
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  border-radius: 12px;
+  padding: 0 10px;
+  background: rgba(13, 21, 31, 0.88);
+  color: #c9d1d9;
+}
+
+.doo-stack-chip-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  background: rgba(121, 192, 255, 0.18);
+  color: #9cc8f0;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.doo-stack-chip-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.doo-stack-chip-remove {
+  margin-left: auto;
+  width: 24px;
+  min-width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(169, 66, 84, 0.42);
+  color: #ffd8de;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.doo-stack-chip-remove:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
 .doo-path-row {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
 }
 
 .doo-path-input {
   min-width: 0;
-  flex: 1;
+  flex: 1 1 420px;
   height: 66px;
   border: 1px solid #30363d;
   background: #0d1117;
@@ -650,6 +731,16 @@ textarea {
   transform: translateY(1px) scale(0.985);
 }
 
+.doo-open-button-secondary {
+  background: linear-gradient(180deg, #d8f5ff 0%, #9ad9f0 100%);
+  color: #0e2940;
+}
+
+.doo-open-button-clear {
+  background: linear-gradient(180deg, #d7dbe1 0%, #a5adba 100%);
+  color: #0f172a;
+}
+
 @keyframes doo-open-button-shimmer {
   0% {
     left: -42%;
@@ -674,6 +765,17 @@ textarea {
 
 .doo-hidden-input {
   display: none;
+}
+
+.doo-stack-summary {
+  border-radius: 12px;
+  border: 1px solid rgba(121, 192, 255, 0.14);
+  background: rgba(15, 28, 40, 0.62);
+  color: #b9c7d6;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 20px;
 }
 
 .doo-mode-bar {
@@ -1065,6 +1167,33 @@ textarea {
   opacity: 0.72;
 }
 
+.doo-history-append {
+  border: 0;
+  border-radius: 12px;
+  background: #284a2f;
+  color: #d7f3db;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-append:hover:enabled {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 18px rgba(123, 222, 146, 0.16);
+}
+
+.doo-history-append:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .doo-history-actions {
   display: flex;
   align-items: center;
@@ -1202,6 +1331,22 @@ textarea {
 @media (max-width: 720px) {
   .doo-path-row {
     flex-direction: column;
+  }
+
+  .doo-stack-chip {
+    min-width: 120px;
+    max-width: 200px;
+    height: 34px;
+    padding: 0 8px;
+  }
+
+  .doo-stack-chip-name {
+    font-size: 12px;
+  }
+
+  .doo-stack-summary {
+    font-size: 13px;
+    line-height: 18px;
   }
 }
 

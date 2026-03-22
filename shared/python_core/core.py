@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 
-POLYGON_ONLY_MESSAGE = "시작점과 끝점이 없는 도형으로 된 파일입니다"
+POLYGON_ONLY_MESSAGE = "폴리곤(도형) 파일입니다. 시작점/끝점 추출 대상이 아닙니다."
 _GENERIC_LINE_NAMES = {"line", "linestring", "flight line"}
 EARTH_RADIUS_KM = 6371.0088
 AIRCRAFT_SPEED_KNOTS = 130
@@ -247,9 +247,10 @@ def format_text(results: list[dict[str, Any]], project_name: str = "", mode: str
     sep = "  "
 
     if mode == "polygon":
+        summary = f"폴리곤 수: {len(results)}개"
         if project_name:
-            return f"프로젝트: {project_name}\n{'=' * 70}\n{POLYGON_ONLY_MESSAGE}"
-        return POLYGON_ONLY_MESSAGE
+            return f"프로젝트: {project_name}\n{'=' * 70}\n{POLYGON_ONLY_MESSAGE}\n{summary}"
+        return f"{POLYGON_ONLY_MESSAGE}\n{summary}"
 
     lines: list[str] = []
     if project_name:
@@ -291,84 +292,210 @@ def format_text(results: list[dict[str, Any]], project_name: str = "", mode: str
     return "\n".join(lines)
 
 
-def save_excel(results: list[dict[str, Any]], filepath: str, project_name: str = "", mode: str = "linestring") -> None:
-    if mode == "polygon":
-        raise ValueError(POLYGON_ONLY_MESSAGE)
-
+def save_excel(
+    results: list[dict[str, Any]],
+    filepath: str,
+    project_name: str = "",
+    mode: str = "linestring",
+    polygons: list[dict[str, Any]] | None = None,
+) -> None:
     import openpyxl
     from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
     workbook = openpyxl.Workbook()
-    sheet = workbook.active
-    sheet.title = "코스좌표"
+    default_sheet = workbook.active
 
     title_font = Font(name="맑은 고딕", bold=True, size=11)
+    header_font = Font(name="맑은 고딕", bold=True, size=10)
+    body_font = Font(name="맑은 고딕", size=10)
+    gray_fill = PatternFill("solid", fgColor="F2F2F2")
     title_fill = PatternFill("solid", fgColor="D9D9D9")
-    group_font = Font(name="맑은 고딕", bold=False, size=10)
-    group_fill = PatternFill("solid", fgColor="F2F2F2")
-    column_font = Font(name="맑은 고딕", bold=False, size=10)
-    column_fill = PatternFill("solid", fgColor="F2F2F2")
-    data_font = Font(name="맑은 고딕", size=10)
     white_fill = PatternFill("solid", fgColor="FFFFFF")
     center = Alignment(horizontal="center", vertical="center", wrap_text=False)
-    thin = Side(style="thin", color="999999")
-    medium = Side(style="medium", color="666666")
-    thin_border = Border(left=thin, right=thin, top=thin, bottom=thin)
+    left = Alignment(horizontal="left", vertical="center", wrap_text=False)
+    thin_side = Side(style="thin", color="999999")
+    border = Border(left=thin_side, right=thin_side, top=thin_side, bottom=thin_side)
 
-    def set_cell(row: int, column: int, value="", font=None, fill=None, border=None, align=None):
-        cell = sheet.cell(row=row, column=column, value=value)
-        if font:
-            cell.font = font
-        if fill:
-            cell.fill = fill
-        if border:
-            cell.border = border
-        cell.alignment = align or center
-        return cell
+    def to_float(value: Any) -> float | None:
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        if number != number or number in (float("inf"), float("-inf")):
+            return None
+        return number
 
-    sheet.merge_cells("A1:F1")
-    set_cell(1, 1, "코 스 좌 표", font=title_font, fill=title_fill, border=thin_border)
+    def normalize_polygon_rows() -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = []
+        if isinstance(polygons, list) and polygons:
+            for index, row in enumerate(polygons, 1):
+                if not isinstance(row, dict):
+                    continue
+                raw_points = row.get("points")
+                if not isinstance(raw_points, list):
+                    continue
+                points_latlon: list[tuple[float, float]] = []
+                for point in raw_points:
+                    if not isinstance(point, (list, tuple)) or len(point) < 2:
+                        continue
+                    lat = to_float(point[0])
+                    lon = to_float(point[1])
+                    if lat is None or lon is None:
+                        continue
+                    points_latlon.append((lat, lon))
+                if len(points_latlon) < 3:
+                    continue
+                label = str(row.get("label") or row.get("num") or f"Polygon {index}").strip() or f"Polygon {index}"
+                normalized.append(
+                    {
+                        "label": label,
+                        "count": len(points_latlon),
+                        "first_lat": points_latlon[0][0],
+                        "first_lon": points_latlon[0][1],
+                    }
+                )
+            return normalized
 
-    sheet.merge_cells("A2:B2")
-    set_cell(2, 1, "코스번호", font=group_font, fill=group_fill, border=thin_border)
-    sheet.merge_cells("C2:D2")
-    set_cell(2, 3, "시 작", font=group_font, fill=group_fill, border=thin_border)
-    sheet.merge_cells("E2:F2")
-    set_cell(2, 5, "끝", font=group_font, fill=group_fill, border=thin_border)
+        if mode == "polygon":
+            for index, row in enumerate(results, 1):
+                if not isinstance(row, dict):
+                    continue
+                raw_points = row.get("points")
+                if not isinstance(raw_points, list):
+                    continue
+                points_latlon: list[tuple[float, float]] = []
+                for point in raw_points:
+                    if not isinstance(point, (list, tuple)) or len(point) < 2:
+                        continue
+                    lon = to_float(point[0])
+                    lat = to_float(point[1])
+                    if lat is None or lon is None:
+                        continue
+                    points_latlon.append((lat, lon))
+                if len(points_latlon) < 3:
+                    continue
+                label = str(row.get("num") or f"Polygon {index}").strip() or f"Polygon {index}"
+                normalized.append(
+                    {
+                        "label": label,
+                        "count": len(points_latlon),
+                        "first_lat": points_latlon[0][0],
+                        "first_lon": points_latlon[0][1],
+                    }
+                )
+        return normalized
 
-    for column, header in [(1, ""), (2, ""), (3, "위도"), (4, "경도"), (5, "위도"), (6, "경도")]:
-        set_cell(3, column, header, font=column_font, fill=column_fill, border=thin_border)
+    def write_line_sheet() -> None:
+        sheet = default_sheet if default_sheet.title == "Sheet" else workbook.create_sheet("코스좌표")
+        sheet.title = "코스좌표"
 
-    row_index = 4
-    for idx, row in enumerate(results, 1):
-        set_cell(row_index, 1, "Run", font=data_font, fill=white_fill, border=thin_border)
-        set_cell(row_index, 2, idx, font=data_font, fill=white_fill, border=thin_border)
-        set_cell(row_index, 3, dd_to_dms(row["s_lat"], True), font=data_font, fill=white_fill, border=thin_border)
-        set_cell(row_index, 4, dd_to_dms(row["s_lon"], False), font=data_font, fill=white_fill, border=thin_border)
-        set_cell(row_index, 5, dd_to_dms(row["e_lat"], True), font=data_font, fill=white_fill, border=thin_border)
-        set_cell(row_index, 6, dd_to_dms(row["e_lon"], False), font=data_font, fill=white_fill, border=thin_border)
-        row_index += 1
+        sheet.merge_cells("A1:F1")
+        title = project_name.strip() if project_name.strip() else "코스 좌표"
+        sheet.cell(row=1, column=1, value=title)
 
-    sheet.column_dimensions["A"].width = 6
-    sheet.column_dimensions["B"].width = 6
-    sheet.column_dimensions["C"].width = 16
-    sheet.column_dimensions["D"].width = 16
-    sheet.column_dimensions["E"].width = 16
-    sheet.column_dimensions["F"].width = 16
+        headers = ["번호", "라인", "시작 위도", "시작 경도", "끝 위도", "끝 경도"]
+        for column, header in enumerate(headers, 1):
+            sheet.cell(row=2, column=column, value=header)
 
-    for index in range(1, row_index):
-        sheet.row_dimensions[index].height = 18
+        row_index = 3
+        for idx, row in enumerate(results, 1):
+            s_lat = to_float(row.get("s_lat")) if isinstance(row, dict) else None
+            s_lon = to_float(row.get("s_lon")) if isinstance(row, dict) else None
+            e_lat = to_float(row.get("e_lat")) if isinstance(row, dict) else None
+            e_lon = to_float(row.get("e_lon")) if isinstance(row, dict) else None
+            if s_lat is None or s_lon is None or e_lat is None or e_lon is None:
+                continue
+            label = str(row.get("num", "")).strip() if isinstance(row, dict) else ""
+            sheet.cell(row=row_index, column=1, value=idx)
+            sheet.cell(row=row_index, column=2, value=label or "-")
+            sheet.cell(row=row_index, column=3, value=dd_to_dms(s_lat, True))
+            sheet.cell(row=row_index, column=4, value=dd_to_dms(s_lon, False))
+            sheet.cell(row=row_index, column=5, value=dd_to_dms(e_lat, True))
+            sheet.cell(row=row_index, column=6, value=dd_to_dms(e_lon, False))
+            row_index += 1
 
-    from openpyxl.styles import Border as OpenPyxlBorder
+        for row in sheet.iter_rows(min_row=1, max_row=max(2, row_index - 1), min_col=1, max_col=6):
+            for cell in row:
+                if cell.row == 1:
+                    cell.font = title_font
+                    cell.fill = title_fill
+                elif cell.row == 2:
+                    cell.font = header_font
+                    cell.fill = gray_fill
+                else:
+                    cell.font = body_font
+                    cell.fill = white_fill
+                cell.alignment = center
+                cell.border = border
 
-    for r_idx in range(1, row_index):
-        for c_idx in range(1, 7):
-            cell = sheet.cell(row=r_idx, column=c_idx)
-            left = medium if c_idx == 1 else thin
-            right = medium if c_idx == 6 else thin
-            top = medium if r_idx == 1 else thin
-            bottom = medium if r_idx == row_index - 1 else thin
-            cell.border = OpenPyxlBorder(left=left, right=right, top=top, bottom=bottom)
+        widths = {"A": 8, "B": 12, "C": 20, "D": 20, "E": 20, "F": 20}
+        for column, width in widths.items():
+            sheet.column_dimensions[column].width = width
+
+    def write_polygon_sheet(rows: list[dict[str, Any]]) -> None:
+        sheet = default_sheet if default_sheet.title == "Sheet" else workbook.create_sheet("폴리곤요약")
+        sheet.title = "폴리곤요약"
+
+        sheet.merge_cells("A1:F1")
+        title = project_name.strip() if project_name.strip() else "폴리곤 요약"
+        sheet.cell(row=1, column=1, value=title)
+
+        headers = ["번호", "이름", "포인트 수", "대표 위도", "대표 경도", "안내"]
+        for column, header in enumerate(headers, 1):
+            sheet.cell(row=2, column=column, value=header)
+
+        row_index = 3
+        for idx, row in enumerate(rows, 1):
+            sheet.cell(row=row_index, column=1, value=idx)
+            sheet.cell(row=row_index, column=2, value=row["label"])
+            sheet.cell(row=row_index, column=3, value=row["count"])
+            sheet.cell(row=row_index, column=4, value=dd_to_dms(float(row["first_lat"]), True))
+            sheet.cell(row=row_index, column=5, value=dd_to_dms(float(row["first_lon"]), False))
+            sheet.cell(row=row_index, column=6, value=POLYGON_ONLY_MESSAGE)
+            row_index += 1
+
+        if row_index == 3:
+            sheet.cell(row=3, column=1, value="데이터 없음")
+            sheet.merge_cells("A3:F3")
+            row_index = 4
+
+        for row in sheet.iter_rows(min_row=1, max_row=max(2, row_index - 1), min_col=1, max_col=6):
+            for cell in row:
+                if cell.row == 1:
+                    cell.font = title_font
+                    cell.fill = title_fill
+                    cell.alignment = left
+                elif cell.row == 2:
+                    cell.font = header_font
+                    cell.fill = gray_fill
+                    cell.alignment = center
+                else:
+                    cell.font = body_font
+                    cell.fill = white_fill
+                    cell.alignment = left if cell.column in (2, 6) else center
+                cell.border = border
+
+        widths = {"A": 8, "B": 24, "C": 12, "D": 20, "E": 20, "F": 52}
+        for column, width in widths.items():
+            sheet.column_dimensions[column].width = width
+
+    polygon_rows = normalize_polygon_rows()
+    has_line_rows = mode != "polygon" and any(
+        isinstance(row, dict) and all(key in row for key in ("s_lat", "s_lon", "e_lat", "e_lon"))
+        for row in results
+    )
+
+    if has_line_rows:
+        write_line_sheet()
+    if polygon_rows or mode == "polygon":
+        write_polygon_sheet(polygon_rows)
+
+    if default_sheet.title == "Sheet" and len(workbook.sheetnames) > 1:
+        workbook.remove(default_sheet)
+    elif default_sheet.title == "Sheet" and len(workbook.sheetnames) == 1:
+        default_sheet.title = "요약"
+        default_sheet.cell(row=1, column=1, value=project_name.strip() or "요약")
+        default_sheet.cell(row=2, column=1, value="내보낼 데이터가 없습니다.")
 
     workbook.save(filepath)
 

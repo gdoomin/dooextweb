@@ -14,7 +14,9 @@ import type {
 
 import type { ClientConvertRequestBody, LineResult, MapPayload, PolygonResult } from "@/lib/convert";
 
-const POLYGON_ONLY_MESSAGE = "시작점과 끝점이 없는 폴리곤 파일입니다.";
+const POLYGON_ONLY_MESSAGE = "폴리곤(도형) 파일입니다. 시작점/끝점 추출 대상이 아닙니다.";
+const MIXED_GEOMETRY_MESSAGE = "라인과 폴리곤(도형)이 함께 포함된 혼합 파일입니다.";
+const NO_SUPPORTED_GEOMETRY_ERROR = "KML에서 LineString 또는 Polygon 데이터를 찾지 못했습니다.";
 const EARTH_RADIUS_KM = 6371.0088;
 const AIRCRAFT_SPEED_KNOTS = 130;
 const KNOT_TO_KMH = 1.852;
@@ -69,19 +71,21 @@ export function buildClientConvertRequestFromKmlText(kmlText: string, fileName: 
     .filter((feature): feature is GeometryFeature => feature !== null);
 
   if (!features.length) {
-    throw new Error("KML에서 LineString 또는 Polygon 데이터를 찾지 못했습니다.");
+    throw new Error(NO_SUPPORTED_GEOMETRY_ERROR);
   }
 
   const lineRows = extractLineRowsWithFolderContext(features, xmlDoc);
-  if (lineRows.length > 0) {
-    return buildLineModePayload(projectName, fileName, features, lineRows);
-  }
-
   const polygons = extractPolygons(features);
-  if (!polygons.length) {
-    throw new Error("KML에서 LineString 또는 Polygon 데이터를 찾지 못했습니다.");
+  if (lineRows.length > 0) {
+    return buildLineModePayload(projectName, fileName, features, lineRows, polygons);
   }
-  return buildPolygonModePayload(projectName, fileName, polygons, features);
+  if (polygons.length > 0) {
+    return buildPolygonModePayload(projectName, fileName, polygons, features);
+  }
+  if (!lineRows.length && !polygons.length) {
+    throw new Error(NO_SUPPORTED_GEOMETRY_ERROR);
+  }
+  throw new Error(NO_SUPPORTED_GEOMETRY_ERROR);
 }
 
 function buildLineModePayload(
@@ -89,11 +93,16 @@ function buildLineModePayload(
   fileName: string,
   features: GeometryFeature[],
   lineRows: LineStorageRow[],
+  polygons: ParsedPolygon[] = [],
 ): ClientConvertRequestBody {
   const lineFeatures = features.filter((feature) => isLineGeometry(feature.geometry));
+  const polygonFeatures = polygons.length > 0
+    ? features.filter((feature) => isPolygonGeometry(feature.geometry))
+    : [];
+  const payloadPolygons = toPayloadPolygons(polygons);
   const rawGeojson: FeatureCollection<Geometry> = {
     type: "FeatureCollection",
-    features: lineFeatures,
+    features: polygonFeatures.length > 0 ? [...lineFeatures, ...polygonFeatures] : lineFeatures,
   };
   const coordinateCount = countFeatureCollectionCoordinates(rawGeojson);
   const tolerance = chooseSimplifyTolerance(coordinateCount);
@@ -118,14 +127,14 @@ function buildLineModePayload(
     project_name: projectName,
     mode: "linestring",
     results: payloadResults,
-    polygons: [],
+    polygons: payloadPolygons,
     has_kml_num: hasKmlNum,
     default_force_num: !hasKmlNum,
     default_show_num: hasKmlNum,
     has_layers: false,
     layer_catalog: [],
     default_gray_map: false,
-    meta_text: buildLineMetaText(lineRows),
+    meta_text: buildLineMetaText(lineRows, payloadPolygons.length),
     geojson: roundedGeojson as FeatureCollection<Geometry | null>,
     source_format: "kml",
     simplify_tolerance: tolerance,
@@ -137,7 +146,7 @@ function buildLineModePayload(
     project_name: projectName,
     mode: "linestring",
     result_count: payloadResults.length,
-    text_output: formatLinesAsText(lineRows, projectName),
+    text_output: formatLinesAsText(lineRows, projectName, payloadPolygons.length),
     map_payload: mapPayload,
     results: lineRows.map((row) => ({ ...row })),
   };
@@ -159,14 +168,7 @@ function buildPolygonModePayload(
   const simplifiedGeojson = simplifyFeatureCollection(rawGeojson, tolerance);
   const roundedGeojson = roundFeatureCollection(simplifiedGeojson);
 
-  const payloadPolygons: PolygonResult[] = polygons.map((polygon, index) => {
-    const label = polygon.baseName || `Polygon ${index + 1}`;
-    return {
-      num: polygon.baseName,
-      label,
-      points: polygon.pointsLonLat.map(([lon, lat]) => [roundCoordinate(lat), roundCoordinate(lon)]),
-    };
-  });
+  const payloadPolygons = toPayloadPolygons(polygons);
 
   const storageRows: PolygonStorageRow[] = polygons.map((polygon) => ({
     num: polygon.baseName,
@@ -196,10 +198,21 @@ function buildPolygonModePayload(
     project_name: projectName,
     mode: "polygon",
     result_count: payloadPolygons.length,
-    text_output: formatPolygonText(projectName),
+    text_output: formatPolygonText(projectName, payloadPolygons.length),
     map_payload: mapPayload,
     results: storageRows.map((row) => ({ ...row })),
   };
+}
+
+function toPayloadPolygons(polygons: ParsedPolygon[]): PolygonResult[] {
+  return polygons.map((polygon, index) => {
+    const label = polygon.baseName || `Polygon ${index + 1}`;
+    return {
+      num: polygon.baseName,
+      label,
+      points: polygon.pointsLonLat.map(([lon, lat]) => [roundCoordinate(lat), roundCoordinate(lon)]),
+    };
+  });
 }
 
 function parseKmlXml(kmlText: string): XMLDocument {
@@ -820,12 +833,15 @@ function buildForceLabels(rows: LineStorageRow[]): Map<number, string> {
   return labels;
 }
 
-function buildLineMetaText(rows: LineStorageRow[]): string {
+function buildLineMetaText(rows: LineStorageRow[], polygonCount = 0): string {
   const totalLengthKm = rows.reduce((sum, row) => sum + haversineKm(row.s_lat, row.s_lon, row.e_lat, row.e_lon), 0);
   const flightHours = totalLengthKm / (AIRCRAFT_SPEED_KNOTS * KNOT_TO_KMH);
   const turnHours = (rows.length * TURN_MINUTES_PER_LINE) / 60;
   const totalCaptureHours = flightHours + turnHours;
-  return `${rows.length}개 라인 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간 : 대략 ${totalCaptureHours.toFixed(1)}시간`;
+  if (polygonCount > 0) {
+    return `${rows.length}개 라인 · ${polygonCount}개 폴리곤 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간: 대략 ${totalCaptureHours.toFixed(1)}시간`;
+  }
+  return `${rows.length}개 라인 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간: 대략 ${totalCaptureHours.toFixed(1)}시간`;
 }
 
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -842,28 +858,34 @@ function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
 }
 
-function formatLinesAsText(rows: LineStorageRow[], projectName: string): string {
+function formatLinesAsText(rows: LineStorageRow[], projectName: string, polygonCount = 0): string {
   const lines: string[] = [];
   if (projectName) {
     lines.push(`프로젝트: ${projectName}`);
     lines.push("=".repeat(70));
+  }
+  if (polygonCount > 0) {
+    lines.push(MIXED_GEOMETRY_MESSAGE);
+    lines.push(`폴리곤 수: ${polygonCount}개`);
+    lines.push("-".repeat(70));
   }
   lines.push("Line  구분   위도                      경도");
   lines.push("-".repeat(70));
   rows.forEach((row) => {
     const lineLabel = row.num || "-";
     lines.push(`${lineLabel}  시작  ${ddToDms(row.s_lat, true)}  ${ddToDms(row.s_lon, false)}`);
-    lines.push(`      끝    ${ddToDms(row.e_lat, true)}  ${ddToDms(row.e_lon, false)}`);
+    lines.push(`      끝   ${ddToDms(row.e_lat, true)}  ${ddToDms(row.e_lon, false)}`);
     lines.push("");
   });
   return lines.join("\n").trimEnd();
 }
 
-function formatPolygonText(projectName: string): string {
+function formatPolygonText(projectName: string, polygonCount = 0): string {
+  const summary = polygonCount > 0 ? `폴리곤 수: ${polygonCount}개` : "폴리곤 수: 0개";
   if (!projectName) {
-    return POLYGON_ONLY_MESSAGE;
+    return `${POLYGON_ONLY_MESSAGE}\n${summary}`;
   }
-  return `프로젝트: ${projectName}\n${"=".repeat(70)}\n${POLYGON_ONLY_MESSAGE}`;
+  return `프로젝트: ${projectName}\n${"=".repeat(70)}\n${POLYGON_ONLY_MESSAGE}\n${summary}`;
 }
 
 function ddToDms(value: number, isLatitude: boolean): string {
@@ -920,3 +942,4 @@ function isLineGeometry(geometry: Geometry): geometry is LineString | MultiLineS
 function isPolygonGeometry(geometry: Geometry): geometry is Polygon | MultiPolygon {
   return geometry.type === "Polygon" || geometry.type === "MultiPolygon";
 }
+

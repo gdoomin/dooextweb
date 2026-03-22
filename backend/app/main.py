@@ -2690,14 +2690,22 @@ def download_xlsx(job_id: str):
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "excel_download"):
         raise HTTPException(status_code=402, detail="?袁⑹삺 ???삏?癒?퐣???臾? ??쇱뒲嚥≪뮆諭띄몴??????????곷뮸??덈뼄.")
-    if job.get("mode") == "polygon":
-        raise HTTPException(status_code=400, detail=POLYGON_ONLY_MESSAGE)
 
     with NamedTemporaryFile(delete=False, suffix=".xlsx") as temp_file:
         temp_path = Path(temp_file.name)
 
     try:
-        save_excel(job.get("results") or [], str(temp_path), str(job.get("project_name") or ""), str(job.get("mode") or "linestring"))
+        map_payload = job.get("map_payload") if isinstance(job.get("map_payload"), dict) else {}
+        polygons = map_payload.get("polygons") if isinstance(map_payload, dict) else []
+        if not isinstance(polygons, list):
+            polygons = []
+        save_excel(
+            job.get("results") or [],
+            str(temp_path),
+            str(job.get("project_name") or ""),
+            str(job.get("mode") or "linestring"),
+            polygons=polygons,
+        )
         content = temp_path.read_bytes()
     finally:
         temp_path.unlink(missing_ok=True)

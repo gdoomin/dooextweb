@@ -10197,6 +10197,39 @@
       scheduleViewerStateSave();
     }
 
+    function renderResultPolygons() {
+      const polygonRows = Array.isArray(payload.polygons) ? payload.polygons : [];
+      polygonRows.forEach((row, index) => {
+        if (!row || !Array.isArray(row.points) || row.points.length < 3) {
+          return;
+        }
+        const label = String(row.label || row.num || `Polygon ${index + 1}`);
+        const polygon = L.polygon(row.points, {
+          color: lineColor,
+          weight: 3,
+          fillColor: hoverColor,
+          fillOpacity: 0.2,
+          renderer: renderer,
+          smoothFactor: 0.2
+        }).addTo(resultPolygonGroup);
+
+        polygon.on('mouseover', () => {
+          polygon.setStyle({ color: hoverColor, weight: 4, fillOpacity: 0.28 });
+        });
+
+        polygon.on('mouseout', () => {
+          polygon.setStyle({ color: lineColor, weight: 3, fillOpacity: 0.2 });
+        });
+
+        polygon.bindTooltip(
+          `<strong>${escapeHtml(label)}</strong><br>폴리곤(도형)입니다. 시작점/끝점 추출 대상이 아닙니다.`,
+          { sticky: true, className: 'doo-tooltip', direction: 'top', opacity: 0.98 }
+        );
+
+        extendBounds(row.points);
+      });
+    }
+
     function renderResults() {
       hideSimulationOverlay(true);
       setSimPanelVisible(false);
@@ -10204,31 +10237,7 @@
         simButton.disabled = true;
       }
       if (isPolygonMode) {
-        payload.polygons.forEach((row) => {
-          const polygon = L.polygon(row.points, {
-            color: lineColor,
-            weight: 3,
-            fillColor: hoverColor,
-            fillOpacity: 0.16,
-            renderer: renderer,
-            smoothFactor: 0.2
-          }).addTo(resultPolygonGroup);
-
-          polygon.on('mouseover', () => {
-            polygon.setStyle({ color: hoverColor, weight: 4, fillOpacity: 0.24 });
-          });
-
-          polygon.on('mouseout', () => {
-            polygon.setStyle({ color: lineColor, weight: 3, fillOpacity: 0.16 });
-          });
-
-          polygon.bindTooltip(
-            `<strong>${escapeHtml(row.label)}</strong><br>시작점과 끝점이 없는 도형입니다.`,
-            { sticky: true, className: 'doo-tooltip', direction: 'top', opacity: 0.98 }
-          );
-
-          extendBounds(row.points);
-        });
+        renderResultPolygons();
         forceButton.style.display = 'none';
         forceControls.style.display = 'none';
         numWrap.style.display = 'none';
@@ -10334,6 +10343,7 @@
         bounds.extend(end);
       });
 
+      renderResultPolygons();
       renderKmzVisuals();
       renderSourceGeoJson();
       map.addLayer(forceLabelGroup);

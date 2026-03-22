@@ -2,13 +2,18 @@
 
 import Image from "next/image";
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import type { FeatureCollection, Geometry } from "geojson";
 
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { LoginForm } from "@/components/LoginForm";
 import {
   API_BASE_URL,
   type BillingStatusResponse,
+  type ClientConvertRequestBody,
   type ConvertResponse,
+  type LineResult,
+  type MapPayload,
+  type PolygonResult,
   type ServerHistoryItem,
   deleteHistoryItem,
   cancelBillingSubscription,
@@ -25,7 +30,7 @@ import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 const modeLabel: Record<ConvertResponse["mode"], string> = {
   linestring: "LineString 모드 | Flight Line 좌표 추출",
-  polygon: "Polygon 모드 | 시작점과 끝점이 없는 폴리곤 파일",
+  polygon: "Polygon 모드 | 폴리곤(도형) 파일입니다. 시작점/끝점 추출 대상이 아닙니다.",
 };
 
 const modeBadgeLabel: Record<ConvertResponse["mode"], string> = {
@@ -140,6 +145,188 @@ function parseLooseBoolean(value: unknown, defaultValue = false): boolean {
   return defaultValue;
 }
 
+type StackEntry = {
+  id: string;
+  response: ConvertResponse;
+};
+
+type Identity = {
+  id: string;
+  email: string;
+  token: string;
+};
+
+function toFiniteNumber(value: unknown): number | null {
+  const number = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(number) ? number : null;
+}
+
+function normalizeLineResult(row: unknown): LineResult | null {
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+  const record = row as Record<string, unknown>;
+  const sLat = toFiniteNumber(record.s_lat);
+  const sLon = toFiniteNumber(record.s_lon);
+  const eLat = toFiniteNumber(record.e_lat);
+  const eLon = toFiniteNumber(record.e_lon);
+  if (sLat === null || sLon === null || eLat === null || eLon === null) {
+    return null;
+  }
+  const num = typeof record.num === "string" ? record.num : String(record.num ?? "").trim();
+  return {
+    num,
+    s_lat: sLat,
+    s_lon: sLon,
+    e_lat: eLat,
+    e_lon: eLon,
+  };
+}
+
+function extractLineResults(response: ConvertResponse): LineResult[] {
+  const mapResults = Array.isArray(response.map_payload?.results) ? response.map_payload.results : [];
+  const rawRows = mapResults.length > 0 ? mapResults : Array.isArray(response.results) ? response.results : [];
+  return rawRows.map((row) => normalizeLineResult(row)).filter((row): row is LineResult => Boolean(row));
+}
+
+function normalizePolygonResult(row: unknown, index: number): PolygonResult | null {
+  if (!row || typeof row !== "object") {
+    return null;
+  }
+  const record = row as Record<string, unknown>;
+  const rawPoints = Array.isArray(record.points) ? record.points : [];
+  const points: [number, number][] = [];
+  rawPoints.forEach((point) => {
+    if (!Array.isArray(point) || point.length < 2) {
+      return;
+    }
+    const lat = toFiniteNumber(point[0]);
+    const lon = toFiniteNumber(point[1]);
+    if (lat === null || lon === null) {
+      return;
+    }
+    points.push([lat, lon]);
+  });
+  if (points.length < 3) {
+    return null;
+  }
+  const num = typeof record.num === "string" ? record.num : String(record.num ?? "").trim();
+  const labelRaw = typeof record.label === "string" ? record.label.trim() : "";
+  return {
+    num,
+    label: labelRaw || num || `Polygon ${index + 1}`,
+    points,
+  };
+}
+
+function extractPolygonResults(response: ConvertResponse): PolygonResult[] {
+  const rows = Array.isArray(response.map_payload?.polygons) ? response.map_payload.polygons : [];
+  return rows.map((row, index) => normalizePolygonResult(row, index)).filter((row): row is PolygonResult => Boolean(row));
+}
+
+function extractGeoJsonFeatures(response: ConvertResponse): Array<Record<string, unknown>> {
+  const geojson = response.map_payload?.geojson;
+  if (!geojson || geojson.type !== "FeatureCollection" || !Array.isArray(geojson.features)) {
+    return [];
+  }
+  return geojson.features.filter((feature) => Boolean(feature) && typeof feature === "object") as Array<Record<string, unknown>>;
+}
+
+function stackEntryId(response: ConvertResponse): string {
+  const source = String(response.source_hash || "").trim();
+  if (source) {
+    return `source:${source}`;
+  }
+  const job = String(response.job_id || "").trim();
+  if (job) {
+    return `job:${job}`;
+  }
+  const filename = String(response.filename || response.project_name || "file").trim();
+  return `local:${filename}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function createStackEntry(response: ConvertResponse): StackEntry {
+  return {
+    id: stackEntryId(response),
+    response,
+  };
+}
+
+function buildStackTextOutput(projectName: string, stack: StackEntry[], lineResults: LineResult[], polygons: PolygonResult[]): string {
+  const lines: string[] = [];
+  lines.push(`프로젝트: ${projectName}`);
+  lines.push("=".repeat(70));
+  lines.push(`중첩 파일 수: ${stack.length}개`);
+  lines.push(`라인: ${lineResults.length}개 · 폴리곤: ${polygons.length}개`);
+  lines.push("-".repeat(70));
+  stack.forEach((entry, index) => {
+    lines.push(`${String(index + 1).padStart(2, "0")}. ${entry.response.filename}`);
+  });
+  return lines.join("\n");
+}
+
+function buildStackProjectName(stack: StackEntry[]): string {
+  if (stack.length === 1) {
+    return stack[0].response.project_name || stack[0].response.filename || "DOO_STACK";
+  }
+  const first = stack[0]?.response?.project_name || stack[0]?.response?.filename || "DOO";
+  const safeFirst = String(first).trim() || "DOO";
+  return `${safeFirst}_STACK_${stack.length}`;
+}
+
+function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
+  const lineResults = stack.flatMap((entry) => extractLineResults(entry.response));
+  const polygons = stack.flatMap((entry) => extractPolygonResults(entry.response));
+  const hasLines = lineResults.length > 0;
+  const mode: ConvertResponse["mode"] = hasLines ? "linestring" : "polygon";
+  const projectName = buildStackProjectName(stack);
+  const fileLabel =
+    stack.length === 1
+      ? stack[0].response.filename
+      : `${projectName}.kml`;
+  const allFeatures = stack.flatMap((entry) => extractGeoJsonFeatures(entry.response));
+  const mapPayload: MapPayload = {
+    project_name: projectName,
+    mode,
+    results: hasLines ? lineResults : [],
+    polygons,
+    has_kml_num: hasLines ? lineResults.every((row) => Boolean(String(row.num || "").trim())) : false,
+    default_force_num: hasLines ? !lineResults.every((row) => Boolean(String(row.num || "").trim())) : false,
+    default_show_num: hasLines ? lineResults.every((row) => Boolean(String(row.num || "").trim())) : false,
+    has_layers: false,
+    layer_catalog: [],
+    default_gray_map: false,
+    meta_text: `${stack.length}개 파일 중첩 · 라인 ${lineResults.length}개 · 폴리곤 ${polygons.length}개`,
+    geojson:
+      allFeatures.length > 0
+        ? ({
+            type: "FeatureCollection",
+            features: allFeatures,
+          } as FeatureCollection<Geometry | null>)
+        : undefined,
+    source_format: "kml",
+  };
+
+  return {
+    filename: fileLabel,
+    project_name: projectName,
+    mode,
+    result_count: mode === "linestring" ? lineResults.length : polygons.length,
+    text_output: buildStackTextOutput(projectName, stack, lineResults, polygons),
+    map_payload: mapPayload,
+    results:
+      mode === "linestring"
+        ? lineResults.map((row) => ({
+            num: row.num || "",
+            s_lat: row.s_lat,
+            s_lon: row.s_lon,
+            e_lat: row.e_lat,
+            e_lon: row.e_lon,
+          }))
+        : [],
+  };
+}
+
 export function HomeScreen({
   initialUserEmail = "",
   initialUserId = "",
@@ -150,6 +337,8 @@ export function HomeScreen({
   const restored = loadLastConvert();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [response, setResponse] = useState<ConvertResponse | null>(restored);
+  const [stackItems, setStackItems] = useState<StackEntry[]>(() => (restored ? [createStackEntry(restored)] : []));
+  const [filePickMode, setFilePickMode] = useState<"replace" | "append">("replace");
   const [historyItems, setHistoryItems] = useState<ServerHistoryItem[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
@@ -160,6 +349,7 @@ export function HomeScreen({
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
   const [isLoading, setIsLoading] = useState(false);
   const [historyOpeningId, setHistoryOpeningId] = useState("");
+  const [historyAppendingId, setHistoryAppendingId] = useState("");
   const [historyDeletingId, setHistoryDeletingId] = useState("");
   const [userEmail, setUserEmail] = useState(initialUserEmail);
   const [userId, setUserId] = useState(initialUserId);
@@ -173,17 +363,40 @@ export function HomeScreen({
   const [showPlanGuide, setShowPlanGuide] = useState(false);
 
   const isAuthenticated = Boolean(userId);
-  const pathLabel = useMemo(() => response?.filename || "", [response]);
+  const pathLabel = useMemo(() => {
+    if (!stackItems.length) {
+      return "";
+    }
+    if (stackItems.length === 1) {
+      return stackItems[0].response.filename || "";
+    }
+    return `${stackItems.length}개 파일 중첩: ${stackItems.map((entry) => entry.response.filename).join(", ")}`;
+  }, [stackItems]);
+
+  const stackSummary = useMemo(() => {
+    if (!stackItems.length) {
+      return "파일 스택이 비어 있습니다.";
+    }
+    const lineCount = stackItems.reduce((sum, entry) => sum + extractLineResults(entry.response).length, 0);
+    const polygonCount = stackItems.reduce((sum, entry) => sum + extractPolygonResults(entry.response).length, 0);
+    return `${stackItems.length}개 파일 중첩 · 라인 ${lineCount}개 · 폴리곤 ${polygonCount}개`;
+  }, [stackItems]);
+
   const modeText = useMemo(() => {
     if (!response) {
       return "지원 파일을 업로드하면 변환 결과가 표시됩니다.";
+    }
+    if (stackItems.length > 1) {
+      return "파일 중첩 모드 | 도식화 보기에서 중첩 레이어를 표시합니다.";
     }
     const sourceFormat = String(response.map_payload?.source_format || "").trim().toLowerCase();
     if (sourceFormat && sourceFormat !== "kml" && sourceFormat !== "kmz") {
       return `${sourceFormat.toUpperCase()} 파일 변환 결과`;
     }
     return modeLabel[response.mode];
-  }, [response]);
+  }, [response, stackItems.length]);
+
+  const modeChipLabel = stackItems.length > 1 ? "중첩" : response ? modeBadgeLabel[response.mode] : "";
   const canUseHistory = isAuthenticated;
   const canOpenViewer = Boolean(response?.job_id);
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
@@ -462,6 +675,38 @@ export function HomeScreen({
     }
   }
 
+  async function refreshAccountState(identity: Identity) {
+    if (!identity.id) {
+      return;
+    }
+    await refreshHistory(identity.id, identity.email, identity.token);
+    const latestBilling = await fetchBillingStatus(identity.id, identity.email, identity.token);
+    setBillingStatus(latestBilling);
+  }
+
+  async function materializeStackResponse(nextStack: StackEntry[], identity: Identity): Promise<ConvertResponse | null> {
+    if (!nextStack.length) {
+      return null;
+    }
+    if (nextStack.length === 1) {
+      return nextStack[0].response;
+    }
+    const stackPayload = buildStackPayload(nextStack);
+    return persistConvertedJob(stackPayload, identity.id, identity.email, identity.token);
+  }
+
+  async function applyStack(nextStack: StackEntry[], identity: Identity): Promise<ConvertResponse | null> {
+    const merged = await materializeStackResponse(nextStack, identity);
+    setStackItems(nextStack);
+    setResponse(merged);
+    if (merged) {
+      saveLastConvert(merged);
+    } else if (typeof window !== "undefined") {
+      window.localStorage.removeItem("doo-extractor-last-convert");
+    }
+    return merged;
+  }
+
   async function handleFilePicked(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file) {
@@ -487,20 +732,24 @@ export function HomeScreen({
         identity.email,
         identity.token,
       );
-      setResponse(converted);
-      saveLastConvert(converted);
+      const nextStack = filePickMode === "append" && stackItems.length > 0
+        ? [...stackItems, createStackEntry(converted)]
+        : [createStackEntry(converted)];
+      const stackedResponse = await applyStack(nextStack, identity);
 
       if (uploadAuthenticated) {
-        await refreshHistory(identity.id, identity.email, identity.token);
-        const latestBilling = await fetchBillingStatus(identity.id, identity.email, identity.token);
-        setBillingStatus(latestBilling);
+        await refreshAccountState(identity);
       }
 
       setStatusTone("success");
       setStatusMessage(
         uploadAuthenticated
-          ? `${converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
-          : `${converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
+          ? filePickMode === "append" && nextStack.length > 1
+            ? `${nextStack.length}개 파일을 중첩했고 합본 결과를 히스토리에 저장했습니다.`
+            : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
+          : filePickMode === "append" && nextStack.length > 1
+            ? `${nextStack.length}개 파일을 중첩했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`
+            : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
     } catch (error) {
       console.error("[KML convert] failed", error);
@@ -514,7 +763,8 @@ export function HomeScreen({
     }
   }
 
-  function openFileDialog() {
+  function openFileDialog(mode: "replace" | "append" = "replace") {
+    setFilePickMode(mode);
     fileInputRef.current?.click();
   }
 
@@ -534,6 +784,7 @@ export function HomeScreen({
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
+      setStackItems([createStackEntry(reopened)]);
       setResponse(reopened);
       saveLastConvert(reopened);
       setStatusTone("success");
@@ -543,6 +794,79 @@ export function HomeScreen({
       setStatusMessage(describeUnknownError(error, "히스토리 항목을 다시 열지 못했습니다."));
     } finally {
       setHistoryOpeningId("");
+    }
+  }
+
+  async function handleHistoryAppend(item: ServerHistoryItem) {
+    if (!canUseHistory) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.");
+      return;
+    }
+    if (!requireAuth("히스토리 항목을 스택에 추가하려면 로그인해 주세요.")) {
+      return;
+    }
+
+    setHistoryAppendingId(item.job_id);
+    setStatusTone("loading");
+    setStatusMessage(`${item.project_name || item.filename} 파일을 스택에 추가하는 중입니다...`);
+
+    try {
+      const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
+      const nextStack = [...stackItems, createStackEntry(reopened)];
+      const identity: Identity = { id: userId, email: userEmail, token: accessToken };
+      await applyStack(nextStack, identity);
+      await refreshAccountState(identity);
+      setStatusTone("success");
+      setStatusMessage(`${nextStack.length}개 파일 중첩이 완료되었습니다.`);
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 스택에 추가하지 못했습니다."));
+    } finally {
+      setHistoryAppendingId("");
+    }
+  }
+
+  async function removeStackEntry(entryId: string) {
+    const nextStack = stackItems.filter((entry) => entry.id !== entryId);
+    const identity = await resolveCurrentIdentity();
+    try {
+      await applyStack(nextStack, identity);
+      if (identity.id) {
+        await refreshAccountState(identity);
+      }
+      if (!nextStack.length) {
+        setStatusTone("idle");
+        setStatusMessage("스택을 비웠습니다. 파일을 열어 주세요.");
+      } else {
+        setStatusTone("success");
+        setStatusMessage(`${nextStack.length}개 파일 중첩 상태로 갱신했습니다.`);
+      }
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "스택 항목을 제거하지 못했습니다."));
+    }
+  }
+
+  async function clearStack() {
+    if (!stackItems.length) {
+      return;
+    }
+    const confirmed = window.confirm("파일 스택을 모두 비울까요?");
+    if (!confirmed) {
+      return;
+    }
+    const identity = await resolveCurrentIdentity();
+    try {
+      await applyStack([], identity);
+      if (identity.id) {
+        await refreshAccountState(identity);
+      }
+      setStatusTone("idle");
+      setStatusMessage("파일 스택을 비웠습니다.");
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "파일 스택을 비우지 못했습니다."));
     }
   }
 
@@ -646,11 +970,6 @@ export function HomeScreen({
     if (!response?.xlsx_download_url) {
       setStatusTone("error");
       setStatusMessage("먼저 지원 파일을 불러와 주세요.");
-      return;
-    }
-    if (response.mode === "polygon") {
-      setStatusTone("error");
-      setStatusMessage("폴리곤 파일은 아직 Excel 다운로드를 지원하지 않습니다.");
       return;
     }
     if (!requireAuth("엑셀 다운로드는 로그인 후 사용할 수 있습니다.")) {
@@ -910,10 +1229,52 @@ export function HomeScreen({
           <section className="doo-main">
             <div className="doo-top-panel">
               <label className="doo-top-label">KML / KMZ / GPX / GEOJSON 파일</label>
+              <div className="doo-stack-row">
+                {stackItems.length ? (
+                  <div className="doo-stack-chips">
+                    {stackItems.map((entry, index) => (
+                      <div key={entry.id} className="doo-stack-chip">
+                        <span className="doo-stack-chip-index">{index + 1}</span>
+                        <span className="doo-stack-chip-name" title={entry.response.filename}>
+                          {entry.response.filename}
+                        </span>
+                        <button
+                          type="button"
+                          className="doo-stack-chip-remove"
+                          onClick={() => void removeStackEntry(entry.id)}
+                          aria-label={`${entry.response.filename} 제거`}
+                          title="스택에서 제거"
+                          disabled={isLoading}
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="doo-stack-empty">중첩된 파일이 없습니다. 파일 열기 또는 파일 추가를 사용해 주세요.</div>
+                )}
+              </div>
               <div className="doo-path-row">
                 <input className="doo-path-input" value={pathLabel} readOnly placeholder="선택된 파일이 없습니다." />
-                <button type="button" className="doo-open-button" onClick={openFileDialog} disabled={isLoading}>
+                <button type="button" className="doo-open-button" onClick={() => openFileDialog("replace")} disabled={isLoading}>
                   {isLoading ? "불러오는 중..." : "파일 열기"}
+                </button>
+                <button
+                  type="button"
+                  className="doo-open-button doo-open-button-secondary"
+                  onClick={() => openFileDialog("append")}
+                  disabled={isLoading}
+                >
+                  파일 추가
+                </button>
+                <button
+                  type="button"
+                  className="doo-open-button doo-open-button-clear"
+                  onClick={() => void clearStack()}
+                  disabled={isLoading || !stackItems.length}
+                >
+                  스택 비우기
                 </button>
                 <input
                   ref={fileInputRef}
@@ -923,11 +1284,12 @@ export function HomeScreen({
                   onChange={handleFilePicked}
                 />
               </div>
+              <div className="doo-stack-summary">{stackSummary}</div>
             </div>
 
             <div className="doo-mode-bar">
               <span className={response ? "doo-mode-active" : "doo-mode-idle"}>{modeText}</span>
-              {response ? <span className="doo-mode-chip">{modeBadgeLabel[response.mode]}</span> : null}
+              {response ? <span className="doo-mode-chip">{modeChipLabel}</span> : null}
             </div>
 
             {!isAuthenticated && response ? (
@@ -970,6 +1332,7 @@ export function HomeScreen({
                     {historyItems.map((item) => {
                       const isCurrent = response?.job_id === item.job_id;
                       const isOpening = historyOpeningId === item.job_id;
+                      const isAppending = historyAppendingId === item.job_id;
                       const isDeleting = historyDeletingId === item.job_id;
                       return (
                         <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
@@ -985,9 +1348,17 @@ export function HomeScreen({
                               type="button"
                               className="doo-history-open"
                               onClick={() => handleHistoryOpen(item)}
-                              disabled={isOpening || isDeleting}
+                              disabled={isOpening || isAppending || isDeleting}
                             >
                               {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
+                            </button>
+                            <button
+                              type="button"
+                              className="doo-history-append"
+                              onClick={() => void handleHistoryAppend(item)}
+                              disabled={isOpening || isAppending || isDeleting}
+                            >
+                              {isAppending ? "추가 중..." : "스택추가"}
                             </button>
                             <button
                               type="button"
@@ -995,7 +1366,7 @@ export function HomeScreen({
                               title="히스토리 삭제"
                               aria-label="히스토리 삭제"
                               onClick={() => handleHistoryDelete(item)}
-                              disabled={isOpening || isDeleting}
+                              disabled={isOpening || isAppending || isDeleting}
                             >
                               {isDeleting ? "..." : "🗑"}
                             </button>
@@ -1033,7 +1404,7 @@ export function HomeScreen({
                   텍스트 저장
                 </button>
                 <button type="button" className="doo-action doo-action-map" onClick={openViewer} disabled={!canOpenViewer}>
-                  도식화 보기
+                  {stackItems.length > 1 ? `도식화 보기 (${stackItems.length})` : "도식화 보기"}
                 </button>
               </div>
             </div>
