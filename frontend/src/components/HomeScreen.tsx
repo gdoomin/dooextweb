@@ -260,6 +260,22 @@ function createStackEntry(response: ConvertResponse): StackEntry {
   };
 }
 
+function isSameSourceFile(left: ConvertResponse, right: ConvertResponse): boolean {
+  const leftHash = String(left.source_hash || "").trim().toLowerCase();
+  const rightHash = String(right.source_hash || "").trim().toLowerCase();
+  if (leftHash && rightHash) {
+    return leftHash === rightHash;
+  }
+
+  const leftJob = String(left.job_id || "").trim();
+  const rightJob = String(right.job_id || "").trim();
+  if (leftJob && rightJob) {
+    return leftJob === rightJob;
+  }
+
+  return false;
+}
+
 function waitForNextPaint(): Promise<void> {
   if (typeof window === "undefined") {
     return Promise.resolve();
@@ -845,6 +861,12 @@ export function HomeScreen({
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
+      const duplicateExists = stackItems.some((entry) => isSameSourceFile(entry.response, reopened));
+      if (duplicateExists) {
+        setStatusTone("error");
+        setStatusMessage("같은 파일입니다. 스택에 추가하지 않았습니다.");
+        return;
+      }
       const nextStack = [...stackItems, createStackEntry(reopened)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
