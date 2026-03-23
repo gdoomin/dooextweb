@@ -54,6 +54,15 @@ const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const DEFAULT_FILE_ACCEPT = ".kml,.kmz,.gpx,.geojson,.json,.csv,.txt";
+const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+const LOADING_STATUS_KEYWORDS = /(불러오는 중|추가하는 중|변환하는 중|저장하는 중)/;
 
 function isIOSLikeDevice(): boolean {
   if (typeof navigator === "undefined") {
@@ -472,13 +481,24 @@ export function HomeScreen({
 
   const modeChipLabel = stackItems.length > 1 ? "중첩" : response ? modeBadgeLabel[response.mode] : "";
   const canUseHistory = isAuthenticated;
-  const canOpenViewer = Boolean(response?.job_id);
+  const isViewerBusy = isLoading || Boolean(historyOpeningId) || Boolean(historyAppendingId);
+  const canOpenViewer = Boolean(response?.job_id) && !isViewerBusy;
+  const showLoadingBadge = statusTone === "loading" && (isViewerBusy || LOADING_STATUS_KEYWORDS.test(statusMessage));
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
   const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
   const shouldShowPricing =
     Boolean(billingStatus?.billing_enabled) &&
     isAuthenticated &&
     Boolean(billingStatus?.is_new_pricing_user);
+
+  const historyRows = useMemo(
+    () =>
+      historyItems.map((item) => ({
+        ...item,
+        savedAtText: formatHistorySavedAt(item.uploaded_at),
+      })),
+    [historyItems],
+  );
 
   async function resolveCurrentIdentity() {
     if (!authAvailable) {
@@ -715,14 +735,7 @@ export function HomeScreen({
       return savedAt;
     }
 
-    return new Intl.DateTimeFormat("ko-KR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    }).format(date);
+    return HISTORY_DATE_TIME_FORMATTER.format(date);
   }
 
   async function refreshHistory(nextUserId = userId, nextUserEmail = userEmail, nextAccessToken = accessToken) {
@@ -1026,6 +1039,11 @@ export function HomeScreen({
   }
 
   function openViewer() {
+    if (isViewerBusy) {
+      setStatusTone("loading");
+      setStatusMessage("파일을 불러오는 중입니다. 완료 후 도식화 보기를 눌러 주세요.");
+      return;
+    }
     if (!response?.job_id) {
       setStatusTone("error");
       setStatusMessage("실제 변환이 완료된 파일만 도식화 보기로 열 수 있습니다.");
@@ -1359,7 +1377,12 @@ export function HomeScreen({
               </div>
               <div className="doo-path-row">
                 <input className="doo-path-input" value={pathLabel} readOnly placeholder="선택된 파일이 없습니다." />
-                <button type="button" className="doo-open-button" onClick={() => openFileDialog("replace")} disabled={isLoading}>
+                <button
+                  type="button"
+                  className={`doo-open-button${isLoading ? " is-loading" : ""}`}
+                  onClick={() => openFileDialog("replace")}
+                  disabled={isLoading}
+                >
                   {isLoading ? "불러오는 중..." : "파일 열기"}
                 </button>
                 <button
@@ -1431,7 +1454,7 @@ export function HomeScreen({
                   <p className="doo-history-empty">{historyError}</p>
                 ) : historyItems.length ? (
                   <div className="doo-history-list doo-history-list-main">
-                    {historyItems.map((item) => {
+                    {historyRows.map((item) => {
                       const isCurrent = response?.job_id === item.job_id;
                       const isOpening = historyOpeningId === item.job_id;
                       const isAppending = historyAppendingId === item.job_id;
@@ -1442,7 +1465,7 @@ export function HomeScreen({
                             <strong>{item.project_name || item.filename}</strong>
                             <span>{item.filename}</span>
                             <span>
-                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 · {formatHistorySavedAt(item.uploaded_at)}
+                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 · {item.savedAtText}
                             </span>
                           </div>
                           <div className="doo-history-actions">
@@ -1484,7 +1507,15 @@ export function HomeScreen({
             </div>
 
             <div className="doo-bottom-bar">
-              <div className={`doo-status doo-status-${statusTone}`}>{statusMessage}</div>
+              <div className={`doo-status doo-status-${statusTone}${showLoadingBadge ? " is-loading-highlight" : ""}`}>
+                {showLoadingBadge ? (
+                  <span className="doo-status-loading-badge" aria-live="polite">
+                    <span className="doo-status-loading-spinner" aria-hidden="true" />
+                    불러오는 중
+                  </span>
+                ) : null}
+                <span className="doo-status-text">{statusMessage}</span>
+              </div>
               <div className="doo-actions">
                 <button type="button" className="doo-action doo-action-copy" onClick={copyClipboard}>
                   클립보드 복사
@@ -1505,7 +1536,13 @@ export function HomeScreen({
                 >
                   텍스트 저장
                 </button>
-                <button type="button" className="doo-action doo-action-map" onClick={openViewer} disabled={!canOpenViewer}>
+                <button
+                  type="button"
+                  className="doo-action doo-action-map"
+                  onClick={openViewer}
+                  disabled={!canOpenViewer}
+                  title={isViewerBusy ? "파일 불러오기 중에는 도식화 보기를 열 수 없습니다." : undefined}
+                >
                   {stackItems.length > 1 ? `도식화 보기 (${stackItems.length})` : "도식화 보기"}
                 </button>
               </div>

@@ -667,6 +667,9 @@ textarea {
 
 .doo-open-button {
   position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   height: 53px;
   border: 2px solid #111111;
   border-radius: 8px;
@@ -738,6 +741,17 @@ textarea {
 
 .doo-open-button:active:not(:disabled) {
   transform: translateY(1px) scale(0.985);
+}
+
+.doo-open-button.is-loading::before {
+  content: "";
+  width: 15px;
+  height: 15px;
+  margin-right: 8px;
+  border-radius: 50%;
+  border: 2px solid rgba(17, 17, 17, 0.24);
+  border-top-color: rgba(17, 17, 17, 0.9);
+  animation: doo-status-spinner-rotate 0.8s linear infinite;
 }
 
 .doo-open-button-secondary {
@@ -996,9 +1010,17 @@ textarea {
 .doo-status {
   min-width: 0;
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
   font-size: 16px;
   font-weight: 700;
   line-height: 1.45;
+}
+
+.doo-status-text {
+  display: block;
 }
 
 .doo-status-idle {
@@ -1007,6 +1029,32 @@ textarea {
 
 .doo-status-loading {
   color: #e67e22;
+}
+
+.doo-status-loading-badge {
+  width: fit-content;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(252, 211, 77, 0.42);
+  background: rgba(126, 63, 20, 0.26);
+  color: #ffd27d;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  padding: 4px 10px;
+  animation: doo-status-loading-pulse 1.5s ease-in-out infinite;
+}
+
+.doo-status-loading-spinner {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 242, 208, 0.26);
+  border-top-color: #ffd27d;
+  animation: doo-status-spinner-rotate 0.8s linear infinite;
 }
 
 .doo-status-success {
@@ -1083,6 +1131,27 @@ textarea {
   color: #e5e7eb;
   opacity: 1;
   box-shadow: none;
+}
+
+@keyframes doo-status-loading-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 212, 125, 0.3);
+    filter: brightness(0.98);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(255, 212, 125, 0);
+    filter: brightness(1.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 212, 125, 0);
+    filter: brightness(0.98);
+  }
+}
+
+@keyframes doo-status-spinner-rotate {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .doo-history-list-main {
