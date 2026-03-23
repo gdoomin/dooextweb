@@ -10,6 +10,18 @@ type NoticePayload = {
   updated_at?: string;
 };
 
+type AdminUsageRow = {
+  user_id: string;
+  user_email: string;
+  plan_code: string;
+  subscription_status: string;
+  monthly_kml_used: number;
+  total_kml_used: number;
+  total_jobs: number;
+  last_uploaded_at: string;
+  last_filename: string;
+};
+
 function readErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     const text = (error.message || "").trim();
@@ -63,6 +75,25 @@ function parseLooseBoolean(value: unknown, defaultValue = false): boolean {
   return defaultValue;
 }
 
+function parseNumber(value: unknown): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
+function formatDate(value: string): string {
+  if (!value) {
+    return "-";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString("ko-KR");
+}
+
 export default function PopupAdminPage() {
   const [password, setPassword] = useState("");
   const [verified, setVerified] = useState(false);
@@ -72,6 +103,54 @@ export default function PopupAdminPage() {
   const [status, setStatus] = useState("");
   const [statusTone, setStatusTone] = useState<"idle" | "success" | "error">("idle");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [usageMonthKey, setUsageMonthKey] = useState("");
+  const [usageRows, setUsageRows] = useState<AdminUsageRow[]>([]);
+  const [usageError, setUsageError] = useState("");
+  const [isUsageLoading, setIsUsageLoading] = useState(false);
+
+  async function loadUsage(nextPassword: string) {
+    setIsUsageLoading(true);
+    setUsageError("");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/popup-notice/usage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: nextPassword }),
+      });
+      const payload = await parseJson(response);
+      if (!response.ok) {
+        throw new Error(String(payload.detail || "사용량 조회에 실패했습니다."));
+      }
+
+      const monthKey = typeof payload.month_key === "string" ? payload.month_key : "";
+      const users = Array.isArray(payload.users) ? payload.users : [];
+      const rows: AdminUsageRow[] = users
+        .filter((item) => item && typeof item === "object")
+        .map((item) => {
+          const row = item as Record<string, unknown>;
+          return {
+            user_id: String(row.user_id || ""),
+            user_email: String(row.user_email || ""),
+            plan_code: String(row.plan_code || ""),
+            subscription_status: String(row.subscription_status || ""),
+            monthly_kml_used: parseNumber(row.monthly_kml_used),
+            total_kml_used: parseNumber(row.total_kml_used),
+            total_jobs: parseNumber(row.total_jobs),
+            last_uploaded_at: String(row.last_uploaded_at || ""),
+            last_filename: String(row.last_filename || ""),
+          };
+        });
+
+      setUsageMonthKey(monthKey);
+      setUsageRows(rows);
+    } catch (error) {
+      setUsageError(readErrorMessage(error, "사용량 조회에 실패했습니다."));
+    } finally {
+      setIsUsageLoading(false);
+    }
+  }
 
   async function verifyPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -97,6 +176,7 @@ export default function PopupAdminPage() {
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("비밀번호 확인 완료. 팝업 문구를 수정할 수 있습니다.");
       setStatusTone("success");
+      await loadUsage(password);
     } catch (error) {
       setStatus(readErrorMessage(error, "비밀번호 확인에 실패했습니다."));
       setStatusTone("error");
@@ -159,25 +239,83 @@ export default function PopupAdminPage() {
             </button>
           </form>
         ) : (
-          <form className="popup-admin-form" onSubmit={saveNotice}>
-            <label htmlFor="popup-admin-message">팝업 문구</label>
-            <textarea
-              id="popup-admin-message"
-              value={message}
-              onChange={(event) => setMessage(event.target.value)}
-              rows={6}
-              maxLength={500}
-              placeholder="팝업에 표시할 문구를 입력하세요."
-              required
-            />
-            <label className="popup-admin-checkbox">
-              <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
-              팝업 표시 사용
-            </label>
-            <button type="submit" disabled={isLoading}>
-              {isLoading ? "저장 중..." : "저장"}
-            </button>
-          </form>
+          <>
+            <form className="popup-admin-form" onSubmit={saveNotice}>
+              <label htmlFor="popup-admin-message">팝업 문구</label>
+              <textarea
+                id="popup-admin-message"
+                value={message}
+                onChange={(event) => setMessage(event.target.value)}
+                rows={6}
+                maxLength={500}
+                placeholder="팝업에 표시할 문구를 입력하세요."
+                required
+              />
+              <label className="popup-admin-checkbox">
+                <input type="checkbox" checked={enabled} onChange={(event) => setEnabled(event.target.checked)} />
+                팝업 표시 사용
+              </label>
+              <button type="submit" disabled={isLoading}>
+                {isLoading ? "저장 중..." : "저장"}
+              </button>
+            </form>
+
+            <section className="popup-admin-usage">
+              <div className="popup-admin-usage-head">
+                <h2>사용자 이메일 / 사용량</h2>
+                <button
+                  type="button"
+                  className="popup-admin-usage-refresh"
+                  onClick={() => loadUsage(password)}
+                  disabled={isUsageLoading}
+                >
+                  {isUsageLoading ? "갱신 중..." : "새로고침"}
+                </button>
+              </div>
+              <p className="popup-admin-usage-meta">
+                기준 월: <strong>{usageMonthKey || "-"}</strong>
+              </p>
+              {usageError ? <p className="popup-admin-usage-error">{usageError}</p> : null}
+              <div className="popup-admin-usage-table-wrap">
+                <table className="popup-admin-usage-table">
+                  <thead>
+                    <tr>
+                      <th>이메일</th>
+                      <th>아이디</th>
+                      <th>이번 달</th>
+                      <th>누적</th>
+                      <th>작업 수</th>
+                      <th>요금제</th>
+                      <th>최근 작업</th>
+                      <th>최근 파일</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {usageRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="popup-admin-usage-empty">
+                          표시할 사용량 데이터가 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      usageRows.map((row) => (
+                        <tr key={`${row.user_id || "unknown"}-${row.user_email || "no-email"}`}>
+                          <td>{row.user_email || "-"}</td>
+                          <td>{row.user_id || "-"}</td>
+                          <td>{row.monthly_kml_used}</td>
+                          <td>{row.total_kml_used}</td>
+                          <td>{row.total_jobs}</td>
+                          <td>{row.plan_code || "-"}</td>
+                          <td>{formatDate(row.last_uploaded_at)}</td>
+                          <td>{row.last_filename || "-"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </>
         )}
 
         {updatedAt ? <p className="popup-admin-updated">최근 수정: {new Date(updatedAt).toLocaleString("ko-KR")}</p> : null}

@@ -2089,3 +2089,95 @@ textarea {
 .popup-admin-status-error {
   color: #ff9e9e;
 }
+
+.popup-admin-usage {
+  display: grid;
+  gap: 10px;
+  margin-top: 8px;
+  border-top: 1px solid rgba(121, 192, 255, 0.16);
+  padding-top: 14px;
+}
+
+.popup-admin-usage-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.popup-admin-usage-head h2 {
+  margin: 0;
+  color: #e6edf3;
+  font-size: 16px;
+}
+
+.popup-admin-usage-refresh {
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  background: #0d365f;
+  color: #e8f3ff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-admin-usage-refresh:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.popup-admin-usage-meta {
+  margin: 0;
+  color: #94adc5;
+  font-size: 12px;
+}
+
+.popup-admin-usage-error {
+  margin: 0;
+  color: #ff9e9e;
+  font-size: 12px;
+}
+
+.popup-admin-usage-table-wrap {
+  width: 100%;
+  overflow: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(121, 192, 255, 0.14);
+  background: rgba(7, 13, 21, 0.7);
+}
+
+.popup-admin-usage-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 760px;
+}
+
+.popup-admin-usage-table th,
+.popup-admin-usage-table td {
+  border-bottom: 1px solid rgba(121, 192, 255, 0.12);
+  padding: 8px 10px;
+  text-align: left;
+  font-size: 12px;
+  color: #d8e4ef;
+  white-space: nowrap;
+}
+
+.popup-admin-usage-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #102238;
+  color: #c2d9ef;
+  font-weight: 700;
+}
+
+.popup-admin-usage-table tbody tr:hover {
+  background: rgba(121, 192, 255, 0.08);
+}
+
+.popup-admin-usage-empty {
+  text-align: center !important;
+  color: #8aa0b8 !important;
+}

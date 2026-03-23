@@ -1288,6 +1288,139 @@ def _require_popup_admin_password(password: str) -> None:
         raise HTTPException(status_code=401, detail="??쑬?甕곕뜇?뉐첎? ??깊뒄??? ??녿뮸??덈뼄.")
 
 
+def _safe_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _collect_popup_admin_usage_rows() -> tuple[str, list[dict[str, Any]]]:
+    month_key = _current_month_key()
+    rows_by_key: dict[str, dict[str, Any]] = {}
+
+    def _row_key(user_id: str, user_email: str) -> str:
+        normalized_id = _normalize_user_identity(user_id)
+        normalized_email = _normalize_user_email(user_email)
+        if normalized_id:
+            return f"id:{normalized_id}"
+        if normalized_email:
+            return f"email:{normalized_email}"
+        return ""
+
+    def _ensure_row(user_id: str, user_email: str) -> dict[str, Any] | None:
+        normalized_id = _normalize_user_identity(user_id)
+        normalized_email = _normalize_user_email(user_email)
+        key = _row_key(normalized_id, normalized_email)
+        if not key:
+            return None
+
+        row = rows_by_key.get(key)
+        if row is None:
+            row = {
+                "user_id": normalized_id,
+                "user_email": normalized_email,
+                "plan_code": "",
+                "subscription_status": "",
+                "monthly_kml_used": 0,
+                "total_kml_used": 0,
+                "total_jobs": 0,
+                "last_uploaded_at": "",
+                "last_filename": "",
+            }
+            rows_by_key[key] = row
+
+        if normalized_id and not str(row.get("user_id") or "").strip():
+            row["user_id"] = normalized_id
+        if normalized_email and not str(row.get("user_email") or "").strip():
+            row["user_email"] = normalized_email
+        return row
+
+    for billing_path in USER_BILLING_DIR.glob("*.json"):
+        payload = _load_json(billing_path, {})
+        if not isinstance(payload, dict):
+            continue
+        user_id = _normalize_user_identity(str(payload.get("user_id") or billing_path.stem))
+        user_email = _normalize_user_email(str(payload.get("user_email") or ""))
+        row = _ensure_row(user_id, user_email)
+        if row is None:
+            continue
+
+        plan_code_raw = str(payload.get("plan_code") or "").strip()
+        if plan_code_raw:
+            row["plan_code"] = _normalize_plan_code(plan_code_raw, fallback=DEFAULT_PLAN_CODE)
+
+        subscription_status = str(payload.get("subscription_status") or "").strip().lower()
+        if subscription_status:
+            row["subscription_status"] = subscription_status
+
+    for usage_path in PAYMENT_USAGE_DIR.glob("*.json"):
+        user_id = _normalize_user_identity(usage_path.stem)
+        if not user_id:
+            continue
+        payload = _load_json(usage_path, {})
+        if not isinstance(payload, dict):
+            continue
+        monthly = payload.get("monthly")
+        if not isinstance(monthly, dict):
+            continue
+        row = _ensure_row(user_id, "")
+        if row is None:
+            continue
+
+        total = 0
+        current = 0
+        for usage_month_key, usage_month_payload in monthly.items():
+            if not isinstance(usage_month_payload, dict):
+                continue
+            count = max(0, _safe_int(usage_month_payload.get("kml_conversions"), 0))
+            total += count
+            if str(usage_month_key) == month_key:
+                current = count
+        row["monthly_kml_used"] = current
+        row["total_kml_used"] = total
+
+    for job_path in JOBS_DIR.glob("*.json"):
+        payload = _load_json(job_path, {})
+        if not isinstance(payload, dict):
+            continue
+        user_id = _normalize_user_identity(str(payload.get("user_id") or ""))
+        user_email = _normalize_user_email(str(payload.get("user_email") or ""))
+        row = _ensure_row(user_id, user_email)
+        if row is None:
+            continue
+
+        row["total_jobs"] = _safe_int(row.get("total_jobs"), 0) + 1
+
+        created_at = str(payload.get("created_at") or payload.get("uploaded_at") or "").strip()
+        if not created_at:
+            continue
+        current_last_raw = str(row.get("last_uploaded_at") or "").strip()
+        current_last = _parse_iso_datetime(current_last_raw)
+        created_dt = _parse_iso_datetime(created_at)
+        should_update = False
+        if created_dt is not None:
+            should_update = current_last is None or created_dt > current_last
+        elif not current_last_raw:
+            should_update = True
+        if should_update:
+            row["last_uploaded_at"] = created_at
+            row["last_filename"] = str(payload.get("filename") or "").strip()
+
+    rows = list(rows_by_key.values())
+    rows.sort(
+        key=lambda item: (
+            _safe_int(item.get("monthly_kml_used"), 0),
+            _safe_int(item.get("total_kml_used"), 0),
+            _safe_int(item.get("total_jobs"), 0),
+            str(item.get("last_uploaded_at") or ""),
+            str(item.get("user_email") or ""),
+        ),
+        reverse=True,
+    )
+    return month_key, rows
+
+
 def _load_map_layers() -> dict:
     data = _load_json(MAP_LAYER_DATA_PATH, {"layers": []})
     layers = data.get("layers", []) if isinstance(data, dict) else []
@@ -2555,6 +2688,13 @@ def get_popup_notice():
 def verify_popup_notice_admin(payload: PopupNoticeAuthPayload):
     _require_popup_admin_password(payload.password)
     return JSONResponse({"ok": True, "notice": _load_popup_notice()})
+
+
+@app.post("/api/admin/popup-notice/usage")
+def get_popup_notice_admin_usage(payload: PopupNoticeAuthPayload):
+    _require_popup_admin_password(payload.password)
+    month_key, rows = _collect_popup_admin_usage_rows()
+    return JSONResponse({"ok": True, "month_key": month_key, "count": len(rows), "users": rows})
 
 
 @app.post("/api/admin/popup-notice")
