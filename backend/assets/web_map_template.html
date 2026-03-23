@@ -189,16 +189,16 @@
       letter-spacing: 0.01em;
     }
     .toolbar {
-      --tool-card-width: clamp(44px, 2.9vw, 52px);
-      --tool-card-height: clamp(32px, 2.2vw, 39px);
+      --tool-card-width: clamp(38px, 2.5vw, 46px);
+      --tool-card-height: clamp(28px, 1.9vw, 34px);
       --tool-banner-height: var(--tool-card-height);
       top: 16px;
       right: 16px;
-      padding: 8px 14px;
+      padding: 6px 10px;
       display: grid;
-      gap: 5px;
-      width: min(98vw, 1480px);
-      max-width: calc(100vw - 32px);
+      gap: 4px;
+      width: min(98vw, 1320px);
+      max-width: calc(100vw - 320px);
       box-sizing: border-box;
     }
     .toolbar.is-collapsed {
@@ -219,7 +219,7 @@
     .toolbar-row {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
       flex-wrap: nowrap;
       min-width: 0;
     }
@@ -240,7 +240,7 @@
     .toolbar-banner img {
       display: block;
       width: auto;
-      max-width: 180px;
+      max-width: 156px;
       height: var(--tool-banner-height);
       border-radius: 12px;
       border: 1px solid rgba(121, 192, 255, 0.28);
@@ -258,9 +258,9 @@
     .toolbar label {
       display: inline-flex;
       align-items: center;
-      gap: 7px;
+      gap: 6px;
       color: #d0d7de;
-      font-size: 14px;
+      font-size: 13px;
       white-space: nowrap;
     }
     .toolbar input[type="checkbox"] {
@@ -9660,6 +9660,11 @@
       marker.on('click', (event) => {
         if (event && event.originalEvent) {
           L.DomEvent.stop(event.originalEvent);
+        }
+        const targetEntry = resultLineEntries.find((entry) => entry.id === entryId);
+        if (doneState.active && targetEntry) {
+          setLineCompleted(targetEntry, !targetEntry.completed);
+          return;
         }
         selectNumberLabel(kind, entryId);
       });

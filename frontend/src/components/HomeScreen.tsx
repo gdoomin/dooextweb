@@ -307,6 +307,45 @@ function buildStackProjectName(stack: StackEntry[]): string {
   return `${safeFirst}_STACK_${stack.length}`;
 }
 
+const STACK_AIRCRAFT_SPEED_KNOTS = 130;
+const STACK_KNOT_TO_KMH = 1.852;
+const STACK_TURN_MINUTES_PER_LINE = 3;
+const STACK_EARTH_RADIUS_KM = 6371.0088;
+
+function degreesToRadians(value: number): number {
+  return (value * Math.PI) / 180;
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const dLat = degreesToRadians(lat2 - lat1);
+  const dLon = degreesToRadians(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(degreesToRadians(lat1)) *
+      Math.cos(degreesToRadians(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  return 2 * STACK_EARTH_RADIUS_KM * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function buildStackMetaText(stackCount: number, lineResults: LineResult[], polygons: PolygonResult[]): string {
+  if (!lineResults.length) {
+    return `${stackCount}개 파일 중첩 · 라인 0개 · 폴리곤 ${polygons.length}개`;
+  }
+  const totalLengthKm = lineResults.reduce((sum, row) => {
+    const sLat = Number(row.s_lat);
+    const sLon = Number(row.s_lon);
+    const eLat = Number(row.e_lat);
+    const eLon = Number(row.e_lon);
+    if (![sLat, sLon, eLat, eLon].every((value) => Number.isFinite(value))) {
+      return sum;
+    }
+    return sum + haversineKm(sLat, sLon, eLat, eLon);
+  }, 0);
+  const flightHours = totalLengthKm / (STACK_AIRCRAFT_SPEED_KNOTS * STACK_KNOT_TO_KMH);
+  const totalCaptureHours = flightHours + ((lineResults.length * STACK_TURN_MINUTES_PER_LINE) / 60);
+  return `${stackCount}개 파일 중첩 · 라인 ${lineResults.length}개 · 폴리곤 ${polygons.length}개 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간: 대략 ${totalCaptureHours.toFixed(1)}시간`;
+}
+
 function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
   const lineResults = stack.flatMap((entry) => extractLineResults(entry.response));
   const polygons = stack.flatMap((entry) => extractPolygonResults(entry.response));
@@ -329,7 +368,7 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
     has_layers: false,
     layer_catalog: [],
     default_gray_map: false,
-    meta_text: `${stack.length}개 파일 중첩 · 라인 ${lineResults.length}개 · 폴리곤 ${polygons.length}개`,
+    meta_text: buildStackMetaText(stack.length, lineResults, polygons),
     geojson:
       allFeatures.length > 0
         ? ({
@@ -351,6 +390,8 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
       mode === "linestring"
         ? lineResults.map((row) => ({
             num: row.num || "",
+            s_num: row.s_num || "",
+            e_num: row.e_num || "",
             s_lat: row.s_lat,
             s_lon: row.s_lon,
             e_lat: row.e_lat,
