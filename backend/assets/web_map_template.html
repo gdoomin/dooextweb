@@ -210,6 +210,10 @@
     .toolbar.is-collapsed .toolbar-collapse-hide {
       display: none !important;
     }
+    .toolbar #layerButton {
+      display: inline-flex !important;
+      flex: 0 0 auto;
+    }
     .toolbar.is-collapsed #layerButton {
       display: inline-flex !important;
     }
@@ -3444,22 +3448,22 @@
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
       { key: 'cctv', label: 'CCTV', note: '국립공원 CCTV 라벨(링크 열기)', badge: 'CCTV' },
     ];
-    const WEATHER_CCTV_DEFAULT_URL = 'https://www.knps.or.kr/';
+    const WEATHER_CCTV_DEFAULT_URL = 'https://www.knps.or.kr/portal/main/contents.do?menuNo=8000168#';
     const WEATHER_CCTV_KOREA_BOUNDS = [[33.0, 124.6], [38.8, 132.0]];
     const WEATHER_CCTV_POINTS = [
       { key: 'seorak-ulsanbawi', label: '설악산국립공원(울산바위)', lat: 38.1943, lng: 128.4745, url: WEATHER_CCTV_DEFAULT_URL },
-      { key: 'bukhansan-jokduri', label: '북한산국립공원(족두리봉)', lat: 37.6124, lng: 126.9456, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'bukhansan-jukduri', label: '북한산국립공원(죽두리봉)', lat: 37.6179, lng: 126.9431, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'bukhansan-sapae', label: '북한산국립공원(사패산)', lat: 37.7224, lng: 127.0104, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'odaesan-duroryeong', label: '오대산국립공원(두로령)', lat: 37.7916, lng: 128.5645, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'chiaksan-sangwonsa', label: '치악산국립공원(상원사)', lat: 37.3955, lng: 128.0512, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'taebaek-cheonjedan', label: '태백산국립공원(천제단)', lat: 37.0964, lng: 128.9165, url: WEATHER_CCTV_DEFAULT_URL },
-      { key: 'taean-hakampo', label: '태안해안국립공원(학암포)', lat: 36.9039, lng: 126.1536, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'taean-hakampo', label: '태안해안국립공원(학암포)', lat: 36.8972, lng: 126.2075, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'gyeryong-cheonhwang', label: '계룡산국립공원(천황봉)', lat: 36.3437, lng: 127.2148, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'sobaek-yeonhwa', label: '소백산국립공원(연화봉)', lat: 36.9523, lng: 128.4844, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'juwang-giam', label: '주왕산국립공원(기암)', lat: 36.4259, lng: 129.1593, url: WEATHER_CCTV_DEFAULT_URL },
-      { key: 'byeonsan-okmabong', label: '변산반도국립공원(옥마봉)', lat: 35.6739, lng: 126.5628, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'byeonsan-jukmak', label: '변산반도국립공원(죽막탐방로)', lat: 35.6646, lng: 126.5132, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'deogyu-seolcheon', label: '덕유산국립공원(설천봉)', lat: 35.8608, lng: 127.7462, url: WEATHER_CCTV_DEFAULT_URL },
-      { key: 'jirisan-cheonwang', label: '지리산국립공원(천왕봉)', lat: 35.3369, lng: 127.7303, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'jirisan-cheonwang', label: '지리산국립공원(천왕봉)', lat: 35.3364, lng: 127.7313, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'jirisan-jangteomok', label: '지리산국립공원(장터목)', lat: 35.3587, lng: 127.6797, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'hallyeo-gaksan', label: '한려해상국립공원(각산)', lat: 34.7955, lng: 128.0678, url: WEATHER_CCTV_DEFAULT_URL },
       { key: 'mudeung-jangbuljae', label: '무등산국립공원(장불재)', lat: 35.1157, lng: 126.9988, url: WEATHER_CCTV_DEFAULT_URL },
@@ -3675,6 +3679,10 @@
     const notamInfoCloseButton = document.getElementById('notamInfoCloseButton');
     const previewGateLink = document.getElementById('previewGateLink');
     const previewGateBackButton = document.getElementById('previewGateBackButton');
+    if (layerButton) {
+      layerButton.classList.remove('toolbar-collapse-hide');
+      layerButton.style.display = 'inline-flex';
+    }
 
     if (projectNameEl) {
       projectNameEl.textContent = payload.project_name || '';
@@ -11807,8 +11815,13 @@
 
     function buildLayerRows() {
       if (!layerCatalog.length) {
-        layerButton.style.display = 'none';
-        layerPanel.style.display = 'none';
+        layerButton.style.display = '';
+        layerPanel.style.display = '';
+        layerRows.innerHTML = '';
+        const emptyRow = document.createElement('div');
+        emptyRow.className = 'layer-row';
+        emptyRow.innerHTML = '<label><span>표시할 겹 레이어가 없습니다.</span></label>';
+        layerRows.appendChild(emptyRow);
         return;
       }
       layerButton.style.display = '';
@@ -12771,9 +12784,6 @@
     }
 
     function setLayerPanelVisible(visible) {
-      if (!payload.has_layers || !layerCatalog.length) {
-        return;
-      }
       const isVisible = !!visible;
       if (isVisible) {
         deactivateToolModes();
