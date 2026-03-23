@@ -44,6 +44,8 @@ export type KmlWorkerResponse = KmlWorkerSuccess | KmlWorkerError;
 
 type LineStorageRow = {
   num: string;
+  s_num?: string;
+  e_num?: string;
   s_lat: number;
   s_lon: number;
   e_lat: number;
@@ -112,6 +114,8 @@ function buildLineModePayload(
 
   const payloadResults: LineResult[] = lineRows.map((row, index) => ({
     num: row.num,
+    s_num: row.s_num,
+    e_num: row.e_num,
     force_label: forceLabels.get(index) ?? String(index + 1),
     force_order: Number(forceLabels.get(index) ?? String(index + 1)),
     s_lat: roundCoordinate(row.s_lat),
@@ -295,6 +299,7 @@ type NumericPointLabel = {
   value: number;
   point: [number, number];
   signed: boolean;
+  sign: "+" | "-" | "";
 };
 
 function extractLineRowsWithFolderContext(features: GeometryFeature[], xmlDoc: XMLDocument): LineStorageRow[] {
@@ -496,8 +501,52 @@ function applyNumericPointLabelNames(rows: LineStorageRow[], candidates: LineEnd
     }
 
     rows[bestRowIndex].num = String(lineNumber);
+    const matchedCandidate = unresolved.find((candidate) => candidate.rowIndex === bestRowIndex);
+    if (matchedCandidate) {
+      const signedPair = resolveSignedEndpointPair(matchedCandidate, points, lineNumber);
+      if (signedPair) {
+        rows[bestRowIndex].s_num = signedPair.start;
+        rows[bestRowIndex].e_num = signedPair.end;
+      }
+    }
     usedRows.add(bestRowIndex);
   });
+}
+
+function resolveSignedEndpointPair(
+  candidate: LineEndpointCandidate,
+  points: NumericPointLabel[],
+  lineNumber: number,
+): { start: string; end: string } | null {
+  const signedPoints = points.filter((point) => point.sign === "+" || point.sign === "-");
+  if (!signedPoints.length) {
+    return null;
+  }
+
+  const [startLon, startLat] = candidate.start;
+  const [endLon, endLat] = candidate.end;
+  const byStart = [...signedPoints].sort((left, right) => (
+    squaredDistance(left.point[0], left.point[1], startLon, startLat)
+    - squaredDistance(right.point[0], right.point[1], startLon, startLat)
+  ));
+  const byEnd = [...signedPoints].sort((left, right) => (
+    squaredDistance(left.point[0], left.point[1], endLon, endLat)
+    - squaredDistance(right.point[0], right.point[1], endLon, endLat)
+  ));
+
+  const startPoint = byStart[0];
+  let endPoint = byEnd[0];
+  if (startPoint && endPoint && startPoint === endPoint && byEnd.length > 1) {
+    endPoint = byEnd.find((item) => item !== startPoint) ?? endPoint;
+  }
+
+  const lineText = String(Math.max(1, Math.round(lineNumber)));
+  const start = startPoint ? `${startPoint.sign}${lineText}` : "";
+  const end = endPoint ? `${endPoint.sign}${lineText}` : "";
+  if (!start && !end) {
+    return null;
+  }
+  return { start, end };
 }
 
 function collectNumericPointLabels(root: Element): NumericPointLabel[] {
@@ -530,6 +579,7 @@ function collectNumericPointLabels(root: Element): NumericPointLabel[] {
       value: Math.round(value),
       point: parsedPoints[0],
       signed: Boolean(parsed[1]),
+      sign: parsed[1] === "+" ? "+" : parsed[1] === "-" ? "-" : "",
     });
   });
   return labels;

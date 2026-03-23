@@ -2,6 +2,8 @@ import type { FeatureCollection, Geometry } from "geojson";
 
 export type LineResult = {
   num?: string;
+  s_num?: string;
+  e_num?: string;
   force_label?: string;
   force_order?: number;
   s_lat?: number;
