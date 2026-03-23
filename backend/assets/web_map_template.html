@@ -197,8 +197,8 @@
       padding: 6px 10px;
       display: grid;
       gap: 4px;
-      width: min(96vw, 1180px);
-      max-width: calc(100vw - 320px);
+      width: max-content;
+      max-width: clamp(280px, calc(100vw - 438px), 1120px);
       box-sizing: border-box;
     }
     .toolbar.is-collapsed {
@@ -209,6 +209,9 @@
     }
     .toolbar.is-collapsed .toolbar-collapse-hide {
       display: none !important;
+    }
+    .toolbar.is-collapsed #layerButton {
+      display: inline-flex !important;
     }
     .toolbar.is-collapsed .toolbar-row {
       justify-content: flex-end;
@@ -1626,6 +1629,55 @@
       transform-origin: 50% 50%;
       box-shadow: 0 5px 10px rgba(0, 0, 0, 0.24);
       pointer-events: none;
+    }
+    .cctv-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 30px;
+      padding: 3px 11px 3px 5px;
+      border-radius: 999px;
+      border: 1px solid #27b7ff;
+      background: rgba(250, 253, 255, 0.96);
+      color: #0f2233;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.24);
+      transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+    }
+    .cctv-chip:hover {
+      transform: translateY(-1px);
+      background: #ffffff;
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+    }
+    .cctv-chip:focus-visible {
+      outline: 2px solid rgba(0, 150, 255, 0.65);
+      outline-offset: 1px;
+    }
+    .cctv-chip__icon {
+      width: 20px;
+      height: 20px;
+      flex: 0 0 20px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #0f9cff 0%, #006ac6 100%);
+      color: #ffffff;
+      font-size: 12px;
+      font-weight: 900;
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 2px 8px rgba(0, 66, 124, 0.28);
+    }
+    .cctv-chip__text {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+    .cctv-chip-anchor {
+      pointer-events: auto;
     }
     .weather-overlay-timeline {
       position: absolute;
@@ -3390,6 +3442,28 @@
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
+      { key: 'cctv', label: 'CCTV', note: '국립공원 CCTV 라벨(링크 열기)', badge: 'CCTV' },
+    ];
+    const WEATHER_CCTV_DEFAULT_URL = 'https://www.knps.or.kr/';
+    const WEATHER_CCTV_KOREA_BOUNDS = [[33.0, 124.6], [38.8, 132.0]];
+    const WEATHER_CCTV_POINTS = [
+      { key: 'seorak-ulsanbawi', label: '설악산국립공원(울산바위)', lat: 38.1943, lng: 128.4745, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'bukhansan-jokduri', label: '북한산국립공원(족두리봉)', lat: 37.6124, lng: 126.9456, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'bukhansan-sapae', label: '북한산국립공원(사패산)', lat: 37.7224, lng: 127.0104, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'odaesan-duroryeong', label: '오대산국립공원(두로령)', lat: 37.7916, lng: 128.5645, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'chiaksan-sangwonsa', label: '치악산국립공원(상원사)', lat: 37.3955, lng: 128.0512, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'taebaek-cheonjedan', label: '태백산국립공원(천제단)', lat: 37.0964, lng: 128.9165, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'taean-hakampo', label: '태안해안국립공원(학암포)', lat: 36.9039, lng: 126.1536, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'gyeryong-cheonhwang', label: '계룡산국립공원(천황봉)', lat: 36.3437, lng: 127.2148, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'sobaek-yeonhwa', label: '소백산국립공원(연화봉)', lat: 36.9523, lng: 128.4844, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'juwang-giam', label: '주왕산국립공원(기암)', lat: 36.4259, lng: 129.1593, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'byeonsan-okmabong', label: '변산반도국립공원(옥마봉)', lat: 35.6739, lng: 126.5628, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'deogyu-seolcheon', label: '덕유산국립공원(설천봉)', lat: 35.8608, lng: 127.7462, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'jirisan-cheonwang', label: '지리산국립공원(천왕봉)', lat: 35.3369, lng: 127.7303, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'jirisan-jangteomok', label: '지리산국립공원(장터목)', lat: 35.3587, lng: 127.6797, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'hallyeo-gaksan', label: '한려해상국립공원(각산)', lat: 34.7955, lng: 128.0678, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'mudeung-jangbuljae', label: '무등산국립공원(장불재)', lat: 35.1157, lng: 126.9988, url: WEATHER_CCTV_DEFAULT_URL },
+      { key: 'dadohae-jiri', label: '다도해해상국립공원(지리청송해변)', lat: 34.3572, lng: 126.0325, url: WEATHER_CCTV_DEFAULT_URL },
     ];
     const WEATHER_OVERLAY_API_URL = 'https://api.open-meteo.com/v1/forecast';
     const WEATHER_OVERLAY_DAY_LABELS = ['오늘', '내일', '모레'];
@@ -3435,6 +3509,8 @@
     map.getPane('weatherSatellitePane').style.zIndex = '240';
     map.createPane('weatherOverlayPane');
     map.getPane('weatherOverlayPane').style.zIndex = '650';
+    map.createPane('cctvPane');
+    map.getPane('cctvPane').style.zIndex = '760';
     map.createPane('notamPane');
     map.getPane('notamPane').style.zIndex = '350';
 
@@ -3630,6 +3706,7 @@
     let layerDataPromise = null;
     const weatherGroups = {
       metar: L.layerGroup(),
+      cctv: L.layerGroup(),
     };
     const weatherOverlayGroups = {
       root: L.layerGroup(),
@@ -6346,6 +6423,9 @@
         return viewerAccess.weatherSatellite;
       }
       if (key === 'metar') {
+        return viewerAccess.weatherMetarTaf;
+      }
+      if (key === 'cctv') {
         return viewerAccess.weatherMetarTaf;
       }
       return false;
@@ -11726,11 +11806,13 @@
     }
 
     function buildLayerRows() {
-      if (!payload.has_layers || !layerCatalog.length) {
+      if (!layerCatalog.length) {
         layerButton.style.display = 'none';
         layerPanel.style.display = 'none';
         return;
       }
+      layerButton.style.display = '';
+      layerPanel.style.display = '';
 
       let airportRow = null;
       layerCatalog.forEach((layer) => {
@@ -12009,6 +12091,76 @@
       }
     }
 
+    function buildCctvChipHtml(item) {
+      const title = String(item && item.label ? item.label : 'CCTV');
+      const href = String(item && item.url ? item.url : WEATHER_CCTV_DEFAULT_URL);
+      return `
+        <a class="cctv-chip" href="${escapeHtml(href)}" target="_blank" rel="noreferrer noopener" title="${escapeHtml(title)} CCTV 열기">
+          <span class="cctv-chip__icon">🎥</span>
+          <span class="cctv-chip__text">${escapeHtml(title)}</span>
+        </a>
+      `;
+    }
+
+    function clearWeatherCctvLayer() {
+      weatherGroups.cctv.clearLayers();
+      if (map.hasLayer(weatherGroups.cctv)) {
+        map.removeLayer(weatherGroups.cctv);
+      }
+    }
+
+    function renderWeatherCctvLabels() {
+      weatherGroups.cctv.clearLayers();
+      WEATHER_CCTV_POINTS.forEach((item) => {
+        const lat = Number(item.lat);
+        const lng = Number(item.lng);
+        if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+          return;
+        }
+        const marker = L.marker([lat, lng], {
+          pane: 'cctvPane',
+          icon: L.divIcon({
+            className: 'cctv-chip-anchor',
+            html: buildCctvChipHtml(item),
+            iconSize: [230, 30],
+            iconAnchor: [0, 15],
+          }),
+          keyboard: false,
+        });
+        marker.on('add', () => {
+          const root = marker.getElement();
+          if (root) {
+            L.DomEvent.disableClickPropagation(root);
+            L.DomEvent.disableScrollPropagation(root);
+          }
+        });
+        marker.addTo(weatherGroups.cctv);
+      });
+      if (!map.hasLayer(weatherGroups.cctv)) {
+        weatherGroups.cctv.addTo(map);
+      }
+    }
+
+    async function syncWeatherCctvLayer() {
+      const controls = weatherControls.get('cctv');
+      if (!controls) {
+        return;
+      }
+      if (!controls.toggle.checked) {
+        clearWeatherCctvLayer();
+        resetWeatherBadge('cctv');
+        return;
+      }
+      setWeatherBadge('cctv', '로딩', 'loading');
+      renderWeatherCctvLabels();
+      map.fitBounds(WEATHER_CCTV_KOREA_BOUNDS, {
+        animate: true,
+        padding: [24, 24],
+        maxZoom: 8,
+      });
+      setWeatherBadge('cctv', `${WEATHER_CCTV_POINTS.length}개`, 'live');
+    }
+
     async function refreshWeatherAviationData(query, token) {
       if (!isWeatherEnabled('metar')) {
         weatherGroups.metar.clearLayers();
@@ -12244,6 +12396,8 @@
         } else if (layerKey === 'metar') {
           weatherGroups.metar.clearLayers();
           map.removeLayer(weatherGroups.metar);
+        } else if (layerKey === 'cctv') {
+          clearWeatherCctvLayer();
         }
         return;
       }
@@ -12252,11 +12406,17 @@
         await syncGk2aSatelliteLayer('satellite', 'satellite', 'weatherSatellitePane');
         return;
       }
+      if (layerKey === 'cctv') {
+        await syncWeatherCctvLayer();
+        return;
+      }
 
       if (!isWeatherEnabled(layerKey)) {
         if (layerKey === 'metar') {
           weatherGroups.metar.clearLayers();
           map.removeLayer(weatherGroups.metar);
+        } else if (layerKey === 'cctv') {
+          clearWeatherCctvLayer();
         }
         resetWeatherBadge(layerKey);
         return;
