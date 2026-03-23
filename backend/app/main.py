@@ -1202,12 +1202,20 @@ def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = 
 def _load_json(path: Path, default):
     if not path.exists():
         return default
+    raw: bytes | None = None
     try:
-        with path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        return data
+        raw = path.read_bytes()
     except Exception:
         return default
+    if raw is None:
+        return default
+
+    for encoding in ("utf-8", "utf-8-sig", "cp949", "euc-kr"):
+        try:
+            return json.loads(raw.decode(encoding))
+        except Exception:
+            continue
+    return default
 
 
 def _save_json(path: Path, data) -> None:
