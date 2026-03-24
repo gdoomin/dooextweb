@@ -162,6 +162,12 @@ type StackEntry = {
   polygonCount: number;
 };
 
+type ViewerTitleFileLabel = {
+  order: number;
+  primary: string;
+  secondary?: string;
+};
+
 type Identity = {
   id: string;
   email: string;
@@ -402,6 +408,75 @@ function buildLocalizedFileDisplay(filename: string): { primary: string; seconda
   return { primary, secondary: `(${regionKo} ${unitText})` };
 }
 
+function canUseLocalizedViewerTitle(response: ConvertResponse): boolean {
+  const mode = String(response.mode || "").trim().toLowerCase();
+  const sourceFormat = String(response.map_payload?.source_format || "").trim().toLowerCase();
+  if (mode !== "linestring") {
+    return false;
+  }
+  if (sourceFormat === "kml" || sourceFormat === "kmz") {
+    return true;
+  }
+  if (!sourceFormat) {
+    const filename = String(response.filename || "").trim().toLowerCase();
+    const segments = filename.split(".").map((item) => item.trim()).filter(Boolean);
+    return segments.includes("kml") || segments.includes("kmz");
+  }
+  return false;
+}
+
+function buildViewerTitleFileLabel(response: ConvertResponse, order: number): ViewerTitleFileLabel | null {
+  if (!canUseLocalizedViewerTitle(response)) {
+    return null;
+  }
+  const sourceName = String(response.filename || response.project_name || "").trim();
+  const localized = buildLocalizedFileDisplay(sourceName);
+  if (!localized.primary) {
+    return null;
+  }
+  return {
+    order,
+    primary: localized.primary,
+    secondary: localized.secondary || undefined,
+  };
+}
+
+function attachViewerTitleLabelToPayload(payload: ClientConvertRequestBody): ClientConvertRequestBody {
+  const mode = String(payload.mode || "").trim().toLowerCase();
+  const sourceFormat = String(payload.map_payload?.source_format || "").trim().toLowerCase();
+  const sourceName = String(payload.filename || payload.project_name || "").trim();
+  const localized = buildLocalizedFileDisplay(sourceName);
+  const isEligible = mode === "linestring" && (sourceFormat === "kml" || sourceFormat === "kmz");
+  const titleFileLabels = isEligible && localized.primary
+    ? [
+        {
+          order: 1,
+          primary: localized.primary,
+          secondary: localized.secondary || undefined,
+        },
+      ]
+    : [];
+
+  return {
+    ...payload,
+    map_payload: {
+      ...(payload.map_payload || {}),
+      title_file_labels: titleFileLabels,
+    },
+  };
+}
+
+function attachViewerTitleLabelToResponse(response: ConvertResponse): ConvertResponse {
+  const label = buildViewerTitleFileLabel(response, 1);
+  return {
+    ...response,
+    map_payload: {
+      ...(response.map_payload || {}),
+      title_file_labels: label ? [label] : [],
+    },
+  };
+}
+
 function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
   const lineResults = stack.flatMap((entry) => extractLineResults(entry.response));
   const polygons = stack.flatMap((entry) => extractPolygonResults(entry.response));
@@ -413,6 +488,9 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
       ? stack[0].response.filename
       : `${projectName}.kml`;
   const allFeatures = stack.flatMap((entry) => extractGeoJsonFeatures(entry.response));
+  const titleFileLabels = stack
+    .map((entry, index) => buildViewerTitleFileLabel(entry.response, index + 1))
+    .filter((item): item is ViewerTitleFileLabel => Boolean(item));
   const mapPayload: MapPayload = {
     project_name: projectName,
     mode,
@@ -433,6 +511,7 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
           } as FeatureCollection<Geometry | null>)
         : undefined,
     source_format: "kml",
+    title_file_labels: titleFileLabels,
   };
 
   return {
@@ -496,15 +575,14 @@ export function HomeScreen({
   const isAuthenticated = Boolean(userId);
   const fileDisplay = useMemo(() => {
     if (!stackItems.length) {
-      return { primary: "", secondary: "" };
+      return { primary: "" };
     }
     if (stackItems.length === 1) {
       const filename = stackItems[0].response.filename || stackItems[0].response.project_name || "";
-      return buildLocalizedFileDisplay(filename);
+      return { primary: stripDisplayExtensions(filename) || filename };
     }
     return {
       primary: `${stackItems.length}개 파일 중첩: ${stackItems.map((entry) => entry.response.filename).join(", ")}`,
-      secondary: "",
     };
   }, [stackItems]);
 
@@ -870,7 +948,7 @@ export function HomeScreen({
     await waitForNextPaint();
 
     try {
-      const convertedForUpload = await convertKmlFileInBrowser(file);
+      const convertedForUpload = attachViewerTitleLabelToPayload(await convertKmlFileInBrowser(file));
       setStatusMessage("변환이 완료되어 서버에 저장하는 중입니다...");
 
       const identity = await resolveCurrentIdentity();
@@ -937,11 +1015,12 @@ export function HomeScreen({
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
-      setStackItems([createStackEntry(reopened)]);
-      setResponse(reopened);
-      saveLastConvert(reopened);
+      const normalized = attachViewerTitleLabelToResponse(reopened);
+      setStackItems([createStackEntry(normalized)]);
+      setResponse(normalized);
+      saveLastConvert(normalized);
       setStatusTone("success");
-      setStatusMessage(`${reopened.project_name || reopened.filename} 결과를 다시 열었습니다.`);
+      setStatusMessage(`${normalized.project_name || normalized.filename} 결과를 다시 열었습니다.`);
     } catch (error) {
       setStatusTone("error");
       setStatusMessage(describeUnknownError(error, "히스토리 항목을 다시 열지 못했습니다."));
@@ -967,13 +1046,14 @@ export function HomeScreen({
 
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
-      const duplicateExists = stackItems.some((entry) => isSameSourceFile(entry.response, reopened));
+      const normalized = attachViewerTitleLabelToResponse(reopened);
+      const duplicateExists = stackItems.some((entry) => isSameSourceFile(entry.response, normalized));
       if (duplicateExists) {
         setStatusTone("error");
         setStatusMessage("같은 파일입니다. 스택에 추가하지 않았습니다.");
         return;
       }
-      const nextStack = [...stackItems, createStackEntry(reopened)];
+      const nextStack = [...stackItems, createStackEntry(normalized)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
       setStatusTone("success");
@@ -1465,9 +1545,8 @@ export function HomeScreen({
                 )}
               </div>
               <div className="doo-path-row">
-                <div className={`doo-path-display${fileDisplay.secondary ? " has-secondary" : ""}`} aria-live="polite">
+                <div className="doo-path-display" aria-live="polite">
                   <span className="doo-path-primary">{fileDisplay.primary || "선택된 파일이 없습니다."}</span>
-                  {fileDisplay.secondary ? <span className="doo-path-secondary">{fileDisplay.secondary}</span> : null}
                 </div>
                 <button
                   type="button"

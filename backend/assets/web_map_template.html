@@ -116,6 +116,29 @@
       color: #79c0ff;
       font-size: 18px;
       line-height: 1.2;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      max-height: 140px;
+      overflow-y: auto;
+    }
+    .titlebar h1 .title-file-item {
+      display: block;
+    }
+    .titlebar h1 .title-file-primary {
+      display: block;
+      color: #79c0ff;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .titlebar h1 .title-file-secondary {
+      display: block;
+      margin-top: 2px;
+      color: #c7d7e8;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.2;
     }
     .titlebar p {
       margin: 0;
@@ -3667,9 +3690,60 @@
       layerButton.style.display = 'inline-flex';
     }
 
-    if (projectNameEl) {
-      projectNameEl.textContent = payload.project_name || '';
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
+
+    function normalizeTitleFileLabels() {
+      const source = Array.isArray(payload.title_file_labels) ? payload.title_file_labels : [];
+      return source
+        .map((item, index) => {
+          if (!item || typeof item !== 'object') {
+            return null;
+          }
+          const primary = String(item.primary || '').trim();
+          if (!primary) {
+            return null;
+          }
+          const rawOrder = Number(item.order);
+          const order = Number.isFinite(rawOrder) && rawOrder > 0 ? Math.floor(rawOrder) : (index + 1);
+          const secondary = String(item.secondary || '').trim();
+          return {
+            order,
+            primary,
+            secondary,
+          };
+        })
+        .filter((item) => !!item);
+    }
+
+    function renderProjectTitle() {
+      if (!projectNameEl) {
+        return;
+      }
+      const labels = normalizeTitleFileLabels();
+      if (!labels.length) {
+        projectNameEl.textContent = payload.project_name || '';
+        return;
+      }
+      const numbered = labels.length > 1;
+      const html = labels.map((item) => {
+        const prefix = numbered ? `${item.order}. ` : '';
+        const primary = `${prefix}${item.primary}`;
+        const secondary = item.secondary
+          ? `<span class="title-file-secondary">${escapeHtml(item.secondary)}</span>`
+          : '';
+        return `<span class="title-file-item"><span class="title-file-primary">${escapeHtml(primary)}</span>${secondary}</span>`;
+      }).join('');
+      projectNameEl.innerHTML = html;
+    }
+
+    renderProjectTitle();
     if (previewGateEnabled) {
       document.body.classList.add('preview-gated');
       if (payload.signup_url) {

@@ -62,6 +62,11 @@ export type MapPayload = {
   kmz_visual?: KmzVisualPayload;
   simplify_tolerance?: number;
   coordinate_count?: number;
+  title_file_labels?: Array<{
+    order?: number;
+    primary?: string;
+    secondary?: string;
+  }>;
 };
 
 export type ConvertResponse = {
