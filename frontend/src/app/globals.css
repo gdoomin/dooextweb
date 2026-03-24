@@ -2134,6 +2134,30 @@ textarea {
   font-size: 12px;
 }
 
+.popup-admin-usage-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.popup-admin-usage-tab {
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  background: rgba(18, 31, 48, 0.8);
+  color: #c7d8e8;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-admin-usage-tab.is-active {
+  color: #f8fbff;
+  background: linear-gradient(180deg, #2276d5 0%, #13549f 100%);
+  border-color: rgba(164, 213, 255, 0.52);
+}
+
 .popup-admin-usage-error {
   margin: 0;
   color: #ff9e9e;

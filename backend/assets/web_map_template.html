@@ -2157,6 +2157,15 @@
       .capture-card {
         width: min(96vw, 760px);
       }
+      .titlebar {
+        top: calc(env(safe-area-inset-top, 0px) + 84px);
+        left: 8px;
+        right: 8px;
+        width: auto;
+        min-width: 0;
+        max-width: none;
+        padding: 10px 12px;
+      }
       .toolbar {
         --tool-card-width: clamp(52px, 11vw, 64px);
         --tool-card-height: clamp(38px, 8.6vw, 46px);

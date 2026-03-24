@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 
 import { API_BASE_URL } from "@/lib/convert";
 
@@ -94,6 +94,14 @@ function formatDate(value: string): string {
   return date.toLocaleString("ko-KR");
 }
 
+function parseDateMs(value: string): number {
+  if (!value) {
+    return 0;
+  }
+  const time = Date.parse(value);
+  return Number.isFinite(time) ? time : 0;
+}
+
 export default function PopupAdminPage() {
   const [password, setPassword] = useState("");
   const [verified, setVerified] = useState(false);
@@ -108,6 +116,42 @@ export default function PopupAdminPage() {
   const [usageRows, setUsageRows] = useState<AdminUsageRow[]>([]);
   const [usageError, setUsageError] = useState("");
   const [isUsageLoading, setIsUsageLoading] = useState(false);
+  const [usageTab, setUsageTab] = useState<"usage" | "recent">("usage");
+
+  const displayedUsageRows = useMemo(() => {
+    const nextRows = [...usageRows];
+    if (usageTab === "recent") {
+      nextRows.sort((a, b) => {
+        const recentDelta = parseDateMs(b.last_uploaded_at) - parseDateMs(a.last_uploaded_at);
+        if (recentDelta !== 0) {
+          return recentDelta;
+        }
+        const jobsDelta = b.total_jobs - a.total_jobs;
+        if (jobsDelta !== 0) {
+          return jobsDelta;
+        }
+        return (b.user_email || "").localeCompare(a.user_email || "");
+      });
+      return nextRows;
+    }
+
+    nextRows.sort((a, b) => {
+      const monthDelta = b.monthly_kml_used - a.monthly_kml_used;
+      if (monthDelta !== 0) {
+        return monthDelta;
+      }
+      const totalDelta = b.total_kml_used - a.total_kml_used;
+      if (totalDelta !== 0) {
+        return totalDelta;
+      }
+      const jobsDelta = b.total_jobs - a.total_jobs;
+      if (jobsDelta !== 0) {
+        return jobsDelta;
+      }
+      return parseDateMs(b.last_uploaded_at) - parseDateMs(a.last_uploaded_at);
+    });
+    return nextRows;
+  }, [usageRows, usageTab]);
 
   async function loadUsage(nextPassword: string) {
     setIsUsageLoading(true);
@@ -275,6 +319,26 @@ export default function PopupAdminPage() {
               <p className="popup-admin-usage-meta">
                 기준 월: <strong>{usageMonthKey || "-"}</strong>
               </p>
+              <div className="popup-admin-usage-tabs" role="tablist" aria-label="사용자 사용량 정렬 탭">
+                <button
+                  type="button"
+                  role="tab"
+                  className={`popup-admin-usage-tab ${usageTab === "usage" ? "is-active" : ""}`}
+                  aria-selected={usageTab === "usage"}
+                  onClick={() => setUsageTab("usage")}
+                >
+                  사용량 순
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className={`popup-admin-usage-tab ${usageTab === "recent" ? "is-active" : ""}`}
+                  aria-selected={usageTab === "recent"}
+                  onClick={() => setUsageTab("recent")}
+                >
+                  최근 접속 순
+                </button>
+              </div>
               {usageError ? <p className="popup-admin-usage-error">{usageError}</p> : null}
               <div className="popup-admin-usage-table-wrap">
                 <table className="popup-admin-usage-table">
@@ -291,14 +355,14 @@ export default function PopupAdminPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {usageRows.length === 0 ? (
+                    {displayedUsageRows.length === 0 ? (
                       <tr>
                         <td colSpan={8} className="popup-admin-usage-empty">
                           표시할 사용량 데이터가 없습니다.
                         </td>
                       </tr>
                     ) : (
-                      usageRows.map((row) => (
+                      displayedUsageRows.map((row) => (
                         <tr key={`${row.user_id || "unknown"}-${row.user_email || "no-email"}`}>
                           <td>{row.user_email || "-"}</td>
                           <td>{row.user_id || "-"}</td>
