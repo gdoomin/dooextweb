@@ -1521,24 +1521,37 @@ export function HomeScreen({
               <div className="doo-stack-row">
                 {stackItems.length ? (
                   <div className="doo-stack-chips">
-                    {stackItems.map((entry, index) => (
-                      <div key={entry.id} className="doo-stack-chip">
-                        <span className="doo-stack-chip-index">{index + 1}</span>
-                        <span className="doo-stack-chip-name" title={entry.response.filename}>
-                          {entry.response.filename}
-                        </span>
-                        <button
-                          type="button"
-                          className="doo-stack-chip-remove"
-                          onClick={() => void removeStackEntry(entry.id)}
-                          aria-label={`${entry.response.filename} 제거`}
-                          title="스택에서 제거"
-                          disabled={isLoading}
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
+                    {stackItems.map((entry, index) => {
+                      const chipDisplay = buildLocalizedFileDisplay(entry.response.filename || "");
+                      return (
+                        <div key={entry.id} className="doo-stack-chip">
+                          <span className="doo-stack-chip-index">{index + 1}</span>
+                          <span
+                            className={`doo-stack-chip-name${chipDisplay.secondary ? " has-secondary" : ""}`}
+                            title={entry.response.filename}
+                          >
+                            <span className="doo-stack-chip-name-primary">
+                              {chipDisplay.primary || entry.response.filename}
+                            </span>
+                            {chipDisplay.secondary ? (
+                              <span className="doo-stack-chip-name-secondary">
+                                {chipDisplay.secondary}
+                              </span>
+                            ) : null}
+                          </span>
+                          <button
+                            type="button"
+                            className="doo-stack-chip-remove"
+                            onClick={() => void removeStackEntry(entry.id)}
+                            aria-label={`${entry.response.filename} 제거`}
+                            title="스택에서 제거"
+                            disabled={isLoading}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : (
                   <div className="doo-stack-empty">중첩된 파일이 없습니다. 파일 열기 또는 파일 추가를 사용해 주세요.</div>

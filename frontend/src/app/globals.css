@@ -591,15 +591,16 @@ textarea {
 }
 
 .doo-stack-chip {
-  display: inline-flex;
+  display: inline-grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 6px;
-  height: 38px;
+  min-height: 42px;
   min-width: 148px;
   max-width: 260px;
   border: 1px solid rgba(121, 192, 255, 0.24);
   border-radius: 12px;
-  padding: 0 10px;
+  padding: 4px 10px;
   background: rgba(13, 21, 31, 0.88);
   color: #c9d1d9;
 }
@@ -619,12 +620,33 @@ textarea {
 }
 
 .doo-stack-chip-name {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 1px;
+  min-width: 0;
+}
+
+.doo-stack-chip-name-primary {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
   font-weight: 600;
+}
+
+.doo-stack-chip-name-secondary {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #9cc8f0;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.1;
 }
 
 .doo-stack-chip-remove {
@@ -687,7 +709,7 @@ textarea {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #e6edf3;
-  font-size: 26px;
+  font-size: 18px;
   font-weight: 700;
   line-height: 1.2;
 }
@@ -1498,7 +1520,7 @@ textarea {
   }
 
   .doo-path-primary {
-    font-size: 19px;
+    font-size: 14px;
   }
 
   .doo-path-display.has-secondary .doo-path-primary {
@@ -1512,12 +1534,16 @@ textarea {
   .doo-stack-chip {
     min-width: 120px;
     max-width: 200px;
-    height: 34px;
+    min-height: 38px;
     padding: 0 8px;
   }
 
-  .doo-stack-chip-name {
+  .doo-stack-chip-name-primary {
     font-size: 12px;
+  }
+
+  .doo-stack-chip-name-secondary {
+    font-size: 10px;
   }
 
   .doo-stack-summary {
