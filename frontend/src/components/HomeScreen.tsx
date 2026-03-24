@@ -16,6 +16,7 @@ import {
   type MapPayload,
   type PolygonResult,
   type ServerHistoryItem,
+  deleteAllHistoryItems,
   deleteHistoryItem,
   cancelBillingSubscription,
   fetchBillingStatus,
@@ -320,6 +321,12 @@ const STACK_AIRCRAFT_SPEED_KNOTS = 130;
 const STACK_KNOT_TO_KMH = 1.852;
 const STACK_TURN_MINUTES_PER_LINE = 3;
 const STACK_EARTH_RADIUS_KM = 6371.0088;
+const DISPLAY_EXTENSION_PATTERN = /\.(kml|kmz|gpx|geojson|json|csv|txt)$/i;
+const REGION_KO_LABELS: Array<{ key: string; label: string }> = [
+  { key: "gyeongbuk", label: "경북" },
+  { key: "gangwon", label: "강원" },
+  { key: "ansan", label: "안산" },
+];
 
 function degreesToRadians(value: number): number {
   return (value * Math.PI) / 180;
@@ -353,6 +360,46 @@ function buildStackMetaText(stackCount: number, lineResults: LineResult[], polyg
   const flightHours = totalLengthKm / (STACK_AIRCRAFT_SPEED_KNOTS * STACK_KNOT_TO_KMH);
   const totalCaptureHours = flightHours + ((lineResults.length * STACK_TURN_MINUTES_PER_LINE) / 60);
   return `${stackCount}개 파일 중첩 · 라인 ${lineResults.length}개 · 폴리곤 ${polygons.length}개 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간: 대략 ${totalCaptureHours.toFixed(1)}시간`;
+}
+
+function stripDisplayExtensions(filename: string): string {
+  let text = String(filename || "").trim();
+  while (DISPLAY_EXTENSION_PATTERN.test(text)) {
+    text = text.replace(DISPLAY_EXTENSION_PATTERN, "").trim();
+  }
+  return text;
+}
+
+function resolveKoreanRegionLabel(filenameWithoutExt: string): string {
+  const normalized = String(filenameWithoutExt || "").toLowerCase();
+  if (!normalized) {
+    return "";
+  }
+  const matched = REGION_KO_LABELS.find((item) => normalized.includes(item.key));
+  return matched ? matched.label : "";
+}
+
+function resolveCmUnitText(filenameWithoutExt: string): string {
+  const match = String(filenameWithoutExt || "").match(/(\d+(?:\.\d+)?)\s*cm/i);
+  if (!match) {
+    return "";
+  }
+  return `${match[1]}cm`;
+}
+
+function buildLocalizedFileDisplay(filename: string): { primary: string; secondary: string } {
+  const stripped = stripDisplayExtensions(filename);
+  const primary = stripped || String(filename || "").trim();
+  if (!primary) {
+    return { primary: "", secondary: "" };
+  }
+
+  const regionKo = resolveKoreanRegionLabel(primary);
+  const unitText = resolveCmUnitText(primary);
+  if (!regionKo || !unitText) {
+    return { primary, secondary: "" };
+  }
+  return { primary, secondary: `(${regionKo} ${unitText})` };
 }
 
 function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
@@ -434,6 +481,7 @@ export function HomeScreen({
   const [historyOpeningId, setHistoryOpeningId] = useState("");
   const [historyAppendingId, setHistoryAppendingId] = useState("");
   const [historyDeletingId, setHistoryDeletingId] = useState("");
+  const [historyDeletingAll, setHistoryDeletingAll] = useState(false);
   const [userEmail, setUserEmail] = useState(initialUserEmail);
   const [userId, setUserId] = useState(initialUserId);
   const [accessToken, setAccessToken] = useState("");
@@ -446,14 +494,18 @@ export function HomeScreen({
   const [showPlanGuide, setShowPlanGuide] = useState(false);
 
   const isAuthenticated = Boolean(userId);
-  const pathLabel = useMemo(() => {
+  const fileDisplay = useMemo(() => {
     if (!stackItems.length) {
-      return "";
+      return { primary: "", secondary: "" };
     }
     if (stackItems.length === 1) {
-      return stackItems[0].response.filename || "";
+      const filename = stackItems[0].response.filename || stackItems[0].response.project_name || "";
+      return buildLocalizedFileDisplay(filename);
     }
-    return `${stackItems.length}개 파일 중첩: ${stackItems.map((entry) => entry.response.filename).join(", ")}`;
+    return {
+      primary: `${stackItems.length}개 파일 중첩: ${stackItems.map((entry) => entry.response.filename).join(", ")}`,
+      secondary: "",
+    };
   }, [stackItems]);
 
   const stackSummary = useMemo(() => {
@@ -481,7 +533,7 @@ export function HomeScreen({
 
   const modeChipLabel = stackItems.length > 1 ? "중첩" : response ? modeBadgeLabel[response.mode] : "";
   const canUseHistory = isAuthenticated;
-  const isViewerBusy = isLoading || Boolean(historyOpeningId) || Boolean(historyAppendingId);
+  const isViewerBusy = isLoading || Boolean(historyOpeningId) || Boolean(historyAppendingId) || historyDeletingAll;
   const canOpenViewer = Boolean(response?.job_id) && !isViewerBusy;
   const showLoadingBadge = statusTone === "loading" && (isViewerBusy || LOADING_STATUS_KEYWORDS.test(statusMessage));
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
@@ -1018,6 +1070,43 @@ export function HomeScreen({
     }
   }
 
+  async function handleHistoryDeleteAll() {
+    if (!canUseHistory) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 히스토리 삭제를 사용할 수 없습니다.");
+      return;
+    }
+    if (!requireAuth("개인 히스토리를 삭제하려면 로그인해 주세요.")) {
+      return;
+    }
+    if (!historyItems.length) {
+      setStatusTone("idle");
+      setStatusMessage("삭제할 히스토리가 없습니다.");
+      return;
+    }
+    const confirmed = window.confirm("모든 파일이 삭제됩니다");
+    if (!confirmed) {
+      return;
+    }
+
+    setHistoryDeletingAll(true);
+    setStatusTone("loading");
+    setStatusMessage("히스토리를 전체삭제하는 중입니다...");
+    await waitForNextPaint();
+
+    try {
+      await deleteAllHistoryItems(userId, userEmail, accessToken);
+      await refreshHistory();
+      setStatusTone("success");
+      setStatusMessage("히스토리를 전체삭제했습니다.");
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "히스토리 전체삭제에 실패했습니다."));
+    } finally {
+      setHistoryDeletingAll(false);
+    }
+  }
+
   async function copyClipboard() {
     if (!response?.text_output) {
       setStatusTone("error");
@@ -1376,7 +1465,10 @@ export function HomeScreen({
                 )}
               </div>
               <div className="doo-path-row">
-                <input className="doo-path-input" value={pathLabel} readOnly placeholder="선택된 파일이 없습니다." />
+                <div className={`doo-path-display${fileDisplay.secondary ? " has-secondary" : ""}`} aria-live="polite">
+                  <span className="doo-path-primary">{fileDisplay.primary || "선택된 파일이 없습니다."}</span>
+                  {fileDisplay.secondary ? <span className="doo-path-secondary">{fileDisplay.secondary}</span> : null}
+                </div>
                 <button
                   type="button"
                   className={`doo-open-button${isLoading ? " is-loading" : ""}`}
@@ -1441,7 +1533,19 @@ export function HomeScreen({
                   <div>
                     <div className="doo-panel-title">히스토리</div>
                   </div>
-                  {isAuthenticated && canUseHistory ? <span className="doo-panel-count">{historyItems.length}건</span> : null}
+                  {isAuthenticated && canUseHistory ? (
+                    <div className="doo-panel-head-actions">
+                      <span className="doo-panel-count">{historyItems.length}건</span>
+                      <button
+                        type="button"
+                        className="doo-history-delete-all"
+                        onClick={() => void handleHistoryDeleteAll()}
+                        disabled={historyLoading || historyDeletingAll || !historyItems.length || Boolean(historyOpeningId) || Boolean(historyAppendingId) || Boolean(historyDeletingId)}
+                      >
+                        {historyDeletingAll ? "삭제 중..." : "전체삭제"}
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
 
                 {!isAuthenticated ? (
@@ -1473,7 +1577,7 @@ export function HomeScreen({
                               type="button"
                               className="doo-history-open"
                               onClick={() => handleHistoryOpen(item)}
-                              disabled={isOpening || isAppending || isDeleting}
+                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
                             >
                               {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
                             </button>
@@ -1481,7 +1585,7 @@ export function HomeScreen({
                               type="button"
                               className="doo-history-append"
                               onClick={() => void handleHistoryAppend(item)}
-                              disabled={isOpening || isAppending || isDeleting}
+                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
                             >
                               {isAppending ? "추가 중..." : "스택추가"}
                             </button>
@@ -1491,7 +1595,7 @@ export function HomeScreen({
                               title="히스토리 삭제"
                               aria-label="히스토리 삭제"
                               onClick={() => handleHistoryDelete(item)}
-                              disabled={isOpening || isAppending || isDeleting}
+                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
                             >
                               {isDeleting ? "..." : "🗑"}
                             </button>

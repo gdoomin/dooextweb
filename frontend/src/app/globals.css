@@ -665,6 +665,49 @@ textarea {
   font-size: 20px;
 }
 
+.doo-path-display {
+  min-width: 0;
+  flex: 1 1 420px;
+  min-height: 66px;
+  border: 1px solid #30363d;
+  background: #0d1117;
+  color: #c9d1d9;
+  padding: 8px 18px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.doo-path-primary {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e6edf3;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.doo-path-display.has-secondary .doo-path-primary {
+  font-size: 24px;
+}
+
+.doo-path-secondary {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #9cc8f0;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
 .doo-open-button {
   position: relative;
   display: inline-flex;
@@ -889,6 +932,43 @@ textarea {
   font-size: 11px;
   font-weight: 700;
   white-space: nowrap;
+}
+
+.doo-panel-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doo-history-delete-all {
+  border: 0;
+  border-radius: 10px;
+  background: #4a1f28;
+  color: #ffd8de;
+  padding: 8px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-delete-all:hover:enabled {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 18px rgba(255, 153, 169, 0.2);
+}
+
+.doo-history-delete-all:active:enabled {
+  transform: translateY(1px) scale(0.985);
+}
+
+.doo-history-delete-all:disabled {
+  cursor: default;
+  opacity: 0.72;
 }
 
 .doo-gate-banner {
@@ -1411,6 +1491,22 @@ textarea {
 @media (max-width: 720px) {
   .doo-path-row {
     flex-direction: column;
+  }
+
+  .doo-path-display {
+    width: 100%;
+  }
+
+  .doo-path-primary {
+    font-size: 19px;
+  }
+
+  .doo-path-display.has-secondary .doo-path-primary {
+    font-size: 17px;
+  }
+
+  .doo-path-secondary {
+    font-size: 14px;
   }
 
   .doo-stack-chip {

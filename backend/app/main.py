@@ -667,6 +667,65 @@ def _history_supabase_delete(user_id: str, user_email: str, job_id: str, access_
         return False
 
 
+def _history_supabase_delete_all(user_id: str, user_email: str, access_token: str = "") -> int:
+    config = _history_supabase_config()
+    if config is None:
+        return 0
+
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    if not normalized_user_id and not normalized_email:
+        return 0
+
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return 0
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    if not supabase_url or not table_name:
+        return 0
+
+    if normalized_user_id and normalized_email:
+        encoded_user_id = quote(normalized_user_id, safe="-_.")
+        encoded_email = quote(normalized_email, safe="@-_.")
+        query_items = [("or", f"(user_id.eq.{encoded_user_id},user_email.eq.{encoded_email})")]
+    elif normalized_user_id:
+        query_items = [("user_id", f"eq.{quote(normalized_user_id, safe='-_.')}")]
+    else:
+        query_items = [("user_email", f"eq.{quote(normalized_email, safe='@-_.')}")]
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}",
+        method="DELETE",
+        headers={
+            **headers,
+            "Prefer": "count=exact,return=representation",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+            count_header = response.headers.get("Content-Range")
+    except Exception:
+        return 0
+
+    if raw:
+        try:
+            payload = json.loads(raw.decode("utf-8"))
+            if isinstance(payload, list):
+                return len(payload)
+        except Exception:
+            pass
+
+    if count_header and "/" in count_header:
+        try:
+            return max(0, int(str(count_header).split("/")[-1]))
+        except ValueError:
+            return 0
+    return 0
+
+
 def _job_payload_supabase_config() -> dict[str, str] | None:
     base = _history_supabase_config()
     if base is None:
@@ -2606,6 +2665,20 @@ def _remove_user_history_item(user_id: str, user_email: str, job_id: str) -> boo
     return removed
 
 
+def _clear_user_history_items(user_id: str, user_email: str) -> int:
+    removed_count = 0
+    history_paths = _history_paths_for_identity(user_id, user_email)
+    for path in history_paths:
+        existing = _load_json(path, [])
+        if not isinstance(existing, list):
+            continue
+        filtered = [item for item in existing if isinstance(item, dict)]
+        removed_count += len(filtered)
+        if path.exists():
+            path.unlink(missing_ok=True)
+    return removed_count
+
+
 def _load_user_history(
     user_id: str,
     user_email: str = "",
@@ -3037,6 +3110,26 @@ def get_history(request: Request):
                 billing_status=billing_status,
                 access_token=_extract_bearer_token(request),
             )
+        }
+    )
+
+
+@app.delete("/api/history")
+def delete_history_all(request: Request):
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    access_token = _extract_bearer_token(request)
+    status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    items = _load_user_history(user_id, user_email, billing_status=status, access_token=access_token)
+
+    local_deleted_count = _clear_user_history_items(user_id, user_email)
+    supabase_deleted_count = _history_supabase_delete_all(user_id, user_email, access_token=access_token)
+    if local_deleted_count <= 0 and supabase_deleted_count <= 0:
+        local_deleted_count = len(items)
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "deleted_count": max(local_deleted_count, supabase_deleted_count),
         }
     )
 

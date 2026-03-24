@@ -418,6 +418,17 @@ export async function deleteHistoryItem(jobId: string, userId: string, userEmail
   }
 }
 
+export async function deleteAllHistoryItems(userId: string, userEmail = "", accessToken = ""): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/history`, {
+    method: "DELETE",
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "히스토리 전체삭제에 실패했습니다."));
+  }
+}
+
 export async function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
   const response = await fetch(`${API_BASE_URL}/api/billing/status`, {
     headers: buildUserHeaders(userId, userEmail, accessToken),
