@@ -115,10 +115,17 @@ export type BillingStatusResponse = {
   user_id: string;
   user_email: string;
   plan_code: "free" | "lite" | "pro" | "legacy";
+  base_plan_code?: "free" | "lite" | "pro" | "legacy";
   legacy_full_access: boolean;
   is_new_pricing_user: boolean;
   subscription_status: string;
   subscription_active: boolean;
+  promo_active?: boolean;
+  promo_code?: string;
+  promo_plan_code?: "lite" | "pro" | "";
+  promo_applied_at?: string;
+  promo_expires_at?: string;
+  promo_remaining_days?: number;
   monthly_kml_limit: number;
   monthly_kml_used: number;
   monthly_kml_remaining: number;
@@ -136,6 +143,12 @@ export type BillingStartResponse = {
   price_krw: number;
   payurl: string;
   rebill_no: string;
+};
+
+export type BillingPromoRedeemResponse = {
+  ok: boolean;
+  message: string;
+  billing_status: BillingStatusResponse;
 };
 
 export type ClientConvertRequestBody = {
@@ -506,6 +519,30 @@ export async function cancelBillingSubscription(
   if (!response.ok) {
     throw new Error(extractErrorMessage(body, rawText, "?닌됰즴 ???????쎈솭??됰뮸??덈뼄."));
   }
+}
+
+export async function redeemBillingPromoCode(
+  code: string,
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<BillingPromoRedeemResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/billing/promo-code/redeem`, {
+    method: "POST",
+    headers: {
+      ...buildUserHeaders(userId, userEmail, accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ code }),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "프로모션 코드 적용에 실패했습니다."));
+  }
+  if (!body || typeof body !== "object") {
+    throw new Error("프로모션 코드 응답을 확인하지 못했습니다.");
+  }
+  return body as BillingPromoRedeemResponse;
 }
 
 export async function fetchHomeSyncState(

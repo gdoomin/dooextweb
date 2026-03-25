@@ -343,6 +343,11 @@ textarea {
   gap: 8px;
 }
 
+.doo-billing-promo-row {
+  display: grid;
+  gap: 8px;
+}
+
 .doo-billing-phone {
   display: grid;
   gap: 6px;
@@ -375,6 +380,11 @@ textarea {
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
+}
+
+.doo-billing-promo-active {
+  color: #24436a;
+  font-weight: 800;
 }
 
 .doo-plan-button-lite {
@@ -2190,7 +2200,7 @@ textarea {
 }
 
 .popup-admin-card {
-  width: min(100%, 640px);
+  width: min(100%, 1100px);
   display: grid;
   gap: 14px;
   padding: 24px;
@@ -2224,6 +2234,9 @@ textarea {
 }
 
 .popup-admin-form input[type="password"],
+.popup-admin-form input[type="text"],
+.popup-admin-form input[type="number"],
+.popup-admin-form select,
 .popup-admin-form textarea {
   width: 100%;
   border-radius: 12px;
@@ -2399,4 +2412,62 @@ textarea {
 .popup-admin-usage-empty {
   text-align: center !important;
   color: #8aa0b8 !important;
+}
+
+.popup-admin-inline-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.popup-admin-inline-grid label {
+  display: grid;
+  gap: 8px;
+}
+
+.popup-admin-promo-status {
+  min-height: 18px;
+  font-size: 12px;
+}
+
+.popup-admin-promo-status.is-success {
+  color: #7be495;
+}
+
+.popup-admin-promo-status.is-error {
+  color: #ff9e9e;
+}
+
+.popup-admin-promo-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.popup-admin-promo-toggle {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  background: rgba(17, 33, 52, 0.95);
+  color: #e8f3ff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.popup-admin-promo-toggle.is-disabled {
+  background: rgba(72, 24, 24, 0.94);
+  border-color: rgba(255, 160, 160, 0.32);
+}
+
+.popup-admin-promo-toggle:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .popup-admin-inline-grid {
+    grid-template-columns: 1fr;
+  }
 }

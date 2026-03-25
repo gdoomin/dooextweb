@@ -25,6 +25,7 @@ import {
   fetchUserHistory,
   loadLastConvert,
   persistConvertedJob,
+  redeemBillingPromoCode,
   reopenHistoryItem,
   saveLastConvert,
   saveHomeSyncState,
@@ -651,6 +652,7 @@ export function HomeScreen({
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingActionLoading, setBillingActionLoading] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState("");
+  const [promoCodeInput, setPromoCodeInput] = useState("");
   const [showPlanGuide, setShowPlanGuide] = useState(false);
   const [homeSyncPendingRemote, setHomeSyncPendingRemote] = useState<HomeSyncStatePayload | null>(null);
   const homeSyncSaveTimerRef = useRef<number | null>(null);
@@ -1709,6 +1711,42 @@ export function HomeScreen({
     }
   }
 
+  async function handleRedeemPromoCode() {
+    const identity = await resolveCurrentIdentity();
+    if (!identity.id) {
+      openAuthModal("프로모션 코드를 적용하려면 로그인해 주세요.");
+      return;
+    }
+    if (!identity.token) {
+      setStatusTone("error");
+      setStatusMessage("보안을 위해 다시 로그인 후 프로모션 코드를 적용해 주세요.");
+      return;
+    }
+
+    const normalizedCode = promoCodeInput.trim().toUpperCase();
+    if (!normalizedCode) {
+      setStatusTone("error");
+      setStatusMessage("프로모션 코드를 먼저 입력해 주세요.");
+      return;
+    }
+
+    setBillingActionLoading(true);
+    setStatusTone("loading");
+    setStatusMessage("프로모션 코드를 적용하고 있습니다...");
+    try {
+      const result = await redeemBillingPromoCode(normalizedCode, identity.id, identity.email, identity.token);
+      setBillingStatus(result.billing_status);
+      setPromoCodeInput("");
+      setStatusTone("success");
+      setStatusMessage(result.message || "프로모션 코드가 적용되었습니다.");
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "프로모션 코드 적용에 실패했습니다."));
+    } finally {
+      setBillingActionLoading(false);
+    }
+  }
+
   return (
     <>
       <main className="doo-shell">
@@ -1788,6 +1826,14 @@ export function HomeScreen({
                         {billingStatus.monthly_kml_limit > 0 ? ` / ${billingStatus.monthly_kml_limit}` : " / 무제한"}
                       </p>
                       <p className="doo-billing-meta">파일 최대 용량: {billingStatus.file_size_limit_mb}MB</p>
+                      {billingStatus.promo_active ? (
+                        <p className="doo-billing-help doo-billing-promo-active">
+                          프로모션 적용 중: {(billingStatus.promo_plan_code || billingStatus.plan_code || "free").toUpperCase()}
+                          {billingStatus.promo_expires_at
+                            ? ` · ${new Date(billingStatus.promo_expires_at).toLocaleDateString("ko-KR")}까지`
+                            : ""}
+                        </p>
+                      ) : null}
 
                       {shouldShowPricing ? (
                         <div className="doo-billing-actions">
@@ -1801,6 +1847,27 @@ export function HomeScreen({
                               inputMode="numeric"
                             />
                           </label>
+                          <div className="doo-billing-promo-row">
+                            <label className="doo-billing-phone">
+                              <span>프로모션 코드</span>
+                              <input
+                                type="text"
+                                value={promoCodeInput}
+                                onChange={(event) => setPromoCodeInput(event.target.value.toUpperCase())}
+                                placeholder="비워두지 말고 코드 입력"
+                                autoCapitalize="characters"
+                                disabled={billingActionLoading || Boolean(billingStatus.promo_active)}
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              className="doo-auth-button doo-plan-button-lite"
+                              onClick={handleRedeemPromoCode}
+                              disabled={billingActionLoading || Boolean(billingStatus.promo_active)}
+                            >
+                              코드 적용
+                            </button>
+                          </div>
                           <div className="doo-billing-buttons">
                             <button
                               type="button"

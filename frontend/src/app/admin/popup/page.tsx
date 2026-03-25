@@ -24,6 +24,18 @@ type AdminUsageRow = {
   last_filename: string;
 };
 
+type PromoCodeRow = {
+  code: string;
+  plan_code: "lite" | "pro";
+  duration_days: number;
+  max_uses: number;
+  used_count: number;
+  enabled: boolean;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 function readErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
     const text = (error.message || "").trim();
@@ -119,6 +131,15 @@ export default function PopupAdminPage() {
   const [usageError, setUsageError] = useState("");
   const [isUsageLoading, setIsUsageLoading] = useState(false);
   const [usageTab, setUsageTab] = useState<"usage" | "recent">("usage");
+  const [promoRows, setPromoRows] = useState<PromoCodeRow[]>([]);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoPlanCode, setPromoPlanCode] = useState<"lite" | "pro">("pro");
+  const [promoDurationDays, setPromoDurationDays] = useState(30);
+  const [promoMaxUses, setPromoMaxUses] = useState(1);
+  const [promoStatus, setPromoStatus] = useState("");
+  const [promoStatusTone, setPromoStatusTone] = useState<"idle" | "success" | "error">("idle");
+  const [isPromoLoading, setIsPromoLoading] = useState(false);
+  const [promoToggleCode, setPromoToggleCode] = useState("");
 
   const displayedUsageRows = useMemo(() => {
     const nextRows = [...usageRows];
@@ -200,6 +221,48 @@ export default function PopupAdminPage() {
     }
   }
 
+  async function loadPromoCodes(nextPassword: string) {
+    setIsPromoLoading(true);
+    setPromoStatus("");
+    setPromoStatusTone("idle");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes/list`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: nextPassword }),
+      });
+      const payload = await parseJson(response);
+      if (!response.ok) {
+        throw new Error(String(payload.detail || "프로모션 코드 조회에 실패했습니다."));
+      }
+
+      const codes = Array.isArray(payload.codes) ? payload.codes : [];
+      const rows: PromoCodeRow[] = codes
+        .filter((item) => item && typeof item === "object")
+        .map((item) => {
+          const row = item as Record<string, unknown>;
+          return {
+            code: String(row.code || ""),
+            plan_code: String(row.plan_code || "pro") === "lite" ? "lite" : "pro",
+            duration_days: parseNumber(row.duration_days),
+            max_uses: parseNumber(row.max_uses),
+            used_count: parseNumber(row.used_count),
+            enabled: parseLooseBoolean(row.enabled, true),
+            expires_at: String(row.expires_at || ""),
+            created_at: String(row.created_at || ""),
+            updated_at: String(row.updated_at || ""),
+          };
+        });
+      setPromoRows(rows);
+    } catch (error) {
+      setPromoStatus(readErrorMessage(error, "프로모션 코드 조회에 실패했습니다."));
+      setPromoStatusTone("error");
+    } finally {
+      setIsPromoLoading(false);
+    }
+  }
+
   async function verifyPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsLoading(true);
@@ -225,11 +288,111 @@ export default function PopupAdminPage() {
       setStatus("비밀번호 확인 완료. 팝업 문구를 수정할 수 있습니다.");
       setStatusTone("success");
       await loadUsage(password);
+      await loadPromoCodes(password);
     } catch (error) {
       setStatus(readErrorMessage(error, "비밀번호 확인에 실패했습니다."));
       setStatusTone("error");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function createPromoCode(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsPromoLoading(true);
+    setPromoStatus("");
+    setPromoStatusTone("idle");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          password,
+          code: promoCode,
+          plan_code: promoPlanCode,
+          duration_days: promoDurationDays,
+          max_uses: promoMaxUses,
+        }),
+      });
+      const payload = await parseJson(response);
+      if (!response.ok) {
+        throw new Error(String(payload.detail || "프로모션 코드 생성에 실패했습니다."));
+      }
+
+      const codes = Array.isArray(payload.codes) ? payload.codes : [];
+      setPromoRows(
+        codes
+          .filter((item) => item && typeof item === "object")
+          .map((item) => {
+            const row = item as Record<string, unknown>;
+            return {
+              code: String(row.code || ""),
+              plan_code: String(row.plan_code || "pro") === "lite" ? "lite" : "pro",
+              duration_days: parseNumber(row.duration_days),
+              max_uses: parseNumber(row.max_uses),
+              used_count: parseNumber(row.used_count),
+              enabled: parseLooseBoolean(row.enabled, true),
+              expires_at: String(row.expires_at || ""),
+              created_at: String(row.created_at || ""),
+              updated_at: String(row.updated_at || ""),
+            };
+          }),
+      );
+      setPromoCode("");
+      setPromoDurationDays(30);
+      setPromoMaxUses(1);
+      setPromoStatus("프로모션 코드가 생성되었습니다.");
+      setPromoStatusTone("success");
+    } catch (error) {
+      setPromoStatus(readErrorMessage(error, "프로모션 코드 생성에 실패했습니다."));
+      setPromoStatusTone("error");
+    } finally {
+      setIsPromoLoading(false);
+    }
+  }
+
+  async function togglePromoCode(code: string, nextEnabled: boolean) {
+    setPromoToggleCode(code);
+    setPromoStatus("");
+    setPromoStatusTone("idle");
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes/toggle`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password, code, enabled: nextEnabled }),
+      });
+      const payload = await parseJson(response);
+      if (!response.ok) {
+        throw new Error(String(payload.detail || "프로모션 코드 상태 변경에 실패했습니다."));
+      }
+      const codes = Array.isArray(payload.codes) ? payload.codes : [];
+      setPromoRows(
+        codes
+          .filter((item) => item && typeof item === "object")
+          .map((item) => {
+            const row = item as Record<string, unknown>;
+            return {
+              code: String(row.code || ""),
+              plan_code: String(row.plan_code || "pro") === "lite" ? "lite" : "pro",
+              duration_days: parseNumber(row.duration_days),
+              max_uses: parseNumber(row.max_uses),
+              used_count: parseNumber(row.used_count),
+              enabled: parseLooseBoolean(row.enabled, true),
+              expires_at: String(row.expires_at || ""),
+              created_at: String(row.created_at || ""),
+              updated_at: String(row.updated_at || ""),
+            };
+          }),
+      );
+      setPromoStatus(nextEnabled ? "프로모션 코드가 활성화되었습니다." : "프로모션 코드가 비활성화되었습니다.");
+      setPromoStatusTone("success");
+    } catch (error) {
+      setPromoStatus(readErrorMessage(error, "프로모션 코드 상태 변경에 실패했습니다."));
+      setPromoStatusTone("error");
+    } finally {
+      setPromoToggleCode("");
     }
   }
 
@@ -378,6 +541,123 @@ export default function PopupAdminPage() {
                           <td>{formatDate(row.last_accessed_at || row.last_uploaded_at)}</td>
                           <td>{row.last_access_path || "-"}</td>
                           <td>{row.last_filename || "-"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className="popup-admin-usage">
+              <div className="popup-admin-usage-head">
+                <h2>프로모션 코드</h2>
+                <button
+                  type="button"
+                  className="popup-admin-usage-refresh"
+                  onClick={() => loadPromoCodes(password)}
+                  disabled={isPromoLoading}
+                >
+                  {isPromoLoading ? "불러오는 중..." : "새로고침"}
+                </button>
+              </div>
+              <form className="popup-admin-form" onSubmit={createPromoCode}>
+                <label htmlFor="popup-admin-promo-code">코드명 (비워두면 자동생성)</label>
+                <input
+                  id="popup-admin-promo-code"
+                  type="text"
+                  value={promoCode}
+                  onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
+                  placeholder="예: DOO-PRO30"
+                  autoCapitalize="characters"
+                />
+                <div className="popup-admin-inline-grid">
+                  <label htmlFor="popup-admin-promo-plan">
+                    대상 플랜
+                    <select
+                      id="popup-admin-promo-plan"
+                      value={promoPlanCode}
+                      onChange={(event) => setPromoPlanCode(event.target.value === "lite" ? "lite" : "pro")}
+                    >
+                      <option value="lite">Lite</option>
+                      <option value="pro">Pro</option>
+                    </select>
+                  </label>
+                  <label htmlFor="popup-admin-promo-days">
+                    사용 기간(일)
+                    <input
+                      id="popup-admin-promo-days"
+                      type="number"
+                      min={1}
+                      max={365}
+                      value={promoDurationDays}
+                      onChange={(event) => setPromoDurationDays(parseNumber(event.target.value) || 30)}
+                    />
+                  </label>
+                  <label htmlFor="popup-admin-promo-max">
+                    최대 사용 횟수
+                    <input
+                      id="popup-admin-promo-max"
+                      type="number"
+                      min={1}
+                      max={100000}
+                      value={promoMaxUses}
+                      onChange={(event) => setPromoMaxUses(parseNumber(event.target.value) || 1)}
+                    />
+                  </label>
+                </div>
+                <button type="submit" disabled={isPromoLoading}>
+                  {isPromoLoading ? "생성 중..." : "코드 생성"}
+                </button>
+              </form>
+              <p className={`popup-admin-promo-status ${promoStatusTone === "success" ? "is-success" : promoStatusTone === "error" ? "is-error" : ""}`}>
+                {promoStatus || " "}
+              </p>
+              <div className="popup-admin-usage-table-wrap">
+                <table className="popup-admin-usage-table">
+                  <thead>
+                    <tr>
+                      <th>코드</th>
+                      <th>플랜</th>
+                      <th>기간</th>
+                      <th>사용</th>
+                      <th>상태</th>
+                      <th>코드 만료</th>
+                      <th>생성일</th>
+                      <th>관리</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {promoRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="popup-admin-usage-empty">
+                          생성된 프로모션 코드가 없습니다.
+                        </td>
+                      </tr>
+                    ) : (
+                      promoRows.map((row) => (
+                        <tr key={row.code}>
+                          <td>{row.code}</td>
+                          <td>{row.plan_code.toUpperCase()}</td>
+                          <td>{row.duration_days}일</td>
+                          <td>
+                            {row.used_count} / {row.max_uses}
+                          </td>
+                          <td>{row.enabled ? "활성" : "비활성"}</td>
+                          <td>{row.expires_at ? formatDate(row.expires_at) : "-"}</td>
+                          <td>{formatDate(row.created_at)}</td>
+                          <td>
+                            <div className="popup-admin-promo-actions">
+                              <button
+                                type="button"
+                                className={`popup-admin-promo-toggle ${row.enabled ? "is-disabled" : ""}`}
+                                onClick={() => togglePromoCode(row.code, !row.enabled)}
+                                disabled={promoToggleCode === row.code}
+                              >
+                                {promoToggleCode === row.code ? "처리 중..." : row.enabled ? "비활성화" : "활성화"}
+                              </button>
+                            </div>
+                          </td>
                         </tr>
                       ))
                     )}

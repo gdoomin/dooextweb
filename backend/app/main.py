@@ -105,6 +105,7 @@ BANNER_PATH = ASSETS_DIR / "doogpx.png"
 ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
 FONTS_DIR = ASSETS_DIR / "fonts"
 POPUP_NOTICE_PATH = RUNTIME_DIR / "popup_notice.json"
+PROMO_CODES_PATH = RUNTIME_DIR / "promo_codes.json"
 
 DEFAULT_POPUP_NOTICE_MESSAGE = "筌왖疫?筌띾Ŧ猷???덈┷野?????肉???낅쑓??꾨뱜 餓λ쵐???덈뼄. 雅뚭쑴???몃빍??"
 
@@ -140,6 +141,7 @@ NOTAM_MAX_LIMIT = 3000
 NOTAM_DEFAULT_LIMIT = 1200
 EMAIL_PATTERN = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 SOURCE_HASH_PATTERN = re.compile(r"^[a-f0-9]{64}$")
+PROMO_CODE_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{3,31}$")
 DEFAULT_PLAN_CODE = "free"
 LITE_PLAN_CODE = "lite"
 PRO_PLAN_CODE = "pro"
@@ -226,6 +228,7 @@ PLAN_PAYAPP_GOODNAME = {
     PRO_PLAN_CODE: "DOO Extractor Pro Monthly",
 }
 JOB_PAYLOAD_BUCKET_CACHE: set[str] = set()
+PROMO_CODE_LOCK = threading.Lock()
 
 
 class PasswordResetRequest(BaseModel):
@@ -255,6 +258,21 @@ class PopupNoticeUpdatePayload(BaseModel):
     enabled: bool = False
 
 
+class PromoCodeCreatePayload(BaseModel):
+    password: str
+    code: str = ""
+    plan_code: Literal["lite", "pro"] = "pro"
+    duration_days: int = 30
+    max_uses: int = 1
+    expires_at: str | None = None
+
+
+class PromoCodeTogglePayload(BaseModel):
+    password: str
+    code: str
+    enabled: bool
+
+
 class BillingStartPayload(BaseModel):
     plan_code: Literal["lite", "pro"]
     buyer_phone: str
@@ -263,6 +281,10 @@ class BillingStartPayload(BaseModel):
 
 class BillingCancelPayload(BaseModel):
     reason: str = ""
+
+
+class BillingPromoRedeemPayload(BaseModel):
+    code: str
 
 for path in (
     JOBS_DIR,
@@ -1390,6 +1412,101 @@ def _save_json(path: Path, data) -> None:
         json.dump(data, handle, ensure_ascii=False, indent=2)
 
 
+def _default_promo_code_store() -> dict[str, Any]:
+    return {"codes": {}}
+
+
+def _sanitize_promo_code_record(record: dict[str, Any]) -> dict[str, Any]:
+    now_iso = _utc_now_iso()
+    try:
+        max_uses = max(int(record.get("max_uses") or 1), 1)
+    except (TypeError, ValueError):
+        max_uses = 1
+    try:
+        used_count = max(int(record.get("used_count") or 0), 0)
+    except (TypeError, ValueError):
+        used_count = 0
+    try:
+        duration_days = max(int(record.get("duration_days") or 30), 1)
+    except (TypeError, ValueError):
+        duration_days = 30
+    redeemed_user_ids = record.get("redeemed_user_ids", [])
+    if not isinstance(redeemed_user_ids, list):
+        redeemed_user_ids = []
+    return {
+        "code": _normalize_promo_code(str(record.get("code") or "")),
+        "plan_code": _normalize_paid_plan_code(str(record.get("plan_code") or "")),
+        "duration_days": min(duration_days, 365),
+        "max_uses": max_uses,
+        "used_count": min(used_count, max_uses),
+        "enabled": bool(record.get("enabled", True)),
+        "expires_at": str(record.get("expires_at") or "").strip(),
+        "created_at": str(record.get("created_at") or now_iso).strip() or now_iso,
+        "updated_at": str(record.get("updated_at") or now_iso).strip() or now_iso,
+        "redeemed_user_ids": [
+            _normalize_user_identity(str(item or ""))
+            for item in redeemed_user_ids
+            if _normalize_user_identity(str(item or ""))
+        ],
+    }
+
+
+def _load_promo_code_store() -> dict[str, Any]:
+    payload = _load_json(PROMO_CODES_PATH, _default_promo_code_store())
+    raw_codes = payload.get("codes", {}) if isinstance(payload, dict) else {}
+    normalized_codes: dict[str, dict[str, Any]] = {}
+    if isinstance(raw_codes, dict):
+        iterable = raw_codes.values()
+    elif isinstance(raw_codes, list):
+        iterable = raw_codes
+    else:
+        iterable = []
+    for item in iterable:
+        if not isinstance(item, dict):
+            continue
+        sanitized = _sanitize_promo_code_record(item)
+        code = sanitized.get("code") or ""
+        if not code or not sanitized.get("plan_code"):
+            continue
+        normalized_codes[code] = sanitized
+    return {"codes": normalized_codes}
+
+
+def _save_promo_code_store(store: dict[str, Any]) -> dict[str, Any]:
+    raw_codes = store.get("codes", {}) if isinstance(store, dict) else {}
+    normalized_codes: dict[str, dict[str, Any]] = {}
+    if isinstance(raw_codes, dict):
+        iterable = raw_codes.values()
+    else:
+        iterable = []
+    for item in iterable:
+        if not isinstance(item, dict):
+            continue
+        sanitized = _sanitize_promo_code_record(item)
+        code = sanitized.get("code") or ""
+        if not code or not sanitized.get("plan_code"):
+            continue
+        normalized_codes[code] = sanitized
+    payload = {"codes": normalized_codes}
+    _save_json(PROMO_CODES_PATH, payload)
+    return payload
+
+
+def _list_promo_codes() -> list[dict[str, Any]]:
+    store = _load_promo_code_store()
+    codes = list((store.get("codes") or {}).values())
+    codes.sort(key=lambda row: parse_datetime_sort_key(str(row.get("created_at") or "")), reverse=True)
+    return codes
+
+
+def _generate_promo_code_value(existing_codes: set[str]) -> str:
+    for _ in range(20):
+        candidate = f"DOO-{secrets.token_hex(3).upper()}"
+        if candidate not in existing_codes:
+            return candidate
+    raise HTTPException(status_code=500, detail="프로모션 코드 생성에 실패했습니다. 다시 시도해 주세요.")
+
+
 def _default_popup_notice() -> dict:
     return {
         "enabled": False,
@@ -1801,6 +1918,11 @@ def _normalize_plan_code(value: str | None, *, fallback: str = DEFAULT_PLAN_CODE
     return fallback
 
 
+def _normalize_paid_plan_code(value: str | None) -> str:
+    normalized = str(value or "").strip().lower()
+    return normalized if normalized in {LITE_PLAN_CODE, PRO_PLAN_CODE} else ""
+
+
 def _normalize_subscription_status(value: str | None, *, fallback: str = "inactive") -> str:
     normalized = str(value or "").strip().lower()
     if normalized in SUBSCRIPTION_STATUSES:
@@ -1813,9 +1935,59 @@ def _plan_policy(plan_code: str) -> dict[str, Any]:
     return PLAN_POLICIES.get(normalized, PLAN_POLICIES[DEFAULT_PLAN_CODE])
 
 
+def _normalize_promo_code(value: str | None) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_-]", "", str(value or "").strip().upper())
+    return cleaned[:32]
+
+
+def _clear_promo_fields(record: dict[str, Any]) -> None:
+    record["promo_code"] = ""
+    record["promo_plan_code"] = ""
+    record["promo_applied_at"] = ""
+    record["promo_expires_at"] = ""
+
+
+def _promo_snapshot_from_record(record: dict[str, Any]) -> dict[str, Any] | None:
+    promo_code = _normalize_promo_code(str(record.get("promo_code") or ""))
+    promo_plan_code = _normalize_paid_plan_code(str(record.get("promo_plan_code") or ""))
+    promo_expires_at = str(record.get("promo_expires_at") or "").strip()
+    expires_at = _parse_iso_datetime(promo_expires_at)
+    if not promo_code or not promo_plan_code or expires_at is None:
+        return None
+    now = datetime.now(timezone.utc)
+    if expires_at <= now:
+        return None
+    applied_at = str(record.get("promo_applied_at") or "").strip()
+    remaining_seconds = max((expires_at - now).total_seconds(), 0)
+    remaining_days = max(int((remaining_seconds + 86399) // 86400), 0)
+    return {
+        "code": promo_code,
+        "plan_code": promo_plan_code,
+        "applied_at": applied_at,
+        "expires_at": promo_expires_at,
+        "remaining_days": remaining_days,
+    }
+
+
+def _refresh_record_promo_state(record: dict[str, Any]) -> bool:
+    snapshot = _promo_snapshot_from_record(record)
+    if snapshot is not None:
+        return False
+    if any(
+        str(record.get(key) or "").strip()
+        for key in ("promo_code", "promo_plan_code", "promo_applied_at", "promo_expires_at")
+    ):
+        _clear_promo_fields(record)
+        return True
+    return False
+
+
 def _effective_plan_code(billing_record: dict) -> str:
     if bool(billing_record.get("legacy_full_access")):
         return LEGACY_PLAN_CODE
+    promo_snapshot = _promo_snapshot_from_record(billing_record)
+    if promo_snapshot is not None:
+        return _normalize_plan_code(str(promo_snapshot.get("plan_code") or ""), fallback=DEFAULT_PLAN_CODE)
     return _normalize_plan_code(str(billing_record.get("plan_code") or ""), fallback=DEFAULT_PLAN_CODE)
 
 
@@ -1954,6 +2126,10 @@ def _default_billing_record(user_id: str, user_email: str) -> dict[str, Any]:
         "payapp_rebill_no": "",
         "payapp_last_mul_no": "",
         "payapp_last_pay_state": "",
+        "promo_code": "",
+        "promo_plan_code": "",
+        "promo_applied_at": "",
+        "promo_expires_at": "",
         "created_at": now_iso,
         "updated_at": now_iso,
         "notes": "",
@@ -1984,6 +2160,11 @@ def _save_user_billing_record(record: dict[str, Any]) -> dict[str, Any]:
         fallback="inactive",
     )
     next_record["subscription_active"] = bool(record.get("subscription_active"))
+    next_record["promo_code"] = _normalize_promo_code(str(record.get("promo_code") or ""))
+    next_record["promo_plan_code"] = _normalize_paid_plan_code(str(record.get("promo_plan_code") or ""))
+    next_record["promo_applied_at"] = str(record.get("promo_applied_at") or "").strip()
+    next_record["promo_expires_at"] = str(record.get("promo_expires_at") or "").strip()
+    _refresh_record_promo_state(next_record)
     next_record.setdefault("created_at", now_iso)
     next_record["updated_at"] = now_iso
     _save_json(_user_billing_path(normalized_id), next_record)
@@ -2184,6 +2365,8 @@ def _ensure_billing_record(user_id: str, user_email: str, created_at_hint: str =
         if user_email and _normalize_user_email(str(existing.get("user_email") or "")) != _normalize_user_email(user_email):
             existing["user_email"] = _normalize_user_email(user_email)
             changed = True
+        if _refresh_record_promo_state(existing):
+            changed = True
         if not bool(existing.get("legacy_full_access")):
             if _is_legacy_member(created_at_hint):
                 _mark_legacy_full_access(existing, "legacy_member_from_access_token")
@@ -2201,6 +2384,7 @@ def _ensure_billing_record(user_id: str, user_email: str, created_at_hint: str =
         _mark_legacy_full_access(next_record, "legacy_member_from_access_token")
     else:
         _try_mark_legacy_from_admin_profile(next_record, normalized_user_id, user_email)
+    _refresh_record_promo_state(next_record)
 
     return _save_user_billing_record(next_record)
 
@@ -2218,10 +2402,17 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
             "user_id": "",
             "user_email": normalized_email,
             "plan_code": effective_plan,
+            "base_plan_code": effective_plan,
             "legacy_full_access": not billing_enabled,
             "is_new_pricing_user": billing_enabled,
             "subscription_status": "inactive",
             "subscription_active": False,
+            "promo_active": False,
+            "promo_code": "",
+            "promo_plan_code": "",
+            "promo_applied_at": "",
+            "promo_expires_at": "",
+            "promo_remaining_days": 0,
             "features": dict(policy.get("features") or {}),
             "monthly_kml_limit": int(policy.get("monthly_kml_limit") or 0),
             "monthly_kml_used": 0,
@@ -2238,10 +2429,17 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
             "user_id": normalized_user_id,
             "user_email": normalized_email,
             "plan_code": LEGACY_PLAN_CODE,
+            "base_plan_code": LEGACY_PLAN_CODE,
             "legacy_full_access": True,
             "is_new_pricing_user": False,
             "subscription_status": "active",
             "subscription_active": True,
+            "promo_active": False,
+            "promo_code": "",
+            "promo_plan_code": "",
+            "promo_applied_at": "",
+            "promo_expires_at": "",
+            "promo_remaining_days": 0,
             "features": dict(policy.get("features") or {}),
             "monthly_kml_limit": 0,
             "monthly_kml_used": 0,
@@ -2252,6 +2450,7 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
         }
 
     record = _ensure_billing_record(normalized_user_id, normalized_email, created_at_hint=created_at_hint)
+    promo_snapshot = _promo_snapshot_from_record(record)
     effective_plan = _effective_plan_code(record)
     policy = _plan_policy(effective_plan)
     monthly_limit = int(policy.get("monthly_kml_limit") or 0)
@@ -2264,10 +2463,17 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
         "user_id": normalized_user_id,
         "user_email": normalized_email or _normalize_user_email(str(record.get("user_email") or "")),
         "plan_code": effective_plan,
+        "base_plan_code": _normalize_plan_code(str(record.get("plan_code") or ""), fallback=DEFAULT_PLAN_CODE),
         "legacy_full_access": bool(record.get("legacy_full_access")),
         "is_new_pricing_user": not bool(record.get("legacy_full_access")),
         "subscription_status": _normalize_subscription_status(str(record.get("subscription_status") or ""), fallback="inactive"),
         "subscription_active": bool(record.get("subscription_active")),
+        "promo_active": promo_snapshot is not None,
+        "promo_code": str((promo_snapshot or {}).get("code") or ""),
+        "promo_plan_code": str((promo_snapshot or {}).get("plan_code") or ""),
+        "promo_applied_at": str((promo_snapshot or {}).get("applied_at") or ""),
+        "promo_expires_at": str((promo_snapshot or {}).get("expires_at") or ""),
+        "promo_remaining_days": int((promo_snapshot or {}).get("remaining_days") or 0),
         "features": features,
         "monthly_kml_limit": monthly_limit,
         "monthly_kml_used": monthly_used,
@@ -2379,6 +2585,9 @@ def _transition_user_plan_from_payment(
         record["subscription_status"] = _normalize_subscription_status(subscription_status, fallback="inactive")
     if active is not None:
         record["subscription_active"] = bool(active)
+
+    if _normalize_paid_plan_code(next_plan_code) and bool(active):
+        _clear_promo_fields(record)
 
     if bool(record.get("legacy_full_access")):
         record["plan_code"] = LEGACY_PLAN_CODE
@@ -2952,6 +3161,86 @@ def get_popup_notice_admin_usage(payload: PopupNoticeAuthPayload):
     return JSONResponse({"ok": True, "month_key": month_key, "count": len(rows), "users": rows})
 
 
+@app.post("/api/admin/promo-codes/list")
+def list_admin_promo_codes(payload: PopupNoticeAuthPayload):
+    _require_popup_admin_password(payload.password)
+    return JSONResponse({"ok": True, "codes": _list_promo_codes()})
+
+
+@app.post("/api/admin/promo-codes")
+def create_admin_promo_code(payload: PromoCodeCreatePayload):
+    _require_popup_admin_password(payload.password)
+
+    requested_code = _normalize_promo_code(payload.code)
+    if requested_code and not PROMO_CODE_PATTERN.match(requested_code):
+        raise HTTPException(status_code=400, detail="프로모션 코드는 영문 대문자, 숫자, -, _만 사용할 수 있습니다.")
+
+    plan_code = _normalize_paid_plan_code(payload.plan_code)
+    if not plan_code:
+        raise HTTPException(status_code=400, detail="프로모션 대상 플랜은 lite 또는 pro만 가능합니다.")
+
+    duration_days = max(min(int(payload.duration_days or 30), 365), 1)
+    max_uses = max(min(int(payload.max_uses or 1), 100000), 1)
+    expires_at = str(payload.expires_at or "").strip()
+    if expires_at and _parse_iso_datetime(expires_at) is None:
+        raise HTTPException(status_code=400, detail="코드 만료일 형식이 올바르지 않습니다.")
+
+    with PROMO_CODE_LOCK:
+        store = _load_promo_code_store()
+        codes = store.setdefault("codes", {})
+        if not isinstance(codes, dict):
+            codes = {}
+            store["codes"] = codes
+        code = requested_code or _generate_promo_code_value(set(codes.keys()))
+        if code in codes:
+            raise HTTPException(status_code=400, detail="이미 존재하는 프로모션 코드입니다.")
+        now_iso = _utc_now_iso()
+        record = {
+            "code": code,
+            "plan_code": plan_code,
+            "duration_days": duration_days,
+            "max_uses": max_uses,
+            "used_count": 0,
+            "enabled": True,
+            "expires_at": expires_at,
+            "created_at": now_iso,
+            "updated_at": now_iso,
+            "redeemed_user_ids": [],
+        }
+        codes[code] = record
+        saved_store = _save_promo_code_store(store)
+        saved_record = dict((saved_store.get("codes") or {}).get(code) or record)
+
+    return JSONResponse(
+        {
+            "ok": True,
+            "promo_code": saved_record,
+            "codes": _list_promo_codes(),
+        }
+    )
+
+
+@app.post("/api/admin/promo-codes/toggle")
+def toggle_admin_promo_code(payload: PromoCodeTogglePayload):
+    _require_popup_admin_password(payload.password)
+    code = _normalize_promo_code(payload.code)
+    if not code:
+        raise HTTPException(status_code=400, detail="프로모션 코드를 확인해 주세요.")
+
+    with PROMO_CODE_LOCK:
+        store = _load_promo_code_store()
+        codes = store.setdefault("codes", {})
+        if not isinstance(codes, dict) or code not in codes:
+            raise HTTPException(status_code=404, detail="프로모션 코드를 찾을 수 없습니다.")
+        record = dict(codes.get(code) or {})
+        record["enabled"] = bool(payload.enabled)
+        record["updated_at"] = _utc_now_iso()
+        codes[code] = record
+        _save_promo_code_store(store)
+
+    return JSONResponse({"ok": True, "promo_code": codes.get(code), "codes": _list_promo_codes()})
+
+
 @app.post("/api/admin/popup-notice")
 def update_popup_notice(payload: PopupNoticeUpdatePayload):
     _require_popup_admin_password(payload.password)
@@ -3407,6 +3696,84 @@ def get_billing_status(request: Request):
     status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
     status["plans"] = _public_plan_rows()
     return JSONResponse(status)
+
+
+@app.post("/api/billing/promo-code/redeem")
+def redeem_billing_promo_code(payload: BillingPromoRedeemPayload, request: Request):
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True, require_token=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    if not billing_status.get("billing_enabled"):
+        raise HTTPException(status_code=400, detail="현재는 프로모션 코드가 필요하지 않은 상태입니다.")
+    if not billing_status.get("is_new_pricing_user"):
+        raise HTTPException(status_code=400, detail="기존 가입자 혜택 계정은 별도 프로모션 코드가 필요하지 않습니다.")
+    if bool(billing_status.get("subscription_active")):
+        raise HTTPException(status_code=400, detail="이미 활성 구독 중인 계정에는 프로모션 코드를 적용할 수 없습니다.")
+    if bool(billing_status.get("promo_active")):
+        raise HTTPException(status_code=400, detail="이미 적용 중인 프로모션이 있습니다.")
+
+    code = _normalize_promo_code(payload.code)
+    if not code:
+        raise HTTPException(status_code=400, detail="프로모션 코드를 입력해 주세요.")
+
+    now = datetime.now(timezone.utc)
+    now_iso = now.isoformat()
+    applied_record = _ensure_billing_record(user_id, user_email, created_at_hint=created_at_hint)
+
+    with PROMO_CODE_LOCK:
+        store = _load_promo_code_store()
+        codes = store.setdefault("codes", {})
+        if not isinstance(codes, dict):
+            raise HTTPException(status_code=500, detail="프로모션 코드 저장소를 불러오지 못했습니다.")
+        promo_record = dict(codes.get(code) or {})
+        if not promo_record:
+            raise HTTPException(status_code=404, detail="유효하지 않은 프로모션 코드입니다.")
+        if not bool(promo_record.get("enabled")):
+            raise HTTPException(status_code=400, detail="현재 사용할 수 없는 프로모션 코드입니다.")
+
+        code_expires_at = _parse_iso_datetime(str(promo_record.get("expires_at") or ""))
+        if code_expires_at is not None and code_expires_at <= now:
+            raise HTTPException(status_code=400, detail="만료된 프로모션 코드입니다.")
+
+        max_uses = max(int(promo_record.get("max_uses") or 1), 1)
+        used_count = max(int(promo_record.get("used_count") or 0), 0)
+        if used_count >= max_uses:
+            raise HTTPException(status_code=400, detail="사용 가능 횟수가 모두 소진된 프로모션 코드입니다.")
+
+        redeemed_user_ids = promo_record.get("redeemed_user_ids", [])
+        if not isinstance(redeemed_user_ids, list):
+            redeemed_user_ids = []
+        normalized_redeemers = {
+            _normalize_user_identity(str(item or ""))
+            for item in redeemed_user_ids
+            if _normalize_user_identity(str(item or ""))
+        }
+        if user_id in normalized_redeemers:
+            raise HTTPException(status_code=400, detail="이 계정에는 이미 적용한 프로모션 코드입니다.")
+
+        duration_days = max(int(promo_record.get("duration_days") or 30), 1)
+        promo_expires_at = (now + timedelta(days=duration_days)).isoformat()
+        applied_record["promo_code"] = code
+        applied_record["promo_plan_code"] = _normalize_paid_plan_code(str(promo_record.get("plan_code") or ""))
+        applied_record["promo_applied_at"] = now_iso
+        applied_record["promo_expires_at"] = promo_expires_at
+        _save_user_billing_record(applied_record)
+
+        normalized_redeemers.add(user_id)
+        promo_record["used_count"] = used_count + 1
+        promo_record["redeemed_user_ids"] = sorted(normalized_redeemers)
+        promo_record["updated_at"] = now_iso
+        codes[code] = promo_record
+        _save_promo_code_store(store)
+
+    latest_billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    latest_billing_status["plans"] = _public_plan_rows()
+    return JSONResponse(
+        {
+            "ok": True,
+            "message": f"{code} 코드가 적용되었습니다. {int(latest_billing_status.get('promo_remaining_days') or 0)}일 동안 {str(latest_billing_status.get('plan_code') or '').upper()} 기능을 사용할 수 있습니다.",
+            "billing_status": latest_billing_status,
+        }
+    )
 
 
 @app.post("/api/billing/payapp/start")
