@@ -150,6 +150,18 @@ export type ClientConvertRequestBody = {
   source_hash?: string;
 };
 
+export type HomeSyncStatePayload = {
+  version?: number;
+  active_job_id?: string;
+  stack_job_ids?: string[];
+  savedAt?: number;
+  __sync?: {
+    rev?: number;
+    updated_at?: number;
+    device_id?: string;
+  };
+};
+
 const STORAGE_KEY = "doo-extractor-last-convert";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
 const PROD_API_BASE_URL = "https://dooext-api.dooheetv.com";
@@ -373,10 +385,10 @@ export async function persistConvertedJob(
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "변환 결과 저장에 실패했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "癰궰??野껉퀗?????關肉???쎈솭??됰뮸??덈뼄."));
   }
   if (!body || typeof body !== "object") {
-    throw new Error("서버가 올바른 변환 응답을 반환하지 않았습니다.");
+    throw new Error("??뺤쒔揶쎛 ??而?몴?癰궰???臾먮뼗??獄쏆꼹???? ??녿릭??щ빍??");
   }
   return body as ConvertResponse;
 }
@@ -388,7 +400,7 @@ export async function fetchUserHistory(userId: string, userEmail = "", accessTok
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "히스토리를 불러오지 못했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺???븍뜄???? 筌륁궢六??щ빍??"));
   }
   if (!body || typeof body !== "object") {
     return [];
@@ -404,10 +416,10 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "히스토리 항목을 다시 열지 못했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺 ???????쇰뻻 ??? 筌륁궢六??щ빍??"));
   }
   if (!body || typeof body !== "object") {
-    throw new Error("히스토리 응답 형식이 올바르지 않습니다.");
+    throw new Error("??됰뮞?醫듼봺 ?臾먮뼗 ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.");
   }
   return body as ConvertResponse;
 }
@@ -419,7 +431,7 @@ export async function deleteHistoryItem(jobId: string, userId: string, userEmail
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "히스토리 항목을 삭제하지 못했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺 ??????????? 筌륁궢六??щ빍??"));
   }
 }
 
@@ -430,7 +442,7 @@ export async function deleteAllHistoryItems(userId: string, userEmail = "", acce
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "히스토리 전체삭제에 실패했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺 ?袁⑷퍥???????쎈솭??됰뮸??덈뼄."));
   }
 }
 
@@ -441,10 +453,10 @@ export async function fetchBillingStatus(userId: string, userEmail = "", accessT
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "결제 상태를 확인하지 못했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "野껉퀣???怨밴묶???類ㅼ뵥??? 筌륁궢六??щ빍??"));
   }
   if (!body || typeof body !== "object") {
-    throw new Error("결제 상태 응답 형식이 올바르지 않습니다.");
+    throw new Error("野껉퀣???怨밴묶 ?臾먮뼗 ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.");
   }
   return body as BillingStatusResponse;
 }
@@ -469,10 +481,10 @@ export async function startBillingSubscription(
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "구독 결제를 시작하지 못했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "?닌됰즴 野껉퀣?ｇ몴???뽰삂??? 筌륁궢六??щ빍??"));
   }
   if (!body || typeof body !== "object") {
-    throw new Error("구독 시작 응답 형식이 올바르지 않습니다.");
+    throw new Error("?닌됰즴 ??뽰삂 ?臾먮뼗 ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.");
   }
   return body as BillingStartResponse;
 }
@@ -492,6 +504,45 @@ export async function cancelBillingSubscription(
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "구독 해지에 실패했습니다."));
+    throw new Error(extractErrorMessage(body, rawText, "?닌됰즴 ???????쎈솭??됰뮸??덈뼄."));
+  }
+}
+
+export async function fetchHomeSyncState(
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<HomeSyncStatePayload | null> {
+  const response = await fetch(`${API_BASE_URL}/api/home-state`, {
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+    cache: "no-store",
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "홈 동기화 상태를 불러오지 못했습니다."));
+  }
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+  return body as HomeSyncStatePayload;
+}
+
+export async function saveHomeSyncState(
+  payload: HomeSyncStatePayload,
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/home-state`, {
+    method: "POST",
+    headers: {
+      ...buildUserHeaders(userId, userEmail, accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "홈 동기화 상태 저장에 실패했습니다."));
   }
 }

@@ -1005,6 +1005,65 @@ textarea {
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
 }
 
+.doo-sync-banner {
+  margin: 0 14px 10px;
+  border: 1px solid rgba(111, 219, 255, 0.34);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(9, 40, 58, 0.64) 0%, rgba(8, 29, 44, 0.62) 100%);
+  color: #b6ecff;
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.doo-sync-banner-text {
+  min-width: 0;
+}
+
+.doo-sync-banner-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.doo-sync-banner-apply,
+.doo-sync-banner-dismiss {
+  border: 0;
+  border-radius: 9px;
+  padding: 7px 11px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    filter 160ms ease;
+}
+
+.doo-sync-banner-apply {
+  background: #1f7aa1;
+  color: #f3fbff;
+}
+
+.doo-sync-banner-dismiss {
+  background: rgba(177, 215, 233, 0.18);
+  color: #d7f5ff;
+}
+
+.doo-sync-banner-apply:hover,
+.doo-sync-banner-dismiss:hover {
+  filter: brightness(1.08);
+}
+
+.doo-sync-banner-apply:active,
+.doo-sync-banner-dismiss:active {
+  transform: translateY(1px) scale(0.985);
+}
+
 .doo-text-panel {
   display: flex;
   flex: 1 1 auto;
@@ -1549,6 +1608,20 @@ textarea {
   .doo-stack-summary {
     font-size: 13px;
     line-height: 18px;
+  }
+
+  .doo-sync-banner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doo-sync-banner-actions {
+    width: 100%;
+  }
+
+  .doo-sync-banner-apply,
+  .doo-sync-banner-dismiss {
+    flex: 1 1 0;
   }
 }
 

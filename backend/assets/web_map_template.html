@@ -3441,6 +3441,27 @@
     const viewerStateLocalKey = viewerStateStorageKeyRaw
       ? `${VIEWER_STATE_LOCAL_PREFIX}${viewerStateStorageKeyRaw}`
       : `${VIEWER_STATE_LOCAL_PREFIX}job:${String(payload.job_id || '').trim()}`;
+    function resolveViewerSyncDeviceId() {
+      try {
+        const existing = window.localStorage.getItem(VIEWER_STATE_SYNC_DEVICE_STORAGE_KEY);
+        if (existing) {
+          return existing;
+        }
+      } catch (error) {
+        // Ignore storage read failures.
+      }
+      const generated = (window.crypto && typeof window.crypto.randomUUID === 'function')
+        ? window.crypto.randomUUID()
+        : `viewer-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      try {
+        window.localStorage.setItem(VIEWER_STATE_SYNC_DEVICE_STORAGE_KEY, generated);
+      } catch (error) {
+        // Ignore storage write failures.
+      }
+      return generated;
+    }
+    const viewerStateSyncDeviceId = resolveViewerSyncDeviceId();
+    const viewerStateSyncEnabled = !/\/api\/viewer\/default$/i.test(String(window.location.pathname || ''));
     const rawLayerCatalog = Array.isArray(payload.layer_catalog) ? payload.layer_catalog : [];
     function normalizeLayerKey(value) {
       return String(value || '').trim().toLowerCase();
@@ -3894,9 +3915,11 @@
       LETTER: { label: 'Letter', width: 2550, height: 3300 },
     };
     const VIEWER_STATE_VERSION = 5;
-    const VIEWER_STATE_SAVE_DEBOUNCE_MS = 420;
-    const VIEWER_STATE_VIEW_SAVE_DEBOUNCE_MS = 180;
+    const VIEWER_STATE_SAVE_DEBOUNCE_MS = 3000;
+    const VIEWER_STATE_VIEW_SAVE_DEBOUNCE_MS = 3000;
     const VIEWER_STATE_REMOTE_SAVE_MIN_INTERVAL_MS = 2000;
+    const VIEWER_STATE_SYNC_POLL_MS = 15000;
+    const VIEWER_STATE_SYNC_DEVICE_STORAGE_KEY = 'doo-viewer-sync-device-id';
     const UNDO_LIMIT = 10;
     const LONG_PRESS_DELETE_MS = 700;
     const LONG_PRESS_MOVE_TOLERANCE_PX = 10;
@@ -3910,6 +3933,10 @@
     let viewerStateRemoteSaveInFlight = null;
     let viewerStatePendingRemoteSave = null;
     let viewerStateSnapshotCache = null;
+    let viewerStateSyncPollTimer = null;
+    let viewerStateLastPromptedRemoteSavedAt = 0;
+    let viewerStateLastPromptedRemoteSerialized = '';
+    let viewerStateSyncRev = 0;
     let zoomVisualRefreshRaf = null;
     const undoHistory = [];
     let undoApplying = false;
@@ -11502,7 +11529,8 @@
       if (!value || typeof value !== 'object') {
         return 0;
       }
-      const candidates = [value.savedAt, value.saved_at, value.clientSavedAt, value.updatedAt, value.updated_at];
+      const syncUpdatedAt = value.__sync && typeof value.__sync === 'object' ? value.__sync.updated_at : null;
+      const candidates = [syncUpdatedAt, value.savedAt, value.saved_at, value.clientSavedAt, value.updatedAt, value.updated_at];
       for (const item of candidates) {
         if (Number.isFinite(item) && Number(item) > 0) {
           return Number(item);
@@ -11517,6 +11545,24 @@
       return 0;
     }
 
+    function getViewerStateSyncRev(value) {
+      if (!value || typeof value !== 'object' || !value.__sync || typeof value.__sync !== 'object') {
+        return 0;
+      }
+      const rev = Number(value.__sync.rev);
+      if (Number.isFinite(rev) && rev > 0) {
+        return Math.max(0, Math.floor(rev));
+      }
+      return 0;
+    }
+
+    function getViewerStateSyncDevice(value) {
+      if (!value || typeof value !== 'object' || !value.__sync || typeof value.__sync !== 'object') {
+        return '';
+      }
+      return String(value.__sync.device_id || '').trim();
+    }
+
     function stripViewerStateMeta(value) {
       if (!value || typeof value !== 'object') {
         return null;
@@ -11527,6 +11573,7 @@
       delete next.clientSavedAt;
       delete next.updatedAt;
       delete next.updated_at;
+      delete next.__sync;
       return next;
     }
 
@@ -11640,9 +11687,16 @@
 
       viewerStateLastSerialized = baseSerialized;
       viewerStateSnapshotCache = snapshot;
+      const now = Date.now();
+      viewerStateSyncRev = Math.max(0, Math.floor(viewerStateSyncRev)) + 1;
       const statePayload = {
         ...snapshot,
-        savedAt: Date.now(),
+        savedAt: now,
+        __sync: {
+          rev: viewerStateSyncRev,
+          updated_at: now,
+          device_id: viewerStateSyncDeviceId,
+        },
       };
       saveViewerStateToLocal(statePayload);
       if (shouldQueueRemote) {
@@ -11659,9 +11713,16 @@
       if (options.force && options.keepalive) {
         viewerStateLastSerialized = serialized;
         viewerStateSnapshotCache = snapshot;
+        const now = Date.now();
+        viewerStateSyncRev = Math.max(0, Math.floor(viewerStateSyncRev)) + 1;
         const statePayload = {
           ...snapshot,
-          savedAt: Date.now(),
+          savedAt: now,
+          __sync: {
+            rev: viewerStateSyncRev,
+            updated_at: now,
+            device_id: viewerStateSyncDeviceId,
+          },
         };
         saveViewerStateToLocal(statePayload);
         try {
@@ -12223,6 +12284,10 @@
       let restored = false;
       const localRaw = loadViewerStateFromLocal();
       const localSavedAt = getViewerStateSavedAt(localRaw);
+      const localSyncRev = getViewerStateSyncRev(localRaw);
+      if (localSyncRev > viewerStateSyncRev) {
+        viewerStateSyncRev = localSyncRev;
+      }
       const localState = stripViewerStateMeta(localRaw);
       if (localState && Object.keys(localState).length) {
         const localSerialized = JSON.stringify(localState);
@@ -12233,6 +12298,10 @@
 
       const remoteRaw = await loadViewerStateFromServer();
       const remoteSavedAt = getViewerStateSavedAt(remoteRaw);
+      const remoteSyncRev = getViewerStateSyncRev(remoteRaw);
+      if (remoteSyncRev > viewerStateSyncRev) {
+        viewerStateSyncRev = remoteSyncRev;
+      }
       const remoteState = stripViewerStateMeta(remoteRaw);
       if (remoteState && Object.keys(remoteState).length) {
         const remoteSerialized = JSON.stringify(remoteState);
@@ -12247,9 +12316,99 @@
           });
         }
         viewerStateLastRemoteSerialized = remoteSerialized;
+        viewerStateLastRemoteSavedAt = Math.max(viewerStateLastRemoteSavedAt, remoteSavedAt);
+        viewerStateLastPromptedRemoteSavedAt = Math.max(viewerStateLastPromptedRemoteSavedAt, remoteSavedAt);
       }
 
       return restored;
+    }
+
+    async function pollRemoteViewerStateOnce() {
+      if (!viewerStateSyncEnabled || viewerStateRestoring || undoApplying) {
+        return;
+      }
+      if (typeof document !== 'undefined' && document.hidden) {
+        return;
+      }
+      if (viewerStateRemoteSaveInFlight) {
+        return;
+      }
+
+      const remoteRaw = await loadViewerStateFromServer();
+      if (!remoteRaw || typeof remoteRaw !== 'object') {
+        return;
+      }
+      const remoteState = stripViewerStateMeta(remoteRaw);
+      if (!remoteState || !Object.keys(remoteState).length) {
+        return;
+      }
+
+      const remoteSerialized = JSON.stringify(remoteState);
+      const remoteSavedAt = getViewerStateSavedAt(remoteRaw);
+      const remoteSyncRev = getViewerStateSyncRev(remoteRaw);
+      const remoteDeviceId = getViewerStateSyncDevice(remoteRaw);
+      if (remoteSyncRev > viewerStateSyncRev) {
+        viewerStateSyncRev = remoteSyncRev;
+      }
+
+      const localSnapshot = collectViewerState();
+      const localSerialized = JSON.stringify(localSnapshot);
+      if (remoteSerialized === localSerialized) {
+        viewerStateLastRemoteSerialized = remoteSerialized;
+        viewerStateLastRemoteSavedAt = Math.max(viewerStateLastRemoteSavedAt, remoteSavedAt);
+        return;
+      }
+
+      if (remoteDeviceId && remoteDeviceId === viewerStateSyncDeviceId && remoteSavedAt <= viewerStateLastRemoteSavedAt) {
+        return;
+      }
+      if (remoteSerialized === viewerStateLastPromptedRemoteSerialized) {
+        if (remoteSavedAt <= 0 || remoteSavedAt <= viewerStateLastPromptedRemoteSavedAt) {
+          return;
+        }
+      }
+      if (remoteSavedAt > 0 && remoteSavedAt <= viewerStateLastPromptedRemoteSavedAt) {
+        return;
+      }
+
+      viewerStateLastPromptedRemoteSavedAt = Math.max(viewerStateLastPromptedRemoteSavedAt, remoteSavedAt || Date.now());
+      viewerStateLastPromptedRemoteSerialized = remoteSerialized;
+      const shouldApply = window.confirm('다른 기기에서 변경된 Viewer 상태가 있습니다. 지금 적용할까요?');
+      if (!shouldApply) {
+        return;
+      }
+
+      const hadView = await applyViewerStateSnapshot(remoteState);
+      viewerStateLastSerialized = remoteSerialized;
+      viewerStateSnapshotCache = remoteState;
+      viewerStateLastRemoteSerialized = remoteSerialized;
+      viewerStateLastRemoteSavedAt = Math.max(viewerStateLastRemoteSavedAt, remoteSavedAt || Date.now());
+      saveViewerStateToLocal({
+        ...remoteState,
+        savedAt: remoteSavedAt || Date.now(),
+        __sync: {
+          rev: Math.max(remoteSyncRev, viewerStateSyncRev),
+          updated_at: remoteSavedAt || Date.now(),
+          device_id: remoteDeviceId || '',
+        },
+      });
+      if (hadView) {
+        recordUndoState(true);
+      }
+    }
+
+    function startViewerStateSyncPolling() {
+      if (!viewerStateSyncEnabled) {
+        return;
+      }
+      if (viewerStateSyncPollTimer) {
+        window.clearInterval(viewerStateSyncPollTimer);
+      }
+      viewerStateSyncPollTimer = window.setInterval(() => {
+        pollRemoteViewerStateOnce().catch(() => {
+          // Ignore transient polling failures.
+        });
+      }, VIEWER_STATE_SYNC_POLL_MS);
     }
 
     async function undoLastAction() {
@@ -14917,6 +15076,10 @@
       });
     });
     window.addEventListener('beforeunload', () => {
+      if (viewerStateSyncPollTimer) {
+        window.clearInterval(viewerStateSyncPollTimer);
+        viewerStateSyncPollTimer = null;
+      }
       saveViewerStateNow({ force: true, keepalive: true });
     });
     document.addEventListener('keydown', (event) => {
@@ -15265,6 +15428,7 @@
         map.invalidateSize({ pan: false, animate: false });
       });
       recordUndoState(true);
+      startViewerStateSyncPolling();
     }
 
     initializeViewer();

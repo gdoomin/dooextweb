@@ -1258,6 +1258,81 @@ def _viewer_state_supabase_upsert(job: dict, payload: dict, access_token: str = 
     return success
 
 
+def _home_state_storage_keys(user_id: str, user_email: str) -> list[str]:
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    keys: list[str] = []
+    if normalized_user_id:
+        keys.append(f"home:user_id:{normalized_user_id}")
+    if normalized_email:
+        keys.append(f"home:user_email:{normalized_email}")
+    deduped: list[str] = []
+    seen: set[str] = set()
+    for key in keys:
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(key)
+    return deduped
+
+
+def _home_state_paths(user_id: str, user_email: str) -> list[Path]:
+    paths: list[Path] = []
+    for storage_key in _home_state_storage_keys(user_id, user_email):
+        paths.append(_viewer_state_path_for_storage_key(storage_key))
+    return paths
+
+
+def _home_state_supabase_fetch(user_id: str, user_email: str, access_token: str = "") -> dict | None:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return None
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return None
+
+    for storage_key in _home_state_storage_keys(user_id, user_email):
+        fetched = _viewer_state_supabase_fetch_one(
+            config,
+            headers,
+            field_name="storage_key",
+            field_value=storage_key,
+        )
+        if isinstance(fetched, dict):
+            return fetched
+    return None
+
+
+def _home_state_supabase_upsert(user_id: str, user_email: str, payload: dict, access_token: str = "") -> bool:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return False
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    if not normalized_user_id and not normalized_email:
+        return False
+
+    updated_at = _utc_now_iso()
+    success = False
+    for storage_key in _home_state_storage_keys(normalized_user_id, normalized_email):
+        row = {
+            "storage_key": storage_key,
+            "job_id": storage_key,
+            "user_id": normalized_user_id,
+            "user_email": normalized_email,
+            "source_hash": "",
+            "state_json": payload,
+            "updated_at": updated_at,
+        }
+        if _viewer_state_supabase_upsert_one(config, headers, row=row, conflict_key="storage_key"):
+            success = True
+    return success
+
+
 def _load_json(path: Path, default):
     if not path.exists():
         return default
@@ -2992,6 +3067,39 @@ async def save_default_viewer_state():
 @app.get("/api/viewer-default/layers.json")
 def get_default_viewer_layers():
     return JSONResponse(_load_map_layers())
+
+
+@app.get("/api/home-state")
+def get_home_state(request: Request):
+    access_token = _extract_bearer_token(request)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    if not _has_feature_access(billing_status, "viewer_state"):
+        return JSONResponse({})
+    remote_state = _home_state_supabase_fetch(user_id, user_email, access_token=access_token)
+    if isinstance(remote_state, dict):
+        return JSONResponse(remote_state)
+    for path in _home_state_paths(user_id, user_email):
+        data = _load_json(path, {})
+        if isinstance(data, dict) and data:
+            return JSONResponse(data)
+    return JSONResponse({})
+
+
+@app.post("/api/home-state")
+async def save_home_state(request: Request):
+    access_token = _extract_bearer_token(request)
+    user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
+    billing_status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
+    if not _has_feature_access(billing_status, "viewer_state"):
+        return JSONResponse({"ok": False, "saved": False, "reason": "plan_restricted"})
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="home state payload must be object")
+    for path in _home_state_paths(user_id, user_email):
+        _save_json(path, payload)
+    _home_state_supabase_upsert(user_id, user_email, payload, access_token=access_token)
+    return {"ok": True}
 
 
 @app.get("/api/viewer/{job_id}/viewer-state")

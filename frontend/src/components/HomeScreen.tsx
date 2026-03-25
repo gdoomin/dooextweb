@@ -12,6 +12,7 @@ import {
   type BillingStatusResponse,
   type ClientConvertRequestBody,
   type ConvertResponse,
+  type HomeSyncStatePayload,
   type LineResult,
   type MapPayload,
   type PolygonResult,
@@ -20,11 +21,13 @@ import {
   deleteHistoryItem,
   cancelBillingSubscription,
   fetchBillingStatus,
+  fetchHomeSyncState,
   fetchUserHistory,
   loadLastConvert,
   persistConvertedJob,
   reopenHistoryItem,
   saveLastConvert,
+  saveHomeSyncState,
   startBillingSubscription,
 } from "@/lib/convert";
 import { convertKmlFileInBrowser } from "@/lib/kml-client-convert";
@@ -64,6 +67,10 @@ const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   hour12: false,
 });
 const LOADING_STATUS_KEYWORDS = /(불러오는 중|추가하는 중|변환하는 중|저장하는 중)/;
+const HOME_SYNC_VERSION = 1;
+const HOME_SYNC_POLL_MS = 15000;
+const HOME_SYNC_SAVE_DEBOUNCE_MS = 3000;
+const HOME_SYNC_DEVICE_STORAGE_KEY = "doo-home-sync-device-id";
 
 function isIOSLikeDevice(): boolean {
   if (typeof navigator === "undefined") {
@@ -73,6 +80,80 @@ function isIOSLikeDevice(): boolean {
   const platform = navigator.platform || "";
   const maxTouchPoints = typeof navigator.maxTouchPoints === "number" ? navigator.maxTouchPoints : 0;
   return /iPad|iPhone|iPod/i.test(userAgent) || (platform === "MacIntel" && maxTouchPoints > 1);
+}
+
+function createHomeSyncDeviceId(): string {
+  if (typeof window === "undefined") {
+    return `device-${Date.now()}`;
+  }
+  const existing = window.localStorage.getItem(HOME_SYNC_DEVICE_STORAGE_KEY);
+  if (existing) {
+    return existing;
+  }
+  const generated = typeof window.crypto?.randomUUID === "function"
+    ? window.crypto.randomUUID()
+    : `device-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  window.localStorage.setItem(HOME_SYNC_DEVICE_STORAGE_KEY, generated);
+  return generated;
+}
+
+function normalizeHomeSyncJobIds(values: unknown): string[] {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  const unique: string[] = [];
+  const seen = new Set<string>();
+  values.forEach((value) => {
+    const jobId = String(value || "").trim();
+    if (!jobId || seen.has(jobId)) {
+      return;
+    }
+    seen.add(jobId);
+    unique.push(jobId);
+  });
+  return unique;
+}
+
+function getHomeSyncUpdatedAt(payload: HomeSyncStatePayload | null): number {
+  if (!payload || typeof payload !== "object") {
+    return 0;
+  }
+  const direct = Number(payload.savedAt);
+  if (Number.isFinite(direct) && direct > 0) {
+    return direct;
+  }
+  const fromSync = Number(payload.__sync?.updated_at);
+  if (Number.isFinite(fromSync) && fromSync > 0) {
+    return fromSync;
+  }
+  return 0;
+}
+
+function getHomeSyncRev(payload: HomeSyncStatePayload | null): number {
+  if (!payload || typeof payload !== "object") {
+    return 0;
+  }
+  const rev = Number(payload.__sync?.rev);
+  if (Number.isFinite(rev) && rev > 0) {
+    return Math.floor(rev);
+  }
+  return 0;
+}
+
+function buildComparableHomeSyncState(payload: HomeSyncStatePayload | null): {
+  active_job_id: string;
+  stack_job_ids: string[];
+} {
+  if (!payload || typeof payload !== "object") {
+    return {
+      active_job_id: "",
+      stack_job_ids: [],
+    };
+  }
+  return {
+    active_job_id: String(payload.active_job_id || "").trim(),
+    stack_job_ids: normalizeHomeSyncJobIds(payload.stack_job_ids),
+  };
 }
 
 function describeUnknownError(error: unknown, fallback: string): string {
@@ -571,6 +652,16 @@ export function HomeScreen({
   const [billingActionLoading, setBillingActionLoading] = useState(false);
   const [buyerPhone, setBuyerPhone] = useState("");
   const [showPlanGuide, setShowPlanGuide] = useState(false);
+  const [homeSyncPendingRemote, setHomeSyncPendingRemote] = useState<HomeSyncStatePayload | null>(null);
+  const homeSyncSaveTimerRef = useRef<number | null>(null);
+  const homeSyncLastSavedComparableRef = useRef("");
+  const homeSyncLastSeenRemoteUpdatedAtRef = useRef(0);
+  const homeSyncLastDismissedRemoteUpdatedAtRef = useRef(0);
+  const homeSyncRevRef = useRef(0);
+  const homeSyncFetchInFlightRef = useRef(false);
+  const homeSyncApplyingRef = useRef(false);
+  const homeSyncSuppressSaveRef = useRef(false);
+  const homeSyncDeviceIdRef = useRef("");
 
   const isAuthenticated = Boolean(userId);
   const fileDisplay = useMemo(() => {
@@ -616,6 +707,7 @@ export function HomeScreen({
   const showLoadingBadge = statusTone === "loading" && (isViewerBusy || LOADING_STATUS_KEYWORDS.test(statusMessage));
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
   const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
+  const canUseViewerStateSync = isAuthenticated && (billingStatus?.billing_enabled ? Boolean(billingStatus?.features?.viewer_state) : true);
   const shouldShowPricing =
     Boolean(billingStatus?.billing_enabled) &&
     isAuthenticated &&
@@ -628,6 +720,20 @@ export function HomeScreen({
         savedAtText: formatHistorySavedAt(item.uploaded_at),
       })),
     [historyItems],
+  );
+
+  const localHomeComparable = useMemo(() => {
+    const activeJobId = String(response?.job_id || "").trim();
+    const stackJobIds = normalizeHomeSyncJobIds(stackItems.map((entry) => entry.response.job_id));
+    return {
+      active_job_id: activeJobId,
+      stack_job_ids: stackJobIds,
+    };
+  }, [response?.job_id, stackItems]);
+
+  const localHomeComparableSerialized = useMemo(
+    () => JSON.stringify(localHomeComparable),
+    [localHomeComparable],
   );
 
   async function resolveCurrentIdentity() {
@@ -734,6 +840,18 @@ export function HomeScreen({
   }, []);
 
   useEffect(() => {
+    homeSyncDeviceIdRef.current = createHomeSyncDeviceId();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (homeSyncSaveTimerRef.current) {
+        window.clearTimeout(homeSyncSaveTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     let cancelled = false;
 
     async function run() {
@@ -836,6 +954,116 @@ export function HomeScreen({
     };
   }, []);
 
+  useEffect(() => {
+    if (!canUseViewerStateSync || !userId) {
+      setHomeSyncPendingRemote(null);
+      return;
+    }
+    if (homeSyncSuppressSaveRef.current || homeSyncApplyingRef.current) {
+      return;
+    }
+    if (homeSyncLastSavedComparableRef.current === localHomeComparableSerialized) {
+      return;
+    }
+
+    if (homeSyncSaveTimerRef.current) {
+      window.clearTimeout(homeSyncSaveTimerRef.current);
+    }
+    homeSyncSaveTimerRef.current = window.setTimeout(async () => {
+      const identity: Identity = { id: userId, email: userEmail, token: accessToken };
+      const now = Date.now();
+      const nextRev = Math.max(homeSyncRevRef.current, 0) + 1;
+      const payload: HomeSyncStatePayload = {
+        version: HOME_SYNC_VERSION,
+        active_job_id: localHomeComparable.active_job_id,
+        stack_job_ids: localHomeComparable.stack_job_ids,
+        savedAt: now,
+        __sync: {
+          rev: nextRev,
+          updated_at: now,
+          device_id: homeSyncDeviceIdRef.current || createHomeSyncDeviceId(),
+        },
+      };
+
+      try {
+        await saveHomeSyncState(payload, identity.id, identity.email, identity.token);
+        homeSyncRevRef.current = nextRev;
+        homeSyncLastSavedComparableRef.current = localHomeComparableSerialized;
+        homeSyncLastSeenRemoteUpdatedAtRef.current = Math.max(homeSyncLastSeenRemoteUpdatedAtRef.current, now);
+      } catch {
+        // Keep UX smooth: sync save retries on next local change/poll cycle.
+      }
+    }, HOME_SYNC_SAVE_DEBOUNCE_MS);
+
+    return () => {
+      if (homeSyncSaveTimerRef.current) {
+        window.clearTimeout(homeSyncSaveTimerRef.current);
+        homeSyncSaveTimerRef.current = null;
+      }
+    };
+  }, [canUseViewerStateSync, userId, userEmail, accessToken, localHomeComparable, localHomeComparableSerialized]);
+
+  useEffect(() => {
+    if (!canUseViewerStateSync || !userId) {
+      return;
+    }
+    let cancelled = false;
+
+    const pollRemoteState = async () => {
+      if (cancelled || homeSyncFetchInFlightRef.current || homeSyncApplyingRef.current) {
+        return;
+      }
+      if (typeof document !== "undefined" && document.hidden) {
+        return;
+      }
+      homeSyncFetchInFlightRef.current = true;
+      try {
+        const remote = await fetchHomeSyncState(userId, userEmail, accessToken);
+        if (cancelled || !remote) {
+          return;
+        }
+        const remoteComparable = buildComparableHomeSyncState(remote);
+        const remoteComparableSerialized = JSON.stringify(remoteComparable);
+        const remoteUpdatedAt = getHomeSyncUpdatedAt(remote);
+        const remoteRev = getHomeSyncRev(remote);
+        if (remoteRev > homeSyncRevRef.current) {
+          homeSyncRevRef.current = remoteRev;
+        }
+
+        if (remoteComparableSerialized === localHomeComparableSerialized) {
+          homeSyncLastSavedComparableRef.current = localHomeComparableSerialized;
+          homeSyncLastSeenRemoteUpdatedAtRef.current = Math.max(homeSyncLastSeenRemoteUpdatedAtRef.current, remoteUpdatedAt);
+          setHomeSyncPendingRemote(null);
+          return;
+        }
+
+        if (remoteUpdatedAt <= homeSyncLastSeenRemoteUpdatedAtRef.current) {
+          return;
+        }
+        if (remoteUpdatedAt <= homeSyncLastDismissedRemoteUpdatedAtRef.current) {
+          return;
+        }
+
+        homeSyncLastSeenRemoteUpdatedAtRef.current = remoteUpdatedAt;
+        setHomeSyncPendingRemote(remote);
+      } catch {
+        // Ignore transient remote sync read failures.
+      } finally {
+        homeSyncFetchInFlightRef.current = false;
+      }
+    };
+
+    void pollRemoteState();
+    const timer = window.setInterval(() => {
+      void pollRemoteState();
+    }, HOME_SYNC_POLL_MS);
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [canUseViewerStateSync, userId, userEmail, accessToken, localHomeComparableSerialized]);
+
   function openAuthModal(message: string) {
     setAuthMessage(message);
     setShowAuthModal(true);
@@ -934,6 +1162,118 @@ export function HomeScreen({
       window.localStorage.removeItem("doo-extractor-last-convert");
     }
     return merged;
+  }
+
+  async function applyHomeSyncRemoteState(remotePayload: HomeSyncStatePayload) {
+    if (!remotePayload || homeSyncApplyingRef.current) {
+      return;
+    }
+    const identity = await resolveCurrentIdentity();
+    if (!identity.id) {
+      return;
+    }
+
+    const remoteComparable = buildComparableHomeSyncState(remotePayload);
+    const remoteStackIds = remoteComparable.stack_job_ids;
+    const remoteActiveJobId = remoteComparable.active_job_id;
+    const remoteComparableSerialized = JSON.stringify(remoteComparable);
+    const remoteUpdatedAt = getHomeSyncUpdatedAt(remotePayload);
+    const remoteRev = getHomeSyncRev(remotePayload);
+
+    homeSyncApplyingRef.current = true;
+    homeSyncSuppressSaveRef.current = true;
+    if (homeSyncSaveTimerRef.current) {
+      window.clearTimeout(homeSyncSaveTimerRef.current);
+      homeSyncSaveTimerRef.current = null;
+    }
+
+    setStatusTone("loading");
+    setStatusMessage("다른 기기의 작업 상태를 적용하는 중입니다...");
+    await waitForNextPaint();
+
+    try {
+      const reopenByJobId = async (jobId: string): Promise<ConvertResponse | null> => {
+        try {
+          const reopened = await reopenHistoryItem(jobId, identity.id, identity.email, identity.token);
+          return attachViewerTitleLabelToResponse(reopened);
+        } catch {
+          return null;
+        }
+      };
+
+      if (remoteStackIds.length > 0) {
+        const reopenedEntries: StackEntry[] = [];
+        for (const jobId of remoteStackIds) {
+          const reopened = await reopenByJobId(jobId);
+          if (!reopened) {
+            continue;
+          }
+          reopenedEntries.push(createStackEntry(reopened));
+        }
+
+        if (reopenedEntries.length > 0) {
+          await applyStack(reopenedEntries, identity);
+          setStatusTone("success");
+          setStatusMessage(`${reopenedEntries.length}개 파일 동기화 상태를 적용했습니다.`);
+        } else if (remoteActiveJobId) {
+          const reopened = await reopenByJobId(remoteActiveJobId);
+          if (!reopened) {
+            throw new Error("동기화할 파일을 찾지 못했습니다. 다시열기 후 다시 시도해 주세요.");
+          }
+          await applyStack([createStackEntry(reopened)], identity);
+          setStatusTone("success");
+          setStatusMessage("다른 기기의 단일 파일 작업 상태를 적용했습니다.");
+        } else {
+          await applyStack([], identity);
+          setStatusTone("success");
+          setStatusMessage("동기화 상태를 적용해 파일 스택을 비웠습니다.");
+        }
+      } else if (remoteActiveJobId) {
+        const reopened = await reopenByJobId(remoteActiveJobId);
+        if (!reopened) {
+          throw new Error("동기화할 파일을 찾지 못했습니다. 다시열기 후 다시 시도해 주세요.");
+        }
+        await applyStack([createStackEntry(reopened)], identity);
+        setStatusTone("success");
+        setStatusMessage("다른 기기의 작업 상태를 적용했습니다.");
+      } else {
+        await applyStack([], identity);
+        setStatusTone("success");
+        setStatusMessage("동기화 상태를 적용해 파일 스택을 비웠습니다.");
+      }
+
+      homeSyncLastSavedComparableRef.current = remoteComparableSerialized;
+      homeSyncLastSeenRemoteUpdatedAtRef.current = Math.max(homeSyncLastSeenRemoteUpdatedAtRef.current, remoteUpdatedAt);
+      homeSyncLastDismissedRemoteUpdatedAtRef.current = 0;
+      if (remoteRev > homeSyncRevRef.current) {
+        homeSyncRevRef.current = remoteRev;
+      }
+      setHomeSyncPendingRemote(null);
+      void refreshAccountState(identity);
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "동기화 상태 적용에 실패했습니다."));
+    } finally {
+      homeSyncApplyingRef.current = false;
+      window.setTimeout(() => {
+        homeSyncSuppressSaveRef.current = false;
+      }, 0);
+    }
+  }
+
+  async function handleApplyPendingHomeSync() {
+    if (!homeSyncPendingRemote) {
+      return;
+    }
+    await applyHomeSyncRemoteState(homeSyncPendingRemote);
+  }
+
+  function handleDismissPendingHomeSync() {
+    if (homeSyncPendingRemote) {
+      const updatedAt = getHomeSyncUpdatedAt(homeSyncPendingRemote);
+      homeSyncLastDismissedRemoteUpdatedAtRef.current = Math.max(homeSyncLastDismissedRemoteUpdatedAtRef.current, updatedAt);
+    }
+    setHomeSyncPendingRemote(null);
   }
 
   async function handleFilePicked(event: ChangeEvent<HTMLInputElement>) {
@@ -1604,6 +1944,20 @@ export function HomeScreen({
             {!isAuthenticated && response ? (
               <div className="doo-gate-banner" role="status">
                 지금은 결과 미리보기 상태입니다. 로그인하면 업로드 이력이 개인별로 저장되고, 히스토리에서 다시열기를 사용할 수 있습니다.
+              </div>
+            ) : null}
+
+            {canUseViewerStateSync && homeSyncPendingRemote ? (
+              <div className="doo-sync-banner" role="status">
+                <span className="doo-sync-banner-text">다른 기기에서 최근 작업 상태가 감지되었습니다.</span>
+                <div className="doo-sync-banner-actions">
+                  <button type="button" className="doo-sync-banner-apply" onClick={() => void handleApplyPendingHomeSync()}>
+                    동기화 적용
+                  </button>
+                  <button type="button" className="doo-sync-banner-dismiss" onClick={handleDismissPendingHomeSync}>
+                    나중에
+                  </button>
+                </div>
               </div>
             ) : null}
 
