@@ -1495,7 +1495,10 @@ def _save_promo_code_store(store: dict[str, Any]) -> dict[str, Any]:
 def _list_promo_codes() -> list[dict[str, Any]]:
     store = _load_promo_code_store()
     codes = list((store.get("codes") or {}).values())
-    codes.sort(key=lambda row: parse_datetime_sort_key(str(row.get("created_at") or "")), reverse=True)
+    codes.sort(
+        key=lambda row: _parse_iso_datetime(str(row.get("created_at") or "")) or datetime.fromtimestamp(0, tz=timezone.utc),
+        reverse=True,
+    )
     return codes
 
 
