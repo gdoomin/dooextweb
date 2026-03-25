@@ -8111,7 +8111,10 @@
         return null;
       }
       const radius = Number(match[3]);
-      return Number.isFinite(radius) && radius > 0 ? radius : null;
+      if (!Number.isFinite(radius) || radius <= 0 || radius === 999) {
+        return null;
+      }
+      return radius;
     }
 
     function extractNotamRadiusNm(content) {
