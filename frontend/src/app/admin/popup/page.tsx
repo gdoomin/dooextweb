@@ -18,6 +18,8 @@ type AdminUsageRow = {
   monthly_kml_used: number;
   total_kml_used: number;
   total_jobs: number;
+  last_accessed_at: string;
+  last_access_path: string;
   last_uploaded_at: string;
   last_filename: string;
 };
@@ -122,7 +124,7 @@ export default function PopupAdminPage() {
     const nextRows = [...usageRows];
     if (usageTab === "recent") {
       nextRows.sort((a, b) => {
-        const recentDelta = parseDateMs(b.last_uploaded_at) - parseDateMs(a.last_uploaded_at);
+        const recentDelta = parseDateMs(b.last_accessed_at || b.last_uploaded_at) - parseDateMs(a.last_accessed_at || a.last_uploaded_at);
         if (recentDelta !== 0) {
           return recentDelta;
         }
@@ -182,6 +184,8 @@ export default function PopupAdminPage() {
             monthly_kml_used: parseNumber(row.monthly_kml_used),
             total_kml_used: parseNumber(row.total_kml_used),
             total_jobs: parseNumber(row.total_jobs),
+            last_accessed_at: String(row.last_accessed_at || ""),
+            last_access_path: String(row.last_access_path || ""),
             last_uploaded_at: String(row.last_uploaded_at || ""),
             last_filename: String(row.last_filename || ""),
           };
@@ -350,14 +354,15 @@ export default function PopupAdminPage() {
                       <th>누적</th>
                       <th>작업 수</th>
                       <th>요금제</th>
-                      <th>최근 작업</th>
+                      <th>최근 접속</th>
+                      <th>접속 위치</th>
                       <th>최근 파일</th>
                     </tr>
                   </thead>
                   <tbody>
                     {displayedUsageRows.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="popup-admin-usage-empty">
+                        <td colSpan={9} className="popup-admin-usage-empty">
                           표시할 사용량 데이터가 없습니다.
                         </td>
                       </tr>
@@ -370,7 +375,8 @@ export default function PopupAdminPage() {
                           <td>{row.total_kml_used}</td>
                           <td>{row.total_jobs}</td>
                           <td>{row.plan_code || "-"}</td>
-                          <td>{formatDate(row.last_uploaded_at)}</td>
+                          <td>{formatDate(row.last_accessed_at || row.last_uploaded_at)}</td>
+                          <td>{row.last_access_path || "-"}</td>
                           <td>{row.last_filename || "-"}</td>
                         </tr>
                       ))

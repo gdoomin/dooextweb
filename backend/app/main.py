@@ -92,6 +92,7 @@ RUNTIME_DIR = _resolve_runtime_dir()
 JOBS_DIR = RUNTIME_DIR / "jobs"
 VIEWER_STATE_DIR = RUNTIME_DIR / "viewer_states"
 USER_HISTORY_DIR = RUNTIME_DIR / "user_history"
+USER_ACTIVITY_DIR = RUNTIME_DIR / "user_activity"
 USER_BILLING_DIR = RUNTIME_DIR / "user_billing"
 PAYMENT_ORDER_DIR = RUNTIME_DIR / "payment_orders"
 PAYMENT_EVENT_DIR = RUNTIME_DIR / "payment_events"
@@ -267,6 +268,7 @@ for path in (
     JOBS_DIR,
     VIEWER_STATE_DIR,
     USER_HISTORY_DIR,
+    USER_ACTIVITY_DIR,
     USER_BILLING_DIR,
     PAYMENT_ORDER_DIR,
     PAYMENT_EVENT_DIR,
@@ -432,6 +434,16 @@ def _user_email_history_path(user_email: str) -> Path:
     return USER_HISTORY_DIR / f"email_{digest}.json"
 
 
+def _user_activity_path(user_id: str) -> Path:
+    return USER_ACTIVITY_DIR / f"{user_id}.json"
+
+
+def _user_email_activity_path(user_email: str) -> Path:
+    normalized = _normalize_user_email(user_email)
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+    return USER_ACTIVITY_DIR / f"email_{digest}.json"
+
+
 def _user_billing_path(user_id: str) -> Path:
     return USER_BILLING_DIR / f"{user_id}.json"
 
@@ -458,6 +470,27 @@ def _history_paths_for_identity(user_id: str, user_email: str) -> list[Path]:
         paths.append(_user_history_path(normalized_user_id))
     if normalized_email:
         paths.append(_user_email_history_path(normalized_email))
+
+    unique_paths: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique_paths.append(path)
+    return unique_paths
+
+
+def _activity_paths_for_identity(user_id: str, user_email: str) -> list[Path]:
+    paths: list[Path] = []
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+
+    if normalized_user_id:
+        paths.append(_user_activity_path(normalized_user_id))
+    if normalized_email:
+        paths.append(_user_email_activity_path(normalized_email))
 
     unique_paths: list[Path] = []
     seen: set[str] = set()
@@ -1429,6 +1462,52 @@ def _safe_int(value: Any, default: int = 0) -> int:
         return default
 
 
+def _record_user_activity(request: Request, user_id: str, user_email: str) -> None:
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    paths = _activity_paths_for_identity(normalized_user_id, normalized_email)
+    if not paths:
+        return
+
+    request_path = str(request.url.path or "").strip()
+    request_method = str(request.method or "").strip().upper()
+    accessed_at = _utc_now_iso()
+    now_dt = _parse_iso_datetime(accessed_at)
+
+    for path in paths:
+        payload = _load_json(path, {})
+        if not isinstance(payload, dict):
+            payload = {}
+
+        previous_path = str(payload.get("last_access_path") or "").strip()
+        previous_method = str(payload.get("last_access_method") or "").strip().upper()
+        previous_at = _parse_iso_datetime(str(payload.get("last_accessed_at") or "").strip())
+        if (
+            now_dt is not None
+            and previous_at is not None
+            and previous_path == request_path
+            and previous_method == request_method
+            and (now_dt - previous_at).total_seconds() < 15
+        ):
+            if normalized_user_id and not str(payload.get("user_id") or "").strip():
+                payload["user_id"] = normalized_user_id
+            if normalized_email and not str(payload.get("user_email") or "").strip():
+                payload["user_email"] = normalized_email
+            _save_json(path, payload)
+            continue
+
+        payload.update(
+            {
+                "user_id": normalized_user_id,
+                "user_email": normalized_email,
+                "last_accessed_at": accessed_at,
+                "last_access_path": request_path,
+                "last_access_method": request_method,
+            }
+        )
+        _save_json(path, payload)
+
+
 def _collect_popup_admin_usage_rows() -> tuple[str, list[dict[str, Any]]]:
     month_key = _current_month_key()
     rows_by_key: dict[str, dict[str, Any]] = {}
@@ -1459,6 +1538,8 @@ def _collect_popup_admin_usage_rows() -> tuple[str, list[dict[str, Any]]]:
                 "monthly_kml_used": 0,
                 "total_kml_used": 0,
                 "total_jobs": 0,
+                "last_accessed_at": "",
+                "last_access_path": "",
                 "last_uploaded_at": "",
                 "last_filename": "",
             }
@@ -1513,6 +1594,29 @@ def _collect_popup_admin_usage_rows() -> tuple[str, list[dict[str, Any]]]:
                 current = count
         row["monthly_kml_used"] = current
         row["total_kml_used"] = total
+
+    for activity_path in USER_ACTIVITY_DIR.glob("*.json"):
+        payload = _load_json(activity_path, {})
+        if not isinstance(payload, dict):
+            continue
+        user_id = _normalize_user_identity(str(payload.get("user_id") or ""))
+        user_email = _normalize_user_email(str(payload.get("user_email") or ""))
+        row = _ensure_row(user_id, user_email)
+        if row is None:
+            continue
+
+        accessed_at = str(payload.get("last_accessed_at") or "").strip()
+        current_access_raw = str(row.get("last_accessed_at") or "").strip()
+        current_access = _parse_iso_datetime(current_access_raw)
+        accessed_dt = _parse_iso_datetime(accessed_at)
+        should_update_access = False
+        if accessed_dt is not None:
+            should_update_access = current_access is None or accessed_dt > current_access
+        elif accessed_at and not current_access_raw:
+            should_update_access = True
+        if should_update_access:
+            row["last_accessed_at"] = accessed_at
+            row["last_access_path"] = str(payload.get("last_access_path") or "").strip()
 
     for job_path in JOBS_DIR.glob("*.json"):
         payload = _load_json(job_path, {})
@@ -2639,6 +2743,7 @@ def _request_identity_with_created_at(
                 user_email = _normalize_user_email(str(payload.get("email") or ""))
                 created_at = str(payload.get("created_at") or "").strip()
                 if user_id:
+                    _record_user_activity(request, user_id, user_email)
                     return user_id, user_email, created_at
         except HTTPException:
             if required:
@@ -2651,6 +2756,8 @@ def _request_identity_with_created_at(
         raise HTTPException(status_code=401, detail="?筌뤾쑴理???ルㅎ荑???熬곣뫗???紐껊퉵?? ???곕뻣 ?β돦裕??筌뤿굝???낅슣?섋땻??")
 
     user_id, user_email = _request_user_identity(request, required=required)
+    if user_id or user_email:
+        _record_user_activity(request, user_id, user_email)
     return user_id, user_email, ""
 
 
@@ -3105,6 +3212,7 @@ async def save_home_state(request: Request):
 @app.get("/api/viewer/{job_id}/viewer-state")
 def get_viewer_state(job_id: str, request: Request):
     access_token = _extract_bearer_token(request)
+    _request_identity_with_created_at(request, required=False)
     job = _load_job(job_id, access_token=access_token)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
@@ -3122,6 +3230,7 @@ def get_viewer_state(job_id: str, request: Request):
 @app.post("/api/viewer/{job_id}/viewer-state")
 async def save_viewer_state(job_id: str, request: Request):
     access_token = _extract_bearer_token(request)
+    _request_identity_with_created_at(request, required=False)
     job = _load_job(job_id, access_token=access_token)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
@@ -3136,7 +3245,8 @@ async def save_viewer_state(job_id: str, request: Request):
 
 
 @app.get("/api/viewer/{job_id}/layers.json")
-def get_layers(job_id: str):
+def get_layers(job_id: str, request: Request):
+    _request_identity_with_created_at(request, required=False)
     _load_job(job_id)
     return JSONResponse(_load_map_layers())
 
