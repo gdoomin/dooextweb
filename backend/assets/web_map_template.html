@@ -909,6 +909,26 @@
       filter: brightness(1.02);
       box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
     }
+    @media (max-width: 1400px) {
+      .toolbar {
+        --tool-card-width: clamp(32px, 2.3vw, 40px);
+        --tool-card-height: clamp(24px, 1.8vw, 30px);
+        max-width: clamp(260px, calc(100vw - 360px), 980px);
+      }
+      .toolbar-row {
+        flex-wrap: wrap;
+      }
+      .toolbar > .toolbar-row:first-child {
+        overflow-x: visible;
+        overflow-y: visible;
+      }
+      .toolbar-banner {
+        display: none !important;
+      }
+      .toolbar label {
+        font-size: 12px;
+      }
+    }
     @media (max-width: 1100px) {
       .doo-pricing-columns {
         grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2219,8 +2239,8 @@
         padding: 10px 12px;
       }
       .toolbar {
-        --tool-card-width: clamp(52px, 11vw, 64px);
-        --tool-card-height: clamp(38px, 8.6vw, 46px);
+        --tool-card-width: clamp(36px, 8.2vw, 44px);
+        --tool-card-height: clamp(28px, 6.4vw, 34px);
         top: 10px;
         right: 8px;
         left: 8px;
@@ -7970,16 +7990,31 @@
       if (!eSection) {
         return [];
       }
+      const compactSection = String(eSection || '')
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, '');
       const out = [];
       const pairRe = /(\d{4,6}(?:\.\d+)?[NS])[\s,/-]*(\d{5,7}(?:\.\d+)?[EW])/gi;
       let match = null;
-      while ((match = pairRe.exec(eSection)) !== null) {
+      while ((match = pairRe.exec(compactSection)) !== null) {
         const parsed = parseCoordPair(match[1], match[2]);
         if (parsed) {
           out.push(parsed);
         }
       }
       return out;
+    }
+
+    function isNotamClosedCoordPath(points) {
+      if (!Array.isArray(points) || points.length < 4) {
+        return false;
+      }
+      const first = points[0];
+      const last = points[points.length - 1];
+      if (!first || !last) {
+        return false;
+      }
+      return first.latitude === last.latitude && first.longitude === last.longitude;
     }
 
     function removeClosingPointIfNeeded(points) {
@@ -8119,8 +8154,21 @@
     }
 
     function extractNotamPolygon(content) {
-      const points = removeClosingPointIfNeeded(extractNotamCoordPairsFromE(content));
-      return points.length >= 3 ? points : null;
+      const points = extractNotamCoordPairsFromE(content);
+      if (!isNotamClosedCoordPath(points)) {
+        return null;
+      }
+      const polygonPoints = removeClosingPointIfNeeded(points);
+      return polygonPoints.length >= 3 ? polygonPoints : null;
+    }
+
+    function extractNotamOpenPolyline(content) {
+      const points = extractNotamCoordPairsFromE(content);
+      if (isNotamClosedCoordPath(points)) {
+        return null;
+      }
+      const polylinePoints = removeClosingPointIfNeeded(points);
+      return polylinePoints.length >= 2 ? polylinePoints : null;
     }
 
     function extractNotamQRadiusNm(content) {
@@ -8216,7 +8264,7 @@
 
     function notamPathStyle(groupKey, colorValue, geometryType = 'polygon') {
       const color = String(colorValue || '#4bc6ff');
-      const isLine = geometryType === 'corridor-centerline';
+      const isLine = geometryType === 'corridor-centerline' || geometryType === 'polyline';
       const fillOpacity = geometryType === 'corridor-polygon' ? 0.1 : 0.12;
       return {
         pane: 'notamPane',
@@ -8283,10 +8331,12 @@
         ? buildNotamCorridorPolygon(corridorCenterlineCoords, corridorHalfWidthMeters)
         : null;
       const polygonCoords = corridorPolygonCoords ? null : extractNotamPolygon(content);
+      const polylineCoords = corridorPolygonCoords || polygonCoords ? null : extractNotamOpenPolyline(content);
       const polygonCenter = polygonCoords ? centroid(polygonCoords) : null;
+      const polylineCenter = polylineCoords ? centroid(polylineCoords) : null;
       const corridorCenter = corridorCenterlineCoords ? centroid(corridorCenterlineCoords) : null;
       const qCenterCoord = extractNotamQCenterCoord(content);
-      const fallbackCenter = corridorCenter || polygonCenter || qCenterCoord || null;
+      const fallbackCenter = corridorCenter || polygonCenter || polylineCenter || qCenterCoord || null;
       const rowLat = Number(item.lat);
       const rowLng = Number(item.lng);
       const latitude = Number.isFinite(rowLat) ? rowLat : (fallbackCenter ? fallbackCenter.latitude : NaN);
@@ -8329,6 +8379,7 @@
         qCircleLng,
         qCircleRadiusMeters,
         polygonCoords,
+        polylineCoords,
         corridorCenterlineCoords,
         corridorPolygonCoords,
       };
@@ -13331,8 +13382,10 @@
           const uniqueCorridorPolygons = [];
           const uniqueCorridorCenterlines = [];
           const uniquePolygons = [];
+          const uniquePolylines = [];
           const corridorKeys = new Set();
           const polygonKeys = new Set();
+          const polylineKeys = new Set();
           const uniqueRadii = new Set();
           const uniqueNavyCircles = [];
           const navyCircleKeys = new Set();
@@ -13354,6 +13407,14 @@
               if (!polygonKeys.has(polygonKey)) {
                 polygonKeys.add(polygonKey);
                 uniquePolygons.push(item.polygonCoords);
+              }
+              return;
+            }
+            if (Array.isArray(item.polylineCoords) && item.polylineCoords.length >= 2) {
+              const polylineKey = notamCoordsKey(item.polylineCoords);
+              if (!polylineKeys.has(polylineKey)) {
+                polylineKeys.add(polylineKey);
+                uniquePolylines.push(item.polylineCoords);
               }
               return;
             }
@@ -13414,6 +13475,17 @@
               {
                 ...notamPathStyle(groupKey, colorValue, 'polygon'),
                 notamGeometryType: 'polygon',
+              }
+            );
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
+            group.addLayer(layer);
+          });
+          uniquePolylines.forEach((coords) => {
+            const layer = L.polyline(
+              coords.map((point) => [point.latitude, point.longitude]),
+              {
+                ...notamPathStyle(groupKey, colorValue, 'polyline'),
+                notamGeometryType: 'polyline',
               }
             );
             bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
