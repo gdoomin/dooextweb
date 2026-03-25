@@ -3810,6 +3810,7 @@
     initializeProjectMetaDisplay();
     let layerDataMap = null;
     let layerDataPromise = null;
+    let notamNamedAreaLookup = null;
     const weatherGroups = {
       metar: L.layerGroup(),
     };
@@ -7985,12 +7986,11 @@
       return { latitude: lat, longitude: lon };
     }
 
-    function extractNotamCoordPairsFromE(content) {
-      const eSection = extractNotamESection(content);
-      if (!eSection) {
+    function extractNotamCoordPairsFromText(text) {
+      if (!text) {
         return [];
       }
-      const compactSection = String(eSection || '')
+      const compactSection = String(text || '')
         .replace(/[–—−]/g, '-')
         .replace(/\s+/g, '');
       const out = [];
@@ -8003,6 +8003,11 @@
         }
       }
       return out;
+    }
+
+    function extractNotamCoordPairsFromE(content) {
+      const eSection = extractNotamESection(content);
+      return extractNotamCoordPairsFromText(eSection);
     }
 
     function isNotamClosedCoordPath(points) {
@@ -8040,13 +8045,17 @@
       if (!eSection) {
         return null;
       }
+      const normalizedSection = String(eSection || '')
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
       const halfWidthPatterns = [
-        /(\d+(?:\.\d+)?)\s*NM\s*(?:ON\s+)?(?:EITHER|EACH)\s+SIDE/i,
-        /(?:ON\s+)?(?:EITHER|EACH)\s+SIDE\s+(\d+(?:\.\d+)?)\s*NM/i,
+        /(\d+(?:\.\d+)?)\s*NM\s*(?:ON\s+)?(?:EITHER|EACH)\s+SIDE(?:\s+OF\s+(?:THE\s+)?)?(?:LINE|CENTER\s*LINE)?/i,
+        /(?:ON\s+)?(?:EITHER|EACH)\s+SIDE(?:\s+OF\s+(?:THE\s+)?)?(?:LINE|CENTER\s*LINE)?\s*(\d+(?:\.\d+)?)\s*NM/i,
         /HALF[-\s]?WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i,
       ];
       for (const pattern of halfWidthPatterns) {
-        const match = eSection.match(pattern);
+        const match = normalizedSection.match(pattern);
         if (!match) {
           continue;
         }
@@ -8061,7 +8070,7 @@
         /WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i,
       ];
       for (const pattern of fullWidthPatterns) {
-        const match = eSection.match(pattern);
+        const match = normalizedSection.match(pattern);
         if (!match) {
           continue;
         }
@@ -8074,8 +8083,22 @@
     }
 
     function extractNotamCorridorCenterline(content) {
-      const points = removeClosingPointIfNeeded(extractNotamCoordPairsFromE(content));
-      return points.length >= 2 ? points : null;
+      const eSection = extractNotamESection(content);
+      if (!eSection) {
+        return null;
+      }
+      const normalizedSection = String(eSection || '')
+        .replace(/[–—−]/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim();
+      const lineMatch = normalizedSection.match(/\b(?:CENTER\s*)?LINE\b([\s\S]*)$/i);
+      const primarySource = lineMatch && lineMatch[1] ? lineMatch[1] : normalizedSection;
+      const primaryPoints = removeClosingPointIfNeeded(extractNotamCoordPairsFromText(primarySource));
+      if (primaryPoints.length >= 2) {
+        return primaryPoints;
+      }
+      const fallbackPoints = removeClosingPointIfNeeded(extractNotamCoordPairsFromText(normalizedSection));
+      return fallbackPoints.length >= 2 ? fallbackPoints : null;
     }
 
     function toRadians(value) {
@@ -8171,6 +8194,121 @@
       return polylinePoints.length >= 2 ? polylinePoints : null;
     }
 
+    function normalizeNotamRestrictedAreaCode(value) {
+      const compact = String(value || '')
+        .toUpperCase()
+        .replace(/[^A-Z0-9]/g, '');
+      const match = compact.match(/^RKR(\d{1,4}[A-Z]?)$/);
+      if (!match) {
+        return '';
+      }
+      return `RKR${match[1]}`;
+    }
+
+    function extractNotamRestrictedAreaCodes(content) {
+      const eSection = extractNotamESection(content);
+      if (!eSection || !/\bRESTRICT(?:ED)?\s+AREA\b/i.test(eSection)) {
+        return [];
+      }
+      const out = new Set();
+      const explicitMatches = eSection.match(/\bRK\s*R\s*\d{1,4}[A-Z]?\b/gi) || [];
+      explicitMatches.forEach((token) => {
+        const code = normalizeNotamRestrictedAreaCode(token);
+        if (code) {
+          out.add(code);
+        }
+      });
+      if (!out.size && /\bRK\b/i.test(eSection)) {
+        const fallbackMatches = eSection.match(/\bR\s*\d{1,4}[A-Z]?\b/gi) || [];
+        fallbackMatches.forEach((token) => {
+          const code = normalizeNotamRestrictedAreaCode(`RK ${token}`);
+          if (code) {
+            out.add(code);
+          }
+        });
+      }
+      return Array.from(out);
+    }
+
+    function mapLayerPointsToNotamCoords(points) {
+      if (!Array.isArray(points)) {
+        return [];
+      }
+      return points
+        .map((point) => {
+          if (!Array.isArray(point) || point.length < 2) {
+            return null;
+          }
+          const lat = Number(point[0]);
+          const lng = Number(point[1]);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return null;
+          }
+          return {
+            latitude: lat,
+            longitude: lng,
+          };
+        })
+        .filter(Boolean);
+    }
+
+    function rebuildNotamNamedAreaLookup() {
+      const lookup = new Map();
+      const restrictLayer = layerDataMap && typeof layerDataMap.get === 'function'
+        ? layerDataMap.get('restrict')
+        : null;
+      const features = Array.isArray(restrictLayer && restrictLayer.features)
+        ? restrictLayer.features
+        : [];
+      features.forEach((feature) => {
+        if (!feature || !Array.isArray(feature.points)) {
+          return;
+        }
+        const code = normalizeNotamRestrictedAreaCode(feature.name);
+        if (!code) {
+          return;
+        }
+        const featureType = String(feature.type || '').toLowerCase() === 'line' ? 'line' : 'polygon';
+        const coords = mapLayerPointsToNotamCoords(feature.points);
+        if ((featureType === 'polygon' && coords.length < 3) || (featureType === 'line' && coords.length < 2)) {
+          return;
+        }
+        if (!lookup.has(code)) {
+          lookup.set(code, []);
+        }
+        lookup.get(code).push({
+          code,
+          name: String(feature.name || '').trim(),
+          featureType,
+          coords,
+        });
+      });
+      notamNamedAreaLookup = lookup;
+      return lookup;
+    }
+
+    function resolveNotamRestrictedAreaFeatures(content) {
+      const codes = extractNotamRestrictedAreaCodes(content);
+      if (!codes.length) {
+        return [];
+      }
+      const lookup = notamNamedAreaLookup || rebuildNotamNamedAreaLookup();
+      const resolved = [];
+      const seen = new Set();
+      codes.forEach((code) => {
+        const matches = Array.isArray(lookup.get(code)) ? lookup.get(code) : [];
+        matches.forEach((feature) => {
+          const key = `${feature.featureType}|${feature.name}|${notamCoordsKey(feature.coords)}`;
+          if (seen.has(key)) {
+            return;
+          }
+          seen.add(key);
+          resolved.push(feature);
+        });
+      });
+      return resolved;
+    }
+
     function extractNotamQRadiusNm(content) {
       const qRaw = extractNotamSectionValue(content, 'Q');
       if (!qRaw) {
@@ -8264,17 +8402,20 @@
 
     function notamPathStyle(groupKey, colorValue, geometryType = 'polygon') {
       const color = String(colorValue || '#4bc6ff');
-      const isLine = geometryType === 'corridor-centerline' || geometryType === 'polyline';
+      const isCenterline = geometryType === 'corridor-centerline';
+      const isLine = isCenterline || geometryType === 'polyline';
       const fillOpacity = geometryType === 'corridor-polygon' ? 0.1 : 0.12;
+      const strokeWeight = isCenterline ? 2.5 : (isLine ? 1.8 : 1.5);
       return {
         pane: 'notamPane',
         color,
-        weight: isLine ? 1.8 : 1.5,
+        weight: strokeWeight,
         opacity: 0.95,
         fillColor: color,
         fillOpacity: isLine ? 0 : fillOpacity,
         lineCap: 'round',
         lineJoin: 'round',
+        dashArray: isCenterline ? '8 6' : undefined,
         renderer,
       };
     }
@@ -8324,6 +8465,7 @@
     function buildParsedNotamItem(rawItem) {
       const item = rawItem && typeof rawItem === 'object' ? rawItem : {};
       const content = sanitizeNotamContent(item.content || '');
+      const restrictedAreaFeatures = resolveNotamRestrictedAreaFeatures(content);
       const corridorHalfWidthNm = extractNotamCorridorHalfWidthNm(content);
       const corridorCenterlineCoords = corridorHalfWidthNm != null ? extractNotamCorridorCenterline(content) : null;
       const corridorHalfWidthMeters = corridorHalfWidthNm != null ? corridorHalfWidthNm * 1852 : null;
@@ -8334,9 +8476,12 @@
       const polylineCoords = corridorPolygonCoords || polygonCoords ? null : extractNotamOpenPolyline(content);
       const polygonCenter = polygonCoords ? centroid(polygonCoords) : null;
       const polylineCenter = polylineCoords ? centroid(polylineCoords) : null;
+      const restrictedAreaCenter = restrictedAreaFeatures.length && Array.isArray(restrictedAreaFeatures[0].coords)
+        ? centroid(restrictedAreaFeatures[0].coords)
+        : null;
       const corridorCenter = corridorCenterlineCoords ? centroid(corridorCenterlineCoords) : null;
       const qCenterCoord = extractNotamQCenterCoord(content);
-      const fallbackCenter = corridorCenter || polygonCenter || polylineCenter || qCenterCoord || null;
+      const fallbackCenter = corridorCenter || polygonCenter || polylineCenter || restrictedAreaCenter || qCenterCoord || null;
       const rowLat = Number(item.lat);
       const rowLng = Number(item.lng);
       const latitude = Number.isFinite(rowLat) ? rowLat : (fallbackCenter ? fallbackCenter.latitude : NaN);
@@ -8345,7 +8490,7 @@
         return null;
       }
       const radiusNm = extractNotamRadiusNm(content);
-      const radiusMeters = Number.isFinite(radiusNm) && radiusNm > 0 ? radiusNm * 1852 : null;
+      let radiusMeters = Number.isFinite(radiusNm) && radiusNm > 0 ? radiusNm * 1852 : null;
       const qRadiusNm = extractNotamQRadiusNm(content);
       let qCircleLat = null;
       let qCircleLng = null;
@@ -8364,6 +8509,12 @@
         qCircleLng = longitude;
         qCircleRadiusMeters = radiusMeters;
       }
+      if (restrictedAreaFeatures.length > 0) {
+        radiusMeters = null;
+        qCircleLat = null;
+        qCircleLng = null;
+        qCircleRadiusMeters = null;
+      }
       return {
         raw: item,
         content,
@@ -8378,6 +8529,7 @@
         qCircleLat,
         qCircleLng,
         qCircleRadiusMeters,
+        restrictedAreaFeatures,
         polygonCoords,
         polylineCoords,
         corridorCenterlineCoords,
@@ -12824,6 +12976,7 @@
             }
           });
           layerDataMap = mapData;
+          notamNamedAreaLookup = null;
           return mapData;
         })
         .finally(() => {
@@ -13391,6 +13544,28 @@
           const navyCircleKeys = new Set();
 
           groupItem.items.forEach((item) => {
+            if (Array.isArray(item.restrictedAreaFeatures) && item.restrictedAreaFeatures.length) {
+              item.restrictedAreaFeatures.forEach((feature) => {
+                if (!feature || !Array.isArray(feature.coords)) {
+                  return;
+                }
+                if (feature.featureType === 'polygon' && feature.coords.length >= 3) {
+                  const polygonKey = notamCoordsKey(feature.coords);
+                  if (!polygonKeys.has(polygonKey)) {
+                    polygonKeys.add(polygonKey);
+                    uniquePolygons.push(feature.coords);
+                  }
+                  return;
+                }
+                if (feature.featureType === 'line' && feature.coords.length >= 2) {
+                  const polylineKey = notamCoordsKey(feature.coords);
+                  if (!polylineKeys.has(polylineKey)) {
+                    polylineKeys.add(polylineKey);
+                    uniquePolylines.push(feature.coords);
+                  }
+                }
+              });
+            }
             if (Array.isArray(item.corridorPolygonCoords) && item.corridorPolygonCoords.length >= 4) {
               const corridorKey = notamCoordsKey(item.corridorPolygonCoords);
               if (!corridorKeys.has(corridorKey)) {
@@ -13575,8 +13750,11 @@
       notamState.loading = true;
       notamButton.disabled = true;
       const requestUrl = `/api/notam?bbox=${encodeURIComponent(getNotamBoundsQuery())}&limit=1200`;
-      const pending = fetchJson(requestUrl)
-        .then((data) => {
+      const pending = Promise.all([
+        fetchJson(requestUrl),
+        ensureLayerData().catch(() => null),
+      ])
+        .then(([data]) => {
           renderNotamItems(Array.isArray(data && data.items) ? data.items : []);
           notamState.loaded = true;
         })
