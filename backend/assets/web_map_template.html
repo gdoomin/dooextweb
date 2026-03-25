@@ -8201,8 +8201,26 @@
       };
     }
 
+    function notamQCircleStyle() {
+      const navy = '#000080';
+      return {
+        pane: 'notamPane',
+        color: navy,
+        weight: 1.7,
+        opacity: 0.96,
+        fillColor: navy,
+        fillOpacity: 0.14,
+        lineCap: 'round',
+        lineJoin: 'round',
+        renderer,
+      };
+    }
+
     function applyNotamLayerStyle(layer, groupKey, colorValue) {
       if (!layer || typeof layer.setStyle !== 'function') {
+        return;
+      }
+      if (layer.options && layer.options.notamFixedColor) {
         return;
       }
       const geometryType = layer.options && layer.options.notamGeometryType
@@ -8237,8 +8255,8 @@
       const polygonCoords = corridorPolygonCoords ? null : extractNotamPolygon(content);
       const polygonCenter = polygonCoords ? centroid(polygonCoords) : null;
       const corridorCenter = corridorCenterlineCoords ? centroid(corridorCenterlineCoords) : null;
-      const qCenter = extractNotamQCenterCoord(content);
-      const fallbackCenter = corridorCenter || polygonCenter || qCenter || null;
+      const qCenterCoord = extractNotamQCenterCoord(content);
+      const fallbackCenter = corridorCenter || polygonCenter || qCenterCoord || null;
       const rowLat = Number(item.lat);
       const rowLng = Number(item.lng);
       const latitude = Number.isFinite(rowLat) ? rowLat : (fallbackCenter ? fallbackCenter.latitude : NaN);
@@ -8247,6 +8265,25 @@
         return null;
       }
       const radiusNm = extractNotamRadiusNm(content);
+      const radiusMeters = Number.isFinite(radiusNm) && radiusNm > 0 ? radiusNm * 1852 : null;
+      const qRadiusNm = extractNotamQRadiusNm(content);
+      let qCircleLat = null;
+      let qCircleLng = null;
+      let qCircleRadiusMeters = null;
+      if (
+        qCenterCoord &&
+        Number.isFinite(qRadiusNm) &&
+        qRadiusNm > 0
+      ) {
+        qCircleLat = Number(qCenterCoord.latitude);
+        qCircleLng = Number(qCenterCoord.longitude);
+        qCircleRadiusMeters = qRadiusNm * 1852;
+      } else if (Number.isFinite(radiusMeters) && radiusMeters > 0) {
+        // Q항목 파싱 실패 시 기존 반경 로직으로 대체
+        qCircleLat = latitude;
+        qCircleLng = longitude;
+        qCircleRadiusMeters = radiusMeters;
+      }
       return {
         raw: item,
         content,
@@ -8257,7 +8294,10 @@
         endDate: item.end_date,
         lat: latitude,
         lng: longitude,
-        radiusMeters: Number.isFinite(radiusNm) && radiusNm > 0 ? radiusNm * 1852 : null,
+        radiusMeters,
+        qCircleLat,
+        qCircleLng,
+        qCircleRadiusMeters,
         polygonCoords,
         corridorCenterlineCoords,
         corridorPolygonCoords,
@@ -13132,6 +13172,8 @@
           const corridorKeys = new Set();
           const polygonKeys = new Set();
           const uniqueRadii = new Set();
+          const uniqueNavyCircles = [];
+          const navyCircleKeys = new Set();
 
           groupItem.items.forEach((item) => {
             if (Array.isArray(item.corridorPolygonCoords) && item.corridorPolygonCoords.length >= 4) {
@@ -13155,6 +13197,25 @@
             }
             if (Number.isFinite(item.radiusMeters) && item.radiusMeters > 0) {
               uniqueRadii.add(Math.round(item.radiusMeters));
+            }
+            const qCircleLat = Number(item.qCircleLat);
+            const qCircleLng = Number(item.qCircleLng);
+            const qCircleRadiusMeters = Number(item.qCircleRadiusMeters);
+            if (
+              Number.isFinite(qCircleLat) &&
+              Number.isFinite(qCircleLng) &&
+              Number.isFinite(qCircleRadiusMeters) &&
+              qCircleRadiusMeters > 0
+            ) {
+              const navyKey = `${qCircleLat.toFixed(6)}|${qCircleLng.toFixed(6)}|${Math.round(qCircleRadiusMeters)}`;
+              if (!navyCircleKeys.has(navyKey)) {
+                navyCircleKeys.add(navyKey);
+                uniqueNavyCircles.push({
+                  lat: qCircleLat,
+                  lng: qCircleLng,
+                  radiusMeters: qCircleRadiusMeters,
+                });
+              }
             }
           });
 
@@ -13201,6 +13262,17 @@
               ...notamPathStyle(groupKey, colorValue, 'circle'),
               radius: radiusMeters,
               notamGeometryType: 'circle',
+            });
+            bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
+            group.addLayer(layer);
+          });
+
+          uniqueNavyCircles.forEach((circle) => {
+            const layer = L.circle([circle.lat, circle.lng], {
+              ...notamQCircleStyle(),
+              radius: circle.radiusMeters,
+              notamGeometryType: 'q-circle',
+              notamFixedColor: true,
             });
             bindNotamLayerInteractions(layer, detailItems, tooltipTitle);
             group.addLayer(layer);
