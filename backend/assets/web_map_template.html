@@ -8977,43 +8977,6 @@
       return nowMinutes >= sunriseMinutes && nowMinutes < sunsetMinutes;
     }
 
-    function buildGk2aImageUrl(channel, utcDate, baseUrl) {
-      const normalizedChannel = String(channel || 'ir105').trim().toLowerCase();
-      const rootRaw = String(baseUrl || '/api/weather/satellite-image').trim();
-      const root = rootRaw || '/api/weather/satellite-image';
-      const year = utcDate.getUTCFullYear();
-      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(utcDate.getUTCDate()).padStart(2, '0');
-      const hour = String(utcDate.getUTCHours()).padStart(2, '0');
-      const minute = String(utcDate.getUTCMinutes()).padStart(2, '0');
-      const yyyymmdd = `${year}${month}${day}`;
-      const hhmm = `${hour}${minute}`;
-      const timestamp = `${yyyymmdd}${hhmm}`;
-      const separator = root.includes('?') ? '&' : '?';
-      return `${root}${separator}channel=${encodeURIComponent(normalizedChannel)}&date=${timestamp}`;
-    }
-
-    function probeImageUrl(url, timeoutMs = 12000) {
-      return new Promise((resolve) => {
-        let done = false;
-        const image = new Image();
-        const finish = (ok) => {
-          if (done) {
-            return;
-          }
-          done = true;
-          window.clearTimeout(timer);
-          image.onload = null;
-          image.onerror = null;
-          resolve(ok);
-        };
-        const timer = window.setTimeout(() => finish(false), timeoutMs);
-        image.onload = () => finish(true);
-        image.onerror = () => finish(false);
-        image.src = url;
-      });
-    }
-
     function ensureSatelliteTimeControl() {
       if (satelliteTimeControlElement) {
         return satelliteTimeControlElement;
@@ -9053,71 +9016,6 @@
         window.clearInterval(satelliteRefreshTimer);
         satelliteRefreshTimer = null;
       }
-    }
-
-    async function refreshGk2aSatelliteOverlay(layerConfig, paneName, key = 'satellite') {
-      const config = layerConfig && typeof layerConfig === 'object' ? layerConfig : {};
-      const bounds = parseSatelliteBounds(config.bounds);
-      const baseUrl = String(config.base_url || '/api/weather/satellite-image').trim();
-      const delayMinutesRaw = Number(config.delay_minutes);
-      const delayMinutes = Number.isFinite(delayMinutesRaw) ? clamp(delayMinutesRaw, 0, 30) : 4;
-      const fallbackStepsRaw = Number(config.fallback_steps);
-      const fallbackSteps = Number.isFinite(fallbackStepsRaw) ? clamp(Math.round(fallbackStepsRaw), 0, 30) : 10;
-      const opacityRaw = Number(config.opacity);
-      const opacity = Number.isFinite(opacityRaw) ? clamp(opacityRaw, 0.05, 1) : 0.75;
-      const dayChannel = String(config.day_channel || 'vi006').trim().toLowerCase();
-      const nightChannel = String(config.night_channel || 'ir105').trim().toLowerCase();
-
-      const captureUtc = floorUtcToEvenMinute(new Date(Date.now() - (delayMinutes * 60 * 1000)));
-      const preferredChannel = isDaylightOverKorea(captureUtc, bounds) ? dayChannel : nightChannel;
-      const candidateChannels = [preferredChannel, nightChannel].filter((item, index, array) => item && array.indexOf(item) === index);
-
-      let selectedChannel = '';
-      let selectedUrl = '';
-      let selectedCaptureUtc = null;
-      for (let step = 0; step <= fallbackSteps && !selectedUrl; step += 1) {
-        const candidateCaptureUtc = new Date(captureUtc.getTime() - (step * 2 * 60 * 1000));
-        for (const candidate of candidateChannels) {
-          const candidateUrl = buildGk2aImageUrl(candidate, candidateCaptureUtc, baseUrl);
-          const ok = await probeImageUrl(candidateUrl);
-          if (!ok) {
-            continue;
-          }
-          selectedChannel = candidate;
-          selectedCaptureUtc = candidateCaptureUtc;
-          selectedUrl = candidateUrl;
-          break;
-        }
-      }
-      if (!selectedUrl) {
-        throw new Error('gk2a image unavailable');
-      }
-
-      const overlayOptions = {
-        pane: paneName,
-        opacity,
-        interactive: false,
-        attribution: String(config.attribution || ''),
-      };
-      if (!weatherTiles[key]) {
-        weatherTiles[key] = L.imageOverlay(selectedUrl, bounds, overlayOptions);
-      } else if (typeof weatherTiles[key].setUrl === 'function') {
-        weatherTiles[key].setUrl(selectedUrl);
-      } else {
-        map.removeLayer(weatherTiles[key]);
-        weatherTiles[key] = L.imageOverlay(selectedUrl, bounds, overlayOptions);
-      }
-      if (typeof weatherTiles[key].setOpacity === 'function') {
-        weatherTiles[key].setOpacity(opacity);
-      }
-      if (!map.hasLayer(weatherTiles[key])) {
-        weatherTiles[key].addTo(map);
-      }
-
-      const resolvedCaptureUtc = selectedCaptureUtc || captureUtc;
-      setSatelliteTimeLabel(resolvedCaptureUtc, selectedChannel);
-      setWeatherBadge(key, selectedChannel.toUpperCase(), 'live');
-      return { captureUtc: resolvedCaptureUtc, channel: selectedChannel };
     }
 
     function aviationColor(props) {
@@ -13264,7 +13162,7 @@
       }
     }
 
-    async function syncGk2aSatelliteLayer(key, configKey, paneName) {
+    async function syncSatelliteWeatherLayer(key, configKey, paneName) {
       const controls = weatherControls.get(key);
       if (!controls) {
         return;
@@ -13383,7 +13281,7 @@
       }
 
       if (layerKey === 'satellite') {
-        await syncGk2aSatelliteLayer('satellite', 'satellite', 'weatherSatellitePane');
+        await syncSatelliteWeatherLayer('satellite', 'satellite', 'weatherSatellitePane');
         return;
       }
 

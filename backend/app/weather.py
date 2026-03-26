@@ -84,19 +84,6 @@ def build_weather_config() -> dict[str, Any]:
         if radar_time:
             radar_generated = datetime.fromtimestamp(int(radar_time), tz=timezone.utc).isoformat()
 
-    gk2a_base_url = GK2A_IMAGE_PROXY_PATH
-    gk2a_delay_minutes = 4
-    gk2a_refresh_seconds = 120
-    gk2a_day_channel = "vi006"
-    gk2a_night_channel = "ir105"
-    gk2a_fallback_steps = 0
-    capture_utc = datetime.now(timezone.utc) - timedelta(minutes=gk2a_delay_minutes)
-    capture_utc = capture_utc.replace(minute=(capture_utc.minute // 2) * 2, second=0, microsecond=0)
-    capture_yyyymmdd = capture_utc.strftime("%Y%m%d")
-    capture_hhmm = capture_utc.strftime("%H%M")
-    satellite_channel = gk2a_night_channel
-    satellite_image_url = f"{gk2a_base_url}?channel={satellite_channel}&date={capture_yyyymmdd}{capture_hhmm}"
-
     return {
         "ok": True,
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -108,29 +95,7 @@ def build_weather_config() -> dict[str, Any]:
             "max_zoom": 19,
             "max_native_zoom": 7,
         },
-        "satellite": {
-            "provider": "gk2a",
-            "base_url": gk2a_base_url,
-            "upstream_base_url": GK2A_API_BASE_URL,
-            "image_url": satellite_image_url,
-            "updated_at": capture_utc.isoformat(),
-            "yyyymmdd": capture_yyyymmdd,
-            "hhmm": capture_hhmm,
-            "day_channel": gk2a_day_channel,
-            "night_channel": gk2a_night_channel,
-            "delay_minutes": gk2a_delay_minutes,
-            "fallback_steps": gk2a_fallback_steps,
-            "refresh_seconds": gk2a_refresh_seconds,
-            # GK-2A KO 영역 코너(문서 기준) 평균 경도대를 사용한 근사 bounds
-            # TL: 45.728965N, 113.996418E / TR: 45.728965N, 138.003582E
-            # BL: 29.312252N, 116.753260E / BR: 29.312252N, 135.246740E
-            "bounds": [[29.312252, 115.374839], [45.728965, 136.625161]],
-            "attribution": "NMSC GK-2A AMI",
-            "opacity": 0.75,
-            "max_zoom": 12,
-        },
     }
-
 
 def build_weather_grid(
     bbox: tuple[float, float, float, float],

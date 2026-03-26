@@ -33,13 +33,7 @@ from .weather import (
     build_aviation_overlay,
     build_weather_config,
     build_weather_grid,
-    configure_gk2a_cache_dir,
-    configure_gk2a_supabase_cache_from_env,
-    fetch_gk2a_image,
-    normalize_gk2a_channel,
     parse_bbox_param,
-    parse_gk2a_capture_datetime,
-    sync_gk2a_local_cache_to_supabase,
 )
 
 
@@ -97,7 +91,6 @@ USER_BILLING_DIR = RUNTIME_DIR / "user_billing"
 PAYMENT_ORDER_DIR = RUNTIME_DIR / "payment_orders"
 PAYMENT_EVENT_DIR = RUNTIME_DIR / "payment_events"
 PAYMENT_USAGE_DIR = RUNTIME_DIR / "payment_usage"
-WEATHER_SATELLITE_CACHE_DIR = RUNTIME_DIR / "weather_satellite_cache"
 MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
@@ -295,14 +288,10 @@ for path in (
     PAYMENT_ORDER_DIR,
     PAYMENT_EVENT_DIR,
     PAYMENT_USAGE_DIR,
-    WEATHER_SATELLITE_CACHE_DIR,
 ):
     path.mkdir(parents=True, exist_ok=True)
 
 FONTS_DIR.mkdir(parents=True, exist_ok=True)
-configure_gk2a_cache_dir(WEATHER_SATELLITE_CACHE_DIR)
-configure_gk2a_supabase_cache_from_env()
-sync_gk2a_local_cache_to_supabase()
 
 
 def _same_path(a: Path, b: Path) -> bool:
@@ -359,83 +348,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-_SATELLITE_PREFETCH_STOP = threading.Event()
-_SATELLITE_PREFETCH_THREAD: threading.Thread | None = None
-
-
-def _env_flag(name: str, default: bool = False) -> bool:
-    raw = str(os.getenv(name) or "").strip().lower()
-    if raw in {"1", "true", "yes", "on", "y"}:
-        return True
-    if raw in {"0", "false", "no", "off", "n"}:
-        return False
-    return default
-
-
-def _satellite_prefetch_interval_seconds() -> int:
-    raw = str(os.getenv("DOO_GK2A_PREFETCH_INTERVAL_SECONDS") or "").strip()
-    try:
-        value = int(raw) if raw else 120
-    except ValueError:
-        value = 120
-    return max(60, min(600, value))
-
-
-def _satellite_prefetch_delay_minutes() -> int:
-    raw = str(os.getenv("DOO_GK2A_DELAY_MINUTES") or "").strip()
-    try:
-        value = int(raw) if raw else 4
-    except ValueError:
-        value = 4
-    return max(0, min(30, value))
-
-
-def _satellite_prefetch_cycle() -> None:
-    capture_utc = parse_gk2a_capture_datetime(None, default_delay_minutes=_satellite_prefetch_delay_minutes())
-    for channel in ("ir105", "vi006"):
-        try:
-            fetch_gk2a_image(channel, capture_utc, allow_stale_fallback=False)
-        except WeatherProviderError:
-            continue
-
-
-def _satellite_prefetch_worker() -> None:
-    interval = _satellite_prefetch_interval_seconds()
-    while not _SATELLITE_PREFETCH_STOP.is_set():
-        _satellite_prefetch_cycle()
-        if _SATELLITE_PREFETCH_STOP.wait(interval):
-            break
-
-
-def _start_satellite_prefetch_thread() -> None:
-    global _SATELLITE_PREFETCH_THREAD
-    if not _env_flag("DOO_GK2A_PREFETCH_ENABLED", default=True):
-        return
-    if _SATELLITE_PREFETCH_THREAD and _SATELLITE_PREFETCH_THREAD.is_alive():
-        return
-    _SATELLITE_PREFETCH_STOP.clear()
-    thread = threading.Thread(target=_satellite_prefetch_worker, name="gk2a-prefetch", daemon=True)
-    thread.start()
-    _SATELLITE_PREFETCH_THREAD = thread
-
-
-def _stop_satellite_prefetch_thread() -> None:
-    _SATELLITE_PREFETCH_STOP.set()
-    thread = _SATELLITE_PREFETCH_THREAD
-    if thread and thread.is_alive():
-        thread.join(timeout=3.0)
-
-
-@app.on_event("startup")
-def _startup_background_workers() -> None:
-    _start_satellite_prefetch_thread()
-
-
-@app.on_event("shutdown")
-def _shutdown_background_workers() -> None:
-    _stop_satellite_prefetch_thread()
 
 
 def _job_path(job_id: str) -> Path:
@@ -4119,31 +4031,6 @@ def get_weather_config():
         return JSONResponse(build_weather_config())
     except WeatherProviderError as error:
         raise HTTPException(status_code=502, detail=f"weather config unavailable: {error}") from error
-
-
-@app.get("/api/weather/satellite-image")
-def get_weather_satellite_image(request: Request):
-    query = request.query_params
-    channel_param = query.get("channel") or "ir105"
-    date_param = query.get("date")
-    try:
-        normalized_channel = normalize_gk2a_channel(channel_param)
-        capture_utc = parse_gk2a_capture_datetime(date_param)
-        image_bytes, resolved_channel, resolved_timestamp = fetch_gk2a_image(normalized_channel, capture_utc)
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
-    except WeatherProviderError as error:
-        raise HTTPException(status_code=502, detail=f"satellite image unavailable: {error}") from error
-
-    return Response(
-        content=image_bytes,
-        media_type="image/png",
-        headers={
-            "Cache-Control": "public, max-age=90",
-            "X-GK2A-Channel": resolved_channel,
-            "X-GK2A-Timestamp": resolved_timestamp,
-        },
-    )
 
 
 @app.get("/api/weather/grid")
