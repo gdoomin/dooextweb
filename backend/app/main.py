@@ -93,6 +93,7 @@ PAYMENT_EVENT_DIR = RUNTIME_DIR / "payment_events"
 PAYMENT_USAGE_DIR = RUNTIME_DIR / "payment_usage"
 MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
+KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
@@ -1696,7 +1697,10 @@ def _load_map_layers() -> dict:
     layers = data.get("layers", []) if isinstance(data, dict) else []
     if not isinstance(layers, list):
         layers = []
-    return {"layers": layers}
+    korea_outline = _load_json(KOREA_OUTLINE_PATH, {"type": "FeatureCollection", "features": []})
+    if not isinstance(korea_outline, dict):
+        korea_outline = {"type": "FeatureCollection", "features": []}
+    return {"layers": layers, "korea_outline": korea_outline}
 
 
 def _build_map_layer_catalog() -> list[dict]:

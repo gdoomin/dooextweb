@@ -3559,6 +3559,8 @@
     map.getPane('kmzPointPane').style.zIndex = '640';
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
+    map.createPane('koreaOutlinePane');
+    map.getPane('koreaOutlinePane').style.zIndex = '245';
     map.createPane('weatherOverlayPane');
     map.getPane('weatherOverlayPane').style.zIndex = '650';
     map.createPane('notamPane');
@@ -3810,9 +3812,11 @@
     initializeProjectMetaDisplay();
     let layerDataMap = null;
     let layerDataPromise = null;
+    let koreaOutlineGeoJson = null;
     let notamNamedAreaLookup = null;
     const weatherGroups = {
       metar: L.layerGroup(),
+      satelliteOutline: L.layerGroup(),
     };
     const weatherOverlayGroups = {
       root: L.layerGroup(),
@@ -12874,6 +12878,9 @@
             }
           });
           layerDataMap = mapData;
+          koreaOutlineGeoJson = data && data.korea_outline && typeof data.korea_outline === 'object'
+            ? data.korea_outline
+            : null;
           notamNamedAreaLookup = null;
           return mapData;
         })
@@ -12882,6 +12889,55 @@
         });
 
       return layerDataPromise;
+    }
+
+    function createKoreaOutlineStyle() {
+      return {
+        pane: 'koreaOutlinePane',
+        color: '#B7FF3C',
+        weight: 2.4,
+        opacity: 0.94,
+        fill: false,
+        interactive: false,
+        lineJoin: 'round',
+      };
+    }
+
+    function ensureKoreaSatelliteOutlineLayer() {
+      if (weatherGroups.satelliteOutline.getLayers().length) {
+        return weatherGroups.satelliteOutline;
+      }
+      const featureCollection = koreaOutlineGeoJson && typeof koreaOutlineGeoJson === 'object'
+        ? koreaOutlineGeoJson
+        : null;
+      const features = Array.isArray(featureCollection && featureCollection.features)
+        ? featureCollection.features
+        : [];
+      if (!features.length) {
+        return null;
+      }
+      const outlineLayer = L.geoJSON(featureCollection, {
+        pane: 'koreaOutlinePane',
+        interactive: false,
+        style: createKoreaOutlineStyle,
+      });
+      weatherGroups.satelliteOutline.clearLayers();
+      weatherGroups.satelliteOutline.addLayer(outlineLayer);
+      return weatherGroups.satelliteOutline;
+    }
+
+    async function syncKoreaSatelliteOutline(visible) {
+      if (!visible) {
+        map.removeLayer(weatherGroups.satelliteOutline);
+        return;
+      }
+      if (!koreaOutlineGeoJson) {
+        await ensureLayerData();
+      }
+      const group = ensureKoreaSatelliteOutlineLayer();
+      if (group && !map.hasLayer(group)) {
+        map.addLayer(group);
+      }
     }
 
     function buildLayerTooltip(feature, fallbackLabel) {
@@ -13171,6 +13227,7 @@
       if (!controls.toggle.checked) {
         stopSatelliteRefreshTimer();
         hideSatelliteTimeLabel();
+        syncKoreaSatelliteOutline(false);
         if (weatherTiles[key]) {
           map.removeLayer(weatherTiles[key]);
         }
@@ -13212,6 +13269,11 @@
           if (!map.hasLayer(weatherTiles[key])) {
             weatherTiles[key].addTo(map);
           }
+          try {
+            await syncKoreaSatelliteOutline(true);
+          } catch (outlineError) {
+            map.removeLayer(weatherGroups.satelliteOutline);
+          }
           const updatedAtRaw = String(layerConfig.updated_at || '').trim();
           const updatedAtDate = updatedAtRaw ? new Date(updatedAtRaw) : null;
           if (updatedAtDate && !Number.isNaN(updatedAtDate.getTime())) {
@@ -13248,6 +13310,7 @@
         controls.toggle.checked = false;
         stopSatelliteRefreshTimer();
         hideSatelliteTimeLabel();
+        syncKoreaSatelliteOutline(false);
         if (weatherTiles[key]) {
           map.removeLayer(weatherTiles[key]);
         }
@@ -13269,6 +13332,7 @@
         if (layerKey === 'satellite') {
           stopSatelliteRefreshTimer();
           hideSatelliteTimeLabel();
+          syncKoreaSatelliteOutline(false);
           if (weatherTiles.satellite) {
             map.removeLayer(weatherTiles.satellite);
           }
