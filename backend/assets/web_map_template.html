@@ -12940,10 +12940,42 @@
       }
     }
 
+    function escapeHtmlMultiline(value) {
+      return String(value || '')
+        .split(/\r?\n/)
+        .filter((line) => line.trim())
+        .map((line) => escapeHtml(line))
+        .join('<br>');
+    }
+
     function buildLayerTooltip(feature, fallbackLabel) {
       const name = feature.name || fallbackLabel;
-      const desc = feature.description ? `<br>${escapeHtml(feature.description)}` : '';
-      return `<strong>${escapeHtml(name)}</strong>${desc}`;
+      const lines = [];
+      if (feature.airspace_class) {
+        lines.push(`Class ${String(feature.airspace_class).trim()}`);
+      }
+      if (feature.zone_label || feature.zone_altitude) {
+        const zoneLabel = String(feature.zone_label || '').trim();
+        const zoneAltitude = String(feature.zone_altitude || '').trim();
+        if (zoneLabel || zoneAltitude) {
+          lines.push(`현재 경계: ${[zoneLabel, zoneAltitude].filter(Boolean).join(' · ')}`);
+        }
+      }
+      if (Array.isArray(feature.info_lines)) {
+        feature.info_lines.forEach((line) => {
+          const text = String(line || '').trim();
+          if (text) {
+            lines.push(text);
+          }
+        });
+      } else if (feature.description) {
+        lines.push(String(feature.description));
+      }
+
+      const body = lines.length
+        ? `<br>${lines.map((line) => escapeHtmlMultiline(line)).join('<br>')}`
+        : '';
+      return `<strong>${escapeHtml(name)}</strong>${body}`;
     }
 
     async function ensureLayerBundle(layerKey) {
