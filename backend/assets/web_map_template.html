@@ -1379,7 +1379,7 @@
     }
     .layer-row {
       display: grid;
-      grid-template-columns: auto 1fr auto auto;
+      grid-template-columns: auto 1fr auto auto auto;
       gap: 10px;
       align-items: center;
       padding: 8px 6px;
@@ -1424,6 +1424,27 @@
       padding: 0;
       background: transparent;
       cursor: pointer;
+    }
+    .layer-reset-button {
+      appearance: none;
+      border: 1px solid rgba(121, 192, 255, 0.28);
+      background: rgba(19, 32, 51, 0.5);
+      color: #d7e6f7;
+      border-radius: 999px;
+      padding: 4px 8px;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .layer-reset-button:hover {
+      border-color: rgba(153, 211, 255, 0.56);
+      background: rgba(30, 54, 84, 0.66);
+    }
+    .layer-reset-button:disabled {
+      opacity: 0.5;
+      cursor: default;
     }
     .layer-paid-button {
       appearance: none;
@@ -12187,7 +12208,33 @@
       if (!Array.isArray(savedLayers)) {
         return;
       }
-      for (const layerState of savedLayers) {
+      const explicitKeys = new Set(
+        savedLayers
+          .map((item) => (item && typeof item.key === 'string' ? item.key : ''))
+          .filter(Boolean)
+      );
+      const expandedStates = [];
+      savedLayers.forEach((layerState) => {
+        if (!layerState || typeof layerState.key !== 'string') {
+          return;
+        }
+        if (layerState.key === 'airport' && !layerControls.has('airport')) {
+          const migratedTargets = ['class_b', 'class_c', 'class_d']
+            .filter((targetKey) => layerControls.has(targetKey) && !explicitKeys.has(targetKey));
+          if (migratedTargets.length) {
+            migratedTargets.forEach((targetKey) => {
+              expandedStates.push({
+                key: targetKey,
+                visible: !!layerState.visible,
+                color: layerState.color,
+              });
+            });
+            return;
+          }
+        }
+        expandedStates.push(layerState);
+      });
+      for (const layerState of expandedStates) {
         if (!layerState || !layerControls.has(layerState.key)) {
           continue;
         }
@@ -12967,6 +13014,9 @@
       notamControls.forEach((controls) => {
         controls.toggle.disabled = !isEnabled;
         controls.color.disabled = !isEnabled;
+        if (controls.resetButton) {
+          controls.resetButton.disabled = !isEnabled;
+        }
       });
     }
 
@@ -12985,7 +13035,11 @@
       if (notamControls.size) {
         return;
       }
-      const airportAnchor = anchorRow || layerRows.querySelector('.layer-row[data-layer-key="airport"]');
+      const airportAnchor = anchorRow
+        || layerRows.querySelector('.layer-row[data-layer-key="class_d"]')
+        || layerRows.querySelector('.layer-row[data-layer-key="class_c"]')
+        || layerRows.querySelector('.layer-row[data-layer-key="class_b"]')
+        || layerRows.querySelector('.layer-row[data-layer-key="airport"]');
       let insertAfter = airportAnchor;
 
       NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
@@ -13014,7 +13068,13 @@
         color.value = definition.defaultColor;
         color.disabled = true;
 
-        row.append(label, count, color);
+        const resetButton = document.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'layer-reset-button';
+        resetButton.textContent = '기본색상';
+        resetButton.disabled = true;
+
+        row.append(label, count, color, resetButton);
 
         if (insertAfter && insertAfter.parentElement === layerRows) {
           layerRows.insertBefore(row, insertAfter.nextSibling);
@@ -13023,7 +13083,7 @@
           layerRows.appendChild(row);
         }
 
-        notamControls.set(definition.key, { row, toggle, count, color, definition });
+        notamControls.set(definition.key, { row, toggle, count, color, resetButton, definition, defaultColor: definition.defaultColor });
 
         toggle.addEventListener('change', () => {
           syncNotamGroup(definition.key);
@@ -13031,6 +13091,11 @@
           scheduleViewerStateSave();
         });
         color.addEventListener('input', () => {
+          applyNotamColor(definition.key);
+          scheduleViewerStateSave();
+        });
+        resetButton.addEventListener('click', () => {
+          color.value = definition.defaultColor;
           applyNotamColor(definition.key);
           scheduleViewerStateSave();
         });
@@ -13078,7 +13143,14 @@
         const color = document.createElement('input');
         color.className = 'layer-color';
         color.type = 'color';
-        color.value = layer.default_color || '#4466CC';
+        const defaultColor = layer.default_color || '#4466CC';
+        color.value = defaultColor;
+
+        const resetButton = document.createElement('button');
+        resetButton.type = 'button';
+        resetButton.className = 'layer-reset-button';
+        resetButton.textContent = '기본색상';
+        resetButton.disabled = !allowed;
 
         let paidButton = null;
         if (!allowed) {
@@ -13095,13 +13167,13 @@
           });
         }
 
-        row.append(label, count, color);
+        row.append(label, count, color, resetButton);
         if (paidButton) {
           row.appendChild(paidButton);
         }
         layerRows.appendChild(row);
-        layerControls.set(layer.key, { toggle, color, allowed, paidButton });
-        if (layer.key === 'airport') {
+        layerControls.set(layer.key, { toggle, color, allowed, paidButton, resetButton, defaultColor });
+        if (layer.key === 'airport' || layer.key === 'class_b' || layer.key === 'class_c' || layer.key === 'class_d') {
           airportRow = row;
         }
 
@@ -13111,6 +13183,11 @@
         });
 
         color.addEventListener('input', () => {
+          applyLayerColor(layer.key);
+          scheduleViewerStateSave();
+        });
+        resetButton.addEventListener('click', () => {
+          color.value = defaultColor;
           applyLayerColor(layer.key);
           scheduleViewerStateSave();
         });
