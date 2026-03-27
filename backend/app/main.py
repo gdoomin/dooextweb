@@ -1779,15 +1779,17 @@ def _estimate_feature_center(points: list[list[float]]) -> tuple[float | None, f
 
 def _iter_airport_sites_from_layers() -> list[dict[str, Any]]:
     layers = _load_map_layers().get("layers", [])
-    airport_layer = next(
-        (
-            layer
-            for layer in layers
-            if isinstance(layer, dict) and str(layer.get("key") or "").strip().lower() == "airport"
-        ),
-        None,
-    )
-    features = airport_layer.get("features", []) if isinstance(airport_layer, dict) else []
+    airport_layer_keys = {"airport", "class_b", "class_c", "class_d"}
+    features: list[dict[str, Any]] = []
+    for layer in layers:
+        if not isinstance(layer, dict):
+            continue
+        layer_key = str(layer.get("key") or "").strip().lower()
+        if layer_key not in airport_layer_keys:
+            continue
+        layer_features = layer.get("features", [])
+        if isinstance(layer_features, list):
+            features.extend(layer_features)
     seen: set[str] = set()
     sites: list[dict[str, Any]] = []
     for feature in features:
