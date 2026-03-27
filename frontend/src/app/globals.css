@@ -725,39 +725,98 @@ textarea {
 
 .doo-rail-card-jobs {
   display: grid;
-  grid-template-rows: auto auto minmax(0, 1fr);
+  grid-template-rows: auto auto auto minmax(0, 1fr);
   gap: 10px;
   padding: 12px;
+  background:
+    radial-gradient(circle at top right, rgba(111, 179, 255, 0.18) 0%, rgba(111, 179, 255, 0) 32%),
+    linear-gradient(180deg, rgba(14, 28, 43, 0.98) 0%, rgba(8, 14, 21, 0.98) 100%);
+  border-color: rgba(124, 174, 220, 0.28);
+  position: relative;
+  overflow: hidden;
+}
+
+.doo-rail-card-jobs::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, rgba(255, 205, 73, 0.06) 0, rgba(255, 205, 73, 0.06) 8px, transparent 8px, transparent 18px);
+  opacity: 0.24;
+  pointer-events: none;
+}
+
+.doo-rail-jobs-kicker-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doo-rail-jobs-kicker {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 213, 112, 0.26);
+  background: rgba(79, 59, 10, 0.9);
+  color: #ffd777;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.22em;
+  padding: 5px 10px 5px 12px;
+}
+
+.doo-rail-jobs-kicker-line {
+  display: block;
+  height: 1px;
+  flex: 1 1 auto;
+  background:
+    linear-gradient(90deg, rgba(255, 213, 112, 0.58) 0%, rgba(92, 157, 222, 0.44) 36%, rgba(92, 157, 222, 0) 100%);
 }
 
 .doo-rail-jobs-count {
   flex: 0 0 auto;
   min-width: 58px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 215, 95, 0.24);
-  background: rgba(75, 56, 12, 0.9);
-  color: #ffe083;
+  border: 1px solid rgba(255, 215, 95, 0.26);
+  background:
+    linear-gradient(180deg, rgba(101, 75, 17, 0.94) 0%, rgba(70, 50, 9, 0.96) 100%);
+  color: #ffe7a5;
   font-size: 12px;
   font-weight: 800;
   text-align: center;
   padding: 8px 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 220, 0.14),
+    0 8px 18px rgba(28, 21, 5, 0.34);
 }
 
 .doo-rail-jobs-meta {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 6px 10px;
-  color: #9ec0d6;
+}
+
+.doo-rail-jobs-meta span {
+  border-radius: 999px;
+  border: 1px solid rgba(120, 171, 214, 0.18);
+  background: rgba(12, 24, 36, 0.76);
+  color: #a7c6dd;
   font-size: 11px;
   font-weight: 700;
+  padding: 6px 10px;
 }
 
 .doo-rail-jobs-list {
   display: grid;
-  gap: 10px;
+  gap: 12px;
   min-height: 0;
   overflow-y: auto;
-  padding-right: 4px;
+  padding-right: 6px;
+  position: relative;
+  z-index: 1;
 }
 
 .doo-rail-jobs-list::-webkit-scrollbar {
@@ -775,26 +834,71 @@ textarea {
 
 .doo-rail-job-card {
   display: grid;
-  gap: 8px;
-  border-radius: 14px;
-  border: 1px solid rgba(121, 192, 255, 0.12);
+  gap: 9px;
+  border-radius: 16px;
+  border: 1px solid rgba(129, 184, 235, 0.16);
   background:
-    linear-gradient(180deg, rgba(12, 23, 35, 0.94) 0%, rgba(8, 16, 26, 0.98) 100%);
+    radial-gradient(circle at top right, rgba(79, 167, 255, 0.12) 0%, rgba(79, 167, 255, 0) 40%),
+    linear-gradient(180deg, rgba(10, 21, 33, 0.96) 0%, rgba(7, 14, 23, 0.98) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.03),
-    0 10px 20px rgba(0, 0, 0, 0.16);
-  padding: 12px;
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 14px 26px rgba(0, 0, 0, 0.24);
+  padding: 12px 12px 13px;
   color: inherit;
   text-decoration: none;
-  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.doo-rail-job-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background:
+    linear-gradient(180deg, #7dd5ff 0%, #ffd777 48%, #ffae42 100%);
+  opacity: 0.92;
 }
 
 .doo-rail-job-card:hover {
   transform: translateY(-1px);
-  border-color: rgba(121, 192, 255, 0.28);
+  border-color: rgba(121, 192, 255, 0.3);
+  background:
+    radial-gradient(circle at top right, rgba(79, 167, 255, 0.16) 0%, rgba(79, 167, 255, 0) 44%),
+    linear-gradient(180deg, rgba(11, 24, 38, 0.98) 0%, rgba(8, 16, 26, 1) 100%);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 14px 26px rgba(0, 0, 0, 0.22);
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 32px rgba(0, 0, 0, 0.28);
+}
+
+.doo-rail-job-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-left: 8px;
+}
+
+.doo-rail-job-role,
+.doo-rail-job-runway {
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  padding: 4px 8px;
+}
+
+.doo-rail-job-role {
+  border: 1px solid rgba(255, 213, 112, 0.22);
+  background: rgba(82, 61, 10, 0.82);
+  color: #ffd777;
+}
+
+.doo-rail-job-runway {
+  border: 1px solid rgba(122, 190, 248, 0.16);
+  background: rgba(14, 33, 52, 0.84);
+  color: #94d7ff;
 }
 
 .doo-rail-job-top {
@@ -802,38 +906,45 @@ textarea {
   align-items: flex-start;
   justify-content: space-between;
   gap: 8px;
+  padding-left: 8px;
 }
 
 .doo-rail-job-company {
   min-width: 0;
-  color: #d8ebff;
-  font-size: 13px;
+  color: #d7ecff;
+  font-size: 12px;
   font-weight: 800;
   line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
 }
 
 .doo-rail-job-deadline {
   flex: 0 0 auto;
   border-radius: 999px;
-  border: 1px solid rgba(255, 215, 95, 0.22);
-  background: rgba(86, 62, 12, 0.88);
+  border: 1px solid rgba(255, 215, 95, 0.28);
+  background: rgba(95, 67, 10, 0.92);
   color: #ffd773;
   font-size: 11px;
   font-weight: 800;
-  padding: 4px 8px;
+  padding: 5px 9px;
+  box-shadow: inset 0 1px 0 rgba(255, 243, 218, 0.12);
 }
 
 .doo-rail-job-title {
-  color: #eef6ff;
+  padding-left: 8px;
+  color: #f1f7ff;
   font-size: 14px;
   font-weight: 800;
   line-height: 1.35;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.24);
 }
 
 .doo-rail-job-meta-line {
-  color: #9db8cf;
+  padding-left: 8px;
+  color: #9fbbd1;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   line-height: 1.4;
 }
 
@@ -845,11 +956,29 @@ textarea {
 
 .doo-rail-job-chip {
   border-radius: 999px;
-  background: rgba(37, 73, 116, 0.5);
-  color: #9bd4ff;
+  border: 1px solid rgba(120, 190, 250, 0.14);
+  background: rgba(25, 63, 102, 0.56);
+  color: #afe0ff;
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
+}
+
+.doo-rail-job-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-left: 8px;
+}
+
+.doo-rail-job-cta {
+  flex: 0 0 auto;
+  color: #ffe38f;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 .doo-rail-jobs-empty {
@@ -874,6 +1003,13 @@ textarea {
   color: #9fb9d3;
   font-size: 13px;
   line-height: 1.45;
+}
+
+@media (max-width: 960px) {
+  .doo-rail-job-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 .doo-rail-placeholder-copy {
