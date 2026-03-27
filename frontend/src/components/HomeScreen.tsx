@@ -2482,10 +2482,10 @@ export function HomeScreen({
                       return (
                         <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
                           <div className="doo-history-body">
-                            <strong>{item.project_name || item.filename}</strong>
-                            <span>{item.filename}</span>
-                            <span>
-                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 · {item.savedAtText}
+                            <strong>{item.filename || item.project_name}</strong>
+                            <span className="doo-history-meta">
+                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 ·{" "}
+                              <span className="doo-history-date">{item.savedAtText}</span>
                             </span>
                           </div>
                           <div className="doo-history-actions">
