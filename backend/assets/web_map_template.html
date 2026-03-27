@@ -3963,6 +3963,11 @@
       timelineCollapsed: true,
       timelineDayIndex: 0,
     };
+    const weatherAtisState = {
+      openIcao: '',
+      detailCache: new Map(),
+      restoring: false,
+    };
 
     const measureState = {
       active: false,
@@ -9478,11 +9483,18 @@
         return;
       }
       marker._dooAtisBound = true;
+      const icao = String(props && props.icao ? props.icao : '').trim().toUpperCase();
+      if (icao && weatherAtisState.detailCache.has(icao) && !marker._atisDetail) {
+        marker._atisDetail = weatherAtisState.detailCache.get(icao);
+      }
 
       marker.on('popupopen', async (openEvent) => {
         const popup = openEvent && openEvent.popup ? openEvent.popup : null;
         if (!popup) {
           return;
+        }
+        if (icao) {
+          weatherAtisState.openIcao = icao;
         }
         if (marker._atisDetail) {
           popup.setContent(buildAtisPopup(marker._atisDetail, props));
@@ -9497,6 +9509,9 @@
         try {
           const detail = await fetchJson(`/api/weather/atis/${encodeURIComponent(props && props.icao ? props.icao : '')}`);
           marker._atisDetail = detail;
+          if (icao) {
+            weatherAtisState.detailCache.set(icao, detail);
+          }
           if (marker.isPopupOpen()) {
             popup.setContent(buildAtisPopup(detail, props));
           }
@@ -9506,6 +9521,11 @@
           }
         } finally {
           marker._atisLoading = false;
+        }
+      });
+      marker.on('popupclose', () => {
+        if (!weatherAtisState.restoring && icao && weatherAtisState.openIcao === icao) {
+          weatherAtisState.openIcao = '';
         }
       });
 
@@ -13356,6 +13376,8 @@
     }
 
     function renderWeatherAtis(featureCollection) {
+      const reopenIcao = String(weatherAtisState.openIcao || '').trim().toUpperCase();
+      weatherAtisState.restoring = true;
       weatherGroups.atis.clearLayers();
       const features = Array.isArray(featureCollection && featureCollection.features) ? featureCollection.features : [];
       features.forEach((feature) => {
@@ -13379,6 +13401,10 @@
             iconAnchor: [37, 13],
           }),
         });
+        const icao = String(props.icao || '').trim().toUpperCase();
+        if (icao && weatherAtisState.detailCache.has(icao)) {
+          marker._atisDetail = weatherAtisState.detailCache.get(icao);
+        }
         const tooltipParts = [props.icao || 'ATIS'];
         if (props.airport) {
           tooltipParts.push(props.airport);
@@ -13395,16 +13421,27 @@
         marker.bindPopup(buildAtisPopupLoading(props), {
           className: 'doo-popup',
           maxWidth: 390,
+          closeOnClick: false,
+          autoClose: false,
         });
         attachAtisPopupBehavior(marker, props);
         weatherGroups.atis.addLayer(marker);
+        if (reopenIcao && icao === reopenIcao) {
+          window.setTimeout(() => {
+            if (weatherGroups.atis.hasLayer(marker) && map.hasLayer(weatherGroups.atis)) {
+              marker.openPopup();
+            }
+          }, 0);
+        }
       });
+      weatherAtisState.restoring = false;
       if (isWeatherEnabled('atis')) {
         if (!map.hasLayer(weatherGroups.atis)) {
           map.addLayer(weatherGroups.atis);
         }
       } else {
         map.removeLayer(weatherGroups.atis);
+        weatherAtisState.openIcao = '';
       }
     }
 
@@ -13693,6 +13730,7 @@
         } else if (layerKey === 'atis') {
           weatherGroups.atis.clearLayers();
           map.removeLayer(weatherGroups.atis);
+          weatherAtisState.openIcao = '';
         }
         return;
       }
@@ -13709,6 +13747,7 @@
         } else if (layerKey === 'atis') {
           weatherGroups.atis.clearLayers();
           map.removeLayer(weatherGroups.atis);
+          weatherAtisState.openIcao = '';
         }
         resetWeatherBadge(layerKey);
         return;
