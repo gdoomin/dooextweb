@@ -189,6 +189,8 @@ export type UserBookmarkPayload = {
   item?: UserBookmarkItem;
 };
 
+const DEFAULT_BOOKMARK_MAX_ITEMS = 20;
+
 const STORAGE_KEY = "doo-extractor-last-convert";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
 const PROD_API_BASE_URL = "https://dooext-api.dooheetv.com";
@@ -612,7 +614,7 @@ export async function fetchUserBookmark(
     throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
   }
   if (!body || typeof body !== "object") {
-    return { items: [], max_items: 4 };
+    return { items: [], max_items: DEFAULT_BOOKMARK_MAX_ITEMS };
   }
   const payload = body as Partial<UserBookmarkPayload>;
   return {
@@ -628,7 +630,10 @@ export async function fetchUserBookmark(
           }))
           .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url))
       : [],
-    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+    max_items:
+      typeof payload.max_items === "number" && Number.isFinite(payload.max_items)
+        ? payload.max_items
+        : DEFAULT_BOOKMARK_MAX_ITEMS,
     item:
       payload.item && typeof payload.item === "object" && typeof payload.item.id === "string" && typeof payload.item.bookmark_url === "string"
         ? {
@@ -684,7 +689,10 @@ export async function saveUserBookmark(
         updated_at: typeof item.updated_at === "string" ? item.updated_at : "",
       }))
       .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url)),
-    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+    max_items:
+      typeof payload.max_items === "number" && Number.isFinite(payload.max_items)
+        ? payload.max_items
+        : DEFAULT_BOOKMARK_MAX_ITEMS,
     item:
       payload.item && typeof payload.item === "object" && typeof payload.item.id === "string" && typeof payload.item.bookmark_url === "string"
         ? {
@@ -713,7 +721,7 @@ export async function deleteUserBookmark(
     throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
   }
   if (!body || typeof body !== "object") {
-    return { items: [], max_items: 4 };
+    return { items: [], max_items: DEFAULT_BOOKMARK_MAX_ITEMS };
   }
   const payload = body as Partial<UserBookmarkPayload>;
   return {
@@ -729,6 +737,9 @@ export async function deleteUserBookmark(
           }))
           .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url))
       : [],
-    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+    max_items:
+      typeof payload.max_items === "number" && Number.isFinite(payload.max_items)
+        ? payload.max_items
+        : DEFAULT_BOOKMARK_MAX_ITEMS,
   };
 }

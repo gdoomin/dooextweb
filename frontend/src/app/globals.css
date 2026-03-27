@@ -1157,14 +1157,39 @@ textarea {
 }
 
 .doo-bookmark-board {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  display: flex;
   gap: 12px;
   min-height: 120px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scroll-behavior: smooth;
+  cursor: grab;
+  user-select: none;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 4px;
+}
+
+.doo-bookmark-board.is-dragging {
+  cursor: grabbing;
+}
+
+.doo-bookmark-board::-webkit-scrollbar {
+  height: 10px;
+}
+
+.doo-bookmark-board::-webkit-scrollbar-thumb {
+  background: rgba(121, 192, 255, 0.28);
+  border-radius: 999px;
+}
+
+.doo-bookmark-board::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 .doo-bookmark-card {
-  min-width: 0;
+  flex: 0 0 128px;
+  width: 128px;
   min-height: 120px;
   border-radius: 18px;
   border: 1px solid rgba(121, 192, 255, 0.16);
@@ -1659,7 +1684,7 @@ textarea {
   }
 
   .doo-bookmark-board {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .doo-result-grid {

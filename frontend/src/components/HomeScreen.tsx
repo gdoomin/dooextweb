@@ -1,7 +1,15 @@
 ﻿"use client";
 
 import Image from "next/image";
-import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  type ChangeEvent,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 import { AdSenseSlot } from "@/components/AdSenseSlot";
@@ -774,7 +782,7 @@ export function HomeScreen({
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [showPlanGuide, setShowPlanGuide] = useState(false);
   const [bookmarks, setBookmarks] = useState<UserBookmarkItem[]>([]);
-  const [bookmarkMaxItems, setBookmarkMaxItems] = useState(4);
+  const [bookmarkMaxItems, setBookmarkMaxItems] = useState(20);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkSaving, setBookmarkSaving] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
@@ -782,6 +790,7 @@ export function HomeScreen({
   const [bookmarkUrlInput, setBookmarkUrlInput] = useState("");
   const [bookmarkImageDataUrl, setBookmarkImageDataUrl] = useState("");
   const [bookmarkError, setBookmarkError] = useState("");
+  const [bookmarkBoardDragging, setBookmarkBoardDragging] = useState(false);
   const [homeSyncPendingRemote, setHomeSyncPendingRemote] = useState<HomeSyncStatePayload | null>(null);
   const homeSyncSaveTimerRef = useRef<number | null>(null);
   const homeSyncLastSavedComparableRef = useRef("");
@@ -792,6 +801,13 @@ export function HomeScreen({
   const homeSyncApplyingRef = useRef(false);
   const homeSyncSuppressSaveRef = useRef(false);
   const homeSyncDeviceIdRef = useRef("");
+  const bookmarkBoardRef = useRef<HTMLDivElement | null>(null);
+  const bookmarkBoardDragRef = useRef({
+    active: false,
+    startX: 0,
+    startScrollLeft: 0,
+    moved: false,
+  });
 
   const isAuthenticated = Boolean(userId);
   const fileDisplay = useMemo(() => {
@@ -845,10 +861,6 @@ export function HomeScreen({
   const selectedBookmark = useMemo(
     () => bookmarks.find((item) => item.id === selectedBookmarkId) || null,
     [bookmarks, selectedBookmarkId],
-  );
-  const bookmarkSlots = useMemo(
-    () => Array.from({ length: bookmarkMaxItems }, (_, index) => bookmarks[index] || null),
-    [bookmarks, bookmarkMaxItems],
   );
 
   const historyRows = useMemo(
@@ -1069,7 +1081,7 @@ export function HomeScreen({
     async function run() {
       if (!userId) {
         setBookmarks([]);
-        setBookmarkMaxItems(4);
+        setBookmarkMaxItems(20);
         setBookmarkLoading(false);
         return;
       }
@@ -1078,12 +1090,12 @@ export function HomeScreen({
         const nextBookmark = await fetchUserBookmark(userId, userEmail, accessToken);
         if (!cancelled) {
           setBookmarks(nextBookmark.items);
-          setBookmarkMaxItems(nextBookmark.max_items || 4);
+          setBookmarkMaxItems(nextBookmark.max_items || 20);
         }
       } catch {
         if (!cancelled) {
           setBookmarks([]);
-          setBookmarkMaxItems(4);
+          setBookmarkMaxItems(20);
         }
       } finally {
         if (!cancelled) {
@@ -1316,7 +1328,7 @@ export function HomeScreen({
 
     if (bookmarkResult.status === "fulfilled") {
       setBookmarks(bookmarkResult.value.items);
-      setBookmarkMaxItems(bookmarkResult.value.max_items || 4);
+      setBookmarkMaxItems(bookmarkResult.value.max_items || 20);
     }
   }
 
@@ -1818,7 +1830,7 @@ export function HomeScreen({
       setHistoryError("");
       setBillingStatus(null);
       setBookmarks([]);
-      setBookmarkMaxItems(4);
+      setBookmarkMaxItems(20);
       setShowBookmarkModal(false);
       setSelectedBookmarkId("");
       setBookmarkUrlInput("");
@@ -1999,10 +2011,6 @@ export function HomeScreen({
       setBookmarkError("링크 주소는 http:// 또는 https:// 로 시작해야 합니다.");
       return;
     }
-    if (!bookmarkImageDataUrl) {
-      setBookmarkError("92x92 이미지를 선택해 주세요.");
-      return;
-    }
     setBookmarkSaving(true);
     setBookmarkError("");
     try {
@@ -2015,7 +2023,7 @@ export function HomeScreen({
         identity.token,
       );
       setBookmarks(savedBookmark.items);
-      setBookmarkMaxItems(savedBookmark.max_items || 4);
+      setBookmarkMaxItems(savedBookmark.max_items || 20);
       setSelectedBookmarkId(savedBookmark.item?.id || selectedBookmarkId);
       setShowBookmarkModal(false);
       setStatusTone("success");
@@ -2044,7 +2052,7 @@ export function HomeScreen({
     try {
       const nextBookmark = await deleteUserBookmark(selectedBookmarkId, identity.id, identity.email, identity.token);
       setBookmarks(nextBookmark.items);
-      setBookmarkMaxItems(nextBookmark.max_items || 4);
+      setBookmarkMaxItems(nextBookmark.max_items || 20);
       const nextSelectedId = nextBookmark.items[0]?.id || "";
       setSelectedBookmarkId(nextSelectedId);
       if (nextSelectedId) {
@@ -2066,6 +2074,57 @@ export function HomeScreen({
       setStatusMessage(message);
     } finally {
       setBookmarkSaving(false);
+    }
+  }
+
+  function handleBookmarkBoardPointerDown(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
+    }
+    const board = bookmarkBoardRef.current;
+    if (!board) {
+      return;
+    }
+    bookmarkBoardDragRef.current = {
+      active: true,
+      startX: event.clientX,
+      startScrollLeft: board.scrollLeft,
+      moved: false,
+    };
+    setBookmarkBoardDragging(true);
+    board.setPointerCapture?.(event.pointerId);
+  }
+
+  function handleBookmarkBoardPointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    const board = bookmarkBoardRef.current;
+    const drag = bookmarkBoardDragRef.current;
+    if (!board || !drag.active) {
+      return;
+    }
+    const deltaX = event.clientX - drag.startX;
+    if (Math.abs(deltaX) > 4) {
+      drag.moved = true;
+    }
+    board.scrollLeft = drag.startScrollLeft - deltaX;
+    if (drag.moved) {
+      event.preventDefault();
+    }
+  }
+
+  function finishBookmarkBoardPointer(event?: ReactPointerEvent<HTMLDivElement>) {
+    const board = bookmarkBoardRef.current;
+    bookmarkBoardDragRef.current.active = false;
+    setBookmarkBoardDragging(false);
+    if (board && event) {
+      board.releasePointerCapture?.(event.pointerId);
+    }
+  }
+
+  function handleBookmarkBoardClickCapture(event: ReactMouseEvent<HTMLDivElement>) {
+    if (bookmarkBoardDragRef.current.moved) {
+      event.preventDefault();
+      event.stopPropagation();
+      bookmarkBoardDragRef.current.moved = false;
     }
   }
 
@@ -2499,39 +2558,46 @@ export function HomeScreen({
 
             <div className="doo-bottom-ad-wrap">
               {isAuthenticated ? (
-                <div className="doo-bookmark-board">
-                  {bookmarkSlots.map((item, index) =>
-                    item ? (
-                      <a
-                        key={item.id}
-                        href={item.bookmark_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="doo-bookmark-card"
-                        title={item.bookmark_url}
-                      >
-                        <BookmarkVisual
-                          bookmark={item}
-                          alt="개인 북마크"
-                          imageClassName="doo-bookmark-card-image"
-                          textClassName="doo-bookmark-card-fallback"
-                        />
-                        <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
-                      </a>
-                    ) : (
-                      <button
-                        key={`bookmark-empty-${index}`}
-                        type="button"
-                        className="doo-bookmark-card doo-bookmark-card-add"
-                        onClick={startAddBookmark}
-                      >
-                        <span className="doo-bookmark-card-plus">+</span>
-                        <span className="doo-bookmark-card-add-text">
-                          {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
-                        </span>
-                      </button>
-                    ),
-                  )}
+                <div
+                  ref={bookmarkBoardRef}
+                  className={`doo-bookmark-board${bookmarkBoardDragging ? " is-dragging" : ""}`}
+                  onPointerDown={handleBookmarkBoardPointerDown}
+                  onPointerMove={handleBookmarkBoardPointerMove}
+                  onPointerUp={finishBookmarkBoardPointer}
+                  onPointerCancel={finishBookmarkBoardPointer}
+                  onPointerLeave={finishBookmarkBoardPointer}
+                  onClickCapture={handleBookmarkBoardClickCapture}
+                >
+                  {bookmarks.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.bookmark_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="doo-bookmark-card"
+                      title={item.bookmark_url}
+                    >
+                      <BookmarkVisual
+                        bookmark={item}
+                        alt="개인 북마크"
+                        imageClassName="doo-bookmark-card-image"
+                        textClassName="doo-bookmark-card-fallback"
+                      />
+                      <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
+                    </a>
+                  ))}
+                  {bookmarks.length < bookmarkMaxItems ? (
+                    <button
+                      type="button"
+                      className="doo-bookmark-card doo-bookmark-card-add"
+                      onClick={startAddBookmark}
+                    >
+                      <span className="doo-bookmark-card-plus">+</span>
+                      <span className="doo-bookmark-card-add-text">
+                        {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
+                      </span>
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <AdSenseSlot slot={BOTTOM_AD_SLOT} className="doo-ad-unit doo-ad-unit-bottom" minHeight={120} />
