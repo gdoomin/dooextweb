@@ -104,6 +104,7 @@ ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
 BOOKMARK_IMAGE_SIZE_PX = 92
 BOOKMARK_IMAGE_MAX_BYTES = 256 * 1024
+BOOKMARK_MAX_ITEMS = 4
 ATIS_VISIBLE_ICAOS = {
     "RKSI",
     "RKSS",
@@ -1482,24 +1483,77 @@ def _validate_bookmark_image(image_data_url: str) -> tuple[str, str]:
     return mime_type, _encode_image_data_url(mime_type, image_bytes)
 
 
-def _sanitize_bookmark_record(record: Any) -> dict[str, Any]:
+def _bookmark_default_id(bookmark_url: str) -> str:
+    return hashlib.sha256(bookmark_url.encode("utf-8")).hexdigest()[:16]
+
+
+def _sanitize_bookmark_item(record: Any) -> dict[str, Any]:
     if not isinstance(record, dict):
         return {}
     bookmark_url = str(record.get("bookmark_url") or "").strip()
+    if not _is_http_url(bookmark_url):
+        return {}
+
+    bookmark_id = str(record.get("id") or "").strip()[:64] or _bookmark_default_id(bookmark_url)
     image_data_url = str(record.get("image_data_url") or "").strip()
     updated_at = str(record.get("updated_at") or "").strip()
-    if not _is_http_url(bookmark_url) or not image_data_url:
-        return {}
-    try:
-        mime_type, normalized_image_data_url = _validate_bookmark_image(image_data_url)
-    except HTTPException:
-        return {}
+    mime_type = str(record.get("mime_type") or "").strip().lower()
+    normalized_image_data_url = ""
+    if image_data_url:
+        try:
+            mime_type, normalized_image_data_url = _validate_bookmark_image(image_data_url)
+        except HTTPException:
+            return {}
+
     return {
+        "id": bookmark_id,
         "bookmark_url": bookmark_url,
         "image_data_url": normalized_image_data_url,
         "mime_type": mime_type,
         "updated_at": updated_at or _utc_now_iso(),
     }
+
+
+def _sanitize_bookmark_store(record: Any) -> dict[str, Any]:
+    raw_items: list[Any] = []
+    if isinstance(record, dict) and isinstance(record.get("items"), list):
+        raw_items = list(record.get("items") or [])
+    elif isinstance(record, dict) and record.get("bookmark_url"):
+        raw_items = [record]
+    elif isinstance(record, list):
+        raw_items = list(record)
+
+    items: list[dict[str, Any]] = []
+    seen_ids: set[str] = set()
+    for raw_item in raw_items:
+        item = _sanitize_bookmark_item(raw_item)
+        if not item:
+            continue
+        item_id = str(item.get("id") or "").strip()
+        if not item_id or item_id in seen_ids:
+            continue
+        seen_ids.add(item_id)
+        items.append(item)
+        if len(items) >= BOOKMARK_MAX_ITEMS:
+            break
+    return {
+        "items": items,
+        "max_items": BOOKMARK_MAX_ITEMS,
+    }
+
+
+def _load_bookmark_store(user_id: str) -> dict[str, Any]:
+    return _sanitize_bookmark_store(_load_json(_user_bookmark_path(user_id), {}))
+
+
+def _save_bookmark_store(user_id: str, items: list[dict[str, Any]]) -> dict[str, Any]:
+    store = _sanitize_bookmark_store({"items": items})
+    path = _user_bookmark_path(user_id)
+    if store["items"]:
+        _save_json(path, store)
+    else:
+        path.unlink(missing_ok=True)
+    return store
 
 
 def _default_promo_code_store() -> dict[str, Any]:
@@ -3774,8 +3828,7 @@ def get_user_bookmark(request: Request):
     user_id, _user_email, _ = _request_identity_with_created_at(request, required=True)
     if not user_id:
         raise HTTPException(status_code=401, detail="login required")
-    payload = _sanitize_bookmark_record(_load_json(_user_bookmark_path(user_id), {}))
-    return JSONResponse(payload if payload else {})
+    return JSONResponse(_load_bookmark_store(user_id))
 
 
 @app.post("/api/bookmark")
@@ -3787,31 +3840,48 @@ async def save_user_bookmark(request: Request):
     if not isinstance(payload, dict):
         raise HTTPException(status_code=400, detail="bookmark payload must be object")
 
+    bookmark_id = str(payload.get("id") or "").strip()[:64]
     bookmark_url = str(payload.get("bookmark_url") or "").strip()
     image_data_url = str(payload.get("image_data_url") or "").strip()
     if not _is_http_url(bookmark_url):
         raise HTTPException(status_code=400, detail="링크 주소는 http 또는 https 형식이어야 합니다.")
-    if not image_data_url:
-        raise HTTPException(status_code=400, detail="북마크 이미지를 선택해 주세요.")
+    candidate = _sanitize_bookmark_item(
+        {
+            "id": bookmark_id,
+            "bookmark_url": bookmark_url,
+            "image_data_url": image_data_url,
+            "updated_at": _utc_now_iso(),
+        }
+    )
+    if not candidate:
+        raise HTTPException(status_code=400, detail="북마크 정보를 저장하지 못했습니다.")
 
-    mime_type, normalized_image_data_url = _validate_bookmark_image(image_data_url)
-    record = {
-        "bookmark_url": bookmark_url,
-        "image_data_url": normalized_image_data_url,
-        "mime_type": mime_type,
-        "updated_at": _utc_now_iso(),
-    }
-    _save_json(_user_bookmark_path(user_id), record)
-    return JSONResponse({"ok": True, "bookmark": record})
+    store = _load_bookmark_store(user_id)
+    items = list(store.get("items") or [])
+    existing_index = next((index for index, item in enumerate(items) if str(item.get("id") or "") == candidate["id"]), -1)
+    if existing_index >= 0:
+        items[existing_index] = candidate
+    else:
+        if len(items) >= BOOKMARK_MAX_ITEMS:
+            raise HTTPException(status_code=400, detail=f"북마크는 최대 {BOOKMARK_MAX_ITEMS}개까지 저장할 수 있습니다.")
+        items.append(candidate)
+
+    store = _save_bookmark_store(user_id, items)
+    return JSONResponse({"ok": True, "item": candidate, **store})
 
 
-@app.delete("/api/bookmark")
-def delete_user_bookmark(request: Request):
+@app.delete("/api/bookmark/{bookmark_id}")
+def delete_user_bookmark(bookmark_id: str, request: Request):
     user_id, _user_email, _ = _request_identity_with_created_at(request, required=True)
     if not user_id:
         raise HTTPException(status_code=401, detail="login required")
-    _user_bookmark_path(user_id).unlink(missing_ok=True)
-    return JSONResponse({"ok": True})
+    normalized_bookmark_id = str(bookmark_id or "").strip()
+    if not normalized_bookmark_id:
+        raise HTTPException(status_code=400, detail="bookmark id is required")
+    store = _load_bookmark_store(user_id)
+    items = [item for item in list(store.get("items") or []) if str(item.get("id") or "") != normalized_bookmark_id]
+    store = _save_bookmark_store(user_id, items)
+    return JSONResponse({"ok": True, **store})
 
 
 @app.get("/api/viewer/{job_id}/viewer-state")

@@ -1,12 +1,6 @@
 # Version Rule
 
+- For every change, bump the version by `0.0.1` before `commit / push / deploy`.
+- Keep the latest value in this file.
 
-
-- ?소??변??함 모든 ?정? `commit / push / deploy` ?에 버전??`0.0.1`???린??
-
-- 버전? ???일(`ver.md`)??`Current Version` 값을 기??로 관리한??
-
-
-
-Current Version: `0.1.29`
-
+Current Version: `0.1.30`

@@ -175,11 +175,18 @@ export type HomeSyncStatePayload = {
   };
 };
 
-export type UserBookmarkPayload = {
+export type UserBookmarkItem = {
+  id: string;
   bookmark_url: string;
-  image_data_url: string;
+  image_data_url?: string;
   mime_type?: string;
   updated_at?: string;
+};
+
+export type UserBookmarkPayload = {
+  items: UserBookmarkItem[];
+  max_items: number;
+  item?: UserBookmarkItem;
 };
 
 const STORAGE_KEY = "doo-extractor-last-convert";
@@ -595,7 +602,7 @@ export async function fetchUserBookmark(
   userId: string,
   userEmail = "",
   accessToken = "",
-): Promise<UserBookmarkPayload | null> {
+): Promise<UserBookmarkPayload> {
   const response = await fetch(`${API_BASE_URL}/api/bookmark`, {
     headers: buildUserHeaders(userId, userEmail, accessToken),
     cache: "no-store",
@@ -605,21 +612,38 @@ export async function fetchUserBookmark(
     throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
   }
   if (!body || typeof body !== "object") {
-    return null;
+    return { items: [], max_items: 4 };
   }
   const payload = body as Partial<UserBookmarkPayload>;
-  if (typeof payload.bookmark_url !== "string" || typeof payload.image_data_url !== "string") {
-    return null;
-  }
   return {
-    bookmark_url: payload.bookmark_url,
-    image_data_url: payload.image_data_url,
-    mime_type: typeof payload.mime_type === "string" ? payload.mime_type : "",
-    updated_at: typeof payload.updated_at === "string" ? payload.updated_at : "",
+    items: Array.isArray(payload.items)
+      ? payload.items
+          .filter((item): item is UserBookmarkItem => Boolean(item && typeof item === "object"))
+          .map((item) => ({
+            id: typeof item.id === "string" ? item.id : "",
+            bookmark_url: typeof item.bookmark_url === "string" ? item.bookmark_url : "",
+            image_data_url: typeof item.image_data_url === "string" ? item.image_data_url : "",
+            mime_type: typeof item.mime_type === "string" ? item.mime_type : "",
+            updated_at: typeof item.updated_at === "string" ? item.updated_at : "",
+          }))
+          .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url))
+      : [],
+    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+    item:
+      payload.item && typeof payload.item === "object" && typeof payload.item.id === "string" && typeof payload.item.bookmark_url === "string"
+        ? {
+            id: payload.item.id,
+            bookmark_url: payload.item.bookmark_url,
+            image_data_url: typeof payload.item.image_data_url === "string" ? payload.item.image_data_url : "",
+            mime_type: typeof payload.item.mime_type === "string" ? payload.item.mime_type : "",
+            updated_at: typeof payload.item.updated_at === "string" ? payload.item.updated_at : "",
+          }
+        : undefined,
   };
 }
 
 export async function saveUserBookmark(
+  bookmarkId: string,
   bookmarkUrl: string,
   imageDataUrl: string,
   userId: string,
@@ -633,6 +657,7 @@ export async function saveUserBookmark(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
+      id: bookmarkId,
       bookmark_url: bookmarkUrl,
       image_data_url: imageDataUrl,
     }),
@@ -644,19 +669,42 @@ export async function saveUserBookmark(
   if (!body || typeof body !== "object") {
     throw new Error("?? ??? ?? ??? ???? ?????.");
   }
-  const payload = body as { bookmark?: UserBookmarkPayload };
-  if (!payload.bookmark || typeof payload.bookmark.bookmark_url !== "string" || typeof payload.bookmark.image_data_url !== "string") {
+  const payload = body as Partial<UserBookmarkPayload>;
+  if (!Array.isArray(payload.items)) {
     throw new Error("?? ??? ?? ??? ???? ????.");
   }
-  return payload.bookmark;
+  return {
+    items: payload.items
+      .filter((item): item is UserBookmarkItem => Boolean(item && typeof item === "object"))
+      .map((item) => ({
+        id: typeof item.id === "string" ? item.id : "",
+        bookmark_url: typeof item.bookmark_url === "string" ? item.bookmark_url : "",
+        image_data_url: typeof item.image_data_url === "string" ? item.image_data_url : "",
+        mime_type: typeof item.mime_type === "string" ? item.mime_type : "",
+        updated_at: typeof item.updated_at === "string" ? item.updated_at : "",
+      }))
+      .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url)),
+    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+    item:
+      payload.item && typeof payload.item === "object" && typeof payload.item.id === "string" && typeof payload.item.bookmark_url === "string"
+        ? {
+            id: payload.item.id,
+            bookmark_url: payload.item.bookmark_url,
+            image_data_url: typeof payload.item.image_data_url === "string" ? payload.item.image_data_url : "",
+            mime_type: typeof payload.item.mime_type === "string" ? payload.item.mime_type : "",
+            updated_at: typeof payload.item.updated_at === "string" ? payload.item.updated_at : "",
+          }
+        : undefined,
+  };
 }
 
 export async function deleteUserBookmark(
+  bookmarkId: string,
   userId: string,
   userEmail = "",
   accessToken = "",
-): Promise<void> {
-  const response = await fetch(`${API_BASE_URL}/api/bookmark`, {
+): Promise<UserBookmarkPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/bookmark/${encodeURIComponent(bookmarkId)}`, {
     method: "DELETE",
     headers: buildUserHeaders(userId, userEmail, accessToken),
   });
@@ -664,4 +712,23 @@ export async function deleteUserBookmark(
   if (!response.ok) {
     throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
   }
+  if (!body || typeof body !== "object") {
+    return { items: [], max_items: 4 };
+  }
+  const payload = body as Partial<UserBookmarkPayload>;
+  return {
+    items: Array.isArray(payload.items)
+      ? payload.items
+          .filter((item): item is UserBookmarkItem => Boolean(item && typeof item === "object"))
+          .map((item) => ({
+            id: typeof item.id === "string" ? item.id : "",
+            bookmark_url: typeof item.bookmark_url === "string" ? item.bookmark_url : "",
+            image_data_url: typeof item.image_data_url === "string" ? item.image_data_url : "",
+            mime_type: typeof item.mime_type === "string" ? item.mime_type : "",
+            updated_at: typeof item.updated_at === "string" ? item.updated_at : "",
+          }))
+          .filter((item) => Boolean(item.id) && Boolean(item.bookmark_url))
+      : [],
+    max_items: typeof payload.max_items === "number" && Number.isFinite(payload.max_items) ? payload.max_items : 4,
+  };
 }

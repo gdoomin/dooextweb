@@ -17,7 +17,7 @@ import {
   type MapPayload,
   type PolygonResult,
   type ServerHistoryItem,
-  type UserBookmarkPayload,
+  type UserBookmarkItem,
   deleteAllHistoryItems,
   deleteUserBookmark,
   deleteHistoryItem,
@@ -273,6 +273,87 @@ function describeBookmarkHost(url: string): string {
   } catch {
     return "링크 열기";
   }
+}
+
+function buildBookmarkIconCandidates(url: string): string[] {
+  try {
+    const parsed = new URL(url);
+    return [`${parsed.origin}/apple-touch-icon.png`, `${parsed.origin}/favicon.ico`];
+  } catch {
+    return [];
+  }
+}
+
+function buildBookmarkTextLabel(url: string): string {
+  const host = describeBookmarkHost(url);
+  const base = host.split(".")[0] || host;
+  return base.slice(0, 8).toUpperCase();
+}
+
+type BookmarkVisualProps = {
+  bookmark: UserBookmarkItem;
+  alt: string;
+  imageClassName: string;
+  textClassName: string;
+};
+
+type BookmarkAutoIconProps = {
+  bookmarkUrl: string;
+  iconCandidates: string[];
+  alt: string;
+  imageClassName: string;
+  textClassName: string;
+};
+
+function BookmarkAutoIcon({
+  bookmarkUrl,
+  iconCandidates,
+  alt,
+  imageClassName,
+  textClassName,
+}: BookmarkAutoIconProps) {
+  const [iconIndex, setIconIndex] = useState(0);
+
+  const iconSrc = iconCandidates[iconIndex] || "";
+  if (iconSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={iconSrc}
+        alt={alt}
+        width={92}
+        height={92}
+        className={imageClassName}
+        loading="lazy"
+        onError={() => setIconIndex((current) => current + 1)}
+      />
+    );
+  }
+
+  return <div className={textClassName}>{buildBookmarkTextLabel(bookmarkUrl)}</div>;
+}
+
+function BookmarkVisual({ bookmark, alt, imageClassName, textClassName }: BookmarkVisualProps) {
+  const customImage = String(bookmark.image_data_url || "").trim();
+  const iconCandidates = useMemo(
+    () => (customImage ? [] : buildBookmarkIconCandidates(bookmark.bookmark_url)),
+    [customImage, bookmark.bookmark_url],
+  );
+
+  if (customImage) {
+    return <Image src={customImage} alt={alt} width={92} height={92} className={imageClassName} unoptimized />;
+  }
+
+  return (
+    <BookmarkAutoIcon
+      key={`${bookmark.id}:${bookmark.bookmark_url}`}
+      bookmarkUrl={bookmark.bookmark_url}
+      iconCandidates={iconCandidates}
+      alt={alt}
+      imageClassName={imageClassName}
+      textClassName={textClassName}
+    />
+  );
 }
 
 type StackEntry = {
@@ -692,10 +773,12 @@ export function HomeScreen({
   const [buyerPhone, setBuyerPhone] = useState("");
   const [promoCodeInput, setPromoCodeInput] = useState("");
   const [showPlanGuide, setShowPlanGuide] = useState(false);
-  const [bookmark, setBookmark] = useState<UserBookmarkPayload | null>(null);
+  const [bookmarks, setBookmarks] = useState<UserBookmarkItem[]>([]);
+  const [bookmarkMaxItems, setBookmarkMaxItems] = useState(4);
   const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [bookmarkSaving, setBookmarkSaving] = useState(false);
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [selectedBookmarkId, setSelectedBookmarkId] = useState("");
   const [bookmarkUrlInput, setBookmarkUrlInput] = useState("");
   const [bookmarkImageDataUrl, setBookmarkImageDataUrl] = useState("");
   const [bookmarkError, setBookmarkError] = useState("");
@@ -759,7 +842,14 @@ export function HomeScreen({
     Boolean(billingStatus?.billing_enabled) &&
     isAuthenticated &&
     Boolean(billingStatus?.is_new_pricing_user);
-  const bookmarkHost = useMemo(() => describeBookmarkHost(bookmark?.bookmark_url || ""), [bookmark?.bookmark_url]);
+  const selectedBookmark = useMemo(
+    () => bookmarks.find((item) => item.id === selectedBookmarkId) || null,
+    [bookmarks, selectedBookmarkId],
+  );
+  const bookmarkSlots = useMemo(
+    () => Array.from({ length: bookmarkMaxItems }, (_, index) => bookmarks[index] || null),
+    [bookmarks, bookmarkMaxItems],
+  );
 
   const historyRows = useMemo(
     () =>
@@ -978,7 +1068,8 @@ export function HomeScreen({
 
     async function run() {
       if (!userId) {
-        setBookmark(null);
+        setBookmarks([]);
+        setBookmarkMaxItems(4);
         setBookmarkLoading(false);
         return;
       }
@@ -986,11 +1077,13 @@ export function HomeScreen({
       try {
         const nextBookmark = await fetchUserBookmark(userId, userEmail, accessToken);
         if (!cancelled) {
-          setBookmark(nextBookmark);
+          setBookmarks(nextBookmark.items);
+          setBookmarkMaxItems(nextBookmark.max_items || 4);
         }
       } catch {
         if (!cancelled) {
-          setBookmark(null);
+          setBookmarks([]);
+          setBookmarkMaxItems(4);
         }
       } finally {
         if (!cancelled) {
@@ -1222,7 +1315,8 @@ export function HomeScreen({
     }
 
     if (bookmarkResult.status === "fulfilled") {
-      setBookmark(bookmarkResult.value);
+      setBookmarks(bookmarkResult.value.items);
+      setBookmarkMaxItems(bookmarkResult.value.max_items || 4);
     }
   }
 
@@ -1723,8 +1817,10 @@ export function HomeScreen({
       setHistoryItems([]);
       setHistoryError("");
       setBillingStatus(null);
-      setBookmark(null);
+      setBookmarks([]);
+      setBookmarkMaxItems(4);
       setShowBookmarkModal(false);
+      setSelectedBookmarkId("");
       setBookmarkUrlInput("");
       setBookmarkImageDataUrl("");
       setBookmarkError("");
@@ -1835,13 +1931,32 @@ export function HomeScreen({
     }
   }
 
-  function openBookmarkSettings() {
+  function selectBookmarkForEdit(bookmarkId = "") {
+    const target = bookmarks.find((item) => item.id === bookmarkId) || null;
+    setSelectedBookmarkId(target?.id || "");
+    setBookmarkUrlInput(target?.bookmark_url || "");
+    setBookmarkImageDataUrl(target?.image_data_url || "");
+    setBookmarkError("");
+  }
+
+  function openBookmarkSettings(bookmarkId = "") {
     if (!requireAuth("개인 북마크를 설정하려면 로그인해 주세요.")) {
       return;
     }
-    setBookmarkUrlInput(bookmark?.bookmark_url || "");
-    setBookmarkImageDataUrl(bookmark?.image_data_url || "");
-    setBookmarkError("");
+    selectBookmarkForEdit(bookmarkId || bookmarks[0]?.id || "");
+    setShowBookmarkModal(true);
+  }
+
+  function startAddBookmark() {
+    if (!requireAuth("개인 북마크를 설정하려면 로그인해 주세요.")) {
+      return;
+    }
+    if (bookmarks.length >= bookmarkMaxItems) {
+      setStatusTone("error");
+      setStatusMessage(`북마크는 최대 ${bookmarkMaxItems}개까지 저장할 수 있습니다.`);
+      return;
+    }
+    selectBookmarkForEdit("");
     setShowBookmarkModal(true);
   }
 
@@ -1892,16 +2007,19 @@ export function HomeScreen({
     setBookmarkError("");
     try {
       const savedBookmark = await saveUserBookmark(
+        selectedBookmarkId,
         normalizedUrl,
         bookmarkImageDataUrl,
         identity.id,
         identity.email,
         identity.token,
       );
-      setBookmark(savedBookmark);
+      setBookmarks(savedBookmark.items);
+      setBookmarkMaxItems(savedBookmark.max_items || 4);
+      setSelectedBookmarkId(savedBookmark.item?.id || selectedBookmarkId);
       setShowBookmarkModal(false);
       setStatusTone("success");
-      setStatusMessage("개인 북마크를 저장했습니다.");
+      setStatusMessage(selectedBookmarkId ? "개인 북마크를 수정했습니다." : "개인 북마크를 추가했습니다.");
     } catch (error) {
       const message = describeUnknownError(error, "개인 북마크를 저장하지 못했습니다.");
       setBookmarkError(message);
@@ -1914,7 +2032,7 @@ export function HomeScreen({
 
   async function handleDeleteBookmark() {
     const identity = await resolveCurrentIdentity();
-    if (!identity.id) {
+    if (!identity.id || !selectedBookmarkId) {
       return;
     }
     const confirmed = window.confirm("개인 북마크를 삭제할까요?");
@@ -1924,11 +2042,21 @@ export function HomeScreen({
     setBookmarkSaving(true);
     setBookmarkError("");
     try {
-      await deleteUserBookmark(identity.id, identity.email, identity.token);
-      setBookmark(null);
-      setBookmarkUrlInput("");
-      setBookmarkImageDataUrl("");
-      setShowBookmarkModal(false);
+      const nextBookmark = await deleteUserBookmark(selectedBookmarkId, identity.id, identity.email, identity.token);
+      setBookmarks(nextBookmark.items);
+      setBookmarkMaxItems(nextBookmark.max_items || 4);
+      const nextSelectedId = nextBookmark.items[0]?.id || "";
+      setSelectedBookmarkId(nextSelectedId);
+      if (nextSelectedId) {
+        const nextSelectedItem = nextBookmark.items[0];
+        setBookmarkUrlInput(nextSelectedItem.bookmark_url);
+        setBookmarkImageDataUrl(nextSelectedItem.image_data_url || "");
+        setShowBookmarkModal(true);
+      } else {
+        setBookmarkUrlInput("");
+        setBookmarkImageDataUrl("");
+        setShowBookmarkModal(false);
+      }
       setStatusTone("success");
       setStatusMessage("개인 북마크를 삭제했습니다.");
     } catch (error) {
@@ -2108,7 +2236,7 @@ export function HomeScreen({
                 <button
                   type="button"
                   className="doo-auth-button doo-auth-button-settings"
-                  onClick={openBookmarkSettings}
+                  onClick={() => openBookmarkSettings()}
                 >
                   개인 설정
                 </button>
@@ -2371,43 +2499,40 @@ export function HomeScreen({
 
             <div className="doo-bottom-ad-wrap">
               {isAuthenticated ? (
-                bookmark ? (
-                  <a
-                    href={bookmark.bookmark_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="doo-bookmark-slot"
-                  >
-                    <Image
-                      src={bookmark.image_data_url}
-                      alt="개인 북마크"
-                      width={92}
-                      height={92}
-                      className="doo-bookmark-slot-image"
-                      unoptimized
-                    />
-                    <div className="doo-bookmark-slot-copy">
-                      <span className="doo-bookmark-slot-label">내 북마크</span>
-                      <strong>{bookmarkHost}</strong>
-                      <span>{bookmark.bookmark_url}</span>
-                    </div>
-                  </a>
-                ) : (
-                  <div className="doo-bookmark-slot doo-bookmark-slot-empty">
-                    <div className="doo-bookmark-slot-copy">
-                      <span className="doo-bookmark-slot-label">개인 북마크</span>
-                      <strong>{bookmarkLoading ? "불러오는 중..." : "아직 설정된 북마크가 없습니다."}</strong>
-                      <span>로그아웃 버튼 위의 개인 설정에서 92x92 이미지와 링크를 저장해 주세요.</span>
-                    </div>
-                    <button
-                      type="button"
-                      className="doo-auth-button doo-auth-button-settings doo-bookmark-slot-button"
-                      onClick={openBookmarkSettings}
-                    >
-                      개인 설정 열기
-                    </button>
-                  </div>
-                )
+                <div className="doo-bookmark-board">
+                  {bookmarkSlots.map((item, index) =>
+                    item ? (
+                      <a
+                        key={item.id}
+                        href={item.bookmark_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="doo-bookmark-card"
+                        title={item.bookmark_url}
+                      >
+                        <BookmarkVisual
+                          bookmark={item}
+                          alt="개인 북마크"
+                          imageClassName="doo-bookmark-card-image"
+                          textClassName="doo-bookmark-card-fallback"
+                        />
+                        <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
+                      </a>
+                    ) : (
+                      <button
+                        key={`bookmark-empty-${index}`}
+                        type="button"
+                        className="doo-bookmark-card doo-bookmark-card-add"
+                        onClick={startAddBookmark}
+                      >
+                        <span className="doo-bookmark-card-plus">+</span>
+                        <span className="doo-bookmark-card-add-text">
+                          {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
+                        </span>
+                      </button>
+                    ),
+                  )}
+                </div>
               ) : (
                 <AdSenseSlot slot={BOTTOM_AD_SLOT} className="doo-ad-unit doo-ad-unit-bottom" minHeight={120} />
               )}
@@ -2470,6 +2595,37 @@ export function HomeScreen({
             </div>
 
             <div className="doo-bookmark-form">
+              <div className="doo-bookmark-selector-grid">
+                {bookmarks.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className={`doo-bookmark-selector${selectedBookmarkId === item.id ? " is-active" : ""}`}
+                    onClick={() => selectBookmarkForEdit(item.id)}
+                    disabled={bookmarkSaving}
+                  >
+                    <BookmarkVisual
+                      bookmark={item}
+                      alt="저장된 북마크"
+                      imageClassName="doo-bookmark-selector-image"
+                      textClassName="doo-bookmark-selector-fallback"
+                    />
+                    <span className="doo-bookmark-selector-host">{describeBookmarkHost(item.bookmark_url)}</span>
+                  </button>
+                ))}
+                {bookmarks.length < bookmarkMaxItems ? (
+                  <button
+                    type="button"
+                    className={`doo-bookmark-selector doo-bookmark-selector-add${!selectedBookmarkId ? " is-active" : ""}`}
+                    onClick={() => selectBookmarkForEdit("")}
+                    disabled={bookmarkSaving}
+                  >
+                    <span className="doo-bookmark-selector-plus">+</span>
+                    <span className="doo-bookmark-selector-host">새 북마크</span>
+                  </button>
+                ) : null}
+              </div>
+
               <label className="doo-billing-phone">
                 <span>북마크 링크</span>
                 <input
@@ -2482,7 +2638,7 @@ export function HomeScreen({
               </label>
 
               <label className="doo-billing-phone">
-                <span>북마크 이미지 (92x92)</span>
+                <span>북마크 이미지 (선택사항, 92x92)</span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -2493,20 +2649,31 @@ export function HomeScreen({
 
               <div className="doo-bookmark-preview-card">
                 {bookmarkImageDataUrl ? (
-                  <Image
-                    src={bookmarkImageDataUrl}
+                  <BookmarkVisual
+                    bookmark={{
+                      id: selectedBookmarkId || "preview",
+                      bookmark_url: bookmarkUrlInput.trim() || "https://example.com",
+                      image_data_url: bookmarkImageDataUrl,
+                    }}
                     alt="북마크 미리보기"
-                    width={92}
-                    height={92}
-                    className="doo-bookmark-preview-image"
-                    unoptimized
+                    imageClassName="doo-bookmark-preview-image"
+                    textClassName="doo-bookmark-preview-empty"
                   />
                 ) : (
-                  <div className="doo-bookmark-preview-empty">92 x 92</div>
+                  <BookmarkVisual
+                    bookmark={{
+                      id: selectedBookmarkId || "preview",
+                      bookmark_url: bookmarkUrlInput.trim() || "https://example.com",
+                      image_data_url: "",
+                    }}
+                    alt="북마크 미리보기"
+                    imageClassName="doo-bookmark-preview-image"
+                    textClassName="doo-bookmark-preview-empty"
+                  />
                 )}
                 <div className="doo-bookmark-preview-copy">
                   <strong>{bookmarkUrlInput.trim() ? describeBookmarkHost(bookmarkUrlInput.trim()) : "미리보기"}</strong>
-                  <span>{bookmarkUrlInput.trim() || "링크와 이미지를 저장하면 하단에 표시됩니다."}</span>
+                  <span>{bookmarkUrlInput.trim() || "링크만 입력해도 파비콘을 시도하고, 없으면 사이트명이 표시됩니다."}</span>
                 </div>
               </div>
 
@@ -2514,7 +2681,7 @@ export function HomeScreen({
             </div>
 
             <div className="doo-bookmark-modal-actions">
-              {bookmark ? (
+              {selectedBookmark ? (
                 <button
                   type="button"
                   className="auth-modal-close doo-bookmark-delete"

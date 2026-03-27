@@ -1156,60 +1156,89 @@ textarea {
   padding: 8px 10px;
 }
 
-.doo-bookmark-slot {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+.doo-bookmark-board {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 12px;
   min-height: 120px;
-  text-decoration: none;
+}
+
+.doo-bookmark-card {
+  min-width: 0;
+  min-height: 120px;
+  border-radius: 18px;
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  background: linear-gradient(180deg, rgba(9, 18, 30, 0.96) 0%, rgba(12, 26, 40, 0.92) 100%);
   color: #d7e6f5;
+  text-decoration: none;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 10px;
+  padding: 12px 10px;
+  box-shadow: 0 14px 24px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
 }
 
-.doo-bookmark-slot-empty {
-  justify-content: space-between;
+.doo-bookmark-card:hover {
+  filter: brightness(1.03);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.06) inset,
+    0 14px 28px rgba(0, 0, 0, 0.24);
 }
 
-.doo-bookmark-slot-image {
+.doo-bookmark-card-add {
+  cursor: pointer;
+}
+
+.doo-bookmark-card-image,
+.doo-bookmark-card-fallback {
   width: 92px;
   height: 92px;
   border-radius: 18px;
+}
+
+.doo-bookmark-card-image {
   border: 1px solid rgba(121, 192, 255, 0.24);
-  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
   object-fit: cover;
-  flex: 0 0 auto;
+  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.2);
 }
 
-.doo-bookmark-slot-copy {
-  min-width: 0;
+.doo-bookmark-card-fallback {
   display: grid;
-  gap: 4px;
+  place-items: center;
+  border: 1px dashed rgba(121, 192, 255, 0.28);
+  background: rgba(20, 43, 64, 0.92);
+  color: #eef6ff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.06em;
 }
 
-.doo-bookmark-slot-label {
-  color: #8cb4d6;
+.doo-bookmark-card-host {
+  width: 100%;
+  color: #d7e6f5;
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.doo-bookmark-slot-copy strong {
-  color: #f4f8fc;
-  font-size: 20px;
-  font-weight: 800;
-}
-
-.doo-bookmark-slot-copy span:last-child {
-  color: #9fb3c8;
-  font-size: 13px;
-  line-height: 1.5;
+  text-align: center;
+  line-height: 1.35;
   word-break: break-all;
 }
 
-.doo-bookmark-slot-button {
-  width: auto;
-  min-width: 140px;
-  padding-inline: 16px;
+.doo-bookmark-card-plus {
+  color: #8fd2ff;
+  font-size: 42px;
+  line-height: 1;
+  font-weight: 400;
+}
+
+.doo-bookmark-card-add-text {
+  color: #a9c2d8;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 .doo-ad-unit {
@@ -1629,14 +1658,8 @@ textarea {
     margin-bottom: 28px;
   }
 
-  .doo-bookmark-slot,
-  .doo-bookmark-slot-empty {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .doo-bookmark-slot-button {
-    width: 100%;
+  .doo-bookmark-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .doo-result-grid {
@@ -1932,6 +1955,74 @@ textarea {
 .doo-bookmark-form {
   display: grid;
   gap: 12px;
+}
+
+.doo-bookmark-selector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 10px;
+}
+
+.doo-bookmark-selector {
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  border-radius: 16px;
+  background: rgba(10, 18, 28, 0.92);
+  padding: 10px;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-bookmark-selector.is-active {
+  border-color: rgba(121, 192, 255, 0.44);
+  box-shadow: 0 0 0 1px rgba(121, 192, 255, 0.2) inset;
+}
+
+.doo-bookmark-selector:hover:enabled {
+  filter: brightness(1.03);
+}
+
+.doo-bookmark-selector-image,
+.doo-bookmark-selector-fallback {
+  width: 72px;
+  height: 72px;
+  border-radius: 16px;
+}
+
+.doo-bookmark-selector-image {
+  border: 1px solid rgba(121, 192, 255, 0.22);
+  object-fit: cover;
+}
+
+.doo-bookmark-selector-fallback {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(121, 192, 255, 0.24);
+  background: rgba(20, 43, 64, 0.92);
+  color: #eef6ff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.doo-bookmark-selector-host {
+  color: #c9d6e4;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.35;
+  word-break: break-all;
+}
+
+.doo-bookmark-selector-plus {
+  color: #8fd2ff;
+  font-size: 32px;
+  line-height: 1;
+  font-weight: 400;
 }
 
 .doo-bookmark-form .doo-billing-phone span {
