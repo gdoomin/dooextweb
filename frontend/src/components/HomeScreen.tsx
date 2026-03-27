@@ -2120,12 +2120,14 @@ export function HomeScreen({
     }
   }
 
-  function handleBookmarkBoardClickCapture(event: ReactMouseEvent<HTMLDivElement>) {
+  function handleBookmarkCardClick(event: ReactMouseEvent<HTMLAnchorElement>, bookmarkUrl: string) {
     if (bookmarkBoardDragRef.current.moved) {
       event.preventDefault();
-      event.stopPropagation();
       bookmarkBoardDragRef.current.moved = false;
+      return;
     }
+    event.preventDefault();
+    window.open(bookmarkUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -2577,7 +2579,6 @@ export function HomeScreen({
                     onPointerUp={finishBookmarkBoardPointer}
                     onPointerCancel={finishBookmarkBoardPointer}
                     onPointerLeave={finishBookmarkBoardPointer}
-                    onClickCapture={handleBookmarkBoardClickCapture}
                   >
                     {bookmarks.map((item) => (
                       <a
@@ -2587,6 +2588,7 @@ export function HomeScreen({
                         rel="noopener noreferrer"
                         className="doo-bookmark-card"
                         title={item.bookmark_url}
+                        onClick={(event) => handleBookmarkCardClick(event, item.bookmark_url)}
                       >
                         <BookmarkVisual
                           bookmark={item}
