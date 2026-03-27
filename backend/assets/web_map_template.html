@@ -7400,17 +7400,6 @@
       return parsed;
     }
 
-    function classifyWeatherOverlayCloudSeverity(cloudCoverPercent) {
-      const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
-      if (cloud > 80) {
-        return { key: 'bad', rank: 2 };
-      }
-      if (cloud >= 50 && cloud <= 80) {
-        return { key: 'caution', rank: 1 };
-      }
-      return { key: 'ok', rank: 0 };
-    }
-
     function resolveWeatherOverlayCloudConstraint(hourly, index, selectedAltitudeFt, selectedSample = null) {
       const selectedFt = normalizeWeatherOverlayAltitudeFt(selectedAltitudeFt);
       const selected = selectedSample || resolveWeatherOverlayAltitudeSample(hourly, index, selectedFt);
@@ -7418,7 +7407,6 @@
       let effectiveCloudCover = selectedCloud;
       let effectiveAltitudeFt = selectedFt;
       let effectiveAltitudeLabel = getWeatherOverlayAltitudeLabel(selectedFt);
-      let severity = classifyWeatherOverlayCloudSeverity(selectedCloud);
 
       WEATHER_OVERLAY_ALTITUDE_PRESETS
         .filter((preset) => preset.feet <= selectedFt)
@@ -7429,9 +7417,7 @@
           if (!sample || !Number.isFinite(sample.cloudCover)) {
             return;
           }
-          const sampleSeverity = classifyWeatherOverlayCloudSeverity(sample.cloudCover);
-          if (sampleSeverity.rank > severity.rank || (sampleSeverity.rank === severity.rank && !Number.isFinite(effectiveCloudCover))) {
-            severity = sampleSeverity;
+          if (!Number.isFinite(effectiveCloudCover) || sample.cloudCover > effectiveCloudCover) {
             effectiveCloudCover = sample.cloudCover;
             effectiveAltitudeFt = preset.feet;
             effectiveAltitudeLabel = preset.label;
