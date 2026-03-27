@@ -2158,8 +2158,9 @@
       padding: 14px 16px;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content {
-      width: 100%;
+      width: 100% !important;
       max-width: none;
+      min-width: 0;
       margin: 0;
       box-sizing: border-box;
       max-height: min(72vh, 760px);
@@ -2175,8 +2176,9 @@
       padding: 14px 16px;
     }
     .leaflet-popup.doo-popup.aviation-popup-shell .leaflet-popup-content {
-      width: 100%;
+      width: 100% !important;
       max-width: none;
+      min-width: 0;
       margin: 0;
       box-sizing: border-box;
       max-height: min(72vh, 760px);
@@ -9809,22 +9811,20 @@
         if (!popup) {
           return;
         }
+        normalizeWeatherPopupLayout(popup);
         if (icao) {
           weatherAtisState.openIcao = icao;
         }
         if (marker._atisDetail) {
-          popup.setContent(buildAtisPopup(marker._atisDetail, props));
-          popup.update();
+          setWeatherPopupContent(popup, buildAtisPopup(marker._atisDetail, props));
           return;
         }
         if (marker._atisLoading) {
-          popup.setContent(buildAtisPopupLoading(props));
-          popup.update();
+          setWeatherPopupContent(popup, buildAtisPopupLoading(props));
           return;
         }
         marker._atisLoading = true;
-        popup.setContent(buildAtisPopupLoading(props));
-        popup.update();
+        setWeatherPopupContent(popup, buildAtisPopupLoading(props));
         try {
           const detail = await fetchJson(`/api/weather/atis/${encodeURIComponent(props && props.icao ? props.icao : '')}`);
           marker._atisDetail = detail;
@@ -9832,13 +9832,11 @@
             weatherAtisState.detailCache.set(icao, detail);
           }
           if (marker.isPopupOpen()) {
-            popup.setContent(buildAtisPopup(detail, props));
-            popup.update();
+            setWeatherPopupContent(popup, buildAtisPopup(detail, props));
           }
         } catch (error) {
           if (marker.isPopupOpen()) {
-            popup.setContent(buildAtisPopupError(props, error));
-            popup.update();
+            setWeatherPopupContent(popup, buildAtisPopupError(props, error));
           }
         } finally {
           marker._atisLoading = false;
@@ -9863,7 +9861,11 @@
       marker._dooAviationBound = true;
       const popupKey = String(props && (props.icaoId || props.site) ? (props.icaoId || props.site) : '').trim().toUpperCase();
 
-      marker.on('popupopen', () => {
+      marker.on('popupopen', (openEvent) => {
+        const popup = openEvent && openEvent.popup ? openEvent.popup : null;
+        if (popup) {
+          normalizeWeatherPopupLayout(popup);
+        }
         if (popupKey) {
           weatherAviationState.openKey = popupKey;
         }
@@ -9879,6 +9881,41 @@
       });
 
       attachAviationPopupDrag(marker);
+    }
+
+    function normalizeWeatherPopupLayout(popup) {
+      if (!popup || typeof popup.getElement !== 'function') {
+        return;
+      }
+      const popupElement = popup.getElement();
+      if (!popupElement) {
+        return;
+      }
+      const wrapper = popupElement.querySelector('.leaflet-popup-content-wrapper');
+      const content = popupElement.querySelector('.leaflet-popup-content');
+      if (!wrapper || !content) {
+        return;
+      }
+      const wrapperStyle = window.getComputedStyle(wrapper);
+      const paddingLeft = parseFloat(wrapperStyle.paddingLeft || '0') || 0;
+      const paddingRight = parseFloat(wrapperStyle.paddingRight || '0') || 0;
+      const innerWidth = Math.max(0, wrapper.clientWidth - paddingLeft - paddingRight);
+      if (innerWidth > 0) {
+        content.style.width = `${innerWidth}px`;
+        content.style.maxWidth = 'none';
+        content.style.minWidth = '0';
+      }
+      if (typeof popup.update === 'function') {
+        popup.update();
+      }
+    }
+
+    function setWeatherPopupContent(popup, html) {
+      if (!popup) {
+        return;
+      }
+      popup.setContent(html);
+      normalizeWeatherPopupLayout(popup);
     }
 
     function snapWeatherPopupLatLng(originLatLng, desiredLatLng) {
