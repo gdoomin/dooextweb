@@ -768,7 +768,7 @@ export async function deleteUserBookmark(
 }
 
 export async function fetchPilotRecruitment(): Promise<PilotRecruitmentResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/jobs/pilot`, {
+  const response = await fetch(`/data/pilot-jobs.json`, {
     cache: "no-store",
   });
   const { body, rawText } = await parseResponseBody(response);

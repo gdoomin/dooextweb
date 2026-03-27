@@ -1,0 +1,38 @@
+name: Update Pilot Jobs Cache
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 */3 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  update-cache:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Update pilot jobs cache
+        run: python scripts/update_pilot_jobs_cache.py
+
+      - name: Commit cache update
+        run: |
+          if git diff --quiet -- frontend/public/data/pilot-jobs.json; then
+            echo "No cache changes"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/public/data/pilot-jobs.json
+          git commit -m "Update pilot jobs cache"
+          git push

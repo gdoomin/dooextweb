@@ -1,0 +1,235 @@
+{
+  "updated_at": "2026-03-27T15:08:35.144972+00:00",
+  "source_label": "Airportal 항공일자리",
+  "items": [
+    {
+      "id": "51930",
+      "job_no": "51930",
+      "title": "경항공기 운항 조종사 채용 공고",
+      "company": "㈜미도지리정보",
+      "location": "서울",
+      "employment_type": "정규직",
+      "experience": "신입, 경력",
+      "deadline_text": "D-8 · 2026.04.05",
+      "deadline_date": "2026.04.05",
+      "period_text": "2026.03.06 ~ 2026.04.05",
+      "d_day": "D-8",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51930"
+    },
+    {
+      "id": "52062",
+      "job_no": "52062",
+      "title": "ATR72-600 운항승무원 채용 안내",
+      "company": "섬에어(주)",
+      "location": "서울",
+      "employment_type": "정규직",
+      "experience": "경력",
+      "deadline_text": "D-15 · 2026.04.12",
+      "deadline_date": "2026.04.12",
+      "period_text": "2026.03.26 ~ 2026.04.12",
+      "d_day": "D-15",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=52062"
+    },
+    {
+      "id": "51513",
+      "job_no": "51513",
+      "title": "조종사 채용공고",
+      "company": "㈜ENBAIR",
+      "location": "지역무관",
+      "employment_type": "정규직",
+      "experience": "경력무관",
+      "deadline_text": "D-94 · 2026.06.30",
+      "deadline_date": "2026.06.30",
+      "period_text": "2025.12.18 ~ 2026.06.30",
+      "d_day": "D-94",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51513"
+    },
+    {
+      "id": "51821",
+      "job_no": "51821",
+      "title": "(군 경력) 교관 조종사 모집",
+      "company": "㈜하늘누리경비행기화성교육원",
+      "location": "경기",
+      "employment_type": "기타",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51821"
+    },
+    {
+      "id": "7565",
+      "job_no": "7565",
+      "title": "2024년 하반기 경력 운항승무원 (부기장) 상시채용",
+      "company": "진에어",
+      "location": "서울",
+      "employment_type": "정규직",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "기장",
+        "부기장",
+        "운항승무원",
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=7565"
+    },
+    {
+      "id": "6212",
+      "job_no": "6212",
+      "title": "[경력] A320 경력부기장 상시 채용",
+      "company": "에어로케이항공(주)",
+      "location": "충북",
+      "employment_type": "정규직",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "조종사",
+        "부기장",
+        "기장"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=6212"
+    },
+    {
+      "id": "51792",
+      "job_no": "51792",
+      "title": "A320 경력기장 모집 (커뮤팅)",
+      "company": "스카이링크",
+      "location": "아시아·중동",
+      "employment_type": "계약직",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "기장",
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51792"
+    },
+    {
+      "id": "51657",
+      "job_no": "51657",
+      "title": "A320 경력부기장 모집 (커뮤팅)",
+      "company": "스카이링크",
+      "location": "아시아·중동",
+      "employment_type": "계약직",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "기장",
+        "부기장",
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51657"
+    },
+    {
+      "id": "6385",
+      "job_no": "6385",
+      "title": "경력 운항승무원 (부기장) 채용",
+      "company": "진에어",
+      "location": "서울",
+      "employment_type": "정규직 전환형",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장",
+        "기장"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=6385"
+    },
+    {
+      "id": "6079",
+      "job_no": "6079",
+      "title": "경력운항승무원 수시 채용",
+      "company": "진에어",
+      "location": "서울",
+      "employment_type": "정규직",
+      "experience": "경력",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=6079"
+    },
+    {
+      "id": "51791",
+      "job_no": "51791",
+      "title": "동남아 Cadet Pilot (B737NG) 모집",
+      "company": "스카이링크",
+      "location": "아시아·중동",
+      "employment_type": "계약직",
+      "experience": "경력무관",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=51791"
+    },
+    {
+      "id": "50940",
+      "job_no": "50940",
+      "title": "드론 조종사(신입, 경력) 모집합니다",
+      "company": "(주)시에라베이스",
+      "location": "울산",
+      "employment_type": "정규직",
+      "experience": "경력무관",
+      "deadline_text": "상시채용",
+      "deadline_date": "",
+      "period_text": "상시채용",
+      "d_day": "상시채용",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "Airportal 항공일자리",
+      "url": "https://www.airportal.go.kr/work/employment/workDetail.do?num=50940"
+    }
+  ]
+}
