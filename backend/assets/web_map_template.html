@@ -1962,8 +1962,15 @@
     }
     .atis-popup {
       width: 100%;
+      min-width: 0;
       max-width: 100%;
       box-sizing: border-box;
+      display: block;
+    }
+    .weather-popup.atis-popup {
+      min-width: 0;
+      max-width: none;
+      width: 100%;
     }
     .atis-popup__meta {
       display: grid;
@@ -1988,12 +1995,16 @@
       font-weight: 800;
     }
     .atis-popup__section {
+      display: flex;
+      flex-direction: column;
       margin-top: 10px;
       padding: 10px 12px;
       border-radius: 12px;
       border: 1px solid rgba(121, 192, 255, 0.16);
       background: rgba(7, 15, 24, 0.74);
       min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
     }
     .atis-popup__grid {
       display: grid;
