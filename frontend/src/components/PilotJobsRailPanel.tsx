@@ -78,18 +78,12 @@ export function PilotJobsRailPanel() {
 
   return (
     <section className="doo-rail-card doo-rail-card-jobs" aria-label="채용정보">
-      <div className="doo-rail-jobs-kicker-row">
-        <span className="doo-rail-jobs-kicker">AIR CREW BOARD</span>
-        <span className="doo-rail-jobs-kicker-line" aria-hidden="true" />
-      </div>
-      <div className="doo-rail-card-head">
-        <div className="doo-rail-card-copy">
-          <strong>채용정보</strong>
-          <span>운항승무원 · 조종사 관련 공고</span>
-        </div>
+      <div className="doo-rail-jobs-summary">
+        <strong>채용정보</strong>
         <div className="doo-rail-jobs-count">{loading ? "조회 중" : `${items.length}건`}</div>
       </div>
       <div className="doo-rail-jobs-meta">
+        <span>운항승무원 · 조종사 관련 공고</span>
         <span>{sourceLabel}</span>
         <span>{updatedAtText ? `업데이트 ${updatedAtText}` : "최신 캐시 기준"}</span>
       </div>

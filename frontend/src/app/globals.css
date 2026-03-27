@@ -725,9 +725,9 @@ textarea {
 
 .doo-rail-card-jobs {
   display: grid;
-  grid-template-rows: auto auto auto minmax(0, 1fr);
-  gap: 9px;
-  padding: 10px 12px 12px;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 10px;
+  padding: 12px;
   background:
     radial-gradient(circle at top right, rgba(111, 179, 255, 0.18) 0%, rgba(111, 179, 255, 0) 32%),
     linear-gradient(180deg, rgba(14, 28, 43, 0.98) 0%, rgba(8, 14, 21, 0.98) 100%);
@@ -746,46 +746,43 @@ textarea {
   pointer-events: none;
 }
 
-.doo-rail-jobs-kicker-row {
+.doo-rail-jobs-summary {
   position: relative;
   z-index: 1;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-}
-
-.doo-rail-jobs-kicker {
-  flex: 0 0 auto;
-  border-radius: 999px;
-  border: 1px solid rgba(255, 213, 112, 0.26);
-  background: rgba(79, 59, 10, 0.9);
-  color: #ffd777;
-  font-size: 10px;
-  font-weight: 900;
-  letter-spacing: 0.22em;
-  padding: 5px 10px 5px 12px;
-}
-
-.doo-rail-jobs-kicker-line {
-  display: block;
-  height: 1px;
-  flex: 1 1 auto;
+  min-height: 52px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(124, 174, 220, 0.2);
   background:
-    linear-gradient(90deg, rgba(255, 213, 112, 0.58) 0%, rgba(92, 157, 222, 0.44) 36%, rgba(92, 157, 222, 0) 100%);
+    linear-gradient(90deg, rgba(15, 34, 52, 0.92) 0%, rgba(12, 24, 36, 0.84) 70%, rgba(46, 58, 21, 0.74) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 22px rgba(0, 0, 0, 0.2);
+}
+
+.doo-rail-jobs-summary strong {
+  color: #eef6ff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .doo-rail-jobs-count {
   flex: 0 0 auto;
-  min-width: 58px;
+  min-width: 64px;
   border-radius: 999px;
   border: 1px solid rgba(255, 215, 95, 0.26);
   background:
     linear-gradient(180deg, rgba(101, 75, 17, 0.94) 0%, rgba(70, 50, 9, 0.96) 100%);
   color: #ffe7a5;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 800;
   text-align: center;
-  padding: 8px 10px;
+  padding: 9px 12px;
   box-shadow:
     inset 0 1px 0 rgba(255, 244, 220, 0.14),
     0 8px 18px rgba(28, 21, 5, 0.34);
@@ -796,7 +793,7 @@ textarea {
   z-index: 1;
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 10px;
+  gap: 7px 10px;
 }
 
 .doo-rail-jobs-meta span {
@@ -806,21 +803,20 @@ textarea {
   color: #a7c6dd;
   font-size: 11px;
   font-weight: 700;
-  padding: 6px 10px;
+  padding: 7px 10px;
 }
 
 .doo-rail-jobs-list {
   display: grid;
   gap: 10px;
+  grid-auto-rows: max-content;
   min-height: 0;
+  align-content: start;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
   position: relative;
   z-index: 1;
-}
-
-.doo-rail-slot:last-child .doo-rail-card {
-  min-height: 420px;
 }
 
 .doo-rail-jobs-list::-webkit-scrollbar {
@@ -839,6 +835,7 @@ textarea {
 .doo-rail-job-card {
   display: grid;
   gap: 9px;
+  align-self: start;
   border-radius: 16px;
   border: 1px solid rgba(129, 184, 235, 0.16);
   background:
@@ -848,6 +845,7 @@ textarea {
     inset 0 1px 0 rgba(255, 255, 255, 0.04),
     0 14px 26px rgba(0, 0, 0, 0.24);
   padding: 12px 12px 13px;
+  min-height: 148px;
   color: inherit;
   text-decoration: none;
   transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
@@ -1010,14 +1008,6 @@ textarea {
 }
 
 @media (max-width: 960px) {
-  .doo-rail-stack {
-    grid-template-rows: auto auto;
-  }
-
-  .doo-rail-slot:last-child .doo-rail-card {
-    min-height: 340px;
-  }
-
   .doo-rail-job-footer {
     align-items: flex-start;
     flex-direction: column;
