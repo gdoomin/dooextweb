@@ -17,8 +17,8 @@ type JmaTimeEntry = {
 
 const KOREA_CENTER = { lat: 36.2, lng: 127.8 };
 const TILE_GRID_SIZE = 3;
-const TILE_ZOOM = 6;
-const CARD_SCALE = 1.45;
+const TILE_ZOOM = 5;
+const CARD_SCALE = 1.9;
 const KOREA_BOUNDS = {
   south: 33.0,
   west: 124.0,
