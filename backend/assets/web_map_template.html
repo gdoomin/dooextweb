@@ -4417,7 +4417,7 @@
         applyInterfaceCollapseState(false, true);
       }
       if (planInfoButton) {
-        const shouldHidePlanButton = viewerIsLegacyPlanUser;
+        const shouldHidePlanButton = viewerIsLegacyPlanUser || viewerPlanCode === 'pro';
         planInfoButton.style.display = shouldHidePlanButton ? 'none' : '';
         if (shouldHidePlanButton) {
           planInfoButton.setAttribute('aria-hidden', 'true');
