@@ -3838,6 +3838,7 @@
     const weatherPopupSnapDefaultDistance = 72;
     const weatherPopupDragThreshold = 3;
     const renderer = L.canvas({ padding: 0.5 });
+    const gpxRenderer = L.svg({ padding: 0.5 });
     const map = L.map('map', {
       preferCanvas: true,
       zoomAnimation: true,
@@ -5079,7 +5080,7 @@
         pane: 'overlayPane',
         interactive: true,
         bubblingMouseEvents: false,
-        renderer,
+        renderer: gpxRenderer,
       }).addTo(gpxRouteGroup);
       const item = {
         id: routeId,
@@ -5367,6 +5368,11 @@
         map.fitBounds(gpxBounds.pad(0.16), { animate: true, maxZoom: GPX_MAX_AUTO_FIT_ZOOM });
       }
       syncGpxRouteSelections();
+      gpxState.items.forEach((item) => {
+        if (item && item.layer && typeof item.layer.bringToFront === 'function') {
+          item.layer.bringToFront();
+        }
+      });
       return {
         segmentCount: segments.length,
         pointCount,
@@ -15931,6 +15937,9 @@
           const gpxText = await file.text();
           const result = loadGpxFromText(gpxText);
           setGpxPanelVisible(true);
+          saveViewerStateNow().catch(() => {
+            // Ignore transient viewer-state sync failures after GPX load.
+          });
           window.alert(`GPX 경로를 불러왔습니다.\n이번 파일 ${result.segmentCount}개 · 좌표 ${result.pointCount}개\n현재 누적 ${result.totalSegmentCount}개`);
         } catch (error) {
           const message = error && error.message ? String(error.message) : 'GPX 파일 처리에 실패했습니다.';
