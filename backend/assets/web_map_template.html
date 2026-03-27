@@ -4345,6 +4345,8 @@
       arcSplits: 20,
       maxDeviationNm: 6,
       customSpeedKnots: 185,
+      styleColor: SIM_BASE_COLOR,
+      styleWeight: SIM_WEIGHT,
     };
     const gpxState = {
       items: [],
@@ -5159,16 +5161,39 @@
       return clamp(numeric, 1, 20);
     }
 
+    function getSimulationGlobalColor() {
+      return normalizeSimColor(simState && simState.settings ? simState.settings.styleColor : SIM_BASE_COLOR, SIM_BASE_COLOR);
+    }
+
+    function getSimulationGlobalWeight() {
+      return normalizeSimWeight(simState && simState.settings ? simState.settings.styleWeight : SIM_WEIGHT, SIM_WEIGHT);
+    }
+
+    function applyGlobalSimulationStyle(persist = true) {
+      const nextColor = normalizeSimColor(simColorInput ? simColorInput.value : getSimulationGlobalColor(), getSimulationGlobalColor());
+      const nextWeight = normalizeSimWeight(simWeightInput ? simWeightInput.value : getSimulationGlobalWeight(), getSimulationGlobalWeight());
+      simState.settings.styleColor = nextColor;
+      simState.settings.styleWeight = nextWeight;
+      simState.items.forEach((item) => {
+        item.color = nextColor;
+        item.weight = nextWeight;
+        item.manualColor = false;
+        item.manualWeight = false;
+        applySimulationSegmentStyle(item, item.id === simState.selectedSegmentId);
+      });
+      syncSimulationSegmentSelections();
+      if (persist) {
+        scheduleViewerStateSave();
+      }
+    }
+
     function getSimSegmentById(segmentId) {
       return simState.items.find((item) => item.id === segmentId) || null;
     }
 
     function resolveSimulationSegmentColor(item) {
       if (!item) {
-        return SIM_BASE_COLOR;
-      }
-      if (item.manualColor) {
-        return normalizeSimColor(item.color, SIM_BASE_COLOR);
+        return getSimulationGlobalColor();
       }
       if (item.isTurnSegment && simState.settings.warnSea && item.warningSea) {
         return SIM_WARNING_SEA_COLOR;
@@ -5176,14 +5201,14 @@
       if (item.isTurnSegment && simState.settings.warnOutOfBounds && item.warningOutOfBounds) {
         return SIM_WARNING_BOUNDS_COLOR;
       }
-      return normalizeSimColor(item.color, SIM_BASE_COLOR);
+      return getSimulationGlobalColor();
     }
 
     function applySimulationSegmentStyle(item, selected = false) {
       if (!item || !item.layer || typeof item.layer.setStyle !== 'function') {
         return;
       }
-      const baseWeight = normalizeSimWeight(item.weight, SIM_WEIGHT);
+      const baseWeight = getSimulationGlobalWeight();
       item.layer.setStyle({
         color: resolveSimulationSegmentColor(item),
         weight: selected ? Math.min(24, Math.max(baseWeight + 1.8, baseWeight)) : baseWeight,
@@ -5200,19 +5225,13 @@
         return;
       }
       const selectedItem = getSimSegmentById(simState.selectedSegmentId);
-      if (!selectedItem) {
-        simColorInput.value = SIM_BASE_COLOR;
-        simWeightInput.value = String(SIM_WEIGHT);
-        simColorInput.disabled = true;
-        simWeightInput.disabled = true;
-        simSelectedStatus.textContent = '선택된 SIM 객체 없음';
-        return;
-      }
       simColorInput.disabled = false;
       simWeightInput.disabled = false;
-      simColorInput.value = normalizeSimColor(selectedItem.color, SIM_BASE_COLOR);
-      simWeightInput.value = String(normalizeSimWeight(selectedItem.weight, SIM_WEIGHT));
-      simSelectedStatus.textContent = `선택된 SIM 객체 #${selectedItem.id}`;
+      simColorInput.value = getSimulationGlobalColor();
+      simWeightInput.value = String(getSimulationGlobalWeight());
+      simSelectedStatus.textContent = selectedItem
+        ? `선택된 SIM 객체 #${selectedItem.id} · 색상/굵기 전체 적용`
+        : '색상/굵기 전체 적용';
     }
 
     function deselectSimulationSegment() {
@@ -5292,8 +5311,8 @@
       if (!meta || !Array.isArray(meta.coords) || meta.coords.length < 2) {
         return null;
       }
-      const initialColor = normalizeSimColor(meta.color, SIM_BASE_COLOR);
-      const initialWeight = normalizeSimWeight(meta.weight, SIM_WEIGHT);
+      const initialColor = normalizeSimColor(meta.color, getSimulationGlobalColor());
+      const initialWeight = normalizeSimWeight(meta.weight, getSimulationGlobalWeight());
       const layer = L.polyline(meta.coords.map((coord) => [coord.latitude, coord.longitude]), {
         color: initialColor,
         weight: initialWeight,
@@ -5550,6 +5569,12 @@
         return;
       }
       const settings = simState.settings;
+      if (simColorInput) {
+        simColorInput.value = normalizeSimColor(settings.styleColor, SIM_BASE_COLOR);
+      }
+      if (simWeightInput) {
+        simWeightInput.value = String(normalizeSimWeight(settings.styleWeight, SIM_WEIGHT));
+      }
       if (simAircraftPresetSelect) {
         simAircraftPresetSelect.value = settings.aircraftPreset;
       }
@@ -5656,6 +5681,8 @@
       simState.settings.inboundNm = clamp(Number(simInboundNmInput ? simInboundNmInput.value : simState.settings.inboundNm) || SIM_DEFAULTS.inboundNm, 0.1, 30);
       simState.settings.maxDeviationNm = clamp(Number(simMaxDeviationNmInput ? simMaxDeviationNmInput.value : simState.settings.maxDeviationNm) || SIM_DEFAULTS.maxDeviationNm, 2, 7);
       simState.settings.customSpeedKnots = clamp(Number(simCustomSpeedInput ? simCustomSpeedInput.value : simState.settings.customSpeedKnots) || SIM_DEFAULTS.customSpeedKnots, 80, 420);
+      simState.settings.styleColor = normalizeSimColor(simColorInput ? simColorInput.value : simState.settings.styleColor, SIM_BASE_COLOR);
+      simState.settings.styleWeight = normalizeSimWeight(simWeightInput ? simWeightInput.value : simState.settings.styleWeight, SIM_WEIGHT);
       setSimDirectInputEnabled();
       return { ...simState.settings };
     }
@@ -6351,14 +6378,14 @@
         appendSimulationSegmentMeta(segments, simulationBounds, {
           coords: startSegment,
           isTurnSegment: false,
-          color: SIM_BASE_COLOR,
-          weight: SIM_ENDPOINT_EXTENSION_WEIGHT,
+          color: normalizeSimColor(settings && settings.styleColor, SIM_BASE_COLOR),
+          weight: normalizeSimWeight(settings && settings.styleWeight, SIM_WEIGHT),
         });
         appendSimulationSegmentMeta(segments, simulationBounds, {
           coords: endSegment,
           isTurnSegment: false,
-          color: SIM_BASE_COLOR,
-          weight: SIM_ENDPOINT_EXTENSION_WEIGHT,
+          color: normalizeSimColor(settings && settings.styleColor, SIM_BASE_COLOR),
+          weight: normalizeSimWeight(settings && settings.styleWeight, SIM_WEIGHT),
         });
         totalDistanceMeters += coordsPathDistanceMeters(startSegment);
         totalDistanceMeters += coordsPathDistanceMeters(endSegment);
@@ -13072,6 +13099,12 @@
           }, false);
         });
       }
+      simState.items.forEach((item) => {
+        item.color = getSimulationGlobalColor();
+        item.weight = getSimulationGlobalWeight();
+        item.manualColor = false;
+        item.manualWeight = false;
+      });
       simState.generatedSegmentCount = simState.items.length;
       const selectedSegmentId = Number.isFinite(savedSim.selectedSegmentId) ? Math.max(1, Math.round(savedSim.selectedSegmentId)) : null;
       if (selectedSegmentId != null && getSimSegmentById(selectedSegmentId)) {
@@ -15998,28 +16031,12 @@
       }
       if (simColorInput) {
         simColorInput.addEventListener('input', () => {
-          const selectedItem = getSimSegmentById(simState.selectedSegmentId);
-          if (!selectedItem) {
-            syncSimulationSegmentSelections();
-            return;
-          }
-          selectedItem.color = normalizeSimColor(simColorInput.value, selectedItem.color || SIM_BASE_COLOR);
-          selectedItem.manualColor = true;
-          applySimulationSegmentStyle(selectedItem, true);
-          scheduleViewerStateSave();
+          applyGlobalSimulationStyle(true);
         });
       }
       if (simWeightInput) {
         simWeightInput.addEventListener('input', () => {
-          const selectedItem = getSimSegmentById(simState.selectedSegmentId);
-          if (!selectedItem) {
-            syncSimulationSegmentSelections();
-            return;
-          }
-          selectedItem.weight = normalizeSimWeight(simWeightInput.value, selectedItem.weight || SIM_WEIGHT);
-          selectedItem.manualWeight = true;
-          applySimulationSegmentStyle(selectedItem, true);
-          scheduleViewerStateSave();
+          applyGlobalSimulationStyle(true);
         });
       }
       if (simApplyButton) {
