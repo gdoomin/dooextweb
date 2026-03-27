@@ -2040,6 +2040,78 @@
       color: #d9f3ff;
       text-decoration: underline;
     }
+    .aviation-popup {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+      display: block;
+    }
+    .weather-popup.aviation-popup {
+      min-width: 0;
+      max-width: none;
+      width: 100%;
+    }
+    .aviation-popup__meta {
+      display: grid;
+      gap: 6px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(110, 231, 183, 0.22);
+      background: rgba(17, 48, 33, 0.32);
+    }
+    .aviation-popup__meta-row {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #edf7f3;
+    }
+    .aviation-popup__meta-row strong {
+      color: #b7f0d5;
+      font-weight: 800;
+    }
+    .aviation-popup__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
+      width: 100%;
+    }
+    .aviation-popup__section {
+      display: flex;
+      flex-direction: column;
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(121, 192, 255, 0.16);
+      background: rgba(7, 15, 24, 0.74);
+      min-width: 0;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .aviation-popup__section-title {
+      margin: 0 0 8px;
+      color: #a8ddff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .aviation-popup__empty {
+      color: #9fb3c8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .aviation-popup__section pre {
+      margin-top: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .leaflet-popup.doo-popup .leaflet-popup-content-wrapper {
       background: rgba(6, 11, 18, 0.985);
       color: #f4f8fc;
@@ -2079,6 +2151,23 @@
       overflow-y: auto;
       padding-right: 6px;
     }
+    .leaflet-popup.doo-popup.aviation-popup-shell .leaflet-popup-content-wrapper {
+      width: min(980px, calc(100vw - 40px));
+      max-width: min(980px, calc(100vw - 40px));
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 14px 16px;
+    }
+    .leaflet-popup.doo-popup.aviation-popup-shell .leaflet-popup-content {
+      width: 100%;
+      max-width: none;
+      margin: 0;
+      box-sizing: border-box;
+      max-height: min(72vh, 760px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
     @media (max-width: 760px) {
       .atis-popup {
         width: 100%;
@@ -2089,6 +2178,17 @@
       }
       .atis-popup__section pre {
         font-size: 13px;
+        line-height: 1.55;
+      }
+      .aviation-popup {
+        width: 100%;
+        max-width: 100%;
+      }
+      .aviation-popup__grid {
+        grid-template-columns: 1fr;
+      }
+      .aviation-popup__section pre {
+        font-size: 12px;
         line-height: 1.55;
       }
     }
@@ -4043,6 +4143,10 @@
     const weatherAtisState = {
       openIcao: '',
       detailCache: new Map(),
+      restoring: false,
+    };
+    const weatherAviationState = {
+      openKey: '',
       restoring: false,
     };
 
@@ -9515,23 +9619,45 @@
     }
 
     function buildAviationPopup(props) {
-      const title = props.icaoId || props.site || 'METAR / TAF';
-      const site = props.site && props.site !== title ? props.site : '';
-      const detailBlocks = [];
-      if (props.rawOb) {
-        detailBlocks.push(`METAR\n${props.rawOb}`);
-      }
-      if (props.tafRaw) {
-        detailBlocks.push(`TAF\n${props.tafRaw}`);
-      }
-      const summary = buildAviationSummary(props);
-      return buildWeatherPopupHtml(title, [
-        ['지점', site],
-        ['관측', formatWeatherTime(props.obsTime)],
-        ['비행등급', props.fltcat || (props.kind === 'taf' ? 'TAF only' : '')],
-        ['현상', props.wx || ''],
-        ['TAF', formatWeatherRange(props.tafValidFrom, props.tafValidTo)],
-      ], detailBlocks.join('\n\n'), summary);
+      const icao = String(props && props.icaoId ? props.icaoId : props && props.site ? props.site : 'METAR').trim().toUpperCase();
+      const site = String(props && props.site ? props.site : '').trim();
+      const title = `${icao} METAR / TAF`;
+      const summary = buildAviationSummary(props) || 'AviationWeather 공항 관측/예보 정보입니다.';
+      const observed = formatWeatherTime(props && props.obsTime ? props.obsTime : '');
+      const tafRange = formatWeatherRange(props && props.tafValidFrom ? props.tafValidFrom : '', props && props.tafValidTo ? props.tafValidTo : '');
+      const flightCategory = describeFlightCategoryKorean(props && props.fltcat ? props.fltcat : '', props && props.kind ? props.kind : '');
+      const flightCategoryValue = flightCategory
+        || (props && props.fltcat ? props.fltcat : '')
+        || (String(props && props.kind || '').toLowerCase() === 'taf' ? 'TAF 예보만 제공' : '-');
+      const metaRows = [
+        { label: '공항', value: site || icao || '-' },
+        { label: '소스', value: 'AviationWeather' },
+        { label: '관측', value: observed || '-' },
+        { label: '비행등급', value: flightCategoryValue },
+        { label: 'TAF', value: tafRange || '-' },
+      ];
+      const metaHtml = metaRows
+        .map((item) => `<div class="aviation-popup__meta-row"><strong>${escapeHtml(item.label)}</strong><span>${escapeHtml(item.value)}</span></div>`)
+        .join('');
+      const metarRaw = String(props && props.rawOb ? props.rawOb : '').trim();
+      const tafRaw = String(props && props.tafRaw ? props.tafRaw : '').trim();
+      return `
+        <div class="weather-popup aviation-popup">
+          <h3>${escapeHtml(title)}</h3>
+          <div class="weather-popup-summary">${escapeHtml(summary)}</div>
+          <div class="aviation-popup__meta">${metaHtml}</div>
+          <div class="aviation-popup__grid">
+            <section class="aviation-popup__section">
+              <div class="aviation-popup__section-title">METAR</div>
+              ${metarRaw ? `<pre>${escapeHtml(metarRaw)}</pre>` : '<div class="aviation-popup__empty">현재 METAR 정보가 없습니다.</div>'}
+            </section>
+            <section class="aviation-popup__section">
+              <div class="aviation-popup__section-title">TAF</div>
+              ${tafRaw ? `<pre>${escapeHtml(tafRaw)}</pre>` : '<div class="aviation-popup__empty">현재 TAF 정보가 없습니다.</div>'}
+            </section>
+          </div>
+        </div>
+      `;
     }
 
     function buildAtisMarkerHtml(props) {
@@ -9552,6 +9678,14 @@
         return 560;
       }
       return clamp(viewportWidth - 40, 320, 560);
+    }
+
+    function getAviationPopupMaxWidth() {
+      const viewportWidth = Number(window.innerWidth || document.documentElement.clientWidth || 0);
+      if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+        return 560;
+      }
+      return clamp(viewportWidth - 40, 360, 560);
     }
 
     function buildAtisPopupError(props, error) {
@@ -9698,6 +9832,31 @@
         if (!weatherAtisState.restoring && icao && weatherAtisState.openIcao === icao) {
           weatherAtisState.openIcao = '';
           if (isWeatherEnabled('atis')) {
+            scheduleWeatherRefresh(80);
+          }
+        }
+      });
+
+      attachAviationPopupDrag(marker);
+    }
+
+    function attachAviationPopupBehavior(marker, props) {
+      if (!marker || marker._dooAviationBound) {
+        return;
+      }
+      marker._dooAviationBound = true;
+      const popupKey = String(props && (props.icaoId || props.site) ? (props.icaoId || props.site) : '').trim().toUpperCase();
+
+      marker.on('popupopen', () => {
+        if (popupKey) {
+          weatherAviationState.openKey = popupKey;
+        }
+      });
+
+      marker.on('popupclose', () => {
+        if (!weatherAviationState.restoring && popupKey && weatherAviationState.openKey === popupKey) {
+          weatherAviationState.openKey = '';
+          if (isWeatherEnabled('metar')) {
             scheduleWeatherRefresh(80);
           }
         }
@@ -13560,6 +13719,8 @@
     }
 
     function renderWeatherAviation(featureCollection) {
+      const reopenKey = String(weatherAviationState.openKey || '').trim().toUpperCase();
+      weatherAviationState.restoring = true;
       weatherGroups.metar.clearLayers();
       const features = Array.isArray(featureCollection && featureCollection.features) ? featureCollection.features : [];
       features.forEach((feature) => {
@@ -13590,18 +13751,34 @@
           opacity: 0.96,
         });
         marker.bindPopup(buildAviationPopup(props), {
-          className: 'doo-popup',
-          maxWidth: 360,
+          className: 'doo-popup aviation-popup-shell',
+          maxWidth: getAviationPopupMaxWidth(),
+          autoPan: true,
+          keepInView: true,
+          autoPanPaddingTopLeft: [24, 24],
+          autoPanPaddingBottomRight: [24, 24],
+          closeOnClick: false,
+          autoClose: false,
         });
-        attachAviationPopupDrag(marker);
+        attachAviationPopupBehavior(marker, props);
         weatherGroups.metar.addLayer(marker);
+        const markerKey = String(props.icaoId || props.site || '').trim().toUpperCase();
+        if (reopenKey && markerKey && markerKey === reopenKey) {
+          window.setTimeout(() => {
+            if (weatherGroups.metar.hasLayer(marker) && map.hasLayer(weatherGroups.metar)) {
+              marker.openPopup();
+            }
+          }, 0);
+        }
       });
+      weatherAviationState.restoring = false;
       if (isWeatherEnabled('metar')) {
         if (!map.hasLayer(weatherGroups.metar)) {
           map.addLayer(weatherGroups.metar);
         }
       } else {
         map.removeLayer(weatherGroups.metar);
+        weatherAviationState.openKey = '';
       }
     }
 
@@ -13720,7 +13897,7 @@
       };
       const token = ++weatherRefreshToken;
       const tasks = [];
-      if (metarEnabled) {
+      if (metarEnabled && !weatherAviationState.openKey) {
         tasks.push(
           refreshWeatherAviationData(query, token).catch((error) => {
             if (token === weatherRefreshToken && isWeatherEnabled('metar')) {
@@ -13729,6 +13906,8 @@
             throw error;
           })
         );
+      } else if (metarEnabled && weatherAviationState.openKey) {
+        setWeatherBadge('metar', '열람중', 'live');
       }
       if (atisEnabled && !weatherAtisState.openIcao) {
         tasks.push(
@@ -13963,6 +14142,7 @@
         } else if (layerKey === 'metar') {
           weatherGroups.metar.clearLayers();
           map.removeLayer(weatherGroups.metar);
+          weatherAviationState.openKey = '';
         } else if (layerKey === 'atis') {
           weatherGroups.atis.clearLayers();
           map.removeLayer(weatherGroups.atis);
@@ -13980,6 +14160,7 @@
         if (layerKey === 'metar') {
           weatherGroups.metar.clearLayers();
           map.removeLayer(weatherGroups.metar);
+          weatherAviationState.openKey = '';
         } else if (layerKey === 'atis') {
           weatherGroups.atis.clearLayers();
           map.removeLayer(weatherGroups.atis);
