@@ -1979,6 +1979,10 @@
       font-weight: 800;
       letter-spacing: 0.02em;
     }
+    .atis-popup__section pre {
+      font-size: 22px;
+      line-height: 1.65;
+    }
     .atis-popup__empty {
       color: #9fb3c8;
       font-size: 12px;
@@ -9465,8 +9469,6 @@
       const fetchedAt = detail && detail.fetched_at ? formatWeatherTime(detail.fetched_at) : '';
       const arrival = detail && detail.arrival && typeof detail.arrival === 'object' ? detail.arrival : {};
       const departure = detail && detail.departure && typeof detail.departure === 'object' ? detail.departure : {};
-      const metar = detail && detail.metar && typeof detail.metar === 'object' ? detail.metar : {};
-      const taf = detail && detail.taf && typeof detail.taf === 'object' ? detail.taf : {};
       const summary = detail && detail.no_data && !arrival.raw && !departure.raw
         ? '현재 표시 가능한 D-ATIS가 없습니다. 항공기 요청이 있을 때만 D-ATIS가 나타날 수 있습니다.'
         : 'ATIS.guru에서 수집한 D-ATIS입니다. 항공기 요청 시점에 따라 최신 정보가 반영됩니다.';
@@ -9486,8 +9488,6 @@
           <div class="atis-popup__meta">${metaHtml}</div>
           ${buildAtisSectionHtml('도착 D-ATIS', arrival, '현재 도착 D-ATIS가 없습니다.')}
           ${buildAtisSectionHtml('출발 D-ATIS', departure, '현재 출발 D-ATIS가 없습니다.')}
-          ${buildAtisSectionHtml('METAR', metar, '참고용 METAR 정보가 없습니다.')}
-          ${buildAtisSectionHtml('TAF', taf, '참고용 TAF 정보가 없습니다.')}
         </div>
       `;
     }
