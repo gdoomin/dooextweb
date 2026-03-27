@@ -1987,18 +1987,39 @@ textarea {
 }
 
 .doo-bookmark-modal {
-  width: min(100%, 560px);
+  width: min(100%, 540px);
+  max-height: min(82vh, 720px);
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
 }
 
 .doo-bookmark-form {
   display: grid;
   gap: 12px;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+.doo-bookmark-form::-webkit-scrollbar,
+.doo-bookmark-selector-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.doo-bookmark-form::-webkit-scrollbar-thumb,
+.doo-bookmark-selector-grid::-webkit-scrollbar-thumb {
+  background: rgba(121, 192, 255, 0.22);
+  border-radius: 999px;
 }
 
 .doo-bookmark-selector-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(96px, 1fr));
   gap: 10px;
+  max-height: 224px;
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 4px;
 }
 
 .doo-bookmark-selector {
@@ -2132,6 +2153,21 @@ textarea {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(121, 192, 255, 0.12);
+}
+
+@media (max-width: 640px) {
+  .doo-bookmark-modal {
+    width: min(100%, 500px);
+    max-height: min(86vh, 680px);
+    padding: 22px 18px;
+    gap: 14px;
+  }
+
+  .doo-bookmark-selector-grid {
+    max-height: 204px;
+  }
 }
 
 .doo-bookmark-save {
