@@ -187,7 +187,7 @@
       pointer-events: none;
     }
     .completion-summary.is-visible {
-      max-height: 168px;
+      max-height: 236px;
       opacity: 1;
       transform: translateY(0);
       padding: 8px 10px;
@@ -3141,6 +3141,14 @@
         <span>(예상)잔여 촬영시간</span>
         <strong id="completionRemainingTimeText">대략 0분</strong>
       </div>
+      <div class="completion-summary-row">
+        <span>수동 완료</span>
+        <strong id="completionManualCountText">0개</strong>
+      </div>
+      <div class="completion-summary-row">
+        <span>GPX 완료</span>
+        <strong id="completionGpxCountText">0개</strong>
+      </div>
     </div>
   </div>
   <div class="panel toolbar">
@@ -3898,6 +3906,8 @@
     const completionCountText = document.getElementById('completionCountText');
     const completionPercentText = document.getElementById('completionPercentText');
     const completionRemainingTimeText = document.getElementById('completionRemainingTimeText');
+    const completionManualCountText = document.getElementById('completionManualCountText');
+    const completionGpxCountText = document.getElementById('completionGpxCountText');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
     const weatherButton = document.getElementById('weatherButton');
@@ -5027,7 +5037,7 @@
         if (!isResultLineCoveredByGpx(entry, candidateSegments)) {
           return;
         }
-        setLineCompleted(entry, true, { persist: false, updateSummary: false });
+        setLineCompleted(entry, true, { persist: false, updateSummary: false, source: 'gpx' });
         changedCount += 1;
       });
       if (changedCount > 0) {
@@ -11905,12 +11915,27 @@
       }
     }
 
-    function buildLineTooltipHtml(row) {
+    function getCompletionSourceLabel(entry) {
+      if (!entry || !entry.completed) {
+        return '';
+      }
+      return entry.completionSource === 'gpx' ? 'GPX 자동 완료' : '수동 완료';
+    }
+
+    function buildLineTooltipHtml(row, entry = null) {
       const forceText = getForceLabelText(row);
       const labelText = forceText
         ? (row.num ? `${row.num} (${forceText})` : forceText)
         : (row.num || 'Line');
-      return `<strong>Line ${escapeHtml(labelText)}</strong>`;
+      const completionSourceLabel = getCompletionSourceLabel(entry);
+      return `<strong>Line ${escapeHtml(labelText)}</strong>${completionSourceLabel ? `<br>완료 방식: ${escapeHtml(completionSourceLabel)}` : ''}`;
+    }
+
+    function refreshLineTooltip(entry) {
+      if (!entry || !entry.hitLine || typeof entry.hitLine.setTooltipContent !== 'function') {
+        return;
+      }
+      entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row, entry));
     }
 
     function refreshForceLabels() {
@@ -11920,7 +11945,7 @@
       resultLineEntries.forEach((entry) => {
         const labelText = getForceLabelText(entry.row);
         if (!labelText) {
-          entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row));
+          entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row, entry));
           return;
         }
         const marker = L.marker(entry.labelPoint, {
@@ -11931,7 +11956,7 @@
         }).addTo(forceLabelGroup);
         forceLabelMarkers.set(entry.id, marker);
         bindNumberLabelMarker(marker, 'force', entry.id);
-        entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row));
+        entry.hitLine.setTooltipContent(buildLineTooltipHtml(entry.row, entry));
       });
       clearMissingNumberLabelSelection();
     }
@@ -12021,9 +12046,11 @@
 
     function applyLineVisual(entry, hovered = false) {
       const isDone = !!entry.completed;
+      const completionSource = isDone && entry && entry.completionSource === 'gpx' ? 'gpx' : 'manual';
+      const isGpxDone = isDone && completionSource === 'gpx';
       const lineWeight = isDone ? 2.4 : 3;
-      const lineColorValue = isDone ? '#96addd' : lineColor;
-      const hoverColorValue = isDone ? '#b8c7ef' : hoverColor;
+      const lineColorValue = isDone ? (isGpxDone ? '#8cb8ea' : '#96addd') : lineColor;
+      const hoverColorValue = isDone ? (isGpxDone ? '#b5d5f7' : '#b8c7ef') : hoverColor;
       entry.line.setStyle({
         color: hovered ? hoverColorValue : lineColorValue,
         weight: hovered ? (isDone ? 3.1 : 5) : lineWeight,
@@ -12031,7 +12058,7 @@
       });
       if (entry.halo) {
         entry.halo.setStyle({
-          color: doneState.highlightColor,
+          color: isGpxDone ? '#74c7ff' : doneState.highlightColor,
           opacity: isDone ? (hovered ? 0.64 : 0.5) : 0,
           weight: isDone ? doneState.highlightWeight : 0.1,
         });
@@ -12053,10 +12080,18 @@
         completionCountText.textContent = '0 / 0';
         completionPercentText.textContent = '0.0%';
         completionRemainingTimeText.textContent = '대략 0분';
+        if (completionManualCountText) {
+          completionManualCountText.textContent = '0개';
+        }
+        if (completionGpxCountText) {
+          completionGpxCountText.textContent = '0개';
+        }
         return;
       }
 
       let completedCount = 0;
+      let manualCompletedCount = 0;
+      let gpxCompletedCount = 0;
       let totalMeters = 0;
       let completedMeters = 0;
       resultLineEntries.forEach((entry) => {
@@ -12064,6 +12099,11 @@
         totalMeters += lengthMeters;
         if (entry.completed) {
           completedCount += 1;
+          if (entry.completionSource === 'gpx') {
+            gpxCompletedCount += 1;
+          } else {
+            manualCompletedCount += 1;
+          }
           completedMeters += lengthMeters;
         }
       });
@@ -12079,6 +12119,12 @@
       completionCountText.textContent = `${completedCount} / ${totalCount}`;
       completionPercentText.textContent = `${progressPercent.toFixed(1)}%`;
       completionRemainingTimeText.textContent = formatRemainingCaptureDuration(remainingEstimatedHours);
+      if (completionManualCountText) {
+        completionManualCountText.textContent = `${manualCompletedCount}개`;
+      }
+      if (completionGpxCountText) {
+        completionGpxCountText.textContent = `${gpxCompletedCount}개`;
+      }
       completionSummary.classList.toggle('is-visible', completedCount > 0);
     }
 
@@ -12087,10 +12133,16 @@
         return;
       }
       entry.completed = !!completed;
+      if (entry.completed) {
+        entry.completionSource = options.source || entry.completionSource || 'manual';
+      } else {
+        entry.completionSource = '';
+      }
       if (Object.prototype.hasOwnProperty.call(options, 'suppressAuto')) {
         entry.gpxAutoSuppressed = !!options.suppressAuto;
       }
       applyLineVisual(entry, false);
+      refreshLineTooltip(entry);
       if (options.updateSummary !== false) {
         updateCompletionSummary();
       }
@@ -12104,10 +12156,10 @@
         return;
       }
       if (entry.completed) {
-        setLineCompleted(entry, false, { suppressAuto: true });
+        setLineCompleted(entry, false, { suppressAuto: true, source: '' });
         return;
       }
-      setLineCompleted(entry, true, { suppressAuto: false });
+      setLineCompleted(entry, true, { suppressAuto: false, source: 'manual' });
     }
 
     function renderResultPolygons() {
@@ -12217,6 +12269,7 @@
           labelPoint: lineLabelPoint(row),
           lengthMeters: map.distance(L.latLng(start[0], start[1]), L.latLng(end[0], end[1])),
           completed: false,
+          completionSource: '',
           gpxAutoSuppressed: false,
         };
 
@@ -12249,7 +12302,7 @@
         resultLineEntries.push(entry);
 
         hitLine.bindTooltip(
-          buildLineTooltipHtml(row),
+          buildLineTooltipHtml(row, entry),
           { sticky: true, className: 'doo-tooltip', direction: 'top', opacity: 0.98 }
         );
 
@@ -12343,6 +12396,12 @@
         completedLineIds: resultLineEntries
           .filter((entry) => entry.completed)
           .map((entry) => entry.id),
+        completionStates: resultLineEntries
+          .filter((entry) => entry.completed)
+          .map((entry) => ({
+            id: entry.id,
+            source: entry.completionSource === 'gpx' ? 'gpx' : 'manual',
+          })),
         gpxSuppressedLineIds: resultLineEntries
           .filter((entry) => entry.gpxAutoSuppressed && !entry.completed)
           .map((entry) => entry.id),
@@ -13117,16 +13176,30 @@
 
         resultLineEntries.forEach((entry) => {
           entry.completed = false;
+          entry.completionSource = '';
           entry.gpxAutoSuppressed = false;
           entry.row.force_assigned = null;
           applyLineVisual(entry, false);
         });
         updateCompletionSummary();
 
+        const completionStates = new Map();
+        if (Array.isArray(saved.completionStates)) {
+          saved.completionStates.forEach((item) => {
+            if (!item || !Number.isFinite(item.id)) {
+              return;
+            }
+            completionStates.set(item.id, item.source === 'gpx' ? 'gpx' : 'manual');
+          });
+        }
         const completedIds = new Set(Array.isArray(saved.completedLineIds) ? saved.completedLineIds : []);
         resultLineEntries.forEach((entry) => {
+          if (completionStates.has(entry.id)) {
+            setLineCompleted(entry, true, { source: completionStates.get(entry.id) });
+            return;
+          }
           if (completedIds.has(entry.id)) {
-            setLineCompleted(entry, true);
+            setLineCompleted(entry, true, { source: 'manual' });
           }
         });
         const suppressedIds = new Set(Array.isArray(saved.gpxSuppressedLineIds) ? saved.gpxSuppressedLineIds : []);
