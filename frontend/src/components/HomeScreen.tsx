@@ -2558,46 +2558,59 @@ export function HomeScreen({
 
             <div className="doo-bottom-ad-wrap">
               {isAuthenticated ? (
-                <div
-                  ref={bookmarkBoardRef}
-                  className={`doo-bookmark-board${bookmarkBoardDragging ? " is-dragging" : ""}`}
-                  onPointerDown={handleBookmarkBoardPointerDown}
-                  onPointerMove={handleBookmarkBoardPointerMove}
-                  onPointerUp={finishBookmarkBoardPointer}
-                  onPointerCancel={finishBookmarkBoardPointer}
-                  onPointerLeave={finishBookmarkBoardPointer}
-                  onClickCapture={handleBookmarkBoardClickCapture}
-                >
-                  {bookmarks.map((item) => (
-                    <a
-                      key={item.id}
-                      href={item.bookmark_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="doo-bookmark-card"
-                      title={item.bookmark_url}
-                    >
-                      <BookmarkVisual
-                        bookmark={item}
-                        alt="개인 북마크"
-                        imageClassName="doo-bookmark-card-image"
-                        textClassName="doo-bookmark-card-fallback"
-                      />
-                      <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
-                    </a>
-                  ))}
-                  {bookmarks.length < bookmarkMaxItems ? (
-                    <button
-                      type="button"
-                      className="doo-bookmark-card doo-bookmark-card-add"
-                      onClick={startAddBookmark}
-                    >
-                      <span className="doo-bookmark-card-plus">+</span>
-                      <span className="doo-bookmark-card-add-text">
-                        {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
-                      </span>
-                    </button>
-                  ) : null}
+                <div className="doo-bookmark-shell">
+                  <div className="doo-bookmark-head">
+                    <div className="doo-bookmark-head-copy">
+                      <span className="doo-bookmark-head-label">개인 북마크</span>
+                      <p>URL만 넣어도 대표 아이콘을 시도하고, 없으면 사이트 이름으로 표시됩니다. 드래그해서 좌우로 이동할 수 있습니다.</p>
+                    </div>
+                    <span className="doo-bookmark-count">
+                      {bookmarks.length}/{bookmarkMaxItems}
+                    </span>
+                  </div>
+
+                  <div
+                    ref={bookmarkBoardRef}
+                    className={`doo-bookmark-board${bookmarkBoardDragging ? " is-dragging" : ""}`}
+                    onPointerDown={handleBookmarkBoardPointerDown}
+                    onPointerMove={handleBookmarkBoardPointerMove}
+                    onPointerUp={finishBookmarkBoardPointer}
+                    onPointerCancel={finishBookmarkBoardPointer}
+                    onPointerLeave={finishBookmarkBoardPointer}
+                    onClickCapture={handleBookmarkBoardClickCapture}
+                  >
+                    {bookmarks.map((item) => (
+                      <a
+                        key={item.id}
+                        href={item.bookmark_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="doo-bookmark-card"
+                        title={item.bookmark_url}
+                      >
+                        <BookmarkVisual
+                          bookmark={item}
+                          alt="개인 북마크"
+                          imageClassName="doo-bookmark-card-image"
+                          textClassName="doo-bookmark-card-fallback"
+                        />
+                        <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
+                      </a>
+                    ))}
+                    {bookmarks.length < bookmarkMaxItems ? (
+                      <button
+                        type="button"
+                        className="doo-bookmark-card doo-bookmark-card-add"
+                        onPointerDown={(event) => event.stopPropagation()}
+                        onClick={startAddBookmark}
+                      >
+                        <span className="doo-bookmark-card-plus">+</span>
+                        <span className="doo-bookmark-card-add-text">
+                          {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
+                        </span>
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               ) : (
                 <AdSenseSlot slot={BOTTOM_AD_SLOT} className="doo-ad-unit doo-ad-unit-bottom" minHeight={120} />
