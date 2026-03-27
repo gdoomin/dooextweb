@@ -1149,83 +1149,32 @@ textarea {
 .doo-bottom-ad-wrap {
   flex: 0 0 auto;
   margin: 0 14px;
-  min-height: 120px;
-  border-radius: 20px;
+  min-height: 96px;
+  border-radius: 16px;
   border: 1px solid rgba(121, 192, 255, 0.16);
   background:
-    radial-gradient(circle at top left, rgba(120, 184, 255, 0.12), transparent 32%),
-    linear-gradient(180deg, rgba(15, 26, 39, 0.94) 0%, rgba(10, 20, 32, 0.9) 100%);
+    radial-gradient(circle at top left, rgba(120, 184, 255, 0.08), transparent 30%),
+    linear-gradient(180deg, rgba(15, 26, 39, 0.88) 0%, rgba(10, 20, 32, 0.84) 100%);
   box-shadow:
-    0 18px 36px rgba(0, 0, 0, 0.18),
+    0 14px 26px rgba(0, 0, 0, 0.16),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  padding: 12px;
+  padding: 8px 10px;
   overflow: hidden;
-}
-
-.doo-bookmark-shell {
-  display: grid;
-  gap: 12px;
-}
-
-.doo-bookmark-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.doo-bookmark-head-copy {
-  min-width: 0;
-  display: grid;
-  gap: 6px;
-}
-
-.doo-bookmark-head-label {
-  display: inline-flex;
-  align-items: center;
-  width: fit-content;
-  padding: 6px 12px;
-  border-radius: 999px;
-  background: rgba(67, 120, 180, 0.24);
-  border: 1px solid rgba(121, 192, 255, 0.18);
-  color: #dff0ff;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-}
-
-.doo-bookmark-head-copy p {
-  margin: 0;
-  color: #9fb9d3;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.doo-bookmark-count {
-  flex: 0 0 auto;
-  min-width: 64px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  background: rgba(7, 19, 31, 0.82);
-  border: 1px solid rgba(121, 192, 255, 0.16);
-  color: #f4f8fc;
-  font-size: 13px;
-  font-weight: 900;
-  text-align: center;
 }
 
 .doo-bookmark-board {
   display: flex;
-  gap: 12px;
-  min-height: 120px;
+  gap: 10px;
+  min-height: 78px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;
-  scroll-behavior: smooth;
   cursor: grab;
   user-select: none;
   -webkit-overflow-scrolling: touch;
-  padding: 4px 2px 6px;
+  touch-action: pan-x pinch-zoom;
+  overscroll-behavior-x: contain;
+  padding: 2px 1px 6px;
 }
 
 .doo-bookmark-board.is-dragging {
@@ -1233,7 +1182,7 @@ textarea {
 }
 
 .doo-bookmark-board::-webkit-scrollbar {
-  height: 10px;
+  height: 8px;
 }
 
 .doo-bookmark-board::-webkit-scrollbar-thumb {
@@ -1246,23 +1195,23 @@ textarea {
 }
 
 .doo-bookmark-card {
-  flex: 0 0 128px;
-  width: 128px;
-  min-height: 134px;
-  border-radius: 22px;
+  flex: 0 0 104px;
+  width: 104px;
+  min-height: 98px;
+  border-radius: 18px;
   border: 1px solid rgba(121, 192, 255, 0.18);
   background:
-    radial-gradient(circle at top, rgba(143, 210, 255, 0.16), transparent 38%),
-    linear-gradient(180deg, rgba(8, 17, 28, 0.98) 0%, rgba(13, 26, 40, 0.94) 100%);
+    radial-gradient(circle at top, rgba(143, 210, 255, 0.12), transparent 40%),
+    linear-gradient(180deg, rgba(8, 17, 28, 0.96) 0%, rgba(13, 26, 40, 0.92) 100%);
   color: #d7e6f5;
   text-decoration: none;
   display: grid;
   justify-items: center;
   align-content: center;
-  gap: 12px;
-  padding: 14px 10px;
+  gap: 8px;
+  padding: 10px 8px;
   box-shadow:
-    0 16px 28px rgba(0, 0, 0, 0.2),
+    0 12px 22px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   transition:
     transform 140ms ease,
@@ -1274,8 +1223,8 @@ textarea {
   filter: brightness(1.03);
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
-    0 18px 34px rgba(0, 0, 0, 0.26);
-  transform: translateY(-2px);
+    0 14px 24px rgba(0, 0, 0, 0.22);
+  transform: translateY(-1px);
 }
 
 .doo-bookmark-card-add {
@@ -1289,9 +1238,9 @@ textarea {
 
 .doo-bookmark-card-image,
 .doo-bookmark-card-fallback {
-  width: 92px;
-  height: 92px;
-  border-radius: 22px;
+  width: 74px;
+  height: 74px;
+  border-radius: 18px;
 }
 
 .doo-bookmark-card-image {
@@ -1306,7 +1255,7 @@ textarea {
   border: 1px dashed rgba(121, 192, 255, 0.28);
   background: rgba(20, 43, 64, 0.92);
   color: #eef6ff;
-  font-size: 18px;
+  font-size: 15px;
   font-weight: 900;
   letter-spacing: 0.06em;
 }
@@ -1314,24 +1263,20 @@ textarea {
 .doo-bookmark-card-host {
   width: 100%;
   color: #e6f0fa;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 800;
   text-align: center;
-  line-height: 1.35;
-  word-break: break-all;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .doo-bookmark-card-plus {
   color: #8fd2ff;
-  font-size: 42px;
+  font-size: 34px;
   line-height: 1;
   font-weight: 400;
-}
-
-.doo-bookmark-card-add-text {
-  color: #d4e5f4;
-  font-size: 13px;
-  font-weight: 800;
 }
 
 .doo-ad-unit {
@@ -1749,15 +1694,6 @@ textarea {
   .doo-bottom-ad-wrap {
     min-height: 90px;
     margin-bottom: 28px;
-  }
-
-  .doo-bookmark-head {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .doo-bookmark-count {
-    width: fit-content;
   }
 
   .doo-bookmark-board {

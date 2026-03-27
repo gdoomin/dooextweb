@@ -3,7 +3,6 @@
 import Image from "next/image";
 import {
   type ChangeEvent,
-  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
   useEffect,
   useMemo,
@@ -807,6 +806,7 @@ export function HomeScreen({
     startX: 0,
     startScrollLeft: 0,
     moved: false,
+    pendingUrl: "",
   });
 
   const isAuthenticated = Boolean(userId);
@@ -2085,11 +2085,13 @@ export function HomeScreen({
     if (!board) {
       return;
     }
+    const anchor = event.target instanceof Element ? event.target.closest("a[href]") as HTMLAnchorElement | null : null;
     bookmarkBoardDragRef.current = {
       active: true,
       startX: event.clientX,
       startScrollLeft: board.scrollLeft,
       moved: false,
+      pendingUrl: anchor?.href || "",
     };
     setBookmarkBoardDragging(true);
     board.setPointerCapture?.(event.pointerId);
@@ -2102,7 +2104,7 @@ export function HomeScreen({
       return;
     }
     const deltaX = event.clientX - drag.startX;
-    if (Math.abs(deltaX) > 4) {
+    if (Math.abs(deltaX) > 6) {
       drag.moved = true;
     }
     board.scrollLeft = drag.startScrollLeft - deltaX;
@@ -2111,23 +2113,31 @@ export function HomeScreen({
     }
   }
 
-  function finishBookmarkBoardPointer(event?: ReactPointerEvent<HTMLDivElement>) {
+  function completeBookmarkBoardPointer(event?: ReactPointerEvent<HTMLDivElement>) {
     const board = bookmarkBoardRef.current;
+    const drag = bookmarkBoardDragRef.current;
+    const shouldOpen = !drag.moved && Boolean(drag.pendingUrl);
     bookmarkBoardDragRef.current.active = false;
     setBookmarkBoardDragging(false);
     if (board && event) {
       board.releasePointerCapture?.(event.pointerId);
     }
+    if (shouldOpen) {
+      window.open(drag.pendingUrl, "_blank", "noopener,noreferrer");
+    }
+    bookmarkBoardDragRef.current.moved = false;
+    bookmarkBoardDragRef.current.pendingUrl = "";
   }
 
-  function handleBookmarkCardClick(event: ReactMouseEvent<HTMLAnchorElement>, bookmarkUrl: string) {
-    if (bookmarkBoardDragRef.current.moved) {
-      event.preventDefault();
-      bookmarkBoardDragRef.current.moved = false;
-      return;
+  function cancelBookmarkBoardPointer(event?: ReactPointerEvent<HTMLDivElement>) {
+    const board = bookmarkBoardRef.current;
+    bookmarkBoardDragRef.current.active = false;
+    bookmarkBoardDragRef.current.moved = false;
+    bookmarkBoardDragRef.current.pendingUrl = "";
+    setBookmarkBoardDragging(false);
+    if (board && event) {
+      board.releasePointerCapture?.(event.pointerId);
     }
-    event.preventDefault();
-    window.open(bookmarkUrl, "_blank", "noopener,noreferrer");
   }
 
   return (
@@ -2560,59 +2570,45 @@ export function HomeScreen({
 
             <div className="doo-bottom-ad-wrap">
               {isAuthenticated ? (
-                <div className="doo-bookmark-shell">
-                  <div className="doo-bookmark-head">
-                    <div className="doo-bookmark-head-copy">
-                      <span className="doo-bookmark-head-label">개인 북마크</span>
-                      <p>URL만 넣어도 대표 아이콘을 시도하고, 없으면 사이트 이름으로 표시됩니다. 드래그해서 좌우로 이동할 수 있습니다.</p>
-                    </div>
-                    <span className="doo-bookmark-count">
-                      {bookmarks.length}/{bookmarkMaxItems}
-                    </span>
-                  </div>
-
-                  <div
-                    ref={bookmarkBoardRef}
-                    className={`doo-bookmark-board${bookmarkBoardDragging ? " is-dragging" : ""}`}
-                    onPointerDown={handleBookmarkBoardPointerDown}
-                    onPointerMove={handleBookmarkBoardPointerMove}
-                    onPointerUp={finishBookmarkBoardPointer}
-                    onPointerCancel={finishBookmarkBoardPointer}
-                    onPointerLeave={finishBookmarkBoardPointer}
-                  >
-                    {bookmarks.map((item) => (
-                      <a
-                        key={item.id}
-                        href={item.bookmark_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="doo-bookmark-card"
-                        title={item.bookmark_url}
-                        onClick={(event) => handleBookmarkCardClick(event, item.bookmark_url)}
-                      >
-                        <BookmarkVisual
-                          bookmark={item}
-                          alt="개인 북마크"
-                          imageClassName="doo-bookmark-card-image"
-                          textClassName="doo-bookmark-card-fallback"
-                        />
-                        <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
-                      </a>
-                    ))}
-                    {bookmarks.length < bookmarkMaxItems ? (
-                      <button
-                        type="button"
-                        className="doo-bookmark-card doo-bookmark-card-add"
-                        onPointerDown={(event) => event.stopPropagation()}
-                        onClick={startAddBookmark}
-                      >
-                        <span className="doo-bookmark-card-plus">+</span>
-                        <span className="doo-bookmark-card-add-text">
-                          {bookmarkLoading && !bookmarks.length ? "불러오는 중..." : "북마크 추가"}
-                        </span>
-                      </button>
-                    ) : null}
-                  </div>
+                <div
+                  ref={bookmarkBoardRef}
+                  className={`doo-bookmark-board${bookmarkBoardDragging ? " is-dragging" : ""}`}
+                  aria-busy={bookmarkLoading}
+                  onPointerDown={handleBookmarkBoardPointerDown}
+                  onPointerMove={handleBookmarkBoardPointerMove}
+                  onPointerUp={completeBookmarkBoardPointer}
+                  onPointerCancel={cancelBookmarkBoardPointer}
+                  onPointerLeave={cancelBookmarkBoardPointer}
+                >
+                  {bookmarks.map((item) => (
+                    <a
+                      key={item.id}
+                      href={item.bookmark_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="doo-bookmark-card"
+                      title={item.bookmark_url}
+                      onClick={(event) => event.preventDefault()}
+                    >
+                      <BookmarkVisual
+                        bookmark={item}
+                        alt="개인 북마크"
+                        imageClassName="doo-bookmark-card-image"
+                        textClassName="doo-bookmark-card-fallback"
+                      />
+                      <span className="doo-bookmark-card-host">{describeBookmarkHost(item.bookmark_url)}</span>
+                    </a>
+                  ))}
+                  {bookmarks.length < bookmarkMaxItems ? (
+                    <button
+                      type="button"
+                      className="doo-bookmark-card doo-bookmark-card-add"
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={startAddBookmark}
+                    >
+                      <span className="doo-bookmark-card-plus">+</span>
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <AdSenseSlot slot={BOTTOM_AD_SLOT} className="doo-ad-unit doo-ad-unit-bottom" minHeight={120} />
