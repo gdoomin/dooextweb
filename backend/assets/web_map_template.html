@@ -187,7 +187,7 @@
       pointer-events: none;
     }
     .completion-summary.is-visible {
-      max-height: 120px;
+      max-height: 168px;
       opacity: 1;
       transform: translateY(0);
       padding: 8px 10px;
@@ -3126,6 +3126,10 @@
         <span>공정률</span>
         <strong id="completionPercentText">0.0%</strong>
       </div>
+      <div class="completion-summary-row">
+        <span>(예상)잔여 촬영시간</span>
+        <strong id="completionRemainingTimeText">대략 0분</strong>
+      </div>
     </div>
   </div>
   <div class="panel toolbar">
@@ -3882,6 +3886,7 @@
     const completionSummary = document.getElementById('completionSummary');
     const completionCountText = document.getElementById('completionCountText');
     const completionPercentText = document.getElementById('completionPercentText');
+    const completionRemainingTimeText = document.getElementById('completionRemainingTimeText');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
     const weatherButton = document.getElementById('weatherButton');
@@ -5224,6 +5229,20 @@
       const hh = Math.floor(totalMinutes / 60);
       const mm = totalMinutes % 60;
       return `${hh}h ${String(mm).padStart(2, '0')}m`;
+    }
+
+    function formatRemainingCaptureDuration(hours) {
+      const totalHours = Math.max(0, Number(hours) || 0);
+      const totalMinutes = Math.max(0, Math.round(totalHours * 60));
+      const hh = Math.floor(totalMinutes / 60);
+      const mm = totalMinutes % 60;
+      if (hh <= 0) {
+        return `대략 ${mm}분`;
+      }
+      if (mm <= 0) {
+        return `대략 ${hh}시간`;
+      }
+      return `대략 ${hh}시간 ${mm}분`;
     }
 
     function getSimCruiseSpeedKnots(settings = simState.settings) {
@@ -11836,7 +11855,7 @@
     }
 
     function updateCompletionSummary() {
-      if (!completionSummary || !completionCountText || !completionPercentText) {
+      if (!completionSummary || !completionCountText || !completionPercentText || !completionRemainingTimeText) {
         return;
       }
       const totalCount = resultLineEntries.length;
@@ -11844,6 +11863,7 @@
         completionSummary.classList.remove('is-visible');
         completionCountText.textContent = '0 / 0';
         completionPercentText.textContent = '0.0%';
+        completionRemainingTimeText.textContent = '대략 0분';
         return;
       }
 
@@ -11861,8 +11881,15 @@
       const progressPercent = totalMeters > 0
         ? (completedMeters / totalMeters) * 100
         : (completedCount / totalCount) * 100;
+      const remainingCount = Math.max(0, totalCount - completedCount);
+      const remainingMeters = Math.max(0, totalMeters - completedMeters);
+      const remainingTurns = Math.max(0, remainingCount - 1);
+      const remainingDistanceHours = remainingMeters > 0 ? ((remainingMeters / 1852) / 130) : 0;
+      const remainingTurnHours = (remainingTurns * 3) / 60;
+      const remainingEstimatedHours = remainingDistanceHours + remainingTurnHours;
       completionCountText.textContent = `${completedCount} / ${totalCount}`;
       completionPercentText.textContent = `${progressPercent.toFixed(1)}%`;
+      completionRemainingTimeText.textContent = formatRemainingCaptureDuration(remainingEstimatedHours);
       completionSummary.classList.toggle('is-visible', completedCount > 0);
     }
 
