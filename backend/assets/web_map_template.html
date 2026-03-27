@@ -1403,6 +1403,22 @@
     .layer-row.layer-row--sub .layer-count {
       font-size: 10px;
     }
+    .layer-row.layer-row--group {
+      grid-template-columns: 1fr;
+      margin-top: 4px;
+      padding: 8px 6px 4px;
+      background: transparent;
+    }
+    .layer-row.layer-row--group:hover {
+      background: transparent;
+    }
+    .layer-group-label {
+      color: #b6c9dd;
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
     .layer-row:hover {
       background: rgba(255, 255, 255, 0.04);
     }
@@ -13315,7 +13331,7 @@
 
       NOTAM_GROUP_DEFINITIONS.forEach((definition) => {
         const row = document.createElement('div');
-        row.className = 'layer-row layer-row--sub';
+        row.className = 'layer-row';
         row.dataset.layerKey = `notam-${definition.key}`;
 
         const label = document.createElement('label');
@@ -13391,10 +13407,28 @@
       layerPanel.style.display = '';
 
       let airportRow = null;
+      const airportClassLayerKeys = new Set(['class_b', 'class_c', 'class_d']);
+      const hasAirportLayer = layerCatalog.some((layer) => layer && layer.key === 'airport');
+      let airportGroupHeaderInserted = false;
       layerCatalog.forEach((layer) => {
+        if (!hasAirportLayer && airportClassLayerKeys.has(layer.key) && !airportGroupHeaderInserted) {
+          const groupRow = document.createElement('div');
+          groupRow.className = 'layer-row layer-row--group';
+          groupRow.dataset.layerGroup = 'airport';
+          const groupLabel = document.createElement('span');
+          groupLabel.className = 'layer-group-label';
+          groupLabel.textContent = 'Airport';
+          groupRow.appendChild(groupLabel);
+          layerRows.appendChild(groupRow);
+          airportGroupHeaderInserted = true;
+        }
+
         const row = document.createElement('div');
         row.className = 'layer-row';
         row.dataset.layerKey = layer.key;
+        if (airportClassLayerKeys.has(layer.key)) {
+          row.classList.add('layer-row--sub');
+        }
         const allowed = isLayerAllowedByPlan(layer);
 
         const label = document.createElement('label');
