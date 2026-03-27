@@ -12,7 +12,7 @@ import {
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 
 import { AdSenseSlot } from "@/components/AdSenseSlot";
-import { CoupangPartnersSlot } from "@/components/CoupangPartnersSlot";
+import { HimawariRailPanel } from "@/components/HimawariRailPanel";
 import { LoginForm } from "@/components/LoginForm";
 import {
   API_BASE_URL,
@@ -2616,9 +2616,21 @@ export function HomeScreen({
             </div>
           </section>
 
-          <aside className="doo-ad-rail" aria-label="Coupang Partners">
+          <aside className="doo-ad-rail" aria-label="실시간 정보">
             <div className="doo-ad-rail-inner">
-              <CoupangPartnersSlot className="doo-ad-unit doo-ad-unit-right" minHeight={650} />
+              <div className="doo-rail-stack">
+                <div className="doo-rail-slot doo-rail-slot-top">
+                  <HimawariRailPanel />
+                </div>
+                <div className="doo-rail-slot doo-rail-slot-bottom">
+                  <section className="doo-rail-card doo-rail-card-placeholder" aria-label="채용정보 준비중">
+                    <div className="doo-rail-placeholder-copy">
+                      <strong>채용정보</strong>
+                      <span>준비중</span>
+                    </div>
+                  </section>
+                </div>
+              </div>
             </div>
           </aside>
         </div>

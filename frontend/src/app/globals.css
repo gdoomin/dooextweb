@@ -561,14 +561,157 @@ textarea {
   width: 100%;
   height: 100%;
   min-height: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: block;
   border-radius: 16px;
   border: 1px solid rgba(121, 192, 255, 0.12);
   background: rgba(18, 34, 48, 0.72);
   padding: 8px;
   overflow: hidden;
+}
+
+.doo-rail-stack {
+  display: grid;
+  grid-template-rows: 45% 55%;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  gap: 10px;
+}
+
+.doo-rail-slot {
+  min-height: 0;
+}
+
+.doo-rail-card {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 16px;
+  border: 1px solid rgba(121, 192, 255, 0.14);
+  background:
+    radial-gradient(circle at top left, rgba(120, 184, 255, 0.1), transparent 30%),
+    linear-gradient(180deg, rgba(12, 23, 35, 0.96) 0%, rgba(9, 17, 28, 0.94) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 16px 28px rgba(0, 0, 0, 0.18);
+  overflow: hidden;
+}
+
+.doo-rail-card-hima {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 8px;
+  padding: 12px;
+}
+
+.doo-rail-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.doo-rail-card-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.doo-rail-card-copy strong {
+  color: #eff6ff;
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.doo-rail-card-copy span {
+  color: #a8bfd7;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.doo-rail-refresh {
+  flex: 0 0 auto;
+  border: 1px solid rgba(121, 192, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(18, 40, 61, 0.88);
+  color: #eff6ff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.doo-rail-refresh:disabled {
+  cursor: progress;
+  opacity: 0.68;
+}
+
+.doo-rail-hima-meta {
+  color: #d8e9f8;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.doo-rail-hima-canvas {
+  min-height: 0;
+  height: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: rgba(5, 10, 16, 0.86);
+  border: 1px solid rgba(121, 192, 255, 0.12);
+}
+
+.doo-rail-hima-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  width: 100%;
+  height: 100%;
+}
+
+.doo-rail-hima-tile {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.doo-rail-hima-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  padding: 18px;
+  color: #c7d5e4;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.doo-rail-card-placeholder {
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.doo-rail-placeholder-copy {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.doo-rail-placeholder-copy strong {
+  color: #eef6ff;
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.doo-rail-placeholder-copy span {
+  color: #9fb9d3;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .doo-top-panel {
@@ -1682,7 +1825,15 @@ textarea {
   }
 
   .doo-ad-rail {
-    display: none;
+    width: 100%;
+    flex: 0 0 auto;
+    padding: 0 14px 28px;
+    border-left: 0;
+    border-top: 1px solid #30363d;
+  }
+
+  .doo-ad-rail-inner {
+    min-height: 560px;
   }
 
   .doo-bottom-bar {
