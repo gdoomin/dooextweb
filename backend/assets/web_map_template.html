@@ -4294,6 +4294,15 @@
     const SIM_NM_TO_METERS = 1852;
     const SIM_ENDPOINT_EXTENSION_DEFAULT_NM = 6;
     const SIM_ENDPOINT_EXTENSION_WEIGHT = 9;
+    const LAYER_COLOR_PROFILE_VERSION = 2;
+    const FORCED_LAYER_DEFAULT_COLORS = Object.freeze({
+      moa: '#FFA500',
+      restrict: '#FF6B6B',
+      prohibit: '#1E5BFF',
+      class_b: '#4C8DDA',
+      class_c: '#2E9B68',
+      class_d: '#D07A2C',
+    });
     const WEATHER_MARKER_MAX_SCALE = 2.5;
     const SURVEY_ARROW_COLOR = '#4bd2ff';
     const SURVEY_TURN_COLOR = '#ffd24a';
@@ -7105,6 +7114,11 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+    }
+
+    function getForcedLayerDefaultColor(layerKey, fallback = '#4466CC') {
+      const normalizedKey = String(layerKey || '').trim().toLowerCase();
+      return FORCED_LAYER_DEFAULT_COLORS[normalizedKey] || fallback;
     }
 
     function clamp(value, min, max) {
@@ -12368,6 +12382,7 @@
     function collectViewerState() {
       return {
         version: VIEWER_STATE_VERSION,
+        layerColorProfileVersion: LAYER_COLOR_PROFILE_VERSION,
         gray: grayToggle.checked,
         numVisible: numToggle.checked,
         numberLabelSize: getKmlFontSize(),
@@ -12861,7 +12876,7 @@
       }
     }
 
-    async function applySavedLayerState(savedLayers) {
+    async function applySavedLayerState(savedLayers, savedColorProfileVersion = 0) {
       if (!Array.isArray(savedLayers)) {
         return;
       }
@@ -12896,7 +12911,13 @@
           continue;
         }
         const controls = layerControls.get(layerState.key);
-        if (typeof layerState.color === 'string' && /^#[0-9a-f]{6}$/i.test(layerState.color)) {
+        const forcedDefaultColor = getForcedLayerDefaultColor(layerState.key, controls.defaultColor || '#4466CC');
+        const shouldForceDefaultColor =
+          savedColorProfileVersion < LAYER_COLOR_PROFILE_VERSION
+          && Object.prototype.hasOwnProperty.call(FORCED_LAYER_DEFAULT_COLORS, String(layerState.key || '').trim().toLowerCase());
+        if (shouldForceDefaultColor) {
+          controls.color.value = forcedDefaultColor;
+        } else if (typeof layerState.color === 'string' && /^#[0-9a-f]{6}$/i.test(layerState.color)) {
           controls.color.value = layerState.color;
         }
         if (controls.allowed === false) {
@@ -13295,7 +13316,7 @@
         applySavedGpxState(saved.gpx);
         applySavedSimState(saved.sim);
 
-        await applySavedLayerState(saved.layers);
+        await applySavedLayerState(saved.layers, Number(saved.layerColorProfileVersion) || 0);
 
         applyInterfaceCollapseState(!!saved.toolbarCollapsed, true);
 
@@ -13845,7 +13866,7 @@
         const color = document.createElement('input');
         color.className = 'layer-color';
         color.type = 'color';
-        const defaultColor = layer.default_color || '#4466CC';
+        const defaultColor = getForcedLayerDefaultColor(layer.key, layer.default_color || '#4466CC');
         color.value = defaultColor;
 
         const resetButton = document.createElement('button');
