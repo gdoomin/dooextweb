@@ -3803,7 +3803,7 @@
     const kmzVisual = payload && payload.kmz_visual && typeof payload.kmz_visual === 'object'
       ? payload.kmz_visual
       : null;
-    const layerCatalog = rawLayerCatalog;
+    let layerCatalog = Array.isArray(rawLayerCatalog) ? rawLayerCatalog.slice() : [];
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
@@ -13905,6 +13905,7 @@
         .then((data) => {
           const mapData = new Map();
           const layers = Array.isArray(data.layers) ? data.layers : [];
+          layerCatalog = layers.slice();
           layers.forEach((layer) => {
             if (layer && layer.key) {
               mapData.set(layer.key, layer);
@@ -16837,6 +16838,7 @@
 
     async function initializeViewer() {
       buildWeatherRows();
+      await ensureLayerData().catch(() => null);
       buildLayerRows();
       renderResults();
       applyViewerPlanRestrictions();

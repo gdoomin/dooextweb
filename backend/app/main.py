@@ -105,6 +105,11 @@ ATIS_GURU_CACHE_TTL_SECONDS = 120
 BOOKMARK_IMAGE_SIZE_PX = 92
 BOOKMARK_IMAGE_MAX_BYTES = 256 * 1024
 BOOKMARK_MAX_ITEMS = 20
+NO_STORE_HEADERS = {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+    "Pragma": "no-cache",
+    "Expires": "0",
+}
 ATIS_VISIBLE_ICAOS = {
     "RKSI",
     "RKSS",
@@ -3748,7 +3753,7 @@ def get_viewer(job_id: str, request: Request):
         payload["preview_gate"] = True
         payload["signup_url"] = request.query_params.get("signup_url") or f"{_allowed_origins()[0]}/login?next=/"
 
-    return HTMLResponse(_viewer_html(job_id, payload))
+    return HTMLResponse(_viewer_html(job_id, payload), headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/viewer/default", response_class=HTMLResponse)
@@ -3771,7 +3776,8 @@ def get_default_viewer(request: Request):
             payload,
             "/api/viewer-default/viewer-state",
             "/api/viewer-default/layers.json",
-        )
+        ),
+        headers=NO_STORE_HEADERS,
     )
 
 
@@ -3787,7 +3793,7 @@ async def save_default_viewer_state():
 
 @app.get("/api/viewer-default/layers.json")
 def get_default_viewer_layers():
-    return JSONResponse(_load_map_layers())
+    return JSONResponse(_load_map_layers(), headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/home-state")
@@ -3923,7 +3929,7 @@ async def save_viewer_state(job_id: str, request: Request):
 def get_layers(job_id: str, request: Request):
     _request_identity_with_created_at(request, required=False)
     _load_job(job_id)
-    return JSONResponse(_load_map_layers())
+    return JSONResponse(_load_map_layers(), headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/notam")
