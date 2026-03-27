@@ -4342,6 +4342,9 @@
       defaultColor: GPX_LINE_COLOR,
       defaultWeight: GPX_LINE_WEIGHT,
     };
+    const GPX_AUTO_COMPLETE_DISTANCE_METERS = 50;
+    const GPX_AUTO_COMPLETE_REQUIRED_RATIO = 0.9;
+    const GPX_AUTO_COMPLETE_SAMPLE_STEP_METERS = 25;
     const simState = {
       visible: false,
       generatedSegmentCount: 0,
@@ -4859,6 +4862,183 @@
         .filter((point) => Array.isArray(point));
     }
 
+    function pointArrayToCoord(point) {
+      if (!Array.isArray(point) || point.length < 2) {
+        return null;
+      }
+      const latitude = Number(point[0]);
+      const longitude = Number(point[1]);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return null;
+      }
+      return { latitude, longitude };
+    }
+
+    function projectCoordToLocalMeters(coord, referenceLat) {
+      if (!coord || !Number.isFinite(coord.latitude) || !Number.isFinite(coord.longitude)) {
+        return null;
+      }
+      const safeReferenceLat = Number.isFinite(referenceLat) ? referenceLat : coord.latitude;
+      const lngScale = 111320 * Math.cos(toRadians(safeReferenceLat));
+      return {
+        x: coord.longitude * (Number.isFinite(lngScale) && Math.abs(lngScale) > 1e-9 ? lngScale : 1),
+        y: coord.latitude * 111320,
+      };
+    }
+
+    function pointToProjectedSegmentDistanceMeters(point, segmentStart, segmentEnd) {
+      if (!point || !segmentStart || !segmentEnd) {
+        return Number.POSITIVE_INFINITY;
+      }
+      const dx = segmentEnd.x - segmentStart.x;
+      const dy = segmentEnd.y - segmentStart.y;
+      if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) {
+        return Math.hypot(point.x - segmentStart.x, point.y - segmentStart.y);
+      }
+      const ratio = clamp((((point.x - segmentStart.x) * dx) + ((point.y - segmentStart.y) * dy)) / ((dx * dx) + (dy * dy)), 0, 1);
+      const nearestX = segmentStart.x + (dx * ratio);
+      const nearestY = segmentStart.y + (dy * ratio);
+      return Math.hypot(point.x - nearestX, point.y - nearestY);
+    }
+
+    function collectGpxSegmentPairs() {
+      const segments = [];
+      gpxState.items.forEach((item) => {
+        const points = Array.isArray(item && item.points) ? item.points : [];
+        for (let index = 1; index < points.length; index += 1) {
+          const start = pointArrayToCoord(points[index - 1]);
+          const end = pointArrayToCoord(points[index]);
+          if (!start || !end) {
+            continue;
+          }
+          segments.push({
+            start,
+            end,
+            minLat: Math.min(start.latitude, end.latitude),
+            maxLat: Math.max(start.latitude, end.latitude),
+            minLng: Math.min(start.longitude, end.longitude),
+            maxLng: Math.max(start.longitude, end.longitude),
+          });
+        }
+      });
+      return segments;
+    }
+
+    function getCandidateGpxSegmentsForEntry(entry, gpxSegments) {
+      if (!entry || !entry.row || !Array.isArray(gpxSegments) || !gpxSegments.length) {
+        return [];
+      }
+      const row = entry.row;
+      const minLat = Math.min(Number(row.s_lat), Number(row.e_lat));
+      const maxLat = Math.max(Number(row.s_lat), Number(row.e_lat));
+      const minLng = Math.min(Number(row.s_lon), Number(row.e_lon));
+      const maxLng = Math.max(Number(row.s_lon), Number(row.e_lon));
+      const centerLat = (minLat + maxLat) / 2;
+      const latPadding = GPX_AUTO_COMPLETE_DISTANCE_METERS / 111320;
+      const lngScale = 111320 * Math.cos(toRadians(centerLat));
+      const lngPadding = GPX_AUTO_COMPLETE_DISTANCE_METERS / (Number.isFinite(lngScale) && Math.abs(lngScale) > 1e-9 ? lngScale : 111320);
+      return gpxSegments.filter((segment) => (
+        segment.maxLat >= (minLat - latPadding)
+        && segment.minLat <= (maxLat + latPadding)
+        && segment.maxLng >= (minLng - lngPadding)
+        && segment.minLng <= (maxLng + lngPadding)
+      ));
+    }
+
+    function isResultLineCoveredByGpx(entry, gpxSegments) {
+      if (!entry || !entry.row || !Array.isArray(gpxSegments) || !gpxSegments.length) {
+        return false;
+      }
+      const start = {
+        latitude: Number(entry.row.s_lat),
+        longitude: Number(entry.row.s_lon),
+      };
+      const end = {
+        latitude: Number(entry.row.e_lat),
+        longitude: Number(entry.row.e_lon),
+      };
+      if (!Number.isFinite(start.latitude) || !Number.isFinite(start.longitude) || !Number.isFinite(end.latitude) || !Number.isFinite(end.longitude)) {
+        return false;
+      }
+      const lineLengthMeters = Math.max(getLineLengthMeters(entry), 0);
+      const sampleCount = Math.max(2, Math.ceil(lineLengthMeters / GPX_AUTO_COMPLETE_SAMPLE_STEP_METERS) + 1);
+      const requiredCoveredCount = Math.max(1, Math.ceil(sampleCount * GPX_AUTO_COMPLETE_REQUIRED_RATIO));
+      const referenceLat = (start.latitude + end.latitude) / 2;
+      const startProjected = projectCoordToLocalMeters(start, referenceLat);
+      const endProjected = projectCoordToLocalMeters(end, referenceLat);
+      if (!startProjected || !endProjected) {
+        return false;
+      }
+      const projectedSegments = gpxSegments
+        .map((segment) => {
+          const segmentStart = projectCoordToLocalMeters(segment.start, referenceLat);
+          const segmentEnd = projectCoordToLocalMeters(segment.end, referenceLat);
+          if (!segmentStart || !segmentEnd) {
+            return null;
+          }
+          return { start: segmentStart, end: segmentEnd };
+        })
+        .filter((segment) => !!segment);
+      if (!projectedSegments.length) {
+        return false;
+      }
+      let coveredCount = 0;
+      for (let index = 0; index < sampleCount; index += 1) {
+        const ratio = sampleCount <= 1 ? 0 : (index / (sampleCount - 1));
+        const samplePoint = {
+          x: startProjected.x + ((endProjected.x - startProjected.x) * ratio),
+          y: startProjected.y + ((endProjected.y - startProjected.y) * ratio),
+        };
+        const isCovered = projectedSegments.some((segment) => {
+          const distanceMeters = pointToProjectedSegmentDistanceMeters(samplePoint, segment.start, segment.end);
+          return distanceMeters <= GPX_AUTO_COMPLETE_DISTANCE_METERS;
+        });
+        if (isCovered) {
+          coveredCount += 1;
+          if (coveredCount >= requiredCoveredCount) {
+            return true;
+          }
+        }
+        const remainingSamples = sampleCount - index - 1;
+        if ((coveredCount + remainingSamples) < requiredCoveredCount) {
+          return false;
+        }
+      }
+      return coveredCount >= requiredCoveredCount;
+    }
+
+    function applyGpxAutoCompletion(persist = true) {
+      if (!resultLineEntries.length || !gpxState.items.length) {
+        return 0;
+      }
+      const gpxSegments = collectGpxSegmentPairs();
+      if (!gpxSegments.length) {
+        return 0;
+      }
+      let changedCount = 0;
+      resultLineEntries.forEach((entry) => {
+        if (!entry || entry.completed || entry.gpxAutoSuppressed) {
+          return;
+        }
+        const candidateSegments = getCandidateGpxSegmentsForEntry(entry, gpxSegments);
+        if (!candidateSegments.length) {
+          return;
+        }
+        if (!isResultLineCoveredByGpx(entry, candidateSegments)) {
+          return;
+        }
+        setLineCompleted(entry, true, { persist: false, updateSummary: false });
+        changedCount += 1;
+      });
+      if (changedCount > 0) {
+        updateCompletionSummary();
+        if (persist) {
+          scheduleViewerStateSave();
+        }
+      }
+      return changedCount;
+    }
+
     function createGpxRouteItem(points, options = {}) {
       const normalizedPoints = normalizeGpxPointsArray(points);
       if (normalizedPoints.length < 2) {
@@ -5189,7 +5369,9 @@
       if (!segments.length) {
         throw new Error('GPX에서 경로(trk/rte)를 찾지 못했습니다.');
       }
-      return drawGpxSegments(segments);
+      const drawResult = drawGpxSegments(segments);
+      applyGpxAutoCompletion(true);
+      return drawResult;
     }
 
     function normalizeHeadingDeg(value) {
@@ -11201,7 +11383,7 @@
         }
         const targetEntry = resultLineEntries.find((entry) => entry.id === entryId);
         if (doneState.active && targetEntry) {
-          setLineCompleted(targetEntry, !targetEntry.completed);
+          toggleLineCompletedFromUser(targetEntry);
           return;
         }
         selectNumberLabel(kind, entryId);
@@ -11890,11 +12072,32 @@
       completionSummary.classList.toggle('is-visible', completedCount > 0);
     }
 
-    function setLineCompleted(entry, completed) {
+    function setLineCompleted(entry, completed, options = {}) {
+      if (!entry) {
+        return;
+      }
       entry.completed = !!completed;
+      if (Object.prototype.hasOwnProperty.call(options, 'suppressAuto')) {
+        entry.gpxAutoSuppressed = !!options.suppressAuto;
+      }
       applyLineVisual(entry, false);
-      updateCompletionSummary();
-      scheduleViewerStateSave();
+      if (options.updateSummary !== false) {
+        updateCompletionSummary();
+      }
+      if (options.persist !== false) {
+        scheduleViewerStateSave();
+      }
+    }
+
+    function toggleLineCompletedFromUser(entry) {
+      if (!entry) {
+        return;
+      }
+      if (entry.completed) {
+        setLineCompleted(entry, false, { suppressAuto: true });
+        return;
+      }
+      setLineCompleted(entry, true, { suppressAuto: false });
     }
 
     function renderResultPolygons() {
@@ -12004,6 +12207,7 @@
           labelPoint: lineLabelPoint(row),
           lengthMeters: map.distance(L.latLng(start[0], start[1]), L.latLng(end[0], end[1])),
           completed: false,
+          gpxAutoSuppressed: false,
         };
 
         hitLine.on('mouseover', () => {
@@ -12019,7 +12223,7 @@
             L.DomEvent.stop(event.originalEvent);
           }
           if (doneState.active) {
-            setLineCompleted(entry, !entry.completed);
+            toggleLineCompletedFromUser(entry);
             return;
           }
           if (forceState.active && forceState.mode === 'new') {
@@ -12128,6 +12332,9 @@
         },
         completedLineIds: resultLineEntries
           .filter((entry) => entry.completed)
+          .map((entry) => entry.id),
+        gpxSuppressedLineIds: resultLineEntries
+          .filter((entry) => entry.gpxAutoSuppressed && !entry.completed)
           .map((entry) => entry.id),
         forceAssignments: resultLineEntries
           .filter((entry) => entry.row.force_assigned != null)
@@ -12900,6 +13107,7 @@
 
         resultLineEntries.forEach((entry) => {
           entry.completed = false;
+          entry.gpxAutoSuppressed = false;
           entry.row.force_assigned = null;
           applyLineVisual(entry, false);
         });
@@ -12909,6 +13117,12 @@
         resultLineEntries.forEach((entry) => {
           if (completedIds.has(entry.id)) {
             setLineCompleted(entry, true);
+          }
+        });
+        const suppressedIds = new Set(Array.isArray(saved.gpxSuppressedLineIds) ? saved.gpxSuppressedLineIds : []);
+        resultLineEntries.forEach((entry) => {
+          if (!entry.completed && suppressedIds.has(entry.id)) {
+            entry.gpxAutoSuppressed = true;
           }
         });
         updateCompletionSummary();
