@@ -663,6 +663,12 @@ textarea {
   border: 1px solid rgba(121, 192, 255, 0.12);
 }
 
+.doo-rail-hima-stage {
+  position: absolute;
+  inset: 0;
+  transform-origin: center center;
+}
+
 .doo-rail-hima-grid {
   position: absolute;
   inset: 0;

@@ -17,7 +17,8 @@ type JmaTimeEntry = {
 
 const KOREA_CENTER = { lat: 36.2, lng: 127.8 };
 const TILE_GRID_SIZE = 3;
-const TILE_ZOOM = 5;
+const TILE_ZOOM = 6;
+const CARD_SCALE = 1.45;
 const KOREA_BOUNDS = {
   south: 33.0,
   west: 124.0,
@@ -313,19 +314,21 @@ export function HimawariRailPanel() {
       <div className="doo-rail-hima-canvas">
         {snapshot ? (
           <>
-            <div className="doo-rail-hima-grid">
-              {snapshot.tiles.map((tileUrl, index) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={`${tileUrl}-${index}`} src={tileUrl} alt="히마와리 타일" className="doo-rail-hima-tile" loading="lazy" />
-              ))}
+            <div className="doo-rail-hima-stage" style={{ transform: `scale(${CARD_SCALE})` }}>
+              <div className="doo-rail-hima-grid">
+                {snapshot.tiles.map((tileUrl, index) => (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={`${tileUrl}-${index}`} src={tileUrl} alt="히마와리 타일" className="doo-rail-hima-tile" loading="lazy" />
+                ))}
+              </div>
+              <svg className="doo-rail-hima-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <polyline points={mainlandOutline} />
+                <polyline points={jejuOutline} />
+                {dokdoOutlines.map((outlinePoints, index) => (
+                  <polyline key={`dokdo-${index}`} points={outlinePoints} />
+                ))}
+              </svg>
             </div>
-            <svg className="doo-rail-hima-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-              <polyline points={mainlandOutline} />
-              <polyline points={jejuOutline} />
-              {dokdoOutlines.map((outlinePoints, index) => (
-                <polyline key={`dokdo-${index}`} points={outlinePoints} />
-              ))}
-            </svg>
           </>
         ) : (
           <div className="doo-rail-hima-empty">{error || "히마와리 이미지를 준비 중입니다."}</div>
