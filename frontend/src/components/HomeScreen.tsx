@@ -14,6 +14,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { HimawariRailPanel } from "@/components/HimawariRailPanel";
 import { LoginForm } from "@/components/LoginForm";
+import { PilotJobsRailPanel } from "@/components/PilotJobsRailPanel";
 import {
   API_BASE_URL,
   type BillingStatusResponse,
@@ -2623,12 +2624,7 @@ export function HomeScreen({
                   <HimawariRailPanel />
                 </div>
                 <div className="doo-rail-slot doo-rail-slot-bottom">
-                  <section className="doo-rail-card doo-rail-card-placeholder" aria-label="채용정보 준비중">
-                    <div className="doo-rail-placeholder-copy">
-                      <strong>채용정보</strong>
-                      <span>준비중</span>
-                    </div>
-                  </section>
+                  <PilotJobsRailPanel />
                 </div>
               </div>
             </div>

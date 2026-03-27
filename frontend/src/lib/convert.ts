@@ -189,6 +189,29 @@ export type UserBookmarkPayload = {
   item?: UserBookmarkItem;
 };
 
+export type PilotRecruitJobItem = {
+  id: string;
+  job_no?: string;
+  title: string;
+  company: string;
+  location?: string;
+  employment_type?: string;
+  experience?: string;
+  deadline_text?: string;
+  deadline_date?: string;
+  period_text?: string;
+  d_day?: string;
+  matched_keywords?: string[];
+  source?: string;
+  url: string;
+};
+
+export type PilotRecruitmentResponse = {
+  updated_at?: string;
+  source_label?: string;
+  items: PilotRecruitJobItem[];
+};
+
 const DEFAULT_BOOKMARK_MAX_ITEMS = 20;
 
 const STORAGE_KEY = "doo-extractor-last-convert";
@@ -741,5 +764,46 @@ export async function deleteUserBookmark(
       typeof payload.max_items === "number" && Number.isFinite(payload.max_items)
         ? payload.max_items
         : DEFAULT_BOOKMARK_MAX_ITEMS,
+  };
+}
+
+export async function fetchPilotRecruitment(): Promise<PilotRecruitmentResponse> {
+  const response = await fetch(`${API_BASE_URL}/api/jobs/pilot`, {
+    cache: "no-store",
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "채용정보를 불러오지 못했습니다."));
+  }
+  if (!body || typeof body !== "object") {
+    return { items: [], source_label: "Airportal 항공일자리", updated_at: "" };
+  }
+  const payload = body as Partial<PilotRecruitmentResponse>;
+  return {
+    updated_at: typeof payload.updated_at === "string" ? payload.updated_at : "",
+    source_label: typeof payload.source_label === "string" ? payload.source_label : "Airportal 항공일자리",
+    items: Array.isArray(payload.items)
+      ? payload.items
+          .filter((item): item is PilotRecruitJobItem => Boolean(item && typeof item === "object"))
+          .map((item) => ({
+            id: typeof item.id === "string" ? item.id : "",
+            job_no: typeof item.job_no === "string" ? item.job_no : "",
+            title: typeof item.title === "string" ? item.title : "",
+            company: typeof item.company === "string" ? item.company : "",
+            location: typeof item.location === "string" ? item.location : "",
+            employment_type: typeof item.employment_type === "string" ? item.employment_type : "",
+            experience: typeof item.experience === "string" ? item.experience : "",
+            deadline_text: typeof item.deadline_text === "string" ? item.deadline_text : "",
+            deadline_date: typeof item.deadline_date === "string" ? item.deadline_date : "",
+            period_text: typeof item.period_text === "string" ? item.period_text : "",
+            d_day: typeof item.d_day === "string" ? item.d_day : "",
+            matched_keywords: Array.isArray(item.matched_keywords)
+              ? item.matched_keywords.map((keyword) => String(keyword || "").trim()).filter(Boolean)
+              : [],
+            source: typeof item.source === "string" ? item.source : "",
+            url: typeof item.url === "string" ? item.url : "",
+          }))
+          .filter((item) => Boolean(item.id) && Boolean(item.title) && Boolean(item.url))
+      : [],
   };
 }

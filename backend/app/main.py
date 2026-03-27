@@ -102,6 +102,42 @@ KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
+AIRPORTAL_WORK_LIST_API_URL = "https://www.airportal.go.kr/work/getAirworkJobList.do"
+AIRPORTAL_WORK_DETAIL_URL = "https://www.airportal.go.kr/work/employment/workDetail.do"
+AIRPORTAL_TIMEOUT_SECONDS = 20
+PILOT_JOBS_CACHE_TTL_SECONDS = 3600
+PILOT_JOBS_CACHE_PATH = RUNTIME_DIR / "pilot_jobs_cache.json"
+PILOT_JOBS_SOURCE_LABEL = "Airportal 항공일자리"
+PILOT_JOB_FETCH_TERMS = [
+    "운항승무원",
+    "조종사",
+    "부기장",
+    "기장",
+    "사업용",
+    "pilot",
+    "first officer",
+    "captain",
+]
+PILOT_JOB_MATCH_GROUPS = {
+    "운항승무원": ["운항승무원", "flight crew"],
+    "조종사": ["비행기조종사", "조종사", "pilot"],
+    "부기장": ["부기장", "first officer"],
+    "기장": ["기장", "captain"],
+    "사업용 면장": ["사업용 면장", "사업용조종사", "사업용 조종사", "사업용 조종사면장"],
+    "파일럿": ["파일럿"],
+}
+PILOT_JOB_NEGATIVE_KEYWORDS = ["드론", "uav", "무인기", "무인 항공", "무인항공", "군집 드론"]
+PILOT_JOB_CONTEXT_KEYWORDS = [
+    "운항승무원",
+    "항공기",
+    "조종사",
+    "부기장",
+    "기장",
+    "pilot",
+    "first officer",
+    "captain",
+    "cadet pilot",
+]
 BOOKMARK_IMAGE_SIZE_PX = 92
 BOOKMARK_IMAGE_MAX_BYTES = 256 * 1024
 BOOKMARK_MAX_ITEMS = 20
@@ -132,6 +168,7 @@ ATIS_VISIBLE_ICAOS = {
 }
 _ATIS_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _ATIS_CACHE_LOCK = threading.Lock()
+_PILOT_JOBS_CACHE_LOCK = threading.Lock()
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
@@ -1559,6 +1596,219 @@ def _save_bookmark_store(user_id: str, items: list[dict[str, Any]]) -> dict[str,
     else:
         path.unlink(missing_ok=True)
     return store
+
+
+def _normalize_space_text(value: Any) -> str:
+    return re.sub(r"\s+", " ", html.unescape(str(value or "")).strip())
+
+
+def _normalize_search_text(value: Any) -> str:
+    return _normalize_space_text(value).lower()
+
+
+def _airportal_job_detail_url(job_no: Any) -> str:
+    return f"{AIRPORTAL_WORK_DETAIL_URL}?num={quote(str(job_no or '').strip())}"
+
+
+def _load_pilot_jobs_cache() -> dict[str, Any]:
+    payload = _load_json(PILOT_JOBS_CACHE_PATH, {})
+    if not isinstance(payload, dict):
+        payload = {}
+    items = payload.get("items", [])
+    if not isinstance(items, list):
+        items = []
+    return {
+        "updated_at": str(payload.get("updated_at") or "").strip(),
+        "fetched_at": float(payload.get("fetched_at") or 0),
+        "items": [item for item in items if isinstance(item, dict)],
+        "source_label": str(payload.get("source_label") or PILOT_JOBS_SOURCE_LABEL).strip() or PILOT_JOBS_SOURCE_LABEL,
+    }
+
+
+def _save_pilot_jobs_cache(items: list[dict[str, Any]]) -> dict[str, Any]:
+    payload = {
+        "updated_at": _utc_now_iso(),
+        "fetched_at": time.time(),
+        "items": items,
+        "source_label": PILOT_JOBS_SOURCE_LABEL,
+    }
+    _save_json(PILOT_JOBS_CACHE_PATH, payload)
+    return payload
+
+
+def _post_airportal_jobs(payload: dict[str, Any]) -> dict[str, Any]:
+    request_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    request = UrlRequest(
+        url=AIRPORTAL_WORK_LIST_API_URL,
+        method="POST",
+        headers={
+            "Content-Type": "application/json; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+        },
+        data=request_body,
+    )
+    with urlopen(request, timeout=AIRPORTAL_TIMEOUT_SECONDS) as response:
+        raw = response.read().decode("utf-8", errors="ignore")
+    data = json.loads(raw or "{}")
+    if not isinstance(data, dict):
+        raise RuntimeError("채용정보 응답 형식이 올바르지 않습니다.")
+    if str(data.get("resultCode") or "") != "200":
+        raise RuntimeError("채용정보 응답 코드가 올바르지 않습니다.")
+    return data
+
+
+def _extract_pilot_job_matches(item: dict[str, Any]) -> list[str]:
+    title = _normalize_space_text(item.get("title"))
+    company = _normalize_space_text(item.get("compNm"))
+    area = _normalize_space_text(item.get("areaCodeNm") or item.get("workRegion"))
+    duty_names = " ".join(_normalize_space_text(name) for name in item.get("jobDutyCodeNmList") or [])
+    experience_names = " ".join(_normalize_space_text(name) for name in item.get("jobExpCodeNmList") or [])
+    combined = " ".join(part for part in [title, company, area, duty_names, experience_names] if part)
+    normalized = _normalize_search_text(combined)
+    if not normalized:
+        return []
+
+    matched: list[str] = []
+    for label, patterns in PILOT_JOB_MATCH_GROUPS.items():
+        if any(pattern in normalized for pattern in patterns):
+            matched.append(label)
+
+    if not matched:
+        return []
+
+    if any(keyword in normalized for keyword in PILOT_JOB_NEGATIVE_KEYWORDS):
+        if not any(keyword in normalized for keyword in PILOT_JOB_CONTEXT_KEYWORDS):
+            return []
+
+    return matched
+
+
+def _normalize_pilot_job_item(item: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
+    job_no = str(item.get("jobNo") or "").strip()
+    company = _normalize_space_text(item.get("compNm"))
+    title = _normalize_space_text(item.get("title"))
+    deadline_date = _normalize_space_text(item.get("viewEdate"))
+    deadline_start = _normalize_space_text(item.get("viewSdate"))
+    d_day = _normalize_space_text(item.get("dDay"))
+    always_recruit = str(item.get("alwaysRecruitYn") or "").strip().upper() == "Y"
+    deadline_text = "상시채용" if always_recruit else " · ".join(part for part in [d_day, deadline_date] if part)
+    if not deadline_text:
+        deadline_text = d_day or deadline_date or "마감정보 확인"
+    return {
+        "id": job_no or hashlib.sha256(f"{company}:{title}".encode("utf-8")).hexdigest()[:16],
+        "job_no": job_no,
+        "title": title,
+        "company": company,
+        "location": _normalize_space_text(item.get("areaCodeNm") or item.get("workRegion")),
+        "employment_type": _normalize_space_text(item.get("empTypeCodeNm")),
+        "experience": ", ".join(_normalize_space_text(name) for name in item.get("jobExpCodeNmList") or [] if _normalize_space_text(name)),
+        "deadline_text": deadline_text,
+        "deadline_date": deadline_date,
+        "period_text": "상시채용" if always_recruit else " ~ ".join(part for part in [deadline_start, deadline_date] if part),
+        "d_day": d_day,
+        "matched_keywords": matched_keywords,
+        "source": PILOT_JOBS_SOURCE_LABEL,
+        "url": _airportal_job_detail_url(job_no),
+    }
+
+
+def _is_open_pilot_job(item: dict[str, Any]) -> bool:
+    d_day = str(item.get("d_day") or "").strip()
+    if "채용종료" in d_day:
+        return False
+
+    deadline_date = str(item.get("deadline_date") or "").strip()
+    if not deadline_date:
+        return True
+    try:
+        parsed_deadline = datetime.strptime(deadline_date, "%Y.%m.%d").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return True
+    today = datetime.now(timezone.utc).date()
+    return parsed_deadline.date() >= today
+
+
+def _pilot_job_sort_key(item: dict[str, Any]) -> tuple[int, datetime, str]:
+    deadline_date = str(item.get("deadline_date") or "").strip()
+    try:
+        parsed_deadline = datetime.strptime(deadline_date, "%Y.%m.%d").replace(tzinfo=timezone.utc)
+        always_rank = 0
+    except ValueError:
+        parsed_deadline = datetime.max.replace(tzinfo=timezone.utc)
+        always_rank = 1
+    title = str(item.get("title") or "").strip().lower()
+    return always_rank, parsed_deadline, title
+
+
+def _fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
+    collected: dict[str, dict[str, Any]] = {}
+    for search_term in PILOT_JOB_FETCH_TERMS:
+        response_payload = _post_airportal_jobs(
+            {
+                "searchNm": search_term,
+                "pageNumber": 1,
+                "pageSize": 40,
+            }
+        )
+        for raw_item in response_payload.get("content") or []:
+            if not isinstance(raw_item, dict):
+                continue
+            matched_keywords = _extract_pilot_job_matches(raw_item)
+            if not matched_keywords:
+                continue
+            normalized_item = _normalize_pilot_job_item(raw_item, matched_keywords)
+            job_id = str(normalized_item.get("id") or "").strip()
+            if not _is_open_pilot_job(normalized_item):
+                continue
+            if not job_id:
+                continue
+            existing = collected.get(job_id)
+            if existing:
+                merged_keywords = sorted(set(existing.get("matched_keywords") or []).union(normalized_item.get("matched_keywords") or []))
+                existing["matched_keywords"] = merged_keywords[:4]
+                continue
+            collected[job_id] = normalized_item
+
+    if not collected:
+        fallback_payload = _post_airportal_jobs({"pageNumber": 1, "pageSize": 120})
+        for raw_item in fallback_payload.get("content") or []:
+            if not isinstance(raw_item, dict):
+                continue
+            matched_keywords = _extract_pilot_job_matches(raw_item)
+            if not matched_keywords:
+                continue
+            normalized_item = _normalize_pilot_job_item(raw_item, matched_keywords)
+            job_id = str(normalized_item.get("id") or "").strip()
+            if not _is_open_pilot_job(normalized_item):
+                continue
+            if job_id and job_id not in collected:
+                collected[job_id] = normalized_item
+
+    items = list(collected.values())
+    items.sort(key=_pilot_job_sort_key)
+    return items[:12]
+
+
+def _get_pilot_jobs(force_refresh: bool = False) -> dict[str, Any]:
+    now = time.time()
+    with _PILOT_JOBS_CACHE_LOCK:
+        cached = _load_pilot_jobs_cache()
+        cache_age = now - float(cached.get("fetched_at") or 0)
+        if not force_refresh and cached["items"] and cache_age < PILOT_JOBS_CACHE_TTL_SECONDS:
+            return cached
+
+    try:
+        items = _fetch_pilot_jobs_from_source()
+    except Exception as error:
+        with _PILOT_JOBS_CACHE_LOCK:
+            cached = _load_pilot_jobs_cache()
+        if cached["items"]:
+            return cached
+        raise RuntimeError(f"채용정보를 불러오지 못했습니다: {error}") from error
+
+    with _PILOT_JOBS_CACHE_LOCK:
+        return _save_pilot_jobs_cache(items)
 
 
 def _default_promo_code_store() -> dict[str, Any]:
@@ -4573,6 +4823,15 @@ def get_weather_atis_detail(icao: str):
         return JSONResponse(_get_atis_detail(icao))
     except WeatherProviderError as error:
         raise HTTPException(status_code=502, detail=f"ATIS unavailable: {error}") from error
+
+
+@app.get("/api/jobs/pilot")
+def get_pilot_jobs():
+    try:
+        payload = _get_pilot_jobs()
+    except RuntimeError as error:
+        raise HTTPException(status_code=502, detail=str(error)) from error
+    return JSONResponse(payload, headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/weather/advisories")
