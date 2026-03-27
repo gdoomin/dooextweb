@@ -1,3 +1,4 @@
+import html
 import json
 import os
 import re
@@ -94,6 +95,11 @@ PAYMENT_USAGE_DIR = RUNTIME_DIR / "payment_usage"
 MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
+ATIS_GURU_BASE_URL = "https://atis.guru/atis"
+ATIS_GURU_TIMEOUT_SECONDS = 18
+ATIS_GURU_CACHE_TTL_SECONDS = 120
+_ATIS_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+_ATIS_CACHE_LOCK = threading.Lock()
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
@@ -1724,6 +1730,174 @@ def _build_map_layer_catalog() -> list[dict]:
             }
         )
     return catalog
+
+
+def _estimate_feature_center(points: list[list[float]]) -> tuple[float | None, float | None]:
+    if not isinstance(points, list) or not points:
+        return None, None
+    normalized: list[tuple[float, float]] = []
+    for point in points:
+        if not isinstance(point, list) or len(point) < 2:
+            continue
+        try:
+            lat = float(point[0])
+            lng = float(point[1])
+        except (TypeError, ValueError):
+            continue
+        normalized.append((lat, lng))
+    if not normalized:
+        return None, None
+    if len(normalized) > 2 and normalized[0] == normalized[-1]:
+        normalized = normalized[:-1]
+    if not normalized:
+        return None, None
+    lat = sum(item[0] for item in normalized) / len(normalized)
+    lng = sum(item[1] for item in normalized) / len(normalized)
+    return lat, lng
+
+
+def _iter_airport_sites_from_layers() -> list[dict[str, Any]]:
+    layers = _load_map_layers().get("layers", [])
+    airport_layer = next(
+        (
+            layer
+            for layer in layers
+            if isinstance(layer, dict) and str(layer.get("key") or "").strip().lower() == "airport"
+        ),
+        None,
+    )
+    features = airport_layer.get("features", []) if isinstance(airport_layer, dict) else []
+    seen: set[str] = set()
+    sites: list[dict[str, Any]] = []
+    for feature in features:
+        if not isinstance(feature, dict):
+            continue
+        icao = str(feature.get("icao") or "").strip().upper()
+        if not icao or icao in seen:
+            continue
+        lat, lng = _estimate_feature_center(feature.get("points") or [])
+        if lat is None or lng is None:
+            continue
+        seen.add(icao)
+        airport_name = str(feature.get("airport") or "").strip().upper()
+        sites.append(
+            {
+                "icao": icao,
+                "airport": airport_name,
+                "airspace_class": str(feature.get("airspace_class") or "").strip().upper(),
+                "lat": round(lat, 6),
+                "lng": round(lng, 6),
+            }
+        )
+    return sites
+
+
+def _airport_sites_for_bbox(bbox: tuple[float, float, float, float]) -> list[dict[str, Any]]:
+    south, west, north, east = bbox
+    sites: list[dict[str, Any]] = []
+    for site in _iter_airport_sites_from_layers():
+        lat = float(site.get("lat") or 0.0)
+        lng = float(site.get("lng") or 0.0)
+        if lat < south or lat > north or lng < west or lng > east:
+            continue
+        sites.append(site)
+    return sites
+
+
+def _atis_strip_html(raw_html: str) -> str:
+    text = re.sub(r"<br\s*/?>", "\n", raw_html, flags=re.IGNORECASE)
+    text = re.sub(r"</(p|div|h\d|li|ul|ol|template)>", "\n", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text)
+    text = text.replace("\r", "")
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _atis_extract_block(page_html: str, title: str) -> dict[str, str]:
+    pattern = re.compile(
+        rf'<h5 class="card-title"[^>]*>\s*{re.escape(title)}\s*</h5>\s*'
+        r'<h6 class="card-subtitle[^"]*"[^>]*>(.*?)</h6>\s*'
+        r'<div class="atis">(.*?)</div>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    match = pattern.search(page_html)
+    if not match:
+        return {"title": title, "observed_at": "", "raw": ""}
+    observed_at = _atis_strip_html(match.group(1))
+    raw = _atis_strip_html(match.group(2))
+    return {"title": title, "observed_at": observed_at, "raw": raw}
+
+
+def _fetch_atis_detail_from_source(icao: str) -> dict[str, Any]:
+    normalized_icao = str(icao or "").strip().upper()
+    if not normalized_icao:
+        raise WeatherProviderError("missing icao")
+    request = UrlRequest(
+        f"{ATIS_GURU_BASE_URL}/{quote(normalized_icao)}",
+        headers={
+            "User-Agent": "dooextweb-atis/0.1",
+            "Accept": "text/html,application/xhtml+xml",
+        },
+    )
+    try:
+        with urlopen(request, timeout=ATIS_GURU_TIMEOUT_SECONDS) as response:
+            page_html = response.read().decode("utf-8", errors="replace")
+    except (HTTPError, URLError, TimeoutError) as error:
+        raise WeatherProviderError(f"ATIS fetch failed: {error}") from error
+
+    page_title_match = re.search(r"<title>(.*?)</title>", page_html, re.IGNORECASE | re.DOTALL)
+    page_title = _atis_strip_html(page_title_match.group(1)) if page_title_match else normalized_icao
+    subtitle_match = re.search(
+        r"<h6>\s*Live digital ATIS for(.*?)</h6>",
+        page_html,
+        re.IGNORECASE | re.DOTALL,
+    )
+    airport_title = _atis_strip_html(subtitle_match.group(1)) if subtitle_match else ""
+    no_atis = bool(re.search(r"No ATIS available", page_html, re.IGNORECASE))
+
+    arrival = _atis_extract_block(page_html, "Arrival ATIS")
+    departure = _atis_extract_block(page_html, "Departure ATIS")
+    metar = _atis_extract_block(page_html, "METAR")
+    taf = _atis_extract_block(page_html, "TAF")
+
+    has_arrival = bool(arrival["raw"])
+    has_departure = bool(departure["raw"])
+    has_data = has_arrival or has_departure
+    updated_candidates = [arrival["observed_at"], departure["observed_at"]]
+    updated_at = next((item for item in updated_candidates if item), "")
+
+    return {
+        "ok": True,
+        "source": "ATIS.guru",
+        "source_url": f"{ATIS_GURU_BASE_URL}/{quote(normalized_icao)}",
+        "icao": normalized_icao,
+        "page_title": page_title,
+        "airport_title": airport_title,
+        "has_data": has_data,
+        "no_data": bool(no_atis and not has_data),
+        "updated_at": updated_at,
+        "arrival": arrival,
+        "departure": departure,
+        "metar": metar,
+        "taf": taf,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def _get_atis_detail(icao: str) -> dict[str, Any]:
+    normalized_icao = str(icao or "").strip().upper()
+    now = time.time()
+    cached = _ATIS_DETAIL_CACHE.get(normalized_icao)
+    if cached and cached[0] > now:
+        return cached[1]
+    with _ATIS_CACHE_LOCK:
+        cached = _ATIS_DETAIL_CACHE.get(normalized_icao)
+        if cached and cached[0] > now:
+            return cached[1]
+        payload = _fetch_atis_detail_from_source(normalized_icao)
+        _ATIS_DETAIL_CACHE[normalized_icao] = (now + ATIS_GURU_CACHE_TTL_SECONDS, payload)
+        return payload
 
 
 def _load_job(job_id: str, access_token: str = "") -> dict:
@@ -4059,6 +4233,47 @@ def get_weather_aviation(request: Request):
         raise HTTPException(status_code=400, detail=str(error)) from error
     except WeatherProviderError as error:
         raise HTTPException(status_code=502, detail=f"aviation weather unavailable: {error}") from error
+
+
+@app.get("/api/weather/atis")
+def get_weather_atis(request: Request):
+    try:
+        bbox = parse_bbox_param(request.query_params.get("bbox"))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    features: list[dict[str, Any]] = []
+    for site in _airport_sites_for_bbox(bbox):
+        features.append(
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [site["lng"], site["lat"]],
+                },
+                "properties": {
+                    "icao": site["icao"],
+                    "airport": site["airport"],
+                    "airspaceClass": site["airspace_class"],
+                    "sourceUrl": f"{ATIS_GURU_BASE_URL}/{quote(site['icao'])}",
+                },
+            }
+        )
+    return JSONResponse(
+        {
+            "type": "FeatureCollection",
+            "features": features,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+
+@app.get("/api/weather/atis/{icao}")
+def get_weather_atis_detail(icao: str):
+    try:
+        return JSONResponse(_get_atis_detail(icao))
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"ATIS unavailable: {error}") from error
 
 
 @app.get("/api/weather/advisories")
