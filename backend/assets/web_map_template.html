@@ -2052,14 +2052,21 @@
       text-rendering: optimizeLegibility;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content-wrapper {
-      width: min(960px, calc(100vw - 40px));
-      max-width: min(960px, calc(100vw - 40px));
+      width: min(980px, calc(100vw - 40px));
+      max-width: min(980px, calc(100vw - 40px));
       overflow: hidden;
+      box-sizing: border-box;
+      padding: 14px 16px;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content {
-      width: min(920px, calc(100vw - 72px));
-      max-width: min(920px, calc(100vw - 72px));
+      width: 100%;
+      max-width: none;
+      margin: 0;
       box-sizing: border-box;
+      max-height: min(72vh, 760px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-right: 6px;
     }
     @media (max-width: 760px) {
       .atis-popup {
