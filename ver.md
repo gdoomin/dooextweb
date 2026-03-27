@@ -8,5 +8,5 @@
 
 
 
-Current Version: `0.1.10`
+Current Version: `0.1.11`
 
