@@ -654,6 +654,7 @@ textarea {
 }
 
 .doo-rail-hima-canvas {
+  position: relative;
   min-height: 0;
   height: 100%;
   border-radius: 14px;
@@ -663,6 +664,8 @@ textarea {
 }
 
 .doo-rail-hima-grid {
+  position: absolute;
+  inset: 0;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   grid-template-rows: repeat(3, 1fr);
@@ -675,6 +678,25 @@ textarea {
   height: 100%;
   object-fit: cover;
   display: block;
+}
+
+.doo-rail-hima-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.doo-rail-hima-outline polyline {
+  fill: none;
+  stroke: #baff57;
+  stroke-width: 0.48;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+  filter: drop-shadow(0 0 4px rgba(186, 255, 87, 0.55));
 }
 
 .doo-rail-hima-empty {

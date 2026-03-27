@@ -6,6 +6,8 @@ type HimawariSnapshot = {
   updatedAt: string;
   bandLabel: string;
   tiles: string[];
+  baseX: number;
+  baseY: number;
 };
 
 type JmaTimeEntry = {
@@ -22,6 +24,93 @@ const KOREA_BOUNDS = {
   north: 39.0,
   east: 132.0,
 };
+
+const SOUTH_KOREA_MAINLAND_OUTLINE: Array<[number, number]> = [
+  [128.3618, 38.6169],
+  [127.9567, 38.3176],
+  [127.6887, 38.3222],
+  [127.1379, 38.3155],
+  [126.9065, 38.1168],
+  [126.6787, 37.8936],
+  [126.3487, 37.7972],
+  [126.1066, 37.686],
+  [126.3757, 37.3963],
+  [126.4211, 37.2238],
+  [126.4719, 37.0683],
+  [126.1313, 36.8225],
+  [126.2576, 36.5979],
+  [126.5021, 36.1833],
+  [126.5831, 35.8546],
+  [126.4526, 35.6484],
+  [126.3441, 35.3017],
+  [126.3551, 35.1547],
+  [126.1574, 35.1542],
+  [126.0942, 34.9889],
+  [126.2556, 34.8302],
+  [126.2329, 34.5518],
+  [126.2844, 34.3599],
+  [126.465, 34.4177],
+  [126.511, 34.2828],
+  [126.6772, 34.2873],
+  [126.9429, 34.4188],
+  [127.1619, 34.6801],
+  [127.1063, 34.4986],
+  [127.243, 34.5054],
+  [127.4366, 34.4539],
+  [127.5142, 34.5953],
+  [127.6948, 34.545],
+  [127.8349, 34.4845],
+  [127.7765, 34.7343],
+  [127.7909, 34.931],
+  [127.9179, 34.7337],
+  [128.082, 34.7557],
+  [128.2125, 34.8887],
+  [128.3656, 34.745],
+  [128.5304, 34.6959],
+  [128.7419, 34.7732],
+  [128.8614, 35.0469],
+  [129.2816, 35.3017],
+  [129.5425, 36.0968],
+  [129.4533, 36.556],
+  [129.3489, 37.2861],
+  [128.632, 38.1475],
+  [128.3618, 38.6169],
+];
+
+const JEJU_OUTLINE: Array<[number, number]> = [
+  [126.8152, 33.5757],
+  [126.4856, 33.5311],
+  [126.2329, 33.4349],
+  [126.156, 33.35],
+  [126.178, 33.2421],
+  [126.2466, 33.1559],
+  [126.3016, 33.1881],
+  [126.3936, 33.2261],
+  [126.6092, 33.2215],
+  [126.8069, 33.2823],
+  [126.9415, 33.4108],
+  [126.9786, 33.4761],
+  [126.9525, 33.5357],
+  [126.855, 33.5448],
+  [126.8152, 33.5757],
+];
+
+const DOKDO_OUTLINES: Array<Array<[number, number]>> = [
+  [
+    [131.8669, 37.2417],
+    [131.8696, 37.2423],
+    [131.869, 37.2444],
+    [131.8663, 37.2438],
+    [131.8669, 37.2417],
+  ],
+  [
+    [131.8642, 37.238],
+    [131.8656, 37.2384],
+    [131.8651, 37.2395],
+    [131.8637, 37.2391],
+    [131.8642, 37.238],
+  ],
+];
 
 function parseCompactUtcTimestamp(rawValue: string) {
   const value = String(rawValue || "").trim();
@@ -107,19 +196,19 @@ function lngLatToTile(lng: number, lat: number, zoom: number) {
   return { x, y };
 }
 
-function buildTileUrls(timestampRaw: string, isDay: boolean) {
+function buildTileSnapshot(timestampRaw: string, isDay: boolean) {
   const bandPath = isDay ? "B03/ALBD" : "B13/TBB";
   const root = `https://www.jma.go.jp/bosai/himawari/data/satimg/${timestampRaw}/fd/${timestampRaw}/${bandPath}`;
   const centerTile = lngLatToTile(KOREA_CENTER.lng, KOREA_CENTER.lat, TILE_ZOOM);
   const baseX = Math.floor(centerTile.x) - 1;
   const baseY = Math.floor(centerTile.y) - 1;
-  const urls: string[] = [];
+  const tiles: string[] = [];
   for (let row = 0; row < TILE_GRID_SIZE; row += 1) {
     for (let col = 0; col < TILE_GRID_SIZE; col += 1) {
-      urls.push(`${root}/${TILE_ZOOM}/${baseX + col}/${baseY + row}.jpg?v=${timestampRaw}`);
+      tiles.push(`${root}/${TILE_ZOOM}/${baseX + col}/${baseY + row}.jpg?v=${timestampRaw}`);
     }
   }
-  return urls;
+  return { tiles, baseX, baseY };
 }
 
 function formatKst(isoValue: string) {
@@ -137,6 +226,17 @@ function formatKst(isoValue: string) {
   } catch {
     return isoValue;
   }
+}
+
+function projectOutlinePoint(lng: number, lat: number, baseX: number, baseY: number) {
+  const projected = lngLatToTile(lng, lat, TILE_ZOOM);
+  const x = ((projected.x - baseX) / TILE_GRID_SIZE) * 100;
+  const y = ((projected.y - baseY) / TILE_GRID_SIZE) * 100;
+  return `${x.toFixed(3)},${y.toFixed(3)}`;
+}
+
+function buildOutlinePoints(outline: Array<[number, number]>, baseX: number, baseY: number) {
+  return outline.map(([lng, lat]) => projectOutlinePoint(lng, lat, baseX, baseY)).join(" ");
 }
 
 export function HimawariRailPanel() {
@@ -161,10 +261,13 @@ export function HimawariRailPanel() {
         throw new Error("최신 히마와리 시각을 찾지 못했습니다.");
       }
       const isDay = isDaylightOverKorea(latest.date);
+      const tileSnapshot = buildTileSnapshot(latest.raw, isDay);
       setSnapshot({
         updatedAt: latest.date.toISOString(),
         bandLabel: isDay ? "B03 / 가시광 단일밴드" : "B13 / 적외 단일밴드",
-        tiles: buildTileUrls(latest.raw, isDay),
+        tiles: tileSnapshot.tiles,
+        baseX: tileSnapshot.baseX,
+        baseY: tileSnapshot.baseY,
       });
     } catch (loadError) {
       const message = loadError instanceof Error ? loadError.message : "히마와리 이미지를 불러오지 못했습니다.";
@@ -179,6 +282,19 @@ export function HimawariRailPanel() {
   }, [loadSnapshot]);
 
   const timeLabel = useMemo(() => (snapshot ? formatKst(snapshot.updatedAt) : "-"), [snapshot]);
+  const mainlandOutline = useMemo(
+    () => (snapshot ? buildOutlinePoints(SOUTH_KOREA_MAINLAND_OUTLINE, snapshot.baseX, snapshot.baseY) : ""),
+    [snapshot],
+  );
+  const jejuOutline = useMemo(
+    () => (snapshot ? buildOutlinePoints(JEJU_OUTLINE, snapshot.baseX, snapshot.baseY) : ""),
+    [snapshot],
+  );
+  const dokdoOutlines = useMemo(
+    () =>
+      snapshot ? DOKDO_OUTLINES.map((outline) => buildOutlinePoints(outline, snapshot.baseX, snapshot.baseY)) : [],
+    [snapshot],
+  );
 
   return (
     <section className="doo-rail-card doo-rail-card-hima" aria-label="히마와리 실시간">
@@ -196,12 +312,21 @@ export function HimawariRailPanel() {
 
       <div className="doo-rail-hima-canvas">
         {snapshot ? (
-          <div className="doo-rail-hima-grid">
-            {snapshot.tiles.map((tileUrl, index) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={`${tileUrl}-${index}`} src={tileUrl} alt="히마와리 타일" className="doo-rail-hima-tile" loading="lazy" />
-            ))}
-          </div>
+          <>
+            <div className="doo-rail-hima-grid">
+              {snapshot.tiles.map((tileUrl, index) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={`${tileUrl}-${index}`} src={tileUrl} alt="히마와리 타일" className="doo-rail-hima-tile" loading="lazy" />
+              ))}
+            </div>
+            <svg className="doo-rail-hima-outline" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polyline points={mainlandOutline} />
+              <polyline points={jejuOutline} />
+              {dokdoOutlines.map((outlinePoints, index) => (
+                <polyline key={`dokdo-${index}`} points={outlinePoints} />
+              ))}
+            </svg>
+          </>
         ) : (
           <div className="doo-rail-hima-empty">{error || "히마와리 이미지를 준비 중입니다."}</div>
         )}
