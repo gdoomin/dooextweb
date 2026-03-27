@@ -5039,6 +5039,15 @@
       return changedCount;
     }
 
+    function resetGpxAutoSuppressionForPendingLines() {
+      resultLineEntries.forEach((entry) => {
+        if (!entry || entry.completed) {
+          return;
+        }
+        entry.gpxAutoSuppressed = false;
+      });
+    }
+
     function createGpxRouteItem(points, options = {}) {
       const normalizedPoints = normalizeGpxPointsArray(points);
       if (normalizedPoints.length < 2) {
@@ -5370,6 +5379,7 @@
         throw new Error('GPX에서 경로(trk/rte)를 찾지 못했습니다.');
       }
       const drawResult = drawGpxSegments(segments);
+      resetGpxAutoSuppressionForPendingLines();
       applyGpxAutoCompletion(true);
       return drawResult;
     }
