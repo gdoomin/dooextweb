@@ -175,6 +175,13 @@ export type HomeSyncStatePayload = {
   };
 };
 
+export type UserBookmarkPayload = {
+  bookmark_url: string;
+  image_data_url: string;
+  mime_type?: string;
+  updated_at?: string;
+};
+
 const STORAGE_KEY = "doo-extractor-last-convert";
 const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
 const PROD_API_BASE_URL = "https://dooext-api.dooheetv.com";
@@ -581,5 +588,80 @@ export async function saveHomeSyncState(
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
     throw new Error(extractErrorMessage(body, rawText, "홈 동기화 상태 저장에 실패했습니다."));
+  }
+}
+
+export async function fetchUserBookmark(
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<UserBookmarkPayload | null> {
+  const response = await fetch(`${API_BASE_URL}/api/bookmark`, {
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+    cache: "no-store",
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
+  }
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+  const payload = body as Partial<UserBookmarkPayload>;
+  if (typeof payload.bookmark_url !== "string" || typeof payload.image_data_url !== "string") {
+    return null;
+  }
+  return {
+    bookmark_url: payload.bookmark_url,
+    image_data_url: payload.image_data_url,
+    mime_type: typeof payload.mime_type === "string" ? payload.mime_type : "",
+    updated_at: typeof payload.updated_at === "string" ? payload.updated_at : "",
+  };
+}
+
+export async function saveUserBookmark(
+  bookmarkUrl: string,
+  imageDataUrl: string,
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<UserBookmarkPayload> {
+  const response = await fetch(`${API_BASE_URL}/api/bookmark`, {
+    method: "POST",
+    headers: {
+      ...buildUserHeaders(userId, userEmail, accessToken),
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      bookmark_url: bookmarkUrl,
+      image_data_url: imageDataUrl,
+    }),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
+  }
+  if (!body || typeof body !== "object") {
+    throw new Error("?? ??? ?? ??? ???? ?????.");
+  }
+  const payload = body as { bookmark?: UserBookmarkPayload };
+  if (!payload.bookmark || typeof payload.bookmark.bookmark_url !== "string" || typeof payload.bookmark.image_data_url !== "string") {
+    throw new Error("?? ??? ?? ??? ???? ????.");
+  }
+  return payload.bookmark;
+}
+
+export async function deleteUserBookmark(
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/api/bookmark`, {
+    method: "DELETE",
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "?? ???? ???? ?????."));
   }
 }

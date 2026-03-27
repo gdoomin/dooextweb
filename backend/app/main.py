@@ -1,3 +1,5 @@
+import base64
+import binascii
 import html
 import json
 import os
@@ -93,12 +95,15 @@ USER_BILLING_DIR = RUNTIME_DIR / "user_billing"
 PAYMENT_ORDER_DIR = RUNTIME_DIR / "payment_orders"
 PAYMENT_EVENT_DIR = RUNTIME_DIR / "payment_events"
 PAYMENT_USAGE_DIR = RUNTIME_DIR / "payment_usage"
+USER_BOOKMARK_DIR = RUNTIME_DIR / "user_bookmarks"
 MAP_TEMPLATE_PATH = ASSETS_DIR / "web_map_template.html"
 MAP_LAYER_DATA_PATH = ASSETS_DIR / "map_layers.json"
 KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
+BOOKMARK_IMAGE_SIZE_PX = 92
+BOOKMARK_IMAGE_MAX_BYTES = 256 * 1024
 ATIS_VISIBLE_ICAOS = {
     "RKSI",
     "RKSS",
@@ -316,6 +321,7 @@ for path in (
     PAYMENT_ORDER_DIR,
     PAYMENT_EVENT_DIR,
     PAYMENT_USAGE_DIR,
+    USER_BOOKMARK_DIR,
 ):
     path.mkdir(parents=True, exist_ok=True)
 
@@ -412,6 +418,10 @@ def _user_billing_path(user_id: str) -> Path:
 
 def _user_payment_usage_path(user_id: str) -> Path:
     return PAYMENT_USAGE_DIR / f"{user_id}.json"
+
+
+def _user_bookmark_path(user_id: str) -> Path:
+    return USER_BOOKMARK_DIR / f"{user_id}.json"
 
 
 def _payment_order_path(order_id: str) -> Path:
@@ -1350,6 +1360,146 @@ def _load_json(path: Path, default):
 def _save_json(path: Path, data) -> None:
     with path.open("w", encoding="utf-8") as handle:
         json.dump(data, handle, ensure_ascii=False, indent=2)
+
+
+def _encode_image_data_url(mime_type: str, image_bytes: bytes) -> str:
+    return f"data:{mime_type};base64,{base64.b64encode(image_bytes).decode('ascii')}"
+
+
+def _decode_image_data_url(value: str | None) -> tuple[str, bytes]:
+    raw = str(value or "").strip()
+    match = re.fullmatch(r"data:(image/(?:png|jpeg|jpg|webp));base64,([A-Za-z0-9+/=\s]+)", raw, flags=re.IGNORECASE)
+    if not match:
+        raise HTTPException(status_code=400, detail="이미지는 PNG, JPG, WEBP 형식의 data URL이어야 합니다.")
+
+    mime_type = match.group(1).lower()
+    if mime_type == "image/jpg":
+        mime_type = "image/jpeg"
+    base64_text = re.sub(r"\s+", "", match.group(2))
+    try:
+        image_bytes = base64.b64decode(base64_text, validate=True)
+    except (binascii.Error, ValueError) as error:
+        raise HTTPException(status_code=400, detail="이미지 데이터가 올바르지 않습니다.") from error
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="이미지 데이터가 비어 있습니다.")
+    if len(image_bytes) > BOOKMARK_IMAGE_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="이미지 크기가 너무 큽니다.")
+    return mime_type, image_bytes
+
+
+def _png_dimensions(image_bytes: bytes) -> tuple[int, int] | None:
+    if len(image_bytes) < 24 or image_bytes[:8] != b"\x89PNG\r\n\x1a\n":
+        return None
+    return int.from_bytes(image_bytes[16:20], "big"), int.from_bytes(image_bytes[20:24], "big")
+
+
+def _jpeg_dimensions(image_bytes: bytes) -> tuple[int, int] | None:
+    if len(image_bytes) < 4 or image_bytes[:2] != b"\xff\xd8":
+        return None
+    index = 2
+    sof_markers = {
+        0xC0,
+        0xC1,
+        0xC2,
+        0xC3,
+        0xC5,
+        0xC6,
+        0xC7,
+        0xC9,
+        0xCA,
+        0xCB,
+        0xCD,
+        0xCE,
+        0xCF,
+    }
+    while index + 8 <= len(image_bytes):
+        if image_bytes[index] != 0xFF:
+            index += 1
+            continue
+        while index < len(image_bytes) and image_bytes[index] == 0xFF:
+            index += 1
+        if index >= len(image_bytes):
+            return None
+        marker = image_bytes[index]
+        index += 1
+        if marker in {0xD8, 0xD9}:
+            continue
+        if index + 2 > len(image_bytes):
+            return None
+        segment_length = int.from_bytes(image_bytes[index : index + 2], "big")
+        if segment_length < 2 or index + segment_length > len(image_bytes):
+            return None
+        if marker in sof_markers:
+            if index + 7 > len(image_bytes):
+                return None
+            height = int.from_bytes(image_bytes[index + 3 : index + 5], "big")
+            width = int.from_bytes(image_bytes[index + 5 : index + 7], "big")
+            return width, height
+        index += segment_length
+    return None
+
+
+def _webp_dimensions(image_bytes: bytes) -> tuple[int, int] | None:
+    if len(image_bytes) < 30 or image_bytes[:4] != b"RIFF" or image_bytes[8:12] != b"WEBP":
+        return None
+    chunk_type = image_bytes[12:16]
+    if chunk_type == b"VP8X" and len(image_bytes) >= 30:
+        width = 1 + int.from_bytes(image_bytes[24:27] + b"\x00", "little")
+        height = 1 + int.from_bytes(image_bytes[27:30] + b"\x00", "little")
+        return width, height
+    if chunk_type == b"VP8 " and len(image_bytes) >= 30:
+        width = int.from_bytes(image_bytes[26:28], "little") & 0x3FFF
+        height = int.from_bytes(image_bytes[28:30], "little") & 0x3FFF
+        return width, height
+    if chunk_type == b"VP8L" and len(image_bytes) >= 25:
+        b0, b1, b2, b3 = image_bytes[21:25]
+        width = 1 + (((b1 & 0x3F) << 8) | b0)
+        height = 1 + (((b3 & 0x0F) << 10) | (b2 << 2) | ((b1 & 0xC0) >> 6))
+        return width, height
+    return None
+
+
+def _image_dimensions(mime_type: str, image_bytes: bytes) -> tuple[int, int] | None:
+    if mime_type == "image/png":
+        return _png_dimensions(image_bytes)
+    if mime_type == "image/jpeg":
+        return _jpeg_dimensions(image_bytes)
+    if mime_type == "image/webp":
+        return _webp_dimensions(image_bytes)
+    return None
+
+
+def _validate_bookmark_image(image_data_url: str) -> tuple[str, str]:
+    mime_type, image_bytes = _decode_image_data_url(image_data_url)
+    dimensions = _image_dimensions(mime_type, image_bytes)
+    if dimensions is None:
+        raise HTTPException(status_code=400, detail="이미지 크기를 확인할 수 없습니다.")
+    if dimensions != (BOOKMARK_IMAGE_SIZE_PX, BOOKMARK_IMAGE_SIZE_PX):
+        raise HTTPException(
+            status_code=400,
+            detail=f"이미지는 {BOOKMARK_IMAGE_SIZE_PX}x{BOOKMARK_IMAGE_SIZE_PX} 정사각형만 사용할 수 있습니다.",
+        )
+    return mime_type, _encode_image_data_url(mime_type, image_bytes)
+
+
+def _sanitize_bookmark_record(record: Any) -> dict[str, Any]:
+    if not isinstance(record, dict):
+        return {}
+    bookmark_url = str(record.get("bookmark_url") or "").strip()
+    image_data_url = str(record.get("image_data_url") or "").strip()
+    updated_at = str(record.get("updated_at") or "").strip()
+    if not _is_http_url(bookmark_url) or not image_data_url:
+        return {}
+    try:
+        mime_type, normalized_image_data_url = _validate_bookmark_image(image_data_url)
+    except HTTPException:
+        return {}
+    return {
+        "bookmark_url": bookmark_url,
+        "image_data_url": normalized_image_data_url,
+        "mime_type": mime_type,
+        "updated_at": updated_at or _utc_now_iso(),
+    }
 
 
 def _default_promo_code_store() -> dict[str, Any]:
@@ -3617,6 +3767,51 @@ async def save_home_state(request: Request):
         _save_json(path, payload)
     _home_state_supabase_upsert(user_id, user_email, payload, access_token=access_token)
     return {"ok": True}
+
+
+@app.get("/api/bookmark")
+def get_user_bookmark(request: Request):
+    user_id, _user_email, _ = _request_identity_with_created_at(request, required=True)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="login required")
+    payload = _sanitize_bookmark_record(_load_json(_user_bookmark_path(user_id), {}))
+    return JSONResponse(payload if payload else {})
+
+
+@app.post("/api/bookmark")
+async def save_user_bookmark(request: Request):
+    user_id, _user_email, _ = _request_identity_with_created_at(request, required=True)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="login required")
+    payload = await request.json()
+    if not isinstance(payload, dict):
+        raise HTTPException(status_code=400, detail="bookmark payload must be object")
+
+    bookmark_url = str(payload.get("bookmark_url") or "").strip()
+    image_data_url = str(payload.get("image_data_url") or "").strip()
+    if not _is_http_url(bookmark_url):
+        raise HTTPException(status_code=400, detail="링크 주소는 http 또는 https 형식이어야 합니다.")
+    if not image_data_url:
+        raise HTTPException(status_code=400, detail="북마크 이미지를 선택해 주세요.")
+
+    mime_type, normalized_image_data_url = _validate_bookmark_image(image_data_url)
+    record = {
+        "bookmark_url": bookmark_url,
+        "image_data_url": normalized_image_data_url,
+        "mime_type": mime_type,
+        "updated_at": _utc_now_iso(),
+    }
+    _save_json(_user_bookmark_path(user_id), record)
+    return JSONResponse({"ok": True, "bookmark": record})
+
+
+@app.delete("/api/bookmark")
+def delete_user_bookmark(request: Request):
+    user_id, _user_email, _ = _request_identity_with_created_at(request, required=True)
+    if not user_id:
+        raise HTTPException(status_code=401, detail="login required")
+    _user_bookmark_path(user_id).unlink(missing_ok=True)
+    return JSONResponse({"ok": True})
 
 
 @app.get("/api/viewer/{job_id}/viewer-state")

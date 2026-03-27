@@ -522,6 +522,13 @@ textarea {
   font-weight: 800;
 }
 
+.doo-auth-button-settings {
+  background: linear-gradient(180deg, #263d57 0%, #1d2f45 100%);
+  color: #eef6ff;
+  font-size: 15px;
+  font-weight: 800;
+}
+
 .doo-auth-button-logout:hover {
   filter: brightness(1.03);
   box-shadow:
@@ -1149,6 +1156,62 @@ textarea {
   padding: 8px 10px;
 }
 
+.doo-bookmark-slot {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 120px;
+  text-decoration: none;
+  color: #d7e6f5;
+}
+
+.doo-bookmark-slot-empty {
+  justify-content: space-between;
+}
+
+.doo-bookmark-slot-image {
+  width: 92px;
+  height: 92px;
+  border-radius: 18px;
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.22);
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.doo-bookmark-slot-copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.doo-bookmark-slot-label {
+  color: #8cb4d6;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.doo-bookmark-slot-copy strong {
+  color: #f4f8fc;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.doo-bookmark-slot-copy span:last-child {
+  color: #9fb3c8;
+  font-size: 13px;
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.doo-bookmark-slot-button {
+  width: auto;
+  min-width: 140px;
+  padding-inline: 16px;
+}
+
 .doo-ad-unit {
   width: 100%;
   overflow: hidden;
@@ -1566,6 +1629,16 @@ textarea {
     margin-bottom: 28px;
   }
 
+  .doo-bookmark-slot,
+  .doo-bookmark-slot-empty {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .doo-bookmark-slot-button {
+    width: 100%;
+  }
+
   .doo-result-grid {
     grid-template-columns: 1fr;
   }
@@ -1850,6 +1923,97 @@ textarea {
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+
+.doo-bookmark-modal {
+  width: min(100%, 560px);
+}
+
+.doo-bookmark-form {
+  display: grid;
+  gap: 12px;
+}
+
+.doo-bookmark-form .doo-billing-phone span {
+  color: #dce8f5;
+}
+
+.doo-bookmark-form .doo-billing-phone input {
+  border-color: rgba(121, 192, 255, 0.18);
+  background: #0f1722;
+  color: #eef5fc;
+}
+
+.doo-bookmark-preview-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border: 1px solid rgba(121, 192, 255, 0.16);
+  border-radius: 18px;
+  background: rgba(10, 18, 28, 0.92);
+  padding: 14px;
+}
+
+.doo-bookmark-preview-image,
+.doo-bookmark-preview-empty {
+  width: 92px;
+  height: 92px;
+  border-radius: 18px;
+  flex: 0 0 auto;
+}
+
+.doo-bookmark-preview-image {
+  border: 1px solid rgba(121, 192, 255, 0.24);
+  object-fit: cover;
+}
+
+.doo-bookmark-preview-empty {
+  display: grid;
+  place-items: center;
+  border: 1px dashed rgba(121, 192, 255, 0.26);
+  color: #86a6c3;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.doo-bookmark-preview-copy {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.doo-bookmark-preview-copy strong {
+  color: #f3f6fb;
+  font-size: 20px;
+  font-weight: 800;
+}
+
+.doo-bookmark-preview-copy span {
+  color: #a3b8cc;
+  font-size: 13px;
+  line-height: 1.6;
+  word-break: break-all;
+}
+
+.doo-bookmark-error {
+  margin: 0;
+}
+
+.doo-bookmark-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.doo-bookmark-save {
+  background: #11263b;
+  color: #eff7ff;
+}
+
+.doo-bookmark-delete {
+  margin-right: auto;
+  background: #3a1d24;
+  color: #ffdce2;
 }
 
 .doo-pricing-backdrop {
