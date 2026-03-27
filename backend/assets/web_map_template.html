@@ -1961,8 +1961,9 @@
       pointer-events: auto;
     }
     .atis-popup {
-      width: min(920px, max(520px, calc(100vw - 92px)));
-      max-width: min(920px, calc(100vw - 92px));
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
     }
     .atis-popup__meta {
       display: grid;
@@ -1999,6 +2000,7 @@
       grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 12px;
       align-items: start;
+      width: 100%;
     }
     .atis-popup__section-title {
       margin: 0 0 8px;
@@ -2050,15 +2052,19 @@
       text-rendering: optimizeLegibility;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content-wrapper {
+      width: min(960px, calc(100vw - 40px));
       max-width: min(960px, calc(100vw - 40px));
+      overflow: hidden;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content {
+      width: min(920px, calc(100vw - 72px));
       max-width: min(920px, calc(100vw - 72px));
+      box-sizing: border-box;
     }
     @media (max-width: 760px) {
       .atis-popup {
-        width: min(100vw - 36px, 560px);
-        max-width: min(100vw - 36px, 560px);
+        width: 100%;
+        max-width: 100%;
       }
       .atis-popup__grid {
         grid-template-columns: 1fr;
@@ -9557,14 +9563,17 @@
         }
         if (marker._atisDetail) {
           popup.setContent(buildAtisPopup(marker._atisDetail, props));
+          popup.update();
           return;
         }
         if (marker._atisLoading) {
           popup.setContent(buildAtisPopupLoading(props));
+          popup.update();
           return;
         }
         marker._atisLoading = true;
         popup.setContent(buildAtisPopupLoading(props));
+        popup.update();
         try {
           const detail = await fetchJson(`/api/weather/atis/${encodeURIComponent(props && props.icao ? props.icao : '')}`);
           marker._atisDetail = detail;
@@ -9573,10 +9582,12 @@
           }
           if (marker.isPopupOpen()) {
             popup.setContent(buildAtisPopup(detail, props));
+            popup.update();
           }
         } catch (error) {
           if (marker.isPopupOpen()) {
             popup.setContent(buildAtisPopupError(props, error));
+            popup.update();
           }
         } finally {
           marker._atisLoading = false;
