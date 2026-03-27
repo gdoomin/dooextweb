@@ -1940,8 +1940,8 @@
       pointer-events: auto;
     }
     .atis-popup {
-      width: min(560px, max(320px, calc(100vw - 92px)));
-      max-width: min(560px, calc(100vw - 92px));
+      width: min(920px, max(520px, calc(100vw - 92px)));
+      max-width: min(920px, calc(100vw - 92px));
     }
     .atis-popup__meta {
       display: grid;
@@ -1971,6 +1971,13 @@
       border-radius: 12px;
       border: 1px solid rgba(121, 192, 255, 0.16);
       background: rgba(7, 15, 24, 0.74);
+      min-width: 0;
+    }
+    .atis-popup__grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 12px;
+      align-items: start;
     }
     .atis-popup__section-title {
       margin: 0 0 8px;
@@ -1982,6 +1989,8 @@
     .atis-popup__section pre {
       font-size: 22px;
       line-height: 1.65;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
     .atis-popup__empty {
       color: #9fb3c8;
@@ -2020,10 +2029,23 @@
       text-rendering: optimizeLegibility;
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content-wrapper {
-      max-width: min(600px, calc(100vw - 40px));
+      max-width: min(960px, calc(100vw - 40px));
     }
     .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content {
-      max-width: min(560px, calc(100vw - 72px));
+      max-width: min(920px, calc(100vw - 72px));
+    }
+    @media (max-width: 760px) {
+      .atis-popup {
+        width: min(100vw - 36px, 560px);
+        max-width: min(100vw - 36px, 560px);
+      }
+      .atis-popup__grid {
+        grid-template-columns: 1fr;
+      }
+      .atis-popup__section pre {
+        font-size: 18px;
+        line-height: 1.55;
+      }
     }
     .leaflet-popup.doo-popup .leaflet-popup-tip {
       background: rgba(6, 11, 18, 0.985);
@@ -9486,8 +9508,10 @@
           <h3>${escapeHtml(`${icao} D-ATIS`)}</h3>
           <div class="weather-popup-summary">${escapeHtml(summary)}</div>
           <div class="atis-popup__meta">${metaHtml}</div>
-          ${buildAtisSectionHtml('도착 D-ATIS', arrival, '현재 도착 D-ATIS가 없습니다.')}
-          ${buildAtisSectionHtml('출발 D-ATIS', departure, '현재 출발 D-ATIS가 없습니다.')}
+          <div class="atis-popup__grid">
+            ${buildAtisSectionHtml('도착 D-ATIS', arrival, '현재 도착 D-ATIS가 없습니다.')}
+            ${buildAtisSectionHtml('출발 D-ATIS', departure, '현재 출발 D-ATIS가 없습니다.')}
+          </div>
         </div>
       `;
     }
@@ -9540,6 +9564,9 @@
       marker.on('popupclose', () => {
         if (!weatherAtisState.restoring && icao && weatherAtisState.openIcao === icao) {
           weatherAtisState.openIcao = '';
+          if (isWeatherEnabled('atis')) {
+            scheduleWeatherRefresh(80);
+          }
         }
       });
 
@@ -13514,7 +13541,7 @@
           })
         );
       }
-      if (atisEnabled) {
+      if (atisEnabled && !weatherAtisState.openIcao) {
         tasks.push(
           refreshWeatherAtisData(query, token).catch((error) => {
             if (token === weatherRefreshToken && isWeatherEnabled('atis')) {
@@ -13523,6 +13550,8 @@
             throw error;
           })
         );
+      } else if (atisEnabled && weatherAtisState.openIcao) {
+        setWeatherBadge('atis', '열람중', 'live');
       }
       const results = await Promise.allSettled(tasks);
       const failure = results.find((item) => item.status === 'rejected');
