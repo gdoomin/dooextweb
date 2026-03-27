@@ -7230,17 +7230,66 @@
       return parsed;
     }
 
-    function classifyWeatherOverlayCondition(windSpeedKt, cloudCoverPercent, visibilityKm) {
-      const wind = Number.isFinite(windSpeedKt) ? windSpeedKt : 0;
+    function classifyWeatherOverlayCloudSeverity(cloudCoverPercent) {
+      const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
+      if (cloud > 80) {
+        return { key: 'bad', rank: 2 };
+      }
+      if (cloud >= 50 && cloud <= 80) {
+        return { key: 'caution', rank: 1 };
+      }
+      return { key: 'ok', rank: 0 };
+    }
+
+    function resolveWeatherOverlayCloudConstraint(hourly, index, selectedAltitudeFt, selectedSample = null) {
+      const selectedFt = normalizeWeatherOverlayAltitudeFt(selectedAltitudeFt);
+      const selected = selectedSample || resolveWeatherOverlayAltitudeSample(hourly, index, selectedFt);
+      const selectedCloud = Number.isFinite(selected && selected.cloudCover) ? selected.cloudCover : null;
+      let effectiveCloudCover = selectedCloud;
+      let effectiveAltitudeFt = selectedFt;
+      let effectiveAltitudeLabel = getWeatherOverlayAltitudeLabel(selectedFt);
+      let severity = classifyWeatherOverlayCloudSeverity(selectedCloud);
+
+      WEATHER_OVERLAY_ALTITUDE_PRESETS
+        .filter((preset) => preset.feet <= selectedFt)
+        .forEach((preset) => {
+          const sample = preset.feet === selectedFt
+            ? selected
+            : resolveWeatherOverlayAltitudeSample(hourly, index, preset.feet);
+          if (!sample || !Number.isFinite(sample.cloudCover)) {
+            return;
+          }
+          const sampleSeverity = classifyWeatherOverlayCloudSeverity(sample.cloudCover);
+          if (sampleSeverity.rank > severity.rank || (sampleSeverity.rank === severity.rank && !Number.isFinite(effectiveCloudCover))) {
+            severity = sampleSeverity;
+            effectiveCloudCover = sample.cloudCover;
+            effectiveAltitudeFt = preset.feet;
+            effectiveAltitudeLabel = preset.label;
+          }
+        });
+
+      const blockedByLowerCloud = effectiveAltitudeFt < selectedFt
+        && Number.isFinite(effectiveCloudCover)
+        && (!Number.isFinite(selectedCloud) || effectiveCloudCover > selectedCloud);
+
+      return {
+        effectiveCloudCover,
+        effectiveAltitudeFt,
+        effectiveAltitudeLabel,
+        blockedByLowerCloud,
+      };
+    }
+
+    function classifyWeatherOverlayCondition(cloudCoverPercent, visibilityKm) {
       const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
       const visibility = Number.isFinite(visibilityKm) ? visibilityKm : 999;
-      if (wind > 25 || cloud > 80 || visibility < 3) {
+      if (cloud > 80 || visibility < 3) {
         return { key: 'bad', label: '촬영 불가', icon: '❌', color: '#F44336' };
       }
-      if ((wind > 15 && wind <= 25) || (cloud >= 50 && cloud <= 80)) {
+      if (cloud >= 50 && cloud <= 80) {
         return { key: 'caution', label: '주의', icon: '⚠️', color: '#FFC107' };
       }
-      if (wind <= 15 && cloud <= 30 && visibility >= 5) {
+      if (cloud <= 30 && visibility >= 5) {
         return { key: 'ok', label: '촬영 가능', icon: '✅', color: '#4CAF50' };
       }
       return { key: 'caution', label: '주의', icon: '⚠️', color: '#FFC107' };
@@ -7307,7 +7356,11 @@
       const visibilityKm = Number.isFinite(currentVisibilityKm) ? currentVisibilityKm : visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', currentIndex));
       const temperatureC = Number.isFinite(altitudeSampleCurrent.temperatureC) ? altitudeSampleCurrent.temperatureC : null;
       const relativeHumidity = Number.isFinite(altitudeSampleCurrent.relativeHumidity) ? altitudeSampleCurrent.relativeHumidity : null;
-      const grade = classifyWeatherOverlayCondition(windKt, cloudCover, visibilityKm);
+      const cloudConstraintCurrent = resolveWeatherOverlayCloudConstraint(hourly, currentIndex, selectedAltitudeFt, altitudeSampleCurrent);
+      const effectiveCloudCover = Number.isFinite(cloudConstraintCurrent.effectiveCloudCover)
+        ? cloudConstraintCurrent.effectiveCloudCover
+        : cloudCover;
+      const grade = classifyWeatherOverlayCondition(effectiveCloudCover, visibilityKm);
 
       const dailyMap = new Map();
       hourlyTimes.forEach((timeValue, index) => {
@@ -7328,12 +7381,20 @@
         const rowDir = Number.isFinite(rowAltitudeSample.windDirDeg) ? rowAltitudeSample.windDirDeg : null;
         const rowCloud = Number.isFinite(rowAltitudeSample.cloudCover) ? rowAltitudeSample.cloudCover : null;
         const rowVisibilityKm = visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', index));
-        const rowGrade = classifyWeatherOverlayCondition(rowWind, rowCloud, rowVisibilityKm);
+        const rowCloudConstraint = resolveWeatherOverlayCloudConstraint(hourly, index, selectedAltitudeFt, rowAltitudeSample);
+        const rowEffectiveCloud = Number.isFinite(rowCloudConstraint.effectiveCloudCover)
+          ? rowCloudConstraint.effectiveCloudCover
+          : rowCloud;
+        const rowGrade = classifyWeatherOverlayCondition(rowEffectiveCloud, rowVisibilityKm);
         dailyMap.get(dateKey).items.push({
           hour,
           windKt: rowWind,
           windDirDeg: rowDir,
           cloudCover: rowCloud,
+          effectiveCloudCover: rowEffectiveCloud,
+          blockingAltitudeFt: rowCloudConstraint.effectiveAltitudeFt,
+          blockingAltitudeLabel: rowCloudConstraint.effectiveAltitudeLabel || '',
+          blockedByLowerCloud: !!rowCloudConstraint.blockedByLowerCloud,
           visibilityKm: rowVisibilityKm,
           grade: rowGrade,
         });
@@ -7355,6 +7416,10 @@
           windDirDeg,
           gustKt,
           cloudCover,
+          effectiveCloudCover,
+          blockingAltitudeFt: cloudConstraintCurrent.effectiveAltitudeFt,
+          blockingAltitudeLabel: cloudConstraintCurrent.effectiveAltitudeLabel || '',
+          blockedByLowerCloud: !!cloudConstraintCurrent.blockedByLowerCloud,
           temperatureC,
           relativeHumidity,
           visibilityKm,
@@ -7535,7 +7600,11 @@
         const windText = Number.isFinite(item.windKt) ? `${formatWeatherNumber(item.windKt, 0)}kt` : '-';
         const dirText = Number.isFinite(item.windDirDeg) ? `${Math.round(item.windDirDeg)}°` : '-';
         const cloudText = Number.isFinite(item.cloudCover) ? `${Math.round(item.cloudCover)}%` : '-';
-        const title = `${activeDay.dateKey} ${item.hour}:00 | 풍속 ${windText} | 풍향 ${dirText} | 운량 ${cloudText}`;
+        const effectiveCloudText = Number.isFinite(item.effectiveCloudCover) ? `${Math.round(item.effectiveCloudCover)}%` : cloudText;
+        const blockText = item.blockedByLowerCloud && item.blockingAltitudeLabel
+          ? ` | 하층차단 ${item.blockingAltitudeLabel}`
+          : '';
+        const title = `${activeDay.dateKey} ${item.hour}:00 | 풍속 ${windText} | 풍향 ${dirText} | 선택운량 ${cloudText} | 판정운량 ${effectiveCloudText}${blockText}`;
         return `<div class="weather-overlay-timeline__cell" data-grade="${escapeHtml(item.grade.key)}" title="${escapeHtml(title)}"></div>`;
       }).join('');
     }
@@ -7545,10 +7614,14 @@
         return '';
       }
       const current = snapshot.current;
-      const grade = current.grade || classifyWeatherOverlayCondition(current.windKt, current.cloudCover, current.visibilityKm);
+      const grade = current.grade || classifyWeatherOverlayCondition(
+        Number.isFinite(current.effectiveCloudCover) ? current.effectiveCloudCover : current.cloudCover,
+        current.visibilityKm
+      );
       const windText = Number.isFinite(current.windKt) ? `${formatWeatherNumber(current.windKt, 0)}kt` : '-';
       const windDeg = Number.isFinite(current.windDirDeg) ? `${Math.round(current.windDirDeg)}°` : '-';
       const cloudText = Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-';
+      const effectiveCloudText = Number.isFinite(current.effectiveCloudCover) ? `${Math.round(current.effectiveCloudCover)}%` : cloudText;
       const tempText = Number.isFinite(current.temperatureC) ? `${formatWeatherNumber(current.temperatureC, 1)}°C` : '-';
       const humidityText = Number.isFinite(current.relativeHumidity) ? `${Math.round(current.relativeHumidity)}%` : '-';
       const visibilityText = Number.isFinite(current.visibilityKm)
@@ -7576,7 +7649,9 @@
               <span class="weather-overlay-card__arrow" style="--wind-rotation:${resolveWindArrowRotation(current.windDirDeg)}deg;">▲</span>
               <span>💨 ${escapeHtml(windText)} → ${escapeHtml(windDeg)} (${escapeHtml(altitudeLabel)})</span>
             </div>
-            <div class="weather-overlay-card__row">☁️ 운량 ${escapeHtml(cloudText)}</div>
+            <div class="weather-overlay-card__row">☁️ 선택고도 운량 ${escapeHtml(cloudText)}</div>
+            <div class="weather-overlay-card__row">☁️ 판정 운량 ${escapeHtml(effectiveCloudText)}</div>
+            ${current.blockedByLowerCloud && current.blockingAltitudeLabel ? `<div class="weather-overlay-card__row">하층 구름 ${escapeHtml(current.blockingAltitudeLabel)} 때문에 지상 차폐</div>` : ''}
             <div class="weather-overlay-card__row">🌡️ 기온 ${escapeHtml(tempText)}</div>
             <div class="weather-overlay-card__row">💧 상대습도 ${escapeHtml(humidityText)}</div>
             <div class="weather-overlay-card__row">👁️ 시정 ${escapeHtml(visibilityText)}</div>
@@ -7615,7 +7690,10 @@
           }),
         });
         const current = snapshot.current || {};
-        const grade = current.grade || classifyWeatherOverlayCondition(current.windKt, current.cloudCover, current.visibilityKm);
+        const grade = current.grade || classifyWeatherOverlayCondition(
+          Number.isFinite(current.effectiveCloudCover) ? current.effectiveCloudCover : current.cloudCover,
+          current.visibilityKm
+        );
         const altitudeLabel = current.altitudeLabel || getWeatherOverlayAltitudeLabel(weatherOverlayState.altitudeFt);
         const actualAltitudeText = Number.isFinite(current.actualAltitudeFt)
           ? `${formatWeatherNumber(current.actualAltitudeFt, 0)}ft`
@@ -7626,7 +7704,9 @@
           [`풍속(${altitudeLabel})`, Number.isFinite(current.windKt) ? `${formatWeatherNumber(current.windKt, 0)}kt` : '-'],
           ['돌풍', Number.isFinite(current.gustKt) ? `${formatWeatherNumber(current.gustKt, 0)}kt` : '-'],
           ['풍향', Number.isFinite(current.windDirDeg) ? `${Math.round(current.windDirDeg)}° (${describeWindDirection(current.windDirDeg)})` : '-'],
-          ['운량', Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-'],
+          ['선택고도 운량', Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-'],
+          ['판정 운량', Number.isFinite(current.effectiveCloudCover) ? `${Math.round(current.effectiveCloudCover)}%` : (Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-')],
+          ['하층 구름 차단', current.blockedByLowerCloud && current.blockingAltitudeLabel ? `${current.blockingAltitudeLabel} 구름 때문에 지상 촬영 제한` : '-'],
           ['기온', Number.isFinite(current.temperatureC) ? `${formatWeatherNumber(current.temperatureC, 1)}°C` : '-'],
           ['상대습도', Number.isFinite(current.relativeHumidity) ? `${Math.round(current.relativeHumidity)}%` : '-'],
           ['실제 고도', actualAltitudeText],
@@ -7672,7 +7752,10 @@
       const snapshots = getWeatherOverlayDataRegions(weatherOverlayState.data);
       snapshots.forEach((snapshot) => {
         const current = snapshot.current || {};
-        const grade = current.grade || classifyWeatherOverlayCondition(current.windKt, current.cloudCover, current.visibilityKm);
+        const grade = current.grade || classifyWeatherOverlayCondition(
+          Number.isFinite(current.effectiveCloudCover) ? current.effectiveCloudCover : current.cloudCover,
+          current.visibilityKm
+        );
         const windRotation = resolveWindArrowRotation(current.windDirDeg);
         const windSpeed = Number.isFinite(current.windKt) ? current.windKt : 0;
         const windSize = clamp(12 + (windSpeed * 0.45), 14, 30);
@@ -7856,7 +7939,7 @@
       const current = snapshot && snapshot.current && typeof snapshot.current === 'object' ? snapshot.current : {};
       const grade = current && current.grade
         ? current.grade
-        : classifyWeatherOverlayCondition(null, null, null);
+        : classifyWeatherOverlayCondition(null, null);
       const altitudeLabel = current.altitudeLabel || getWeatherOverlayAltitudeLabel(weatherOverlayState.altitudeFt);
       const regionCount = snapshots.length;
       const failedCount = Number.isFinite(parseWeatherNumber(weatherOverlayState.data && weatherOverlayState.data.failedRegionCount))
