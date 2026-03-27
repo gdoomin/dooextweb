@@ -26,7 +26,7 @@ declare global {
 }
 
 const COUPANG_SCRIPT_ID = "doo-coupang-partners-sdk";
-const COUPANG_CONFIG: CoupangConfig = {
+const COUPANG_BASE_CONFIG: CoupangConfig = {
   id: 974526,
   template: "carousel",
   trackingCode: "AF3646154",
@@ -66,16 +66,38 @@ function ensureCoupangSdk(): Promise<void> {
 
 export function CoupangPartnersSlot({ className = "", minHeight = 650 }: CoupangPartnersSlotProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const lastRenderedHeightRef = useRef<number>(0);
 
   useEffect(() => {
     let cancelled = false;
+    let resizeFrame = 0;
+    let resizeObserver: ResizeObserver | null = null;
     const container = containerRef.current;
 
-    const renderAd = async () => {
+    const resolveAdHeight = () => {
+      if (!container || typeof window === "undefined") {
+        return minHeight;
+      }
+
+      const rect = container.getBoundingClientRect();
+      const measuredHeight = Math.max(
+        Math.floor(container.clientHeight || 0),
+        Math.floor(rect.height || 0),
+        minHeight,
+      );
+      return measuredHeight;
+    };
+
+    const renderAd = async (force = false) => {
       if (!container || typeof window === "undefined") {
         return;
       }
 
+      const height = resolveAdHeight();
+      if (!force && Math.abs(height - lastRenderedHeightRef.current) < 4) {
+        return;
+      }
+      lastRenderedHeightRef.current = height;
       container.innerHTML = "";
 
       try {
@@ -87,9 +109,10 @@ export function CoupangPartnersSlot({ className = "", minHeight = 650 }: Coupang
         if (!window.PartnersCoupang?.G) {
           throw new Error("쿠팡 광고 생성기를 찾을 수 없습니다.");
         }
-        // container를 명시하지 않으면 스크립트의 마지막 위치에 삽입되어 의도치 않은 위치에 렌더링될 수 있다.
+
         new window.PartnersCoupang.G({
-          ...COUPANG_CONFIG,
+          ...COUPANG_BASE_CONFIG,
+          height: String(height),
           container,
         });
       } catch {
@@ -100,15 +123,65 @@ export function CoupangPartnersSlot({ className = "", minHeight = 650 }: Coupang
       }
     };
 
-    void renderAd();
+    const scheduleRender = (force = false) => {
+      if (typeof window === "undefined") {
+        return;
+      }
+      if (resizeFrame) {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+      resizeFrame = window.requestAnimationFrame(() => {
+        resizeFrame = 0;
+        void renderAd(force);
+      });
+    };
+
+    void renderAd(true);
+
+    if (typeof ResizeObserver !== "undefined" && container) {
+      resizeObserver = new ResizeObserver(() => {
+        scheduleRender();
+      });
+      resizeObserver.observe(container);
+      if (container.parentElement) {
+        resizeObserver.observe(container.parentElement);
+      }
+    } else if (typeof window !== "undefined") {
+      const handleResize = () => {
+        scheduleRender();
+      };
+      window.addEventListener("resize", handleResize);
+      return () => {
+        cancelled = true;
+        if (resizeFrame) {
+          window.cancelAnimationFrame(resizeFrame);
+        }
+        window.removeEventListener("resize", handleResize);
+        if (container) {
+          container.innerHTML = "";
+        }
+      };
+    }
 
     return () => {
       cancelled = true;
+      if (resizeFrame && typeof window !== "undefined") {
+        window.cancelAnimationFrame(resizeFrame);
+      }
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (container) {
         container.innerHTML = "";
       }
     };
-  }, []);
+  }, [minHeight]);
 
-  return <div ref={containerRef} className={`doo-coupang-slot ${className}`.trim()} style={{ minHeight }} />;
+  return (
+    <div
+      ref={containerRef}
+      className={`doo-coupang-slot ${className}`.trim()}
+      style={{ minHeight, height: "100%" }}
+    />
+  );
 }
