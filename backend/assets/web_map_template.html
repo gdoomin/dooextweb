@@ -1726,6 +1726,17 @@
       font-size: 11px;
       white-space: nowrap;
     }
+    .weather-overlay-card__reason {
+      color: #ffc107;
+      font-weight: 800;
+      line-height: 1.38;
+      white-space: normal;
+      overflow: hidden;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      text-shadow: 0 0 6px rgba(255, 193, 7, 0.16);
+    }
     .weather-overlay-wind-grid {
       display: inline-flex;
       align-items: center;
@@ -7810,7 +7821,7 @@
             </div>
             <div class="weather-overlay-card__row">☁️ 선택고도 운량 ${escapeHtml(cloudText)}</div>
             <div class="weather-overlay-card__row">☁️ 판정 운량 ${escapeHtml(effectiveCloudText)}</div>
-            ${current.blockedByLowerCloud && current.blockingAltitudeLabel ? `<div class="weather-overlay-card__row">하층 구름 ${escapeHtml(current.blockingAltitudeLabel)} 때문에 지상 차폐</div>` : ''}
+            ${current.blockedByLowerCloud && current.blockingAltitudeLabel ? `<div class="weather-overlay-card__row weather-overlay-card__reason">하층 구름 ${escapeHtml(current.blockingAltitudeLabel)} 때문에 지상 차폐</div>` : ''}
             <div class="weather-overlay-card__row">🌡️ 기온 ${escapeHtml(tempText)}</div>
             <div class="weather-overlay-card__row">💧 상대습도 ${escapeHtml(humidityText)}</div>
             <div class="weather-overlay-card__row">👁️ 시정 ${escapeHtml(visibilityText)}</div>
