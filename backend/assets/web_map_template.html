@@ -1940,8 +1940,8 @@
       pointer-events: auto;
     }
     .atis-popup {
-      min-width: 260px;
-      max-width: 360px;
+      width: min(560px, max(320px, calc(100vw - 92px)));
+      max-width: min(560px, calc(100vw - 92px));
     }
     .atis-popup__meta {
       display: grid;
@@ -2014,6 +2014,12 @@
       line-height: 1.55;
       -webkit-font-smoothing: antialiased;
       text-rendering: optimizeLegibility;
+    }
+    .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content-wrapper {
+      max-width: min(600px, calc(100vw - 40px));
+    }
+    .leaflet-popup.doo-popup.atis-popup-shell .leaflet-popup-content {
+      max-width: min(560px, calc(100vw - 72px));
     }
     .leaflet-popup.doo-popup .leaflet-popup-tip {
       background: rgba(6, 11, 18, 0.985);
@@ -9386,6 +9392,14 @@
       ], '', 'D-ATIS 정보를 불러오는 중입니다.');
     }
 
+    function getAtisPopupMaxWidth() {
+      const viewportWidth = Number(window.innerWidth || document.documentElement.clientWidth || 0);
+      if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+        return 560;
+      }
+      return clamp(viewportWidth - 40, 320, 560);
+    }
+
     function buildAtisPopupError(props, error) {
       const title = `${props && props.icao ? props.icao : 'ATIS'} D-ATIS`;
       const message = error && error.message ? String(error.message) : 'ATIS 정보를 불러오지 못했습니다.';
@@ -13419,8 +13433,12 @@
           opacity: 0.96,
         });
         marker.bindPopup(buildAtisPopupLoading(props), {
-          className: 'doo-popup',
-          maxWidth: 390,
+          className: 'doo-popup atis-popup-shell',
+          maxWidth: getAtisPopupMaxWidth(),
+          autoPan: true,
+          keepInView: true,
+          autoPanPaddingTopLeft: [24, 24],
+          autoPanPaddingBottomRight: [24, 24],
           closeOnClick: false,
           autoClose: false,
         });
