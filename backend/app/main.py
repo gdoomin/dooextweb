@@ -98,6 +98,26 @@ KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
+ATIS_VISIBLE_ICAOS = {
+    "RKSI",
+    "RKSS",
+    "RKPC",
+    "RKPK",
+    "RKNY",
+    "RKJB",
+    "RKJY",
+    "RKJJ",
+    "RKJK",
+    "RKTN",
+    "RKTY",
+    "RKTU",
+    "RKTH",
+    "RKPS",
+    "RKNN",
+    "RKND",
+    "RKPU",
+    "RKTL",
+}
 _ATIS_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _ATIS_CACHE_LOCK = threading.Lock()
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
@@ -1775,6 +1795,10 @@ def _iter_airport_sites_from_layers() -> list[dict[str, Any]]:
         icao = str(feature.get("icao") or "").strip().upper()
         if not icao or icao in seen:
             continue
+        if not icao.startswith("RK"):
+            continue
+        if ATIS_VISIBLE_ICAOS and icao not in ATIS_VISIBLE_ICAOS:
+            continue
         lat, lng = _estimate_feature_center(feature.get("points") or [])
         if lat is None or lng is None:
             continue
@@ -1789,6 +1813,7 @@ def _iter_airport_sites_from_layers() -> list[dict[str, Any]]:
                 "lng": round(lng, 6),
             }
         )
+    sites.sort(key=lambda item: (item.get("icao") or "", item.get("airport") or ""))
     return sites
 
 

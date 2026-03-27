@@ -1939,6 +1939,60 @@
       white-space: nowrap;
       pointer-events: auto;
     }
+    .atis-popup {
+      min-width: 260px;
+      max-width: 360px;
+    }
+    .atis-popup__meta {
+      display: grid;
+      gap: 6px;
+      margin: 0 0 12px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(110, 231, 183, 0.24);
+      background: rgba(17, 48, 33, 0.34);
+    }
+    .atis-popup__meta-row {
+      display: grid;
+      grid-template-columns: 58px 1fr;
+      gap: 8px;
+      align-items: start;
+      font-size: 12px;
+      line-height: 1.5;
+      color: #edf7f3;
+    }
+    .atis-popup__meta-row strong {
+      color: #b7f0d5;
+      font-weight: 800;
+    }
+    .atis-popup__section {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(121, 192, 255, 0.16);
+      background: rgba(7, 15, 24, 0.74);
+    }
+    .atis-popup__section-title {
+      margin: 0 0 8px;
+      color: #a8ddff;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+    .atis-popup__empty {
+      color: #9fb3c8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+    .atis-popup__link {
+      color: #7dd3fc;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .atis-popup__link:hover {
+      color: #d9f3ff;
+      text-decoration: underline;
+    }
     .leaflet-popup.doo-popup .leaflet-popup-content-wrapper {
       background: rgba(6, 11, 18, 0.985);
       color: #f4f8fc;
@@ -9337,6 +9391,54 @@
       ], '', message);
     }
 
+    function formatAtisObservedText(value) {
+      const raw = String(value || '').trim();
+      if (!raw) {
+        return '';
+      }
+      const utcMatch = raw.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})\s+UTC$/i);
+      if (!utcMatch) {
+        return raw;
+      }
+      const date = new Date(`${utcMatch[1]}-${utcMatch[2]}-${utcMatch[3]}T${utcMatch[4]}:${utcMatch[5]}:00Z`);
+      if (Number.isNaN(date.getTime())) {
+        return raw;
+      }
+      const kst = new Intl.DateTimeFormat('ko-KR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Seoul',
+      }).format(date).replace(/\.\s*/g, '. ').replace(/\s+/g, ' ').trim();
+      return `${kst} KST (${raw})`;
+    }
+
+    function buildAtisSectionHtml(title, block, emptyLabel = '현재 정보 없음') {
+      const normalized = block && typeof block === 'object' ? block : {};
+      const observedAt = formatAtisObservedText(normalized.observed_at);
+      if (!normalized.raw) {
+        return `
+          <section class="atis-popup__section">
+            <div class="atis-popup__section-title">${escapeHtml(title)}</div>
+            <div class="atis-popup__empty">${escapeHtml(emptyLabel)}</div>
+          </section>
+        `;
+      }
+      const rows = observedAt
+        ? `<div class="atis-popup__meta-row"><strong>기준시각</strong><span>${escapeHtml(observedAt)}</span></div>`
+        : '';
+      return `
+        <section class="atis-popup__section">
+          <div class="atis-popup__section-title">${escapeHtml(title)}</div>
+          ${rows}
+          <pre>${escapeHtml(normalized.raw)}</pre>
+        </section>
+      `;
+    }
+
     function buildAtisPopup(detail, props = {}) {
       const icao = String((detail && detail.icao) || props.icao || 'ATIS').trim().toUpperCase();
       const airportTitle = String((detail && detail.airport_title) || props.airport || '').trim();
@@ -9346,33 +9448,29 @@
       const departure = detail && detail.departure && typeof detail.departure === 'object' ? detail.departure : {};
       const metar = detail && detail.metar && typeof detail.metar === 'object' ? detail.metar : {};
       const taf = detail && detail.taf && typeof detail.taf === 'object' ? detail.taf : {};
-      const detailBlocks = [];
-
-      if (arrival.raw) {
-        detailBlocks.push(`Arrival ATIS${arrival.observed_at ? ` (${arrival.observed_at})` : ''}\n${arrival.raw}`);
-      }
-      if (departure.raw) {
-        detailBlocks.push(`Departure ATIS${departure.observed_at ? ` (${departure.observed_at})` : ''}\n${departure.raw}`);
-      }
-      if (metar.raw) {
-        detailBlocks.push(`METAR${metar.observed_at ? ` (${metar.observed_at})` : ''}\n${metar.raw}`);
-      }
-      if (taf.raw) {
-        detailBlocks.push(`TAF${taf.observed_at ? ` (${taf.observed_at})` : ''}\n${taf.raw}`);
-      }
-
-      let summary = 'ATIS.guru에서 수집한 D-ATIS입니다. 항공기 요청이 있을 때만 갱신될 수 있습니다.';
-      if (detail && detail.no_data && !detailBlocks.length) {
-        summary = '현재 표시 가능한 D-ATIS가 없습니다. 항공기가 요청한 경우에만 D-ATIS가 나타날 수 있습니다.';
-      }
-
-      return buildWeatherPopupHtml(`${icao} D-ATIS`, [
-        ['공항', airportTitle],
-        ['소스', 'ATIS.guru'],
-        ['갱신', updatedAt || fetchedAt],
-        ['도착', arrival.observed_at || ''],
-        ['출발', departure.observed_at || ''],
-      ], detailBlocks.join('\n\n'), summary);
+      const summary = detail && detail.no_data && !arrival.raw && !departure.raw
+        ? '현재 표시 가능한 D-ATIS가 없습니다. 항공기 요청이 있을 때만 D-ATIS가 나타날 수 있습니다.'
+        : 'ATIS.guru에서 수집한 D-ATIS입니다. 항공기 요청 시점에 따라 최신 정보가 반영됩니다.';
+      const sourceUrl = String((detail && detail.source_url) || props.sourceUrl || '').trim();
+      const metaRows = [
+        { label: '공항', value: escapeHtml(airportTitle || props.airport || '-') },
+        { label: '소스', value: sourceUrl ? `<a class="atis-popup__link" href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">ATIS.guru 원문 보기</a>` : escapeHtml('ATIS.guru') },
+        { label: '갱신', value: escapeHtml(formatAtisObservedText(updatedAt) || fetchedAt || '-') },
+      ];
+      const metaHtml = metaRows
+        .map((item) => `<div class="atis-popup__meta-row"><strong>${escapeHtml(item.label)}</strong><span>${item.value}</span></div>`)
+        .join('');
+      return `
+        <div class="weather-popup atis-popup">
+          <h3>${escapeHtml(`${icao} D-ATIS`)}</h3>
+          <div class="weather-popup-summary">${escapeHtml(summary)}</div>
+          <div class="atis-popup__meta">${metaHtml}</div>
+          ${buildAtisSectionHtml('도착 D-ATIS', arrival, '현재 도착 D-ATIS가 없습니다.')}
+          ${buildAtisSectionHtml('출발 D-ATIS', departure, '현재 출발 D-ATIS가 없습니다.')}
+          ${buildAtisSectionHtml('METAR', metar, '참고용 METAR 정보가 없습니다.')}
+          ${buildAtisSectionHtml('TAF', taf, '참고용 TAF 정보가 없습니다.')}
+        </div>
+      `;
     }
 
     function attachAtisPopupBehavior(marker, props) {
