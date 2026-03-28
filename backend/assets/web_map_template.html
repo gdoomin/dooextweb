@@ -3902,7 +3902,8 @@
         pm10: 100,
       }),
     });
-    const WEATHER_OVERLAY_MAX_REGION_CARDS = 6;
+    const WEATHER_OVERLAY_MAX_REGION_CARDS = 4;
+    const WEATHER_OVERLAY_FETCH_CONCURRENCY = 2;
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
       { key: 'acgz', label: 'NOTAM A,C,G,Z', defaultColor: '#4bc6ff' },
@@ -4267,7 +4268,7 @@
       options: {
         marker: true,
         badge: true,
-        wind: true,
+        wind: false,
         timeline: false,
       },
       timelineCollapsed: true,
@@ -8882,9 +8883,14 @@
       if (!regions.length) {
         throw new Error('파일을 먼저 열어주세요');
       }
-      const settled = await Promise.allSettled(
-        regions.map((region) => fetchWeatherOverlayRegionSnapshot(region, forceRefresh))
-      );
+      const settled = [];
+      for (let index = 0; index < regions.length; index += WEATHER_OVERLAY_FETCH_CONCURRENCY) {
+        const batch = regions.slice(index, index + WEATHER_OVERLAY_FETCH_CONCURRENCY);
+        const batchResults = await Promise.allSettled(
+          batch.map((region) => fetchWeatherOverlayRegionSnapshot(region, forceRefresh))
+        );
+        settled.push(...batchResults);
+      }
       const snapshots = [];
       let failedCount = 0;
       settled.forEach((result, index) => {
@@ -8895,6 +8901,14 @@
         failedCount += 1;
         console.warn('[weather overlay] region fetch failed', regions[index] && regions[index].label ? regions[index].label : index, result.reason);
       });
+      if (!snapshots.length && regions.length > 1) {
+        try {
+          const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(regions[0], true);
+          snapshots.push(fallbackSnapshot);
+        } catch (error) {
+          console.warn('[weather overlay] fallback single-region fetch failed', error);
+        }
+      }
       if (!snapshots.length) {
         throw new Error('기상 데이터를 불러올 수 없습니다.');
       }
@@ -13584,10 +13598,10 @@
         syncWeatherOverlayControlUi();
         return;
       }
-      weatherOverlayState.options.marker = true;
-      weatherOverlayState.options.badge = true;
-      weatherOverlayState.options.wind = true;
-      weatherOverlayState.options.timeline = false;
+      weatherOverlayState.options.marker = savedOverlay.marker !== false;
+      weatherOverlayState.options.badge = savedOverlay.badge !== false;
+      weatherOverlayState.options.wind = savedOverlay.wind === true;
+      weatherOverlayState.options.timeline = savedOverlay.timeline === true;
       weatherOverlayState.altitudeFt = normalizeWeatherOverlayAltitudeFt(savedOverlay.altitudeFt);
       weatherOverlayState.timelineCollapsed = savedOverlay.timelineCollapsed !== false;
       if (Number.isFinite(savedOverlay.timelineDayIndex)) {
