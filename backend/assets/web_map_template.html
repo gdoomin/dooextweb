@@ -3782,6 +3782,7 @@
       forceStyleCustomize: resolveViewerFlag('force_style_customize', true),
       measureStyleCustomize: resolveViewerFlag('measure_style_customize', true),
       collapseToolbar: resolveViewerFlag('collapse_toolbar', true),
+      weatherOverlay: true,
       weatherMetarTaf: resolveViewerFlag('weather_metar_taf', true),
       weatherSatellite: resolveViewerFlag('weather_satellite', true),
       notamDetail: resolveViewerFlag('notam_detail', true),
@@ -9011,7 +9012,7 @@
     async function setWeatherOverlayEnabled(enabled, options = {}) {
       const { persist = true, silentFail = false } = options;
       const turnOn = !!enabled;
-      if (turnOn && weatherButton && weatherButton.disabled) {
+      if (turnOn && !viewerAccess.weatherOverlay) {
         weatherOverlayState.enabled = false;
         setWeatherOverlayStatus('현재 요금제에서 기상 기능을 사용할 수 없습니다.', 'error');
         syncWeatherOverlayControlUi();
@@ -14216,7 +14217,7 @@
     syncWeatherOverlayControlUi();
 
     function buildWeatherRows() {
-      const hasAnyAllowed = WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
+      const hasAnyAllowed = !!viewerAccess.weatherOverlay || WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
       if (!hasAnyAllowed) {
         weatherButton.disabled = true;
         weatherPanel.classList.remove('is-visible');
