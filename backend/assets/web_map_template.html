@@ -3821,6 +3821,18 @@
       { feet: 13000, levelKey: '600hPa', label: '1만3천피트' },
     ];
     const WEATHER_OVERLAY_LEVEL_KEYS = ['surface', '925hPa', '850hPa', '700hPa', '600hPa'];
+    const AERIAL_SURVEY_AEROSOL_THRESHOLDS = Object.freeze({
+      safe: Object.freeze({
+        aod: 0.20,
+        pm25: 15,
+        pm10: 30,
+      }),
+      caution: Object.freeze({
+        aod: 0.35,
+        pm25: 50,
+        pm10: 80,
+      }),
+    });
     const WEATHER_OVERLAY_MAX_REGION_CARDS = 6;
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -7770,6 +7782,58 @@
       return 0;
     }
 
+    function classifyAerialSurveyAerosolAvailability(aodValue, pm25Value, pm10Value) {
+      const aod = parseWeatherNumber(aodValue);
+      const pm25 = parseWeatherNumber(pm25Value);
+      const pm10 = parseWeatherNumber(pm10Value);
+      const hasAnyData = [aod, pm25, pm10].some((item) => Number.isFinite(item));
+      const exceededUnusable = [];
+      const exceededCaution = [];
+      if (Number.isFinite(aod)) {
+        if (aod > AERIAL_SURVEY_AEROSOL_THRESHOLDS.caution.aod) {
+          exceededUnusable.push(`AOD ${formatWeatherNumber(aod, 2)}`);
+        } else if (aod > AERIAL_SURVEY_AEROSOL_THRESHOLDS.safe.aod) {
+          exceededCaution.push(`AOD ${formatWeatherNumber(aod, 2)}`);
+        }
+      }
+      if (Number.isFinite(pm25)) {
+        if (pm25 > AERIAL_SURVEY_AEROSOL_THRESHOLDS.caution.pm25) {
+          exceededUnusable.push(`PM2.5 ${formatWeatherNumber(pm25, 0)}`);
+        } else if (pm25 > AERIAL_SURVEY_AEROSOL_THRESHOLDS.safe.pm25) {
+          exceededCaution.push(`PM2.5 ${formatWeatherNumber(pm25, 0)}`);
+        }
+      }
+      if (Number.isFinite(pm10)) {
+        if (pm10 > AERIAL_SURVEY_AEROSOL_THRESHOLDS.caution.pm10) {
+          exceededUnusable.push(`PM10 ${formatWeatherNumber(pm10, 0)}`);
+        } else if (pm10 > AERIAL_SURVEY_AEROSOL_THRESHOLDS.safe.pm10) {
+          exceededCaution.push(`PM10 ${formatWeatherNumber(pm10, 0)}`);
+        }
+      }
+      if (exceededUnusable.length) {
+        return {
+          status: '촬영불가',
+          reason: `${exceededUnusable.join(' / ')} 수치가 불가 기준을 초과했습니다.`,
+          recommendation: '연무층 영향이 큰 상태입니다. 촬영을 보류하고 대기질 개선 후 재확인하세요.',
+          hasData: hasAnyData,
+        };
+      }
+      if (exceededCaution.length) {
+        return {
+          status: '주의',
+          reason: `${exceededCaution.join(' / ')} 수치가 주의 구간입니다.`,
+          recommendation: '대기 산란으로 지상 선명도가 떨어질 수 있으니 시험 촬영 후 진행 여부를 판단하세요.',
+          hasData: hasAnyData,
+        };
+      }
+      return {
+        status: '촬영가능',
+        reason: hasAnyData ? 'AOD / PM2.5 / PM10 수치가 촬영 가능 범위입니다.' : '가용 에어로졸 자료가 없습니다.',
+        recommendation: hasAnyData ? '연무 기준상 촬영을 진행할 수 있습니다.' : '운량과 시정 기준으로만 보조 판정합니다.',
+        hasData,
+      };
+    }
+
     function buildWeatherOverlaySurfaceAssessment(context = {}) {
       const visibilityKm = parseWeatherNumber(context.visibilityKm);
       const weatherCode = parseWeatherNumber(context.weatherCode);
@@ -7823,9 +7887,13 @@
         return {
           key: 'fog',
           label: '안개 가능',
+          status: (fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 1.0)) ? '촬영불가' : '주의',
           gradeKey: fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 1.0) ? 'bad' : 'caution',
           reason: detailParts.join(' · '),
           shortReason: detailParts.join(' / '),
+          recommendation: (fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 1.0))
+            ? '지상 목표가 가려질 가능성이 높아 촬영을 중단하는 것이 안전합니다.'
+            : '시정이 불안정하므로 저고도 시계 상태를 다시 확인한 뒤 촬영 여부를 결정하세요.',
           surfaceRelativeHumidity: relativeHumidity2m,
           dewPointSpreadC,
           lowCloudCover,
@@ -7849,9 +7917,13 @@
         return {
           key: 'mist',
           label: '박무 가능',
+          status: visibilityKm < 2.5 ? '촬영불가' : '주의',
           gradeKey: visibilityKm < 2.5 ? 'bad' : 'caution',
           reason: detailParts.join(' · '),
           shortReason: detailParts.join(' / '),
+          recommendation: visibilityKm < 2.5
+            ? '박무로 지상 대비가 크게 떨어질 수 있어 촬영을 보류하는 편이 좋습니다.'
+            : '지표면 대비가 흐려질 수 있으니 샘플 컷 확인 후 진행하세요.',
           surfaceRelativeHumidity: relativeHumidity2m,
           dewPointSpreadC,
           lowCloudCover,
@@ -7863,28 +7935,17 @@
         };
       }
 
-      const hazeLikely = Number.isFinite(visibilityKm)
-        && visibilityKm < 10
-        && (
-          (Number.isFinite(aerosolOpticalDepth) && aerosolOpticalDepth >= 0.28)
-          || (Number.isFinite(pm25) && pm25 >= 20)
-          || (Number.isFinite(pm10) && pm10 >= 40)
-          || (Number.isFinite(dust) && dust >= 10)
-        );
-      if (hazeLikely) {
+      const aerosolAvailability = classifyAerialSurveyAerosolAvailability(aerosolOpticalDepth, pm25, pm10);
+      if (aerosolAvailability.hasData && aerosolAvailability.status !== '촬영가능') {
         const detailParts = [visibilityText, aerosolText, pm25Text, pm10Text, dustText].filter(Boolean);
         return {
           key: 'haze',
           label: '연무 가능',
-          gradeKey: (
-            visibilityKm < 5
-            || (Number.isFinite(aerosolOpticalDepth) && aerosolOpticalDepth >= 0.45)
-            || (Number.isFinite(pm25) && pm25 >= 35)
-            || (Number.isFinite(pm10) && pm10 >= 80)
-            || (Number.isFinite(dust) && dust >= 20)
-          ) ? 'bad' : 'caution',
-          reason: detailParts.join(' · '),
-          shortReason: detailParts.join(' / '),
+          status: aerosolAvailability.status,
+          gradeKey: aerosolAvailability.status === '촬영불가' ? 'bad' : 'caution',
+          reason: [detailParts.join(' · '), aerosolAvailability.reason].filter(Boolean).join(' · '),
+          shortReason: [detailParts.join(' / '), aerosolAvailability.reason].filter(Boolean).join(' / '),
+          recommendation: aerosolAvailability.recommendation,
           surfaceRelativeHumidity: relativeHumidity2m,
           dewPointSpreadC,
           lowCloudCover,
@@ -7899,9 +7960,11 @@
       return {
         key: 'clear',
         label: '양호',
+        status: '촬영가능',
         gradeKey: 'ok',
         reason: '',
         shortReason: '',
+        recommendation: '현재 지상 시정 현상 기준으로는 촬영을 진행할 수 있습니다.',
         surfaceRelativeHumidity: relativeHumidity2m,
         dewPointSpreadC,
         lowCloudCover,
@@ -8424,6 +8487,7 @@
           ['하층 구름 차단', current.blockedByLowerCloud && current.blockingAltitudeLabel ? `${current.blockingAltitudeLabel} 구름 때문에 지상 촬영 제한` : '-'],
           ['지상 현상', surfaceAssessment.label || '양호'],
           ['판정 근거', surfaceAssessment.shortReason || '-'],
+          ['권고', surfaceAssessment.recommendation || '-'],
           ['기온', Number.isFinite(current.temperatureC) ? `${formatWeatherNumber(current.temperatureC, 1)}°C` : '-'],
           ['상대습도', Number.isFinite(current.relativeHumidity) ? `${Math.round(current.relativeHumidity)}%` : '-'],
           ['지상 RH', Number.isFinite(current.surfaceRelativeHumidity) ? `${Math.round(current.surfaceRelativeHumidity)}%` : '-'],
