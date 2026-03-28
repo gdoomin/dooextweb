@@ -9044,43 +9044,101 @@
       return query;
     }
 
+    function normalizeWeatherOverlayLongitude(value) {
+      let parsed = parseWeatherNumber(value);
+      if (!Number.isFinite(parsed)) {
+        return null;
+      }
+      while (parsed > 180) {
+        parsed -= 360;
+      }
+      while (parsed < -180) {
+        parsed += 360;
+      }
+      return parsed;
+    }
+
+    function resolveWeatherOverlayFetchCenter(region) {
+      const regionCenter = region && region.center ? region.center : null;
+      const regionLat = parseWeatherNumber(regionCenter && regionCenter.lat);
+      const regionLng = normalizeWeatherOverlayLongitude(regionCenter && regionCenter.lng);
+      if (Number.isFinite(regionLat) && Number.isFinite(regionLng)) {
+        return L.latLng(clamp(regionLat, -89.9999, 89.9999), regionLng);
+      }
+
+      const fallbackRegion = buildWeatherOverlayFallbackRegion();
+      const fallbackCenter = fallbackRegion && fallbackRegion.center ? fallbackRegion.center : null;
+      const fallbackLat = parseWeatherNumber(fallbackCenter && fallbackCenter.lat);
+      const fallbackLng = normalizeWeatherOverlayLongitude(fallbackCenter && fallbackCenter.lng);
+      if (Number.isFinite(fallbackLat) && Number.isFinite(fallbackLng)) {
+        return L.latLng(clamp(fallbackLat, -89.9999, 89.9999), fallbackLng);
+      }
+
+      if (map && typeof map.getCenter === 'function') {
+        const mapCenter = map.getCenter();
+        const mapLat = parseWeatherNumber(mapCenter && mapCenter.lat);
+        const mapLng = normalizeWeatherOverlayLongitude(mapCenter && mapCenter.lng);
+        if (Number.isFinite(mapLat) && Number.isFinite(mapLng)) {
+          return L.latLng(clamp(mapLat, -89.9999, 89.9999), mapLng);
+        }
+      }
+      return null;
+    }
+
+    function buildWeatherOverlayForecastFetchUrls(center, forceRefresh = false) {
+      const weatherQuery = buildWeatherOverlayApiQuery(center, forceRefresh);
+      const weatherDirectQuery = buildWeatherOverlayApiQuery(center, forceRefresh, { includeModel: false });
+      const urls = [];
+      if (WEATHER_OVERLAY_FRONTEND_PROXY_URL) {
+        urls.push(`${WEATHER_OVERLAY_FRONTEND_PROXY_URL}?${weatherQuery.toString()}`);
+      }
+      urls.push(
+        `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherDirectQuery.toString()}`,
+        `${WEATHER_OVERLAY_API_DIRECT_ECMWF_URL}?${weatherDirectQuery.toString()}`,
+        `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
+      );
+      return urls;
+    }
+
+    function buildWeatherOverlayAirQualityFetchUrls(center, forceRefresh = false) {
+      const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
+      const urls = [];
+      if (WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL) {
+        urls.push(`${WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL}?${airQualityQuery.toString()}`);
+      }
+      urls.push(
+        `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
+        `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
+      );
+      return urls;
+    }
+
     async function fetchWeatherOverlayRegionSnapshot(region, forceRefresh = false) {
-      const center = region && region.center ? region.center : null;
+      const center = resolveWeatherOverlayFetchCenter(region);
       if (!center) {
         throw new Error('invalid region center');
       }
-      const weatherQuery = buildWeatherOverlayApiQuery(center, forceRefresh);
-      const weatherDirectQuery = buildWeatherOverlayApiQuery(center, forceRefresh, { includeModel: false });
-      const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
+      const regionMeta = region && typeof region === 'object' ? region : {};
       const [weatherResult, airQualityResult] = await Promise.allSettled([
-        fetchJsonWithFallbacks([
-          `${WEATHER_OVERLAY_FRONTEND_PROXY_URL}?${weatherQuery.toString()}`,
-          `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherDirectQuery.toString()}`,
-          `${WEATHER_OVERLAY_API_DIRECT_ECMWF_URL}?${weatherDirectQuery.toString()}`,
-          `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
-        ], 'forecast'),
-        fetchJsonWithFallbacks([
-          `${WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL}?${airQualityQuery.toString()}`,
-          `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
-          `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
-        ], 'air-quality'),
+        fetchJsonWithFallbacks(buildWeatherOverlayForecastFetchUrls(center, forceRefresh), 'forecast'),
+        fetchJsonWithFallbacks(buildWeatherOverlayAirQualityFetchUrls(center, forceRefresh), 'air-quality'),
       ]);
       if (weatherResult.status !== 'fulfilled') {
         throw weatherResult.reason;
       }
       if (airQualityResult.status !== 'fulfilled') {
-        console.warn('[weather overlay] air quality fetch failed', region && region.label ? region.label : '', airQualityResult.reason);
+        console.warn('[weather overlay] air quality fetch failed', regionMeta.label ? regionMeta.label : '', airQualityResult.reason);
       }
       const snapshot = buildWeatherOverlayData(
         center,
         weatherResult.value,
         airQualityResult.status === 'fulfilled' ? airQualityResult.value : null
       );
-      snapshot.regionId = region.id || '';
-      snapshot.regionLabel = region.label || '';
-      snapshot.regionIndex = Number.isFinite(parseWeatherNumber(region.index)) ? Math.max(0, Math.round(parseWeatherNumber(region.index))) : 0;
-      snapshot.regionLineCount = Number.isFinite(parseWeatherNumber(region.lineCount)) ? Math.max(0, Math.round(parseWeatherNumber(region.lineCount))) : 0;
-      snapshot.regionBounds = Array.isArray(region.bounds) ? region.bounds : null;
+      snapshot.regionId = regionMeta.id || '';
+      snapshot.regionLabel = regionMeta.label || '';
+      snapshot.regionIndex = Number.isFinite(parseWeatherNumber(regionMeta.index)) ? Math.max(0, Math.round(parseWeatherNumber(regionMeta.index))) : 0;
+      snapshot.regionLineCount = Number.isFinite(parseWeatherNumber(regionMeta.lineCount)) ? Math.max(0, Math.round(parseWeatherNumber(regionMeta.lineCount))) : 0;
+      snapshot.regionBounds = Array.isArray(regionMeta.bounds) ? regionMeta.bounds : null;
       return snapshot;
     }
 
