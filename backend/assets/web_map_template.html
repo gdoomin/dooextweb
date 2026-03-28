@@ -1668,15 +1668,15 @@
       color: #ffb4ab;
     }
     .weather-overlay-card {
-      min-width: 166px;
-      max-width: 220px;
-      padding: 8px 10px;
+      min-width: 184px;
+      max-width: 244px;
+      padding: 9px 12px;
       border-radius: 12px;
       border: 1px solid rgba(205, 228, 255, 0.34);
       background: rgba(4, 11, 18, 0.92);
       color: #f4f8fd;
-      font-size: 11px;
-      line-height: 1.4;
+      font-size: 12px;
+      line-height: 1.42;
       box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42);
       backdrop-filter: blur(2px);
     }
@@ -1694,7 +1694,7 @@
       margin-bottom: 6px;
       padding: 3px 8px;
       border-radius: 999px;
-      font-size: 10px;
+      font-size: 11px;
       font-weight: 800;
       letter-spacing: 0.02em;
       border: 1px solid rgba(255, 255, 255, 0.24);
@@ -1714,13 +1714,14 @@
     .weather-overlay-card__wind {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 4px;
       font-weight: 700;
     }
     .weather-overlay-card__arrow {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -1728,15 +1729,17 @@
       background: rgba(117, 182, 255, 0.20);
       border: 1px solid rgba(143, 200, 255, 0.40);
       color: #b8e0ff;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 900;
       transform: rotate(var(--wind-rotation, 0deg));
       transform-origin: 50% 50%;
     }
     .weather-overlay-card__row {
       color: #d8e6f5;
-      font-size: 11px;
-      white-space: nowrap;
+      font-size: 12px;
+      line-height: 1.42;
+      white-space: normal;
+      word-break: keep-all;
     }
     .weather-overlay-card__reason {
       color: #ffc107;
@@ -8529,8 +8532,8 @@
           icon: L.divIcon({
             className: '',
             html: buildWeatherOverlayMarkerHtml(snapshot),
-            iconSize: [190, 116],
-            iconAnchor: [95, 58],
+            iconSize: [214, 136],
+            iconAnchor: [107, 68],
           }),
         });
         const current = snapshot.current || {};
