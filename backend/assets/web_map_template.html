@@ -3876,14 +3876,14 @@
     const WEATHER_OVERLAY_LEVEL_KEYS = ['surface', '925hPa', '850hPa', '700hPa', '600hPa'];
     const AERIAL_SURVEY_AEROSOL_THRESHOLDS = Object.freeze({
       safe: Object.freeze({
-        aod: 0.25,
-        pm25: 20,
-        pm10: 40,
+        aod: 0.28,
+        pm25: 25,
+        pm10: 45,
       }),
       caution: Object.freeze({
-        aod: 0.45,
-        pm25: 55,
-        pm10: 90,
+        aod: 0.50,
+        pm25: 60,
+        pm10: 100,
       }),
     });
     const WEATHER_OVERLAY_MAX_REGION_CARDS = 6;
@@ -7961,23 +7961,24 @@
       const fogByCode = weatherCode === 45 || weatherCode === 48;
       const fogLikely = fogByCode || (
         Number.isFinite(visibilityKm)
-        && visibilityKm < 1.0
+        && visibilityKm < 0.8
         && (
-          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 97)
-          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 1.0)
-          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 90)
+          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 98)
+          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 0.8)
+          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 92)
         )
       );
       if (fogLikely) {
         const detailParts = [visibilityText, humidityText, spreadText, lowCloudText].filter(Boolean);
+        const fogUnusable = Number.isFinite(visibilityKm) && visibilityKm < 0.6;
         return {
           key: 'fog',
           label: '안개 가능',
-          status: (fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 0.8)) ? '촬영불가' : '주의',
-          gradeKey: fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 0.8) ? 'bad' : 'caution',
+          status: fogUnusable ? '촬영불가' : '주의',
+          gradeKey: fogUnusable ? 'bad' : 'caution',
           reason: detailParts.join(' · '),
           shortReason: detailParts.join(' / '),
-          recommendation: (fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 0.8))
+          recommendation: fogUnusable
             ? '지상 목표가 가려질 가능성이 높아 촬영을 중단하는 것이 안전합니다.'
             : '시정이 불안정하므로 저고도 시계 상태를 다시 확인한 뒤 촬영 여부를 결정하세요.',
           surfaceRelativeHumidity: relativeHumidity2m,
@@ -7992,22 +7993,22 @@
       }
 
       const mistLikely = Number.isFinite(visibilityKm)
-        && visibilityKm < 4
+        && visibilityKm < 3.5
         && (
-          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 92)
-          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 2.0)
-          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 80)
+          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 93)
+          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 1.8)
+          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 82)
         );
       if (mistLikely) {
         const detailParts = [visibilityText, humidityText, spreadText, lowCloudText].filter(Boolean);
         return {
           key: 'mist',
           label: '박무 가능',
-          status: visibilityKm < 1.8 ? '촬영불가' : '주의',
-          gradeKey: visibilityKm < 1.8 ? 'bad' : 'caution',
+          status: visibilityKm < 1.5 ? '촬영불가' : '주의',
+          gradeKey: visibilityKm < 1.5 ? 'bad' : 'caution',
           reason: detailParts.join(' · '),
           shortReason: detailParts.join(' / '),
-          recommendation: visibilityKm < 1.8
+          recommendation: visibilityKm < 1.5
             ? '박무로 지상 대비가 크게 떨어질 수 있어 촬영을 보류하는 편이 좋습니다.'
             : '지표면 대비가 흐려질 수 있으니 샘플 컷 확인 후 진행하세요.',
           surfaceRelativeHumidity: relativeHumidity2m,
@@ -8066,11 +8067,11 @@
       const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
       const visibility = Number.isFinite(visibilityKm) ? visibilityKm : 999;
       let baseKey = 'ok';
-      if (cloud > 80 || visibility < 2) {
+      if (cloud > 80 || visibility < 1.5) {
         baseKey = 'bad';
       } else if (cloud >= 50 && cloud <= 80) {
         baseKey = 'caution';
-      } else if (cloud <= 30 && visibility >= 4) {
+      } else if (cloud <= 30 && visibility >= 3.5) {
         baseKey = 'ok';
       } else {
         baseKey = 'caution';
