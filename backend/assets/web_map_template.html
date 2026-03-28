@@ -3705,6 +3705,20 @@
   <script src="/html2canvas.min.js"></script>
   <script>
     const payload = __PAYLOAD_JSON__;
+    const API_BASE_URL = String(payload && payload.api_base_url ? payload.api_base_url : '').trim().replace(/\/+$/, '');
+    function resolveApiUrl(path) {
+      const value = String(path || '').trim();
+      if (!value) {
+        return value;
+      }
+      if (/^https?:\/\//i.test(value)) {
+        return value;
+      }
+      if (value.startsWith('/api/') && API_BASE_URL) {
+        return `${API_BASE_URL}${value}`;
+      }
+      return value;
+    }
     const previewGateEnabled = !!payload.preview_gate;
     const lineColor = '#1A3FCC';
     const hoverColor = '#4488FF';
@@ -3863,8 +3877,8 @@
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
-    const WEATHER_OVERLAY_API_URL = '/api/weather/open-meteo/forecast';
-    const WEATHER_AIR_QUALITY_API_URL = '/api/weather/open-meteo/air-quality';
+    const WEATHER_OVERLAY_API_URL = resolveApiUrl('/api/weather/open-meteo/forecast');
+    const WEATHER_AIR_QUALITY_API_URL = resolveApiUrl('/api/weather/open-meteo/air-quality');
     const WEATHER_OVERLAY_DAY_LABELS = ['오늘', '내일', '모레'];
     const WEATHER_OVERLAY_ALTITUDE_PRESETS = [
       { feet: 500, levelKey: 'surface', label: '500피트' },
@@ -7206,7 +7220,7 @@
     }
 
     function fetchJson(url) {
-      return fetch(url, { cache: 'no-store' }).then(async (response) => {
+      return fetch(resolveApiUrl(url), { cache: 'no-store' }).then(async (response) => {
         if (!response.ok) {
           const fallback = `${response.status} ${response.statusText}`.trim();
           let detail = fallback;

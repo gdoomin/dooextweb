@@ -2403,11 +2403,14 @@ def _load_job(job_id: str, access_token: str = "") -> dict:
     raise HTTPException(status_code=404, detail="복원할 변환 데이터가 서버에 없습니다. 파일을 다시 변환해 주세요.")
 
 
-def _viewer_html_with_paths(payload: dict, viewer_state_path: str, layers_path: str) -> str:
+def _viewer_html_with_paths(payload: dict, viewer_state_path: str, layers_path: str, api_base_url: str = "") -> str:
     html = build_web_map_html(payload, str(MAP_TEMPLATE_PATH))
+    normalized_base = str(api_base_url or "").rstrip("/")
+    html2canvas_src = f'{normalized_base}/api/assets/html2canvas.min.js' if normalized_base else '/api/assets/html2canvas.min.js'
+    doogpx_src = f'{normalized_base}/api/assets/doogpx.png' if normalized_base else '/api/assets/doogpx.png'
     replacements = {
-        'src="/html2canvas.min.js"': 'src="/api/assets/html2canvas.min.js"',
-        'src="/doogpx.png"': 'src="/api/assets/doogpx.png"',
+        'src="/html2canvas.min.js"': f'src="{html2canvas_src}"',
+        'src="/doogpx.png"': f'src="{doogpx_src}"',
         "fetch('/viewer-state'": f"fetch('{viewer_state_path}'",
         "fetch('/layers.json'": f"fetch('{layers_path}'",
     }
@@ -2417,10 +2420,12 @@ def _viewer_html_with_paths(payload: dict, viewer_state_path: str, layers_path: 
 
 
 def _viewer_html(job_id: str, payload: dict) -> str:
+    api_base_url = str(payload.get("api_base_url") or "").rstrip("/")
     return _viewer_html_with_paths(
         payload,
-        f"/api/viewer/{job_id}/viewer-state",
-        f"/api/viewer/{job_id}/layers.json",
+        f"{api_base_url}/api/viewer/{job_id}/viewer-state" if api_base_url else f"/api/viewer/{job_id}/viewer-state",
+        f"{api_base_url}/api/viewer/{job_id}/layers.json" if api_base_url else f"/api/viewer/{job_id}/layers.json",
+        api_base_url=api_base_url,
     )
 
 
@@ -3998,6 +4003,7 @@ def download_xlsx(job_id: str):
 def get_viewer(job_id: str, request: Request):
     job = _load_job(job_id)
     payload = dict(job["map_payload"])
+    payload["api_base_url"] = _external_base_url(request)
     payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
     payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
 
@@ -4012,6 +4018,7 @@ def get_viewer(job_id: str, request: Request):
 @app.get("/api/viewer/default", response_class=HTMLResponse)
 def get_default_viewer(request: Request):
     payload = _default_viewer_payload()
+    payload["api_base_url"] = _external_base_url(request)
     viewer_user_id = _normalize_user_identity(str(request.query_params.get("user_id") or ""))
     viewer_user_email = _normalize_user_email(str(request.query_params.get("user_email") or ""))
     viewer_created_at = str(request.query_params.get("created_at") or "").strip()
@@ -4027,8 +4034,9 @@ def get_default_viewer(request: Request):
     return HTMLResponse(
         _viewer_html_with_paths(
             payload,
-            "/api/viewer-default/viewer-state",
-            "/api/viewer-default/layers.json",
+            f"{payload['api_base_url']}/api/viewer-default/viewer-state",
+            f"{payload['api_base_url']}/api/viewer-default/layers.json",
+            api_base_url=str(payload.get("api_base_url") or ""),
         ),
         headers=NO_STORE_HEADERS,
     )
