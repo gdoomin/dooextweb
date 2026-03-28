@@ -1694,7 +1694,7 @@
       margin-bottom: 6px;
       padding: 3px 8px;
       border-radius: 999px;
-      font-size: 11px;
+      font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.02em;
       border: 1px solid rgba(255, 255, 255, 0.24);
@@ -1944,8 +1944,8 @@
       border: 1px solid rgba(121, 192, 255, 0.30);
       background: rgba(53, 112, 170, 0.26);
       color: #f5fbff;
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       line-height: 1.6;
       word-break: keep-all;
     }
@@ -7847,10 +7847,10 @@
 
     function getWeatherOverlayGradeDescriptor(key) {
       if (String(key || '').trim().toLowerCase() === 'bad') {
-        return { key: 'bad', label: '촬영 불가', icon: '❌', color: '#F44336' };
+        return { key: 'bad', label: '촬영 보류', icon: '❌', color: '#F44336' };
       }
       if (String(key || '').trim().toLowerCase() === 'caution') {
-        return { key: 'caution', label: '주의', icon: '⚠️', color: '#FFC107' };
+        return { key: 'caution', label: '가봐야 알듯(애매함)', icon: '⚠️', color: '#FFC107' };
       }
       return { key: 'ok', label: '촬영 가능', icon: '✅', color: '#4CAF50' };
     }
