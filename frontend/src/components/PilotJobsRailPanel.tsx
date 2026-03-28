@@ -39,7 +39,15 @@ function buildDeadlineBadge(item: PilotRecruitJobItem): string {
 }
 
 export function PilotJobsRailPanel() {
-  const [payload, setPayload] = useState<PilotRecruitmentResponse>({ items: [], source_label: "Airportal 항공일자리", updated_at: "" });
+  const [payload, setPayload] = useState<PilotRecruitmentResponse>({
+    items: [],
+    source_label: "Airportal 항공일자리",
+    updated_at: "",
+    last_successful_at: "",
+    last_attempted_at: "",
+    cache_status: "",
+    cache_warning: "",
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -73,8 +81,16 @@ export function PilotJobsRailPanel() {
   }, []);
 
   const items = payload.items || [];
-  const updatedAtText = useMemo(() => formatJobUpdatedAt(payload.updated_at || ""), [payload.updated_at]);
+  const updatedAtText = useMemo(
+    () => formatJobUpdatedAt(payload.last_successful_at || payload.updated_at || ""),
+    [payload.last_successful_at, payload.updated_at],
+  );
+  const attemptedAtText = useMemo(
+    () => formatJobUpdatedAt(payload.last_attempted_at || ""),
+    [payload.last_attempted_at],
+  );
   const sourceLabel = String(payload.source_label || "Airportal 항공일자리").trim() || "Airportal 항공일자리";
+  const isStaleCache = payload.cache_status === "stale";
 
   return (
     <section className="doo-rail-card doo-rail-card-jobs" aria-label="채용정보">
@@ -85,8 +101,15 @@ export function PilotJobsRailPanel() {
       <div className="doo-rail-jobs-meta">
         <span>운항승무원 · 조종사 관련 공고</span>
         <span>{sourceLabel}</span>
-        <span>{updatedAtText ? `업데이트 ${updatedAtText}` : "최신 캐시 기준"}</span>
+        <span>{updatedAtText ? `${isStaleCache ? "마지막 성공" : "업데이트"} ${updatedAtText}` : "최신 캐시 기준"}</span>
       </div>
+      {isStaleCache ? (
+        <div className="doo-rail-jobs-warning" role="status" aria-live="polite">
+          <strong>이전 캐시 표시 중</strong>
+          <span>{payload.cache_warning || "채용정보 원본 연결이 불안정해 마지막 성공 데이터를 보여주고 있습니다."}</span>
+          {attemptedAtText ? <em>마지막 시도 {attemptedAtText}</em> : null}
+        </div>
+      ) : null}
       {error ? (
         <div className="doo-rail-jobs-empty">
           <strong>채용정보를 불러오지 못했습니다.</strong>

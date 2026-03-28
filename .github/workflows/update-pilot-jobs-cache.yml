@@ -23,9 +23,12 @@ jobs:
           python-version: "3.12"
 
       - name: Update pilot jobs cache
+        id: update_cache
+        continue-on-error: true
         run: python scripts/update_pilot_jobs_cache.py
 
       - name: Commit cache update
+        if: always()
         run: |
           if git diff --quiet -- frontend/public/data/pilot-jobs.json; then
             echo "No cache changes"
@@ -36,3 +39,9 @@ jobs:
           git add frontend/public/data/pilot-jobs.json
           git commit -m "Update pilot jobs cache"
           git push
+
+      - name: Mark run as failed when source fetch failed
+        if: steps.update_cache.outcome == 'failure'
+        run: |
+          echo "Pilot jobs cache refresh failed; stale cache metadata was committed."
+          exit 1

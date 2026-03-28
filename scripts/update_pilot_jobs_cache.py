@@ -208,17 +208,46 @@ def fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
 
 def load_existing_payload() -> dict[str, Any]:
     if not OUTPUT_PATH.exists():
-        return {"updated_at": "", "source_label": PILOT_JOBS_SOURCE_LABEL, "items": []}
+        return {
+            "updated_at": "",
+            "last_successful_at": "",
+            "last_attempted_at": "",
+            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "cache_status": "",
+            "cache_warning": "",
+            "items": [],
+        }
     try:
         payload = json.loads(OUTPUT_PATH.read_text(encoding="utf-8"))
     except Exception:
-        return {"updated_at": "", "source_label": PILOT_JOBS_SOURCE_LABEL, "items": []}
+        return {
+            "updated_at": "",
+            "last_successful_at": "",
+            "last_attempted_at": "",
+            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "cache_status": "",
+            "cache_warning": "",
+            "items": [],
+        }
     if not isinstance(payload, dict):
-        return {"updated_at": "", "source_label": PILOT_JOBS_SOURCE_LABEL, "items": []}
+        return {
+            "updated_at": "",
+            "last_successful_at": "",
+            "last_attempted_at": "",
+            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "cache_status": "",
+            "cache_warning": "",
+            "items": [],
+        }
     items = payload.get("items")
+    updated_at = str(payload.get("updated_at") or "").strip()
     return {
-        "updated_at": str(payload.get("updated_at") or "").strip(),
+        "updated_at": updated_at,
+        "last_successful_at": str(payload.get("last_successful_at") or updated_at).strip(),
+        "last_attempted_at": str(payload.get("last_attempted_at") or "").strip(),
         "source_label": str(payload.get("source_label") or PILOT_JOBS_SOURCE_LABEL).strip() or PILOT_JOBS_SOURCE_LABEL,
+        "cache_status": str(payload.get("cache_status") or "").strip(),
+        "cache_warning": str(payload.get("cache_warning") or "").strip(),
         "items": items if isinstance(items, list) else [],
     }
 
@@ -229,11 +258,16 @@ def write_payload(payload: dict[str, Any]) -> None:
 
 
 def main() -> int:
+    attempted_at = datetime.now(timezone.utc).isoformat()
     try:
         items = fetch_pilot_jobs_from_source()
         payload = {
-            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": attempted_at,
+            "last_successful_at": attempted_at,
+            "last_attempted_at": attempted_at,
             "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "cache_status": "fresh",
+            "cache_warning": "",
             "items": items,
         }
         write_payload(payload)
@@ -242,8 +276,28 @@ def main() -> int:
     except Exception as error:
         existing = load_existing_payload()
         if existing.get("items"):
+            stale_payload = {
+                "updated_at": str(existing.get("updated_at") or "").strip(),
+                "last_successful_at": str(existing.get("last_successful_at") or existing.get("updated_at") or "").strip(),
+                "last_attempted_at": attempted_at,
+                "source_label": str(existing.get("source_label") or PILOT_JOBS_SOURCE_LABEL).strip() or PILOT_JOBS_SOURCE_LABEL,
+                "cache_status": "stale",
+                "cache_warning": "Airportal 연결 문제로 이전 캐시를 표시 중입니다.",
+                "items": existing.get("items") or [],
+            }
+            write_payload(stale_payload)
             print(f"warning: source fetch failed, keeping existing cache ({error})", file=sys.stderr)
-            return 0
+            return 1
+        error_payload = {
+            "updated_at": "",
+            "last_successful_at": "",
+            "last_attempted_at": attempted_at,
+            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "cache_status": "error",
+            "cache_warning": "채용정보를 가져오지 못했습니다.",
+            "items": [],
+        }
+        write_payload(error_payload)
         print(f"error: unable to update pilot jobs cache ({error})", file=sys.stderr)
         return 1
 

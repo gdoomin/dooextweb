@@ -806,6 +806,40 @@ textarea {
   padding: 7px 10px;
 }
 
+.doo-rail-jobs-warning {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 190, 95, 0.24);
+  background:
+    linear-gradient(180deg, rgba(64, 39, 7, 0.92) 0%, rgba(44, 28, 7, 0.94) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 244, 214, 0.08),
+    0 10px 22px rgba(24, 14, 3, 0.28);
+  padding: 9px 11px;
+}
+
+.doo-rail-jobs-warning strong {
+  color: #ffe08a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.doo-rail-jobs-warning span {
+  color: #f0dcc0;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.doo-rail-jobs-warning em {
+  color: #ffca73;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
 .doo-rail-jobs-list {
   display: grid;
   gap: 10px;

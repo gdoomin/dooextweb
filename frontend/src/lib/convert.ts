@@ -208,7 +208,11 @@ export type PilotRecruitJobItem = {
 
 export type PilotRecruitmentResponse = {
   updated_at?: string;
+  last_successful_at?: string;
+  last_attempted_at?: string;
   source_label?: string;
+  cache_status?: "fresh" | "stale" | "error" | "";
+  cache_warning?: string;
   items: PilotRecruitJobItem[];
 };
 
@@ -781,7 +785,17 @@ export async function fetchPilotRecruitment(): Promise<PilotRecruitmentResponse>
   const payload = body as Partial<PilotRecruitmentResponse>;
   return {
     updated_at: typeof payload.updated_at === "string" ? payload.updated_at : "",
+    last_successful_at:
+      typeof payload.last_successful_at === "string"
+        ? payload.last_successful_at
+        : (typeof payload.updated_at === "string" ? payload.updated_at : ""),
+    last_attempted_at: typeof payload.last_attempted_at === "string" ? payload.last_attempted_at : "",
     source_label: typeof payload.source_label === "string" ? payload.source_label : "Airportal 항공일자리",
+    cache_status:
+      payload.cache_status === "fresh" || payload.cache_status === "stale" || payload.cache_status === "error"
+        ? payload.cache_status
+        : "",
+    cache_warning: typeof payload.cache_warning === "string" ? payload.cache_warning : "",
     items: Array.isArray(payload.items)
       ? payload.items
           .filter((item): item is PilotRecruitJobItem => Boolean(item && typeof item === "object"))
