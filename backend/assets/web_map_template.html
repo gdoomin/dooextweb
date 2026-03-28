@@ -7692,6 +7692,38 @@
       }];
     }
 
+    function buildWeatherOverlayFallbackRegion() {
+      const referenceBounds = getWeatherOverlayReferenceBounds();
+      if (referenceBounds) {
+        const center = referenceBounds.getCenter();
+        return {
+          id: 'region-1',
+          index: 0,
+          label: '구역 1',
+          lineCount: Math.max(0, Array.isArray(resultLineEntries) ? resultLineEntries.length : 0),
+          center: L.latLng(center.lat, center.lng),
+          bounds: [
+            [referenceBounds.getSouth(), referenceBounds.getWest()],
+            [referenceBounds.getNorth(), referenceBounds.getEast()],
+          ],
+        };
+      }
+      if (map && typeof map.getCenter === 'function') {
+        const center = map.getCenter();
+        if (center && Number.isFinite(parseWeatherNumber(center.lat)) && Number.isFinite(parseWeatherNumber(center.lng))) {
+          return {
+            id: 'region-1',
+            index: 0,
+            label: '구역 1',
+            lineCount: Math.max(0, Array.isArray(resultLineEntries) ? resultLineEntries.length : 0),
+            center: L.latLng(center.lat, center.lng),
+            bounds: [[center.lat, center.lng], [center.lat, center.lng]],
+          };
+        }
+      }
+      return null;
+    }
+
     function getWeatherOverlayWorkCenter() {
       const regions = getWeatherOverlayWorkRegions(1);
       if (!regions.length) {
@@ -9072,7 +9104,19 @@
     async function fetchWeatherOverlaySnapshot(forceRefresh = false) {
       const regions = getWeatherOverlayWorkRegions(WEATHER_OVERLAY_MAX_REGION_CARDS);
       if (!regions.length) {
-        throw new Error('파일을 먼저 열어주세요');
+        const fallbackRegion = buildWeatherOverlayFallbackRegion();
+        if (!fallbackRegion) {
+          throw new Error('파일을 먼저 열어주세요');
+        }
+        const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(fallbackRegion, true);
+        return {
+          regions: [fallbackSnapshot],
+          center: fallbackSnapshot.center,
+          current: fallbackSnapshot.current,
+          days: fallbackSnapshot.days,
+          failedRegionCount: 0,
+          requestedRegionCount: 1,
+        };
       }
       const settled = [];
       for (let index = 0; index < regions.length; index += WEATHER_OVERLAY_FETCH_CONCURRENCY) {
@@ -9098,6 +9142,17 @@
           snapshots.push(fallbackSnapshot);
         } catch (error) {
           console.warn('[weather overlay] fallback single-region fetch failed', error);
+        }
+      }
+      if (!snapshots.length) {
+        const fallbackRegion = buildWeatherOverlayFallbackRegion();
+        if (fallbackRegion) {
+          try {
+            const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(fallbackRegion, true);
+            snapshots.push(fallbackSnapshot);
+          } catch (error) {
+            console.warn('[weather overlay] fallback center-region fetch failed', error);
+          }
         }
       }
       if (!snapshots.length) {
@@ -9232,7 +9287,7 @@
         return true;
       }
 
-      if (!getWeatherOverlayWorkRegions(1).length) {
+      if (!getWeatherOverlayWorkRegions(1).length && !buildWeatherOverlayFallbackRegion()) {
         weatherOverlayState.enabled = false;
         weatherOverlayFetchToken += 1;
         hideWeatherOverlayTimeline();
