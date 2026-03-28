@@ -3782,7 +3782,7 @@
       forceStyleCustomize: resolveViewerFlag('force_style_customize', true),
       measureStyleCustomize: resolveViewerFlag('measure_style_customize', true),
       collapseToolbar: resolveViewerFlag('collapse_toolbar', true),
-      weatherOverlay: true,
+      weatherOverlay: resolveViewerFlag('weather_overlay', true),
       weatherMetarTaf: resolveViewerFlag('weather_metar_taf', true),
       weatherSatellite: resolveViewerFlag('weather_satellite', true),
       notamDetail: resolveViewerFlag('notam_detail', true),
@@ -14263,6 +14263,7 @@
       if (weatherOverlayAltitudeSelect) {
         weatherOverlayAltitudeSelect.disabled = false;
       }
+      weatherButton.disabled = false;
 
       WEATHER_LAYER_DEFS.forEach((item) => {
         const allowed = isWeatherFeatureAllowed(item.key);

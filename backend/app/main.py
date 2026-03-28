@@ -3112,6 +3112,7 @@ def _viewer_billing_payload(billing_status: dict[str, Any]) -> dict[str, Any]:
             "force_style_customize": is_pro_like,
             "measure_style_customize": is_pro_like,
             "collapse_toolbar": not is_free,
+            "weather_overlay": True,
             "weather_metar_taf": bool(features.get("weather_metar_taf")),
             "weather_satellite": bool(features.get("weather_satellite")),
             "notam_detail": bool(features.get("notam_detail")),
