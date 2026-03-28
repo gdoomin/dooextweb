@@ -3239,6 +3239,7 @@
       <label class="weather-overlay-altitude-row" for="weatherOverlayAltitudeSelect">
         <span>고도</span>
         <select id="weatherOverlayAltitudeSelect" class="weather-overlay-altitude-select" aria-label="기상 고도 선택">
+          <option value="500">500피트</option>
           <option value="2500">2500피트</option>
           <option value="5000">5000피트</option>
           <option value="10000" selected>1만피트</option>
@@ -3813,12 +3814,13 @@
     const WEATHER_AIR_QUALITY_API_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
     const WEATHER_OVERLAY_DAY_LABELS = ['오늘', '내일', '모레'];
     const WEATHER_OVERLAY_ALTITUDE_PRESETS = [
+      { feet: 500, levelKey: 'surface', label: '500피트' },
       { feet: 2500, levelKey: '925hPa', label: '2500피트' },
       { feet: 5000, levelKey: '850hPa', label: '5000피트' },
       { feet: 10000, levelKey: '700hPa', label: '1만피트' },
       { feet: 13000, levelKey: '600hPa', label: '1만3천피트' },
     ];
-    const WEATHER_OVERLAY_LEVEL_KEYS = ['925hPa', '850hPa', '700hPa', '600hPa'];
+    const WEATHER_OVERLAY_LEVEL_KEYS = ['surface', '925hPa', '850hPa', '700hPa', '600hPa'];
     const WEATHER_OVERLAY_MAX_REGION_CARDS = 6;
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -7487,6 +7489,27 @@
       if (!levelKey) {
         return null;
       }
+      if (levelKey === 'surface') {
+        const windKt = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'wind_speed_10m', index));
+        const windDirDeg = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'wind_direction_10m', index));
+        const cloudCover = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'cloud_cover_low', index));
+        const temperatureC = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'temperature_2m', index));
+        const relativeHumidity = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'relative_humidity_2m', index));
+        const hasAnyData = [windKt, windDirDeg, cloudCover, temperatureC, relativeHumidity]
+          .some((item) => Number.isFinite(item));
+        if (!hasAnyData) {
+          return null;
+        }
+        return {
+          levelKey,
+          windKt,
+          windDirDeg,
+          cloudCover,
+          temperatureC,
+          relativeHumidity,
+          geopotentialHeightM: weatherFeetToMeters(500),
+        };
+      }
       const windKt = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, `wind_speed_${levelKey}`, index));
       const windDirDeg = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, `wind_direction_${levelKey}`, index));
       const cloudCover = parseWeatherNumber(getOpenMeteoHourlyValue(hourly, `cloud_cover_${levelKey}`, index));
@@ -8515,6 +8538,8 @@
         longitude: center.lng.toFixed(4),
         hourly: [
           'wind_gusts_10m',
+          'wind_speed_10m',
+          'wind_direction_10m',
           'visibility',
           'weather_code',
           'temperature_2m',
@@ -8547,7 +8572,7 @@
           'geopotential_height_600hPa',
         ].join(','),
         models: 'ecmwf_ifs025',
-        current: 'wind_gusts_10m,weather_code,is_day,visibility,temperature_2m,relative_humidity_2m,dew_point_2m,cloud_cover_low',
+        current: 'wind_gusts_10m,wind_speed_10m,wind_direction_10m,weather_code,is_day,visibility,temperature_2m,relative_humidity_2m,dew_point_2m,cloud_cover_low',
         timezone: 'Asia/Tokyo',
         forecast_days: '3',
         wind_speed_unit: 'kn',
