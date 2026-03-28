@@ -1668,17 +1668,20 @@
       color: #ffb4ab;
     }
     .weather-overlay-card {
-      min-width: 184px;
-      max-width: 244px;
-      padding: 9px 12px;
-      border-radius: 12px;
-      border: 1px solid rgba(205, 228, 255, 0.34);
-      background: rgba(4, 11, 18, 0.92);
+      min-width: 204px;
+      max-width: 276px;
+      padding: 12px 14px 13px;
+      border-radius: 14px;
+      border: 1px solid rgba(205, 228, 255, 0.38);
+      background:
+        linear-gradient(180deg, rgba(9, 19, 31, 0.96) 0%, rgba(4, 11, 18, 0.94) 100%);
       color: #f4f8fd;
       font-size: 12px;
-      line-height: 1.42;
-      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42);
-      backdrop-filter: blur(2px);
+      line-height: 1.46;
+      box-shadow:
+        0 16px 32px rgba(0, 0, 0, 0.44),
+        0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+      backdrop-filter: blur(4px);
     }
     .weather-overlay-marker-scale {
       --weather-marker-scale: 1;
@@ -1691,8 +1694,8 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      margin-bottom: 6px;
-      padding: 3px 8px;
+      margin-bottom: 8px;
+      padding: 4px 9px;
       border-radius: 999px;
       font-size: 13px;
       font-weight: 800;
@@ -1716,7 +1719,7 @@
       align-items: center;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
       font-weight: 700;
     }
     .weather-overlay-card__arrow {
@@ -1736,21 +1739,24 @@
     }
     .weather-overlay-card__row {
       color: #d8e6f5;
-      font-size: 12px;
-      line-height: 1.42;
+      font-size: 12.5px;
+      line-height: 1.48;
       white-space: normal;
       word-break: keep-all;
     }
     .weather-overlay-card__reason {
       color: #ffc107;
       font-weight: 800;
-      line-height: 1.38;
+      line-height: 1.42;
       white-space: normal;
       overflow: hidden;
       display: -webkit-box;
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       text-shadow: 0 0 6px rgba(255, 193, 7, 0.16);
+    }
+    .weather-overlay-card__row + .weather-overlay-card__row {
+      margin-top: 2px;
     }
     .weather-overlay-wind-grid {
       display: inline-flex;
@@ -3907,7 +3913,7 @@
         pm10: 100,
       }),
     });
-    const WEATHER_OVERLAY_MAX_REGION_CARDS = 1;
+    const WEATHER_OVERLAY_MAX_REGION_CARDS = 2;
     const WEATHER_OVERLAY_FETCH_CONCURRENCY = 1;
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
@@ -7653,14 +7659,103 @@
         fallbackLineCount,
         Array.isArray(candidates) ? candidates.length : 0,
       );
-      return [{
-        id: 'region-1',
-        index: 0,
-        label: '구역 1',
-        lineCount: visibleFeatureCount,
-        center: L.latLng(center.lat, center.lng),
-        bounds: [[south, west], [north, east]],
-      }];
+      const requestedCards = Math.max(1, Math.min(2, Math.round(parseWeatherNumber(maxCards) || 1)));
+      if (requestedCards <= 1) {
+        return [{
+          id: 'region-1',
+          index: 0,
+          label: '구역 1',
+          lineCount: visibleFeatureCount,
+          center: L.latLng(center.lat, center.lng),
+          bounds: [[south, west], [north, east]],
+        }];
+      }
+      const latSpan = Math.max(0, north - south);
+      const lngSpan = Math.max(0, east - west);
+      if (latSpan < 0.0005 && lngSpan < 0.0005) {
+        return [{
+          id: 'region-1',
+          index: 0,
+          label: '구역 1',
+          lineCount: visibleFeatureCount,
+          center: L.latLng(center.lat, center.lng),
+          bounds: [[south, west], [north, east]],
+        }];
+      }
+      const splitHorizontally = lngSpan >= latSpan;
+      const splitValue = splitHorizontally ? (west + east) / 2 : (south + north) / 2;
+      const regions = splitHorizontally
+        ? [
+          {
+            id: 'region-1',
+            index: 0,
+            label: '구역 1',
+            bounds: [[south, west], [north, splitValue]],
+            center: L.latLng(center.lat, (west + splitValue) / 2),
+          },
+          {
+            id: 'region-2',
+            index: 1,
+            label: '구역 2',
+            bounds: [[south, splitValue], [north, east]],
+            center: L.latLng(center.lat, (splitValue + east) / 2),
+          },
+        ]
+        : [
+          {
+            id: 'region-1',
+            index: 0,
+            label: '구역 1',
+            bounds: [[south, west], [splitValue, east]],
+            center: L.latLng((south + splitValue) / 2, center.lng),
+          },
+          {
+            id: 'region-2',
+            index: 1,
+            label: '구역 2',
+            bounds: [[splitValue, west], [north, east]],
+            center: L.latLng((splitValue + north) / 2, center.lng),
+          },
+        ];
+      if (Array.isArray(candidates) && candidates.length) {
+        const regionCounts = regions.map(() => 0);
+        candidates.forEach((candidate) => {
+          const lat = parseWeatherNumber(candidate.lat);
+          const lng = parseWeatherNumber(candidate.lng);
+          if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+            return;
+          }
+          const regionIndex = splitHorizontally
+            ? (lng <= splitValue ? 0 : 1)
+            : (lat <= splitValue ? 0 : 1);
+          regionCounts[regionIndex] += 1;
+        });
+        regions.forEach((region, index) => {
+          region.lineCount = regionCounts[index];
+        });
+      } else if (fallbackLineCount > 0) {
+        const firstHalfCount = Math.ceil(fallbackLineCount / 2);
+        regions[0].lineCount = firstHalfCount;
+        regions[1].lineCount = Math.max(0, fallbackLineCount - firstHalfCount);
+      } else {
+        regions.forEach((region) => {
+          region.lineCount = visibleFeatureCount;
+        });
+      }
+      const nonEmptyRegions = regions.filter((region) => {
+        if (visibleFeatureCount <= 1) {
+          return region.index === 0;
+        }
+        return Number.isFinite(parseWeatherNumber(region.lineCount)) ? parseWeatherNumber(region.lineCount) > 0 : true;
+      });
+      return (nonEmptyRegions.length ? nonEmptyRegions : regions.slice(0, 1)).map((region) => ({
+        id: region.id,
+        index: region.index,
+        label: region.label,
+        lineCount: Number.isFinite(parseWeatherNumber(region.lineCount)) ? Math.max(0, Math.round(parseWeatherNumber(region.lineCount))) : visibleFeatureCount,
+        center: region.center,
+        bounds: region.bounds,
+      }));
     }
 
     function buildWeatherOverlayFallbackRegion() {
@@ -8795,8 +8890,8 @@
           icon: L.divIcon({
             className: '',
             html: buildWeatherOverlayMarkerHtml(snapshot),
-            iconSize: [214, 136],
-            iconAnchor: [107, 68],
+            iconSize: [248, 170],
+            iconAnchor: [124, 85],
           }),
         });
         const current = snapshot.current || {};
