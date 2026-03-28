@@ -7352,8 +7352,84 @@
       return `${bounds.getSouth().toFixed(4)},${bounds.getWest().toFixed(4)},${bounds.getNorth().toFixed(4)},${bounds.getEast().toFixed(4)}`;
     }
 
+    function pushWeatherOverlayCandidate(candidates, seenKeys, candidate) {
+      if (!Array.isArray(candidates) || !candidate || typeof candidate !== 'object') {
+        return;
+      }
+      const lat = parseWeatherNumber(candidate.lat);
+      const lng = parseWeatherNumber(candidate.lng);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return;
+      }
+      const start = Array.isArray(candidate.start) && candidate.start.length >= 2
+        ? [parseWeatherNumber(candidate.start[0]), parseWeatherNumber(candidate.start[1])]
+        : [lat, lng];
+      const end = Array.isArray(candidate.end) && candidate.end.length >= 2
+        ? [parseWeatherNumber(candidate.end[0]), parseWeatherNumber(candidate.end[1])]
+        : [lat, lng];
+      if (![start[0], start[1], end[0], end[1]].every((value) => Number.isFinite(value))) {
+        return;
+      }
+      const key = `${lat.toFixed(5)}:${lng.toFixed(5)}:${start[0].toFixed(5)}:${start[1].toFixed(5)}:${end[0].toFixed(5)}:${end[1].toFixed(5)}`;
+      if (seenKeys && seenKeys.has(key)) {
+        return;
+      }
+      if (seenKeys) {
+        seenKeys.add(key);
+      }
+      candidates.push({
+        lat,
+        lng,
+        start,
+        end,
+      });
+    }
+
+    function pushWeatherOverlayCandidateFromBounds(candidates, seenKeys, latLngBounds) {
+      if (!latLngBounds || typeof latLngBounds.isValid !== 'function' || !latLngBounds.isValid()) {
+        return;
+      }
+      const southWest = latLngBounds.getSouthWest();
+      const northEast = latLngBounds.getNorthEast();
+      const center = latLngBounds.getCenter();
+      pushWeatherOverlayCandidate(candidates, seenKeys, {
+        lat: center.lat,
+        lng: center.lng,
+        start: [southWest.lat, southWest.lng],
+        end: [northEast.lat, northEast.lng],
+      });
+    }
+
+    function collectWeatherOverlayCandidatesFromLayerGroup(candidates, seenKeys, group) {
+      if (!group || typeof group.eachLayer !== 'function') {
+        return;
+      }
+      group.eachLayer((layer) => {
+        if (!layer) {
+          return;
+        }
+        if (typeof layer.getBounds === 'function') {
+          const layerBounds = layer.getBounds();
+          pushWeatherOverlayCandidateFromBounds(candidates, seenKeys, layerBounds);
+          return;
+        }
+        if (typeof layer.getLatLng === 'function') {
+          const latlng = layer.getLatLng();
+          if (latlng && Number.isFinite(parseWeatherNumber(latlng.lat)) && Number.isFinite(parseWeatherNumber(latlng.lng))) {
+            pushWeatherOverlayCandidate(candidates, seenKeys, {
+              lat: latlng.lat,
+              lng: latlng.lng,
+              start: [latlng.lat, latlng.lng],
+              end: [latlng.lat, latlng.lng],
+            });
+          }
+        }
+      });
+    }
+
     function buildWeatherOverlayRegionCandidates() {
       const candidates = [];
+      const seenKeys = new Set();
       if (Array.isArray(resultLineEntries) && resultLineEntries.length) {
         resultLineEntries.forEach((entry) => {
           const row = entry && entry.row && typeof entry.row === 'object' ? entry.row : null;
@@ -7367,7 +7443,7 @@
           if (![sLat, sLng, eLat, eLng].every((value) => Number.isFinite(value))) {
             return;
           }
-          candidates.push({
+          pushWeatherOverlayCandidate(candidates, seenKeys, {
             lat: (sLat + eLat) / 2,
             lng: (sLng + eLng) / 2,
             start: [sLat, sLng],
@@ -7375,6 +7451,16 @@
           });
         });
       }
+      if (candidates.length > 0) {
+        return candidates;
+      }
+      [
+        resultLineGroup,
+        resultPolygonGroup,
+        sourceGeoJsonGroup,
+        kmzGroundOverlayGroup,
+        kmzPointGroup,
+      ].forEach((group) => collectWeatherOverlayCandidatesFromLayerGroup(candidates, seenKeys, group));
       if (candidates.length > 0) {
         return candidates;
       }
@@ -7386,6 +7472,17 @@
           start: [center.lat, center.lng],
           end: [center.lat, center.lng],
         }];
+      }
+      if (map && typeof map.getCenter === 'function') {
+        const center = map.getCenter();
+        if (center && Number.isFinite(parseWeatherNumber(center.lat)) && Number.isFinite(parseWeatherNumber(center.lng))) {
+          return [{
+            lat: center.lat,
+            lng: center.lng,
+            start: [center.lat, center.lng],
+            end: [center.lat, center.lng],
+          }];
+        }
       }
       return [];
     }
@@ -7505,12 +7602,17 @@
     }
 
     function getWeatherOverlayWorkRegions(maxCards = WEATHER_OVERLAY_MAX_REGION_CARDS) {
-      if (!bounds || typeof bounds.isValid !== 'function' || !bounds.isValid()) {
-        return [];
-      }
       const candidates = buildWeatherOverlayRegionCandidates();
       if (!candidates.length) {
-        const center = bounds.getCenter();
+        let center = null;
+        if (bounds && typeof bounds.isValid === 'function' && bounds.isValid()) {
+          center = bounds.getCenter();
+        } else if (map && typeof map.getCenter === 'function') {
+          center = map.getCenter();
+        }
+        if (!center || !Number.isFinite(parseWeatherNumber(center.lat)) || !Number.isFinite(parseWeatherNumber(center.lng))) {
+          return [];
+        }
         return [{
           id: 'region-1',
           index: 0,
