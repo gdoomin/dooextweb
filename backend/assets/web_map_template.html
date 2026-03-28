@@ -4541,9 +4541,11 @@
           planInfoButton.removeAttribute('aria-hidden');
         }
       }
-      if (!weatherControls.size) {
+      if (!weatherControls.size && !viewerAccess.weatherOverlay) {
         weatherButton.disabled = true;
         weatherPanel.classList.remove('is-visible');
+      } else if (viewerAccess.weatherOverlay) {
+        weatherButton.disabled = false;
       }
       refreshDoneSettings(false);
       refreshMeasureSettings(false);
@@ -14217,6 +14219,8 @@
     syncWeatherOverlayControlUi();
 
     function buildWeatherRows() {
+      weatherRows.innerHTML = '';
+      weatherControls.clear();
       const hasAnyAllowed = !!viewerAccess.weatherOverlay || WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
       if (!hasAnyAllowed) {
         weatherButton.disabled = true;
@@ -15690,7 +15694,7 @@
     }
 
     function setWeatherPanelVisible(visible) {
-      if (!weatherControls.size) {
+      if (!weatherControls.size && !viewerAccess.weatherOverlay) {
         if (visible) {
           notifyPlanRestriction(viewerRestrictionMessage.weather);
         }
