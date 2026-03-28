@@ -32,12 +32,15 @@ if str(ROOT_DIR) not in sys.path:
 
 from shared.python_core import POLYGON_ONLY_MESSAGE, build_web_map_html, build_web_map_payload, save_excel
 from .weather import (
+    OPEN_METEO_AIR_QUALITY_URL,
+    OPEN_METEO_FORECAST_URL,
     WeatherProviderError,
     build_advisory_overlay,
     build_aviation_overlay,
     build_weather_config,
     build_weather_grid,
     parse_bbox_param,
+    proxy_open_meteo_payload,
 )
 
 
@@ -4771,6 +4774,26 @@ def get_weather_grid(request: Request):
         raise HTTPException(status_code=400, detail=str(error)) from error
     except WeatherProviderError as error:
         raise HTTPException(status_code=502, detail=f"weather grid unavailable: {error}") from error
+
+
+@app.get("/api/weather/open-meteo/forecast")
+def get_weather_open_meteo_forecast(request: Request):
+    try:
+        return JSONResponse(proxy_open_meteo_payload(OPEN_METEO_FORECAST_URL, dict(request.query_params)))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"open-meteo forecast unavailable: {error}") from error
+
+
+@app.get("/api/weather/open-meteo/air-quality")
+def get_weather_open_meteo_air_quality(request: Request):
+    try:
+        return JSONResponse(proxy_open_meteo_payload(OPEN_METEO_AIR_QUALITY_URL, dict(request.query_params)))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"open-meteo air quality unavailable: {error}") from error
 
 
 @app.get("/api/weather/aviation")

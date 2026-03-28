@@ -9,7 +9,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
 
@@ -30,6 +30,19 @@ GK2A_CHANNEL_MAP = {
 }
 _CACHE: dict[str, tuple[float, Any]] = {}
 _USER_AGENT = "dooextweb-weather/0.1"
+OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
+OPEN_METEO_PROXY_ALLOWED_PARAMS = frozenset({
+    "latitude",
+    "longitude",
+    "hourly",
+    "current",
+    "models",
+    "timezone",
+    "forecast_days",
+    "wind_speed_unit",
+    "domains",
+})
 _GK2A_CACHE_DIR: Path | None = None
 _GK2A_FETCH_LOCK = threading.Lock()
 _GK2A_FAILURE_CACHE: dict[str, float] = {}
@@ -843,6 +856,12 @@ def _get_json(cache_key: str, url: str, ttl_seconds: int) -> Any:
     if cached and cached[0] > now:
         return cached[1]
 
+    payload = _fetch_json(url)
+    _CACHE[cache_key] = (now + ttl_seconds, payload)
+    return payload
+
+
+def _fetch_json(url: str) -> Any:
     request = Request(
         url,
         headers={
@@ -852,12 +871,38 @@ def _get_json(cache_key: str, url: str, ttl_seconds: int) -> Any:
     )
     try:
         with urlopen(request, timeout=18) as response:
-            payload = json.load(response)
+            return json.load(response)
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
         raise WeatherProviderError(str(error)) from error
 
-    _CACHE[cache_key] = (now + ttl_seconds, payload)
-    return payload
+
+def proxy_open_meteo_payload(base_url: str, query_params: dict[str, Any]) -> dict[str, Any]:
+    params: dict[str, str] = {}
+    force_refresh = False
+    for key, value in (query_params or {}).items():
+        normalized_key = str(key or "").strip()
+        if not normalized_key:
+            continue
+        if normalized_key == "_ts":
+            force_refresh = True
+            continue
+        if normalized_key not in OPEN_METEO_PROXY_ALLOWED_PARAMS:
+            continue
+        normalized_value = str(value or "").strip()
+        if normalized_value:
+            params[normalized_key] = normalized_value
+
+    latitude = _as_float(params.get("latitude"))
+    longitude = _as_float(params.get("longitude"))
+    if latitude is None or longitude is None:
+        raise ValueError("latitude and longitude are required")
+
+    ordered_query = urlencode(sorted(params.items()))
+    url = f"{base_url}?{ordered_query}"
+    if force_refresh:
+        return _fetch_json(url)
+    cache_key = f"weather:proxy:{base_url}:{ordered_query}"
+    return _get_json(cache_key, url, ttl_seconds=180)
 
 
 def _feature_list(data: Any) -> list[dict[str, Any]]:
