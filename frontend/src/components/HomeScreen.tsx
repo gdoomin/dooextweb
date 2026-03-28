@@ -2212,9 +2212,6 @@ export function HomeScreen({
             </div>
 
             <div className="doo-sidebar-footer">
-              <a href="/jobs" className="doo-jobs-link-button">
-                항공 채용 포털 열기
-              </a>
               <button type="button" className="doo-plan-guide-button" onClick={() => setShowPlanGuide(true)}>
                 요금제/기능 안내
               </button>

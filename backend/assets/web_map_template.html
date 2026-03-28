@@ -3960,6 +3960,8 @@
     map.getPane('kmzPointPane').style.zIndex = '640';
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
+    map.getPane('weatherSatellitePane').style.mixBlendMode = 'screen';
+    map.getPane('weatherSatellitePane').style.filter = 'contrast(1.08) saturate(1.16) brightness(1.04)';
     map.createPane('koreaOutlinePane');
     map.getPane('koreaOutlinePane').style.zIndex = '245';
     map.createPane('weatherOverlayPane');
@@ -3981,6 +3983,16 @@
       crossOrigin: true,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(map);
+    const satelliteBaseTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+      maxZoom: 19,
+      minZoom: 3,
+      keepBuffer: 16,
+      updateWhenIdle: false,
+      updateWhenZooming: true,
+      detectRetina: false,
+      crossOrigin: true,
+      attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community'
+    });
 
     const resultLineGroup = L.layerGroup().addTo(map);
     const resultPolygonGroup = L.layerGroup().addTo(map);
@@ -11331,7 +11343,7 @@
         updated_at: latest.date.toISOString(),
         channel,
         attribution: 'JMA Himawari',
-        opacity: 0.78,
+        opacity: isDay ? 0.56 : 0.64,
         max_zoom: 19,
         max_native_zoom: 5,
         refresh_seconds: 600,
@@ -13285,9 +13297,19 @@
       }
     }
 
+    function isSatelliteWeatherLayerActive() {
+      const satelliteLayer = weatherTiles.satellite;
+      return !!(
+        isWeatherEnabled('satellite') &&
+        satelliteLayer &&
+        map.hasLayer(satelliteLayer)
+      );
+    }
+
     function applyBaseMapTone() {
+      const satelliteActive = isSatelliteWeatherLayerActive();
       tilePane.style.filter = grayToggle.checked
-        ? 'grayscale(1) saturate(0.05) contrast(1.08) brightness(1.02)'
+        ? (satelliteActive ? 'none' : 'grayscale(1) saturate(0.05) contrast(1.08) brightness(1.02)')
         : 'none';
     }
 
@@ -15310,21 +15332,24 @@
     }
 
     function syncBaseMapForSatelliteMode() {
-      const satelliteLayer = weatherTiles.satellite;
-      const satelliteActive = !!(
-        isWeatherEnabled('satellite') &&
-        satelliteLayer &&
-        map.hasLayer(satelliteLayer)
-      );
+      const satelliteActive = isSatelliteWeatherLayerActive();
       if (satelliteActive) {
         if (map.hasLayer(baseTileLayer)) {
           map.removeLayer(baseTileLayer);
         }
+        if (!map.hasLayer(satelliteBaseTileLayer)) {
+          satelliteBaseTileLayer.addTo(map);
+        }
+        applyBaseMapTone();
         return;
+      }
+      if (map.hasLayer(satelliteBaseTileLayer)) {
+        map.removeLayer(satelliteBaseTileLayer);
       }
       if (!map.hasLayer(baseTileLayer)) {
         baseTileLayer.addTo(map);
       }
+      applyBaseMapTone();
     }
 
     async function syncTileWeatherLayer(key, configKey, paneName) {

@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/convert";
+﻿import { API_BASE_URL } from "@/lib/convert";
 
 export type PilotJobListItem = {
   id: string;
@@ -154,14 +154,7 @@ function normalizeFilterOption(item: unknown): JobsFilterOption | null {
   return { value, label, count };
 }
 
-export async function fetchPilotJobsPanel(limit = 12): Promise<PilotRecruitmentResponse> {
-  const response = await fetch(`${API_BASE_URL}/api/jobs/pilot?limit=${encodeURIComponent(String(limit))}`, {
-    cache: "no-store",
-  });
-  const { body, rawText } = await parseJsonResponse(response);
-  if (!response.ok) {
-    throw new Error(getErrorMessage(body, rawText, "채용정보를 불러오지 못했습니다."));
-  }
+function normalizePilotPanelPayload(body: unknown): PilotRecruitmentResponse {
   const payload = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   return {
     updated_at: typeof payload.updated_at === "string" ? payload.updated_at : "",
@@ -177,6 +170,33 @@ export async function fetchPilotJobsPanel(limit = 12): Promise<PilotRecruitmentR
       ? payload.items.map((item) => normalizeJobItem(item)).filter((item): item is PilotJobListItem => Boolean(item))
       : [],
   };
+}
+
+async function fetchPilotPanelFromUrl(url: string): Promise<PilotRecruitmentResponse> {
+  const response = await fetch(url, { cache: "no-store" });
+  const { body, rawText } = await parseJsonResponse(response);
+  if (!response.ok) {
+    throw new Error(getErrorMessage(body, rawText, "채용정보를 불러오지 못했습니다."));
+  }
+  return normalizePilotPanelPayload(body);
+}
+
+export async function fetchPilotJobsPanel(limit = 12): Promise<PilotRecruitmentResponse> {
+  const safeLimit = Math.max(Number(limit) || 12, 1);
+  const candidates = [
+    `${API_BASE_URL}/api/jobs/pilot?limit=${encodeURIComponent(String(safeLimit))}`,
+    `${API_BASE_URL}/api/jobs?limit=${encodeURIComponent(String(safeLimit))}&page=1`,
+    "/data/pilot-jobs.json",
+  ];
+  let lastError: Error | null = null;
+  for (const url of candidates) {
+    try {
+      return await fetchPilotPanelFromUrl(url);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error || ""));
+    }
+  }
+  throw (lastError || new Error("채용정보를 불러오지 못했습니다."));
 }
 
 export async function fetchPilotJobsIndex(params: JobsQueryParams = {}): Promise<PilotJobsListResponse> {
@@ -201,7 +221,7 @@ export async function fetchPilotJobsIndex(params: JobsQueryParams = {}): Promise
   });
   const { body, rawText } = await parseJsonResponse(response);
   if (!response.ok) {
-    throw new Error(getErrorMessage(body, rawText, "채용 목록을 불러오지 못했습니다."));
+    throw new Error(getErrorMessage(body, rawText, "梨꾩슜 紐⑸줉??遺덈윭?ㅼ? 紐삵뻽?듬땲??"));
   }
   const payload = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const filters = payload.filters && typeof payload.filters === "object" ? (payload.filters as Record<string, unknown>) : {};
@@ -240,3 +260,4 @@ export async function fetchPilotJobsIndex(params: JobsQueryParams = {}): Promise
       : [],
   };
 }
+
