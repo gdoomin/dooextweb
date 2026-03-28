@@ -1,5 +1,6 @@
 import base64
 import binascii
+import gzip
 import html
 import json
 import os
@@ -31,6 +32,17 @@ if str(ROOT_DIR) not in sys.path:
     sys.path.insert(0, str(ROOT_DIR))
 
 from shared.python_core import POLYGON_ONLY_MESSAGE, build_web_map_html, build_web_map_payload, save_excel
+from .pilot_jobs import (
+    build_error_cache_payload as build_pilot_jobs_error_cache_payload,
+    build_fresh_cache_payload as build_pilot_jobs_fresh_cache_payload,
+    build_jobs_list_response as build_pilot_jobs_list_response,
+    build_panel_payload as build_pilot_jobs_panel_payload,
+    build_stale_cache_payload as build_pilot_jobs_stale_cache_payload,
+    fetch_pilot_jobs_from_source as fetch_pilot_jobs_from_airportal,
+    load_cache_payload as load_pilot_jobs_cache_payload,
+    sync_pilot_jobs_to_supabase as sync_pilot_jobs_to_supabase_store,
+    write_cache_payload as write_pilot_jobs_cache_payload,
+)
 from .weather import (
     OPEN_METEO_AIR_QUALITY_URL,
     OPEN_METEO_FORECAST_URL,
@@ -109,7 +121,7 @@ AIRPORTAL_WORK_LIST_API_URL = "https://www.airportal.go.kr/work/getAirworkJobLis
 AIRPORTAL_WORK_DETAIL_URL = "https://www.airportal.go.kr/work/employment/workDetail.do"
 AIRPORTAL_TIMEOUT_SECONDS = 20
 PILOT_JOBS_CACHE_TTL_SECONDS = 3600
-PILOT_JOBS_CACHE_PATH = RUNTIME_DIR / "pilot_jobs_cache.json"
+PILOT_JOBS_CACHE_PATH = ROOT_DIR / "frontend" / "public" / "data" / "pilot-jobs.json"
 PILOT_JOBS_SOURCE_LABEL = "Airportal 항공일자리"
 PILOT_JOB_FETCH_TERMS = [
     "운항승무원",
@@ -228,6 +240,8 @@ PAYAPP_PARTIAL_CANCEL_STATES = {"70", "71"}
 PAYAPP_PENDING_STATES = {"1", "10"}
 MONTH_KEY_FORMAT = "%Y-%m"
 DEFAULT_BILLING_CUTOVER_AT = datetime(2026, 3, 19, 0, 0, tzinfo=timezone(timedelta(hours=9)))
+PRO_HISTORY_GRACE_DAYS = 15
+LEGACY_HISTORY_RETENTION_DAYS = 90
 PLAN_POLICIES: dict[str, dict[str, Any]] = {
     DEFAULT_PLAN_CODE: {
         "monthly_kml_limit": 5,
@@ -277,7 +291,7 @@ PLAN_POLICIES: dict[str, dict[str, Any]] = {
     LEGACY_PLAN_CODE: {
         "monthly_kml_limit": 0,
         "file_size_limit_mb": 200,
-        "history_days": 36500,
+        "history_days": LEGACY_HISTORY_RETENTION_DAYS,
         "history_limit": 5000,
         "features": {
             "history": True,
@@ -809,6 +823,14 @@ def _job_payload_storage_path(job: dict) -> str:
     if not job_id:
         fallback_seed = str(job.get("created_at") or _utc_now_iso())
         job_id = hashlib.sha256(fallback_seed.encode("utf-8")).hexdigest()[:24]
+    return f"jobs/by-id/{job_id}.json.gz"
+
+
+def _job_payload_legacy_storage_path(job: dict) -> str:
+    job_id = _normalize_user_identity(str(job.get("job_id") or ""))
+    if not job_id:
+        fallback_seed = str(job.get("created_at") or _utc_now_iso())
+        job_id = hashlib.sha256(fallback_seed.encode("utf-8")).hexdigest()[:24]
     return f"jobs/by-id/{job_id}.json"
 
 
@@ -884,14 +906,15 @@ def _job_payload_supabase_upload(
 
     path = quote(object_path.lstrip("/"), safe="-_./")
     upload_url = f"{supabase_url}/storage/v1/object/{quote(bucket_name, safe='-_.')}/{path}"
-    body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    json_body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+    body = gzip.compress(json_body, compresslevel=6) if object_path.endswith(".gz") else json_body
     request = UrlRequest(
         url=upload_url,
         method="POST",
         data=body,
         headers={
             **headers,
-            "Content-Type": "application/json; charset=utf-8",
+            "Content-Type": "application/gzip" if object_path.endswith(".gz") else "application/json; charset=utf-8",
             "x-upsert": "true",
         },
     )
@@ -1021,6 +1044,8 @@ def _job_payload_supabase_download(
     except Exception:
         return None
     try:
+        if raw and (object_path.endswith(".gz") or raw[:2] == b"\x1f\x8b"):
+            raw = gzip.decompress(raw)
         payload = json.loads(raw.decode("utf-8")) if raw else {}
     except Exception:
         return None
@@ -1041,6 +1066,11 @@ def _load_job_from_supabase(job_id: str, access_token: str = "") -> dict | None:
         object_path = _job_payload_storage_path({"job_id": job_id})
 
     payload = _job_payload_supabase_download(config, headers, bucket_name, object_path)
+    if payload is None and object_path.endswith(".json.gz"):
+        legacy_path = _job_payload_legacy_storage_path({"job_id": job_id})
+        payload = _job_payload_supabase_download(config, headers, bucket_name, legacy_path)
+        if payload:
+            object_path = legacy_path
     if not isinstance(payload, dict) or not payload:
         return None
 
@@ -1794,24 +1824,45 @@ def _fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
 
 
 def _get_pilot_jobs(force_refresh: bool = False) -> dict[str, Any]:
-    now = time.time()
-    with _PILOT_JOBS_CACHE_LOCK:
-        cached = _load_pilot_jobs_cache()
-        cache_age = now - float(cached.get("fetched_at") or 0)
-        if not force_refresh and cached["items"] and cache_age < PILOT_JOBS_CACHE_TTL_SECONDS:
-            return cached
+    return _get_pilot_jobs_panel(force_refresh=force_refresh)
+
+
+def _refresh_pilot_jobs_snapshot(limit: int = 12) -> dict[str, Any]:
+    attempted_at = _utc_now_iso()
+    existing_payload = load_pilot_jobs_cache_payload(PILOT_JOBS_CACHE_PATH)
 
     try:
-        items = _fetch_pilot_jobs_from_source()
+        items = fetch_pilot_jobs_from_airportal()
+        fresh_payload = build_pilot_jobs_fresh_cache_payload(items, attempted_at)
+        write_pilot_jobs_cache_payload(PILOT_JOBS_CACHE_PATH, fresh_payload)
+        try:
+            sync_pilot_jobs_to_supabase_store(items, attempted_at)
+        except Exception as sync_error:
+            print(f"[warn] pilot jobs Supabase sync failed: {sync_error}", file=sys.stderr)
+        return build_pilot_jobs_panel_payload(PILOT_JOBS_CACHE_PATH, limit=limit)
     except Exception as error:
-        with _PILOT_JOBS_CACHE_LOCK:
-            cached = _load_pilot_jobs_cache()
-        if cached["items"]:
-            return cached
+        if existing_payload.get("items"):
+            stale_payload = build_pilot_jobs_stale_cache_payload(
+                existing_payload,
+                attempted_at,
+                "Airportal 연결 문제로 이전 캐시를 표시 중입니다.",
+            )
+            write_pilot_jobs_cache_payload(PILOT_JOBS_CACHE_PATH, stale_payload)
+            return build_pilot_jobs_panel_payload(PILOT_JOBS_CACHE_PATH, limit=limit)
+
+        error_payload = build_pilot_jobs_error_cache_payload(attempted_at, "채용정보를 가져오지 못했습니다.")
+        write_pilot_jobs_cache_payload(PILOT_JOBS_CACHE_PATH, error_payload)
         raise RuntimeError(f"채용정보를 불러오지 못했습니다: {error}") from error
 
-    with _PILOT_JOBS_CACHE_LOCK:
-        return _save_pilot_jobs_cache(items)
+
+def _get_pilot_jobs_panel(force_refresh: bool = False, limit: int = 12) -> dict[str, Any]:
+    if force_refresh:
+        return _refresh_pilot_jobs_snapshot(limit=limit)
+
+    payload = build_pilot_jobs_panel_payload(PILOT_JOBS_CACHE_PATH, limit=limit)
+    if payload.get("items"):
+        return payload
+    return _refresh_pilot_jobs_snapshot(limit=limit)
 
 
 def _default_promo_code_store() -> dict[str, Any]:
@@ -2570,6 +2621,28 @@ def _refresh_record_promo_state(record: dict[str, Any]) -> bool:
     return False
 
 
+def _clear_history_grace_fields(record: dict[str, Any]) -> None:
+    record["history_grace_plan_code"] = ""
+    record["history_grace_started_at"] = ""
+
+
+def _history_grace_snapshot_from_record(record: dict[str, Any]) -> dict[str, Any] | None:
+    plan_code = _normalize_paid_plan_code(str(record.get("history_grace_plan_code") or ""))
+    started_at_raw = str(record.get("history_grace_started_at") or "").strip()
+    started_at = _parse_iso_datetime(started_at_raw)
+    if not plan_code or started_at is None:
+        return None
+    expires_at = started_at + timedelta(days=PRO_HISTORY_GRACE_DAYS)
+    now = datetime.now(timezone.utc)
+    return {
+        "plan_code": plan_code,
+        "started_at": started_at_raw,
+        "expires_at": expires_at.isoformat(),
+        "active": expires_at > now,
+        "expired": expires_at <= now,
+    }
+
+
 def _effective_plan_code(billing_record: dict) -> str:
     if bool(billing_record.get("legacy_full_access")):
         return LEGACY_PLAN_CODE
@@ -2711,6 +2784,8 @@ def _default_billing_record(user_id: str, user_email: str) -> dict[str, Any]:
         "subscription_active": False,
         "subscription_started_at": "",
         "subscription_updated_at": "",
+        "history_grace_plan_code": "",
+        "history_grace_started_at": "",
         "payapp_rebill_no": "",
         "payapp_last_mul_no": "",
         "payapp_last_pay_state": "",
@@ -2748,6 +2823,10 @@ def _save_user_billing_record(record: dict[str, Any]) -> dict[str, Any]:
         fallback="inactive",
     )
     next_record["subscription_active"] = bool(record.get("subscription_active"))
+    next_record["subscription_started_at"] = str(record.get("subscription_started_at") or "").strip()
+    next_record["subscription_updated_at"] = str(record.get("subscription_updated_at") or "").strip()
+    next_record["history_grace_plan_code"] = _normalize_paid_plan_code(str(record.get("history_grace_plan_code") or ""))
+    next_record["history_grace_started_at"] = str(record.get("history_grace_started_at") or "").strip()
     next_record["promo_code"] = _normalize_promo_code(str(record.get("promo_code") or ""))
     next_record["promo_plan_code"] = _normalize_paid_plan_code(str(record.get("promo_plan_code") or ""))
     next_record["promo_applied_at"] = str(record.get("promo_applied_at") or "").strip()
@@ -3039,6 +3118,7 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
 
     record = _ensure_billing_record(normalized_user_id, normalized_email, created_at_hint=created_at_hint)
     promo_snapshot = _promo_snapshot_from_record(record)
+    history_grace_snapshot = _history_grace_snapshot_from_record(record)
     effective_plan = _effective_plan_code(record)
     policy = _plan_policy(effective_plan)
     monthly_limit = int(policy.get("monthly_kml_limit") or 0)
@@ -3046,6 +3126,17 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
     monthly_used = _usage_month_count(normalized_user_id, month_key)
     monthly_remaining = -1 if monthly_limit <= 0 else max(monthly_limit - monthly_used, 0)
     features = dict(policy.get("features") or {})
+    history_days = int(policy.get("history_days") or 0)
+    history_limit = int(policy.get("history_limit") or 0)
+    if (
+        isinstance(history_grace_snapshot, dict)
+        and bool(history_grace_snapshot.get("active"))
+        and str(history_grace_snapshot.get("plan_code") or "") == PRO_PLAN_CODE
+    ):
+        pro_policy = _plan_policy(PRO_PLAN_CODE)
+        features["history"] = True
+        history_days = int(pro_policy.get("history_days") or history_days)
+        history_limit = int(pro_policy.get("history_limit") or history_limit)
     return {
         "billing_enabled": True,
         "user_id": normalized_user_id,
@@ -3062,13 +3153,16 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
         "promo_applied_at": str((promo_snapshot or {}).get("applied_at") or ""),
         "promo_expires_at": str((promo_snapshot or {}).get("expires_at") or ""),
         "promo_remaining_days": int((promo_snapshot or {}).get("remaining_days") or 0),
+        "history_grace_active": bool((history_grace_snapshot or {}).get("active")),
+        "history_grace_started_at": str((history_grace_snapshot or {}).get("started_at") or ""),
+        "history_grace_expires_at": str((history_grace_snapshot or {}).get("expires_at") or ""),
         "features": features,
         "monthly_kml_limit": monthly_limit,
         "monthly_kml_used": monthly_used,
         "monthly_kml_remaining": monthly_remaining,
         "file_size_limit_mb": int(policy.get("file_size_limit_mb") or 0),
-        "history_days": int(policy.get("history_days") or 0),
-        "history_limit": int(policy.get("history_limit") or 0),
+        "history_days": history_days,
+        "history_limit": history_limit,
         "payapp_rebill_no": str(record.get("payapp_rebill_no") or ""),
     }
 
@@ -3160,6 +3254,9 @@ def _transition_user_plan_from_payment(
     record = _ensure_billing_record(normalized_user_id, normalized_user_email)
     if normalized_user_email:
         record["user_email"] = normalized_user_email
+    previous_paid_plan = _normalize_paid_plan_code(str(record.get("plan_code") or ""))
+    next_paid_plan = _normalize_paid_plan_code(next_plan_code)
+    now_iso = _utc_now_iso()
 
     if next_plan_code:
         normalized_plan = _normalize_plan_code(next_plan_code, fallback=DEFAULT_PLAN_CODE)
@@ -3174,6 +3271,18 @@ def _transition_user_plan_from_payment(
         record["subscription_status"] = _normalize_subscription_status(subscription_status, fallback="inactive")
     if active is not None:
         record["subscription_active"] = bool(active)
+    if next_paid_plan and bool(active):
+        if not str(record.get("subscription_started_at") or "").strip():
+            record["subscription_started_at"] = now_iso
+        record["subscription_updated_at"] = now_iso
+        _clear_history_grace_fields(record)
+    elif active is False:
+        record["subscription_updated_at"] = now_iso
+        if previous_paid_plan == PRO_PLAN_CODE and not next_paid_plan:
+            record["history_grace_plan_code"] = PRO_PLAN_CODE
+            record["history_grace_started_at"] = now_iso
+        else:
+            _clear_history_grace_fields(record)
 
     if _normalize_paid_plan_code(next_plan_code) and bool(active):
         _clear_promo_fields(record)
@@ -3665,6 +3774,10 @@ def _load_user_history(
     billing_status: dict[str, Any] | None = None,
     access_token: str = "",
 ) -> list[dict]:
+    status = billing_status or _billing_status_for_user(user_id, user_email)
+    deleted_job_ids = _purge_expired_history_for_user(user_id, user_email, status, access_token=access_token)
+    if deleted_job_ids:
+        status = _billing_status_for_user(user_id, user_email)
     history_paths = _history_paths_for_identity(user_id, user_email)
     if not history_paths and _history_supabase_config() is None:
         return []
@@ -3696,8 +3809,606 @@ def _load_user_history(
             merged.append(item)
 
     merged.sort(key=lambda item: str(item.get("uploaded_at") or ""), reverse=True)
-    status = billing_status or _billing_status_for_user(user_id, user_email)
     return _trim_history_for_plan(merged[:USER_HISTORY_LIMIT], status)
+
+
+def _job_matches_identity(job: dict, user_id: str, user_email: str) -> bool:
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    owner_id = _normalize_user_identity(str(job.get("user_id") or ""))
+    owner_email = _normalize_user_email(str(job.get("user_email") or ""))
+    matches_id = bool(normalized_user_id) and owner_id == normalized_user_id
+    matches_email = bool(normalized_email) and bool(owner_email) and owner_email == normalized_email
+    return bool(matches_id or matches_email)
+
+
+def _job_payload_supabase_meta_rows_for_identity(
+    user_id: str,
+    user_email: str,
+    *,
+    source_hash: str = "",
+    access_token: str = "",
+) -> list[dict]:
+    config = _job_payload_supabase_config()
+    if config is None:
+        return []
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return []
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("meta_table") or "").strip()
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    normalized_source_hash = _normalize_source_hash(source_hash)
+    if not supabase_url or not table_name:
+        return []
+    if not normalized_user_id and not normalized_email:
+        return []
+
+    query_items: list[tuple[str, str]] = [
+        (
+            "select",
+            "job_id,user_id,user_email,payload_bucket,payload_path,source_hash,filename,project_name,mode,result_count,uploaded_at",
+        ),
+        ("limit", "5000"),
+    ]
+    if normalized_user_id and normalized_email:
+        encoded_user_id = quote(normalized_user_id, safe="-_.")
+        encoded_email = quote(normalized_email, safe="@-_.")
+        query_items.append(("or", f"(user_id.eq.{encoded_user_id},user_email.eq.{encoded_email})"))
+    elif normalized_user_id:
+        query_items.append(("user_id", f"eq.{quote(normalized_user_id, safe='-_.')}"))
+    else:
+        query_items.append(("user_email", f"eq.{quote(normalized_email, safe='@-_.')}"))
+    if normalized_source_hash:
+        query_items.append(("source_hash", f"eq.{quote(normalized_source_hash, safe='-_')}"))
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}",
+        method="GET",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return []
+
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else []
+    except Exception:
+        return []
+    if not isinstance(payload, list):
+        return []
+
+    rows: list[dict] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        rows.append(
+            {
+                "job_id": str(item.get("job_id") or "").strip(),
+                "user_id": _normalize_user_identity(str(item.get("user_id") or "")),
+                "user_email": _normalize_user_email(str(item.get("user_email") or "")),
+                "payload_bucket": str(item.get("payload_bucket") or "").strip(),
+                "payload_path": str(item.get("payload_path") or "").strip(),
+                "source_hash": _normalize_source_hash(str(item.get("source_hash") or "")),
+                "filename": str(item.get("filename") or "").strip(),
+                "project_name": str(item.get("project_name") or "").strip(),
+                "mode": str(item.get("mode") or "").strip(),
+                "result_count": int(item.get("result_count") or 0),
+                "created_at": str(item.get("uploaded_at") or "").strip(),
+            }
+        )
+    return rows
+
+
+def _collect_local_owned_jobs(user_id: str, user_email: str, *, source_hash: str = "") -> list[dict]:
+    normalized_source_hash = _normalize_source_hash(source_hash)
+    rows: list[dict] = []
+    for path in JOBS_DIR.glob("*.json"):
+        payload = _load_json(path, {})
+        if not isinstance(payload, dict) or not payload:
+            continue
+        if not _job_matches_identity(payload, user_id, user_email):
+            continue
+        row = dict(payload)
+        row["job_id"] = str(row.get("job_id") or path.stem).strip()
+        row["source_hash"] = _normalize_source_hash(str(row.get("source_hash") or ""))
+        if normalized_source_hash and row["source_hash"] != normalized_source_hash:
+            continue
+        rows.append(row)
+    return rows
+
+
+def _merge_job_payload_row(existing: dict, incoming: dict) -> dict:
+    if not existing:
+        return dict(incoming)
+    merged = dict(existing)
+    for key, value in incoming.items():
+        if key not in merged or merged.get(key) in ("", None, [], {}):
+            merged[key] = value
+    return merged
+
+
+def _collect_owned_jobs(user_id: str, user_email: str, *, source_hash: str = "", access_token: str = "") -> list[dict]:
+    jobs_by_id: dict[str, dict] = {}
+    for row in _collect_local_owned_jobs(user_id, user_email, source_hash=source_hash):
+        job_id = str(row.get("job_id") or "").strip()
+        if not job_id:
+            continue
+        jobs_by_id[job_id] = row
+
+    for row in _job_payload_supabase_meta_rows_for_identity(
+        user_id,
+        user_email,
+        source_hash=source_hash,
+        access_token=access_token,
+    ):
+        job_id = str(row.get("job_id") or "").strip()
+        if not job_id:
+            continue
+        jobs_by_id[job_id] = _merge_job_payload_row(jobs_by_id.get(job_id, {}), row)
+
+    return list(jobs_by_id.values())
+
+
+def _job_payload_supabase_delete_object(
+    config: dict[str, str],
+    headers: dict[str, str],
+    bucket_name: str,
+    object_path: str,
+) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    normalized_bucket = str(bucket_name or "").strip()
+    normalized_path = str(object_path or "").strip().lstrip("/")
+    if not supabase_url or not normalized_bucket or not normalized_path:
+        return False
+
+    request = UrlRequest(
+        url=(
+            f"{supabase_url}/storage/v1/object/"
+            f"{quote(normalized_bucket, safe='-_.')}/{quote(normalized_path, safe='-_./')}"
+        ),
+        method="DELETE",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except HTTPError as error:
+        if error.code == 404:
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _job_payload_supabase_delete_meta(
+    config: dict[str, str],
+    headers: dict[str, str],
+    job_id: str,
+) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("meta_table") or "").strip()
+    normalized_job_id = str(job_id or "").strip()
+    if not supabase_url or not table_name or not normalized_job_id:
+        return False
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?job_id=eq.{quote(normalized_job_id, safe='-_')}",
+        method="DELETE",
+        headers={
+            **headers,
+            "Prefer": "return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except HTTPError as error:
+        if error.code == 404:
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _delete_job_payload_from_supabase(job: dict, access_token: str = "") -> bool:
+    config = _job_payload_supabase_config()
+    if config is None:
+        return False
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return False
+
+    bucket_name, object_path = _job_payload_storage_ref(job)
+    normalized_bucket = str(bucket_name or "").strip() or str(config.get("bucket_name") or "").strip()
+    paths_to_try: list[str] = []
+    if object_path:
+        paths_to_try.append(str(object_path).strip())
+    else:
+        paths_to_try.append(_job_payload_storage_path(job))
+    legacy_path = _job_payload_legacy_storage_path(job)
+    if legacy_path not in paths_to_try:
+        paths_to_try.append(legacy_path)
+
+    deleted = False
+    for path_to_delete in paths_to_try:
+        deleted = _job_payload_supabase_delete_object(config, headers, normalized_bucket, path_to_delete) or deleted
+    deleted = _job_payload_supabase_delete_meta(config, headers, str(job.get("job_id") or "").strip()) or deleted
+    return deleted
+
+
+def _viewer_state_supabase_delete_one(
+    config: dict[str, str],
+    headers: dict[str, str],
+    *,
+    field_name: str,
+    field_value: str,
+) -> bool:
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    normalized_value = str(field_value or "").strip()
+    if not supabase_url or not table_name or not normalized_value:
+        return False
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{field_name}=eq.{quote(normalized_value, safe='-_.:@')}",
+        method="DELETE",
+        headers={
+            **headers,
+            "Prefer": "return=minimal",
+        },
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS):
+            return True
+    except HTTPError as error:
+        if error.code == 404:
+            return True
+        return False
+    except Exception:
+        return False
+
+
+def _delete_viewer_state_from_supabase(job: dict, access_token: str = "") -> int:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return 0
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return 0
+
+    deleted = 0
+    for storage_key in _viewer_state_storage_keys(job):
+        deleted += int(
+            _viewer_state_supabase_delete_one(
+                config,
+                headers,
+                field_name="storage_key",
+                field_value=storage_key,
+            )
+        )
+
+    job_id = str(job.get("job_id") or "").strip()
+    if job_id:
+        deleted += int(
+            _viewer_state_supabase_delete_one(
+                config,
+                headers,
+                field_name="job_id",
+                field_value=job_id,
+            )
+        )
+    return deleted
+
+
+def _viewer_state_rows_for_identity(
+    user_id: str,
+    user_email: str,
+    *,
+    source_hash: str = "",
+    access_token: str = "",
+) -> list[dict[str, str]]:
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return []
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return []
+
+    supabase_url = str(config.get("supabase_url") or "").strip().rstrip("/")
+    table_name = str(config.get("table_name") or "").strip()
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_email = _normalize_user_email(user_email)
+    normalized_source_hash = _normalize_source_hash(source_hash)
+    if not supabase_url or not table_name:
+        return []
+    if not normalized_user_id and not normalized_email:
+        return []
+
+    query_items: list[tuple[str, str]] = [("select", "storage_key,job_id,source_hash"), ("limit", "5000")]
+    if normalized_user_id and normalized_email:
+        encoded_user_id = quote(normalized_user_id, safe="-_.")
+        encoded_email = quote(normalized_email, safe="@-_.")
+        query_items.append(("or", f"(user_id.eq.{encoded_user_id},user_email.eq.{encoded_email})"))
+    elif normalized_user_id:
+        query_items.append(("user_id", f"eq.{quote(normalized_user_id, safe='-_.')}"))
+    else:
+        query_items.append(("user_email", f"eq.{quote(normalized_email, safe='@-_.')}"))
+    if normalized_source_hash:
+        query_items.append(("source_hash", f"eq.{quote(normalized_source_hash, safe='-_')}"))
+
+    request = UrlRequest(
+        url=f"{supabase_url}/rest/v1/{table_name}?{urlencode(query_items)}",
+        method="GET",
+        headers=headers,
+    )
+    try:
+        with urlopen(request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except Exception:
+        return []
+
+    try:
+        payload = json.loads(raw.decode("utf-8")) if raw else []
+    except Exception:
+        return []
+    if not isinstance(payload, list):
+        return []
+
+    rows: list[dict[str, str]] = []
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        storage_key = str(item.get("storage_key") or "").strip()
+        job_id = str(item.get("job_id") or "").strip()
+        item_source_hash = _normalize_source_hash(str(item.get("source_hash") or ""))
+        if not storage_key and not job_id:
+            continue
+        rows.append({
+            "storage_key": storage_key,
+            "job_id": job_id,
+            "source_hash": item_source_hash,
+        })
+    return rows
+
+
+def _delete_viewer_state_refs_for_identity(
+    user_id: str,
+    user_email: str,
+    *,
+    source_hash: str = "",
+    access_token: str = "",
+) -> int:
+    rows = _viewer_state_rows_for_identity(
+        user_id,
+        user_email,
+        source_hash=source_hash,
+        access_token=access_token,
+    )
+    if not rows:
+        return 0
+
+    config = _viewer_state_supabase_config()
+    headers = _history_supabase_headers(config, access_token=access_token) if config is not None else None
+    deleted = 0
+    seen_paths: set[str] = set()
+    seen_storage_keys: set[str] = set()
+    seen_job_ids: set[str] = set()
+
+    for row in rows:
+        storage_key = str(row.get("storage_key") or "").strip()
+        job_id = str(row.get("job_id") or "").strip()
+        if storage_key and storage_key not in seen_storage_keys and config is not None and headers is not None:
+            deleted += int(
+                _viewer_state_supabase_delete_one(
+                    config,
+                    headers,
+                    field_name="storage_key",
+                    field_value=storage_key,
+                )
+            )
+            seen_storage_keys.add(storage_key)
+        if job_id and job_id not in seen_job_ids and config is not None and headers is not None:
+            deleted += int(
+                _viewer_state_supabase_delete_one(
+                    config,
+                    headers,
+                    field_name="job_id",
+                    field_value=job_id,
+                )
+            )
+            seen_job_ids.add(job_id)
+
+        candidate_paths = []
+        if storage_key:
+            candidate_paths.append(_viewer_state_path_for_storage_key(storage_key))
+        if job_id:
+            candidate_paths.append(_viewer_state_path(job_id))
+        for candidate in candidate_paths:
+            candidate_key = str(candidate)
+            if candidate_key in seen_paths or not candidate.exists():
+                continue
+            candidate.unlink(missing_ok=True)
+            deleted += 1
+            seen_paths.add(candidate_key)
+    return deleted
+
+
+def _delete_local_viewer_state(job: dict) -> int:
+    deleted = 0
+    for path in _viewer_state_paths_for_job(job):
+        if not path.exists():
+            continue
+        path.unlink(missing_ok=True)
+        deleted += 1
+    return deleted
+
+
+def _home_sync_timestamp_ms() -> int:
+    return int(time.time() * 1000)
+
+
+def _prune_home_state_payload(payload: dict | None, deleted_job_ids: set[str]) -> dict | None:
+    if not isinstance(payload, dict):
+        return None
+
+    next_stack = [
+        str(value or "").strip()
+        for value in payload.get("stack_job_ids") or []
+        if str(value or "").strip() and str(value or "").strip() not in deleted_job_ids
+    ]
+    seen: set[str] = set()
+    deduped_stack: list[str] = []
+    for job_id in next_stack:
+        if job_id in seen:
+            continue
+        seen.add(job_id)
+        deduped_stack.append(job_id)
+
+    active_job_id = str(payload.get("active_job_id") or "").strip()
+    if active_job_id in deleted_job_ids:
+        active_job_id = ""
+    if not active_job_id and deduped_stack:
+        active_job_id = deduped_stack[0]
+
+    now_ms = _home_sync_timestamp_ms()
+    next_payload = dict(payload)
+    next_payload["active_job_id"] = active_job_id
+    next_payload["stack_job_ids"] = deduped_stack
+    next_payload["savedAt"] = now_ms
+
+    sync_payload = dict(next_payload.get("__sync") or {}) if isinstance(next_payload.get("__sync"), dict) else {}
+    previous_rev = sync_payload.get("rev")
+    try:
+        rev = int(previous_rev)
+    except (TypeError, ValueError):
+        rev = 0
+    sync_payload["rev"] = max(0, rev) + 1
+    sync_payload["updated_at"] = now_ms
+    next_payload["__sync"] = sync_payload
+    return next_payload
+
+
+def _prune_home_state_refs(user_id: str, user_email: str, deleted_job_ids: list[str], access_token: str = "") -> None:
+    deleted_set = {str(job_id or "").strip() for job_id in deleted_job_ids if str(job_id or "").strip()}
+    if not deleted_set:
+        return
+
+    for path in _home_state_paths(user_id, user_email):
+        payload = _load_json(path, None)
+        next_payload = _prune_home_state_payload(payload if isinstance(payload, dict) else None, deleted_set)
+        if next_payload is None:
+            continue
+        _save_json(path, next_payload)
+
+    remote_payload = _home_state_supabase_fetch(user_id, user_email, access_token=access_token)
+    next_remote_payload = _prune_home_state_payload(remote_payload if isinstance(remote_payload, dict) else None, deleted_set)
+    if next_remote_payload is not None:
+        _home_state_supabase_upsert(user_id, user_email, next_remote_payload, access_token=access_token)
+
+
+def _delete_home_state_refs(user_id: str, user_email: str, access_token: str = "") -> int:
+    deleted = 0
+    for path in _home_state_paths(user_id, user_email):
+        if not path.exists():
+            continue
+        path.unlink(missing_ok=True)
+        deleted += 1
+
+    config = _viewer_state_supabase_config()
+    if config is None:
+        return deleted
+    headers = _history_supabase_headers(config, access_token=access_token)
+    if headers is None:
+        return deleted
+
+    for storage_key in _home_state_storage_keys(user_id, user_email):
+        deleted += int(
+            _viewer_state_supabase_delete_one(
+                config,
+                headers,
+                field_name="storage_key",
+                field_value=storage_key,
+            )
+        )
+    return deleted
+
+
+def _delete_owned_jobs(jobs: list[dict], access_token: str = "") -> list[str]:
+    deleted_job_ids: list[str] = []
+    for job in jobs:
+        job_id = str(job.get("job_id") or "").strip()
+        if not job_id:
+            continue
+        job_path = _job_path(job_id)
+        if job_path.exists():
+            job_path.unlink(missing_ok=True)
+        _delete_local_viewer_state(job)
+        _delete_viewer_state_from_supabase(job, access_token=access_token)
+        _delete_job_payload_from_supabase(job, access_token=access_token)
+        deleted_job_ids.append(job_id)
+    return deleted_job_ids
+
+
+def _purge_expired_history_for_user(
+    user_id: str,
+    user_email: str,
+    billing_status: dict[str, Any],
+    *,
+    access_token: str = "",
+) -> list[str]:
+    normalized_user_id = _normalize_user_identity(user_id)
+    normalized_user_email = _normalize_user_email(user_email)
+    if not normalized_user_id:
+        return []
+
+    owned_jobs = _collect_owned_jobs(normalized_user_id, normalized_user_email, access_token=access_token)
+    if not owned_jobs:
+        return []
+
+    now = datetime.now(timezone.utc)
+    base_plan_code = _normalize_plan_code(str(billing_status.get("base_plan_code") or ""), fallback=DEFAULT_PLAN_CODE)
+    history_grace_active = bool(billing_status.get("history_grace_active"))
+    history_grace_expires_at = _parse_iso_datetime(str(billing_status.get("history_grace_expires_at") or ""))
+    targets: list[dict] = []
+
+    if base_plan_code == LEGACY_PLAN_CODE:
+        cutoff = now - timedelta(days=LEGACY_HISTORY_RETENTION_DAYS)
+        for job in owned_jobs:
+            uploaded_at = _parse_iso_datetime(str(job.get("uploaded_at") or ""))
+            if uploaded_at is not None and uploaded_at < cutoff:
+                targets.append(job)
+    elif (
+        not history_grace_active
+        and history_grace_expires_at is not None
+        and history_grace_expires_at <= now
+    ):
+        targets = list(owned_jobs)
+
+    if not targets:
+        return []
+
+    deleted_job_ids = _delete_owned_jobs(targets, access_token=access_token)
+    deleted_job_ids = [job_id for job_id in deleted_job_ids if job_id]
+    if not deleted_job_ids:
+        return []
+
+    for deleted_job_id in deleted_job_ids:
+        _remove_user_history_item(normalized_user_id, normalized_user_email, deleted_job_id)
+        _history_supabase_delete(normalized_user_id, normalized_user_email, deleted_job_id, access_token=access_token)
+    _prune_home_state_refs(normalized_user_id, normalized_user_email, deleted_job_ids, access_token=access_token)
+
+    if history_grace_expires_at is not None and history_grace_expires_at <= now:
+        record = _ensure_billing_record(normalized_user_id, normalized_user_email)
+        if str(record.get("history_grace_plan_code") or "").strip() or str(record.get("history_grace_started_at") or "").strip():
+            _clear_history_grace_fields(record)
+            _save_user_billing_record(record)
+
+    return deleted_job_ids
 
 
 def _job_response(job: dict, base_url: str) -> dict:
@@ -4291,18 +5002,23 @@ def get_history(request: Request):
 def delete_history_all(request: Request):
     user_id, user_email, created_at_hint = _request_identity_with_created_at(request, required=True)
     access_token = _extract_bearer_token(request)
-    status = _billing_status_for_user(user_id, user_email, created_at_hint=created_at_hint)
-    items = _load_user_history(user_id, user_email, billing_status=status, access_token=access_token)
+    owned_jobs = _collect_owned_jobs(user_id, user_email, access_token=access_token)
+    deleted_job_ids = [str(job.get("job_id") or "").strip() for job in owned_jobs]
+    deleted_job_ids = [job_id for job_id in deleted_job_ids if job_id]
 
+    _delete_owned_jobs(owned_jobs, access_token=access_token)
+    _delete_viewer_state_refs_for_identity(user_id, user_email, access_token=access_token)
     local_deleted_count = _clear_user_history_items(user_id, user_email)
     supabase_deleted_count = _history_supabase_delete_all(user_id, user_email, access_token=access_token)
+    _delete_home_state_refs(user_id, user_email, access_token=access_token)
     if local_deleted_count <= 0 and supabase_deleted_count <= 0:
-        local_deleted_count = len(items)
+        local_deleted_count = len(deleted_job_ids)
 
     return JSONResponse(
         {
             "ok": True,
             "deleted_count": max(local_deleted_count, supabase_deleted_count),
+            "deleted_job_ids": deleted_job_ids,
         }
     )
 
@@ -4336,9 +5052,46 @@ def delete_history_item(job_id: str, request: Request):
     if not any(str(item.get("job_id") or "").strip() == target_job_id for item in items):
         raise HTTPException(status_code=404, detail="history item not found")
 
-    removed_local = _remove_user_history_item(user_id, user_email, target_job_id)
-    removed_supabase = _history_supabase_delete(user_id, user_email, target_job_id, access_token=access_token)
-    return JSONResponse({"ok": True, "deleted": bool(removed_local or removed_supabase), "job_id": target_job_id})
+    target_job = _load_job(target_job_id, access_token=access_token)
+    if not _job_matches_identity(target_job, user_id, user_email):
+        raise HTTPException(status_code=404, detail="history item not found")
+
+    source_hash = _normalize_source_hash(str(target_job.get("source_hash") or ""))
+    if source_hash:
+        owned_jobs = _collect_owned_jobs(user_id, user_email, source_hash=source_hash, access_token=access_token)
+    else:
+        owned_jobs = [target_job]
+
+    deleted_job_ids = _delete_owned_jobs(owned_jobs, access_token=access_token)
+    deleted_job_ids = [job_id for job_id in deleted_job_ids if job_id]
+    if not deleted_job_ids:
+        deleted_job_ids = [target_job_id]
+    if source_hash:
+        _delete_viewer_state_refs_for_identity(
+            user_id,
+            user_email,
+            source_hash=source_hash,
+            access_token=access_token,
+        )
+
+    removed_local = False
+    removed_supabase = False
+    for deleted_job_id in deleted_job_ids:
+        removed_local = _remove_user_history_item(user_id, user_email, deleted_job_id) or removed_local
+        removed_supabase = (
+            _history_supabase_delete(user_id, user_email, deleted_job_id, access_token=access_token) or removed_supabase
+        )
+    _prune_home_state_refs(user_id, user_email, deleted_job_ids, access_token=access_token)
+    return JSONResponse(
+        {
+            "ok": True,
+            "deleted": bool(removed_local or removed_supabase or deleted_job_ids),
+            "job_id": target_job_id,
+            "deleted_count": len(deleted_job_ids),
+            "deleted_job_ids": deleted_job_ids,
+            "source_hash": source_hash,
+        }
+    )
 
 
 @app.get("/api/billing/plans")
@@ -4869,10 +5622,40 @@ def get_weather_atis_detail(icao: str):
         raise HTTPException(status_code=502, detail=f"ATIS unavailable: {error}") from error
 
 
-@app.get("/api/jobs/pilot")
-def get_pilot_jobs():
+@app.get("/api/jobs")
+def get_jobs(request: Request):
     try:
-        payload = _get_pilot_jobs()
+        query = str(request.query_params.get("q") or "").strip()
+        role_family = str(request.query_params.get("role_family") or "").strip()
+        location = str(request.query_params.get("location") or "").strip()
+        employment_type = str(request.query_params.get("employment_type") or "").strip()
+        limit = max(int(request.query_params.get("limit", "24")), 1)
+        page = max(int(request.query_params.get("page", "1")), 1)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=f"잘못된 조회 파라미터입니다: {error}") from error
+
+    offset = (page - 1) * limit
+    payload = build_pilot_jobs_list_response(
+        PILOT_JOBS_CACHE_PATH,
+        query=query,
+        role_family=role_family,
+        location=location,
+        employment_type=employment_type,
+        limit=limit,
+        offset=offset,
+    )
+    payload["page"] = page
+    return JSONResponse(payload, headers=NO_STORE_HEADERS)
+
+
+@app.get("/api/jobs/pilot")
+def get_pilot_jobs(request: Request):
+    try:
+        limit = max(int(request.query_params.get("limit", "12")), 1)
+        refresh = str(request.query_params.get("refresh") or "").strip().lower() in {"1", "true", "yes"}
+        payload = _get_pilot_jobs_panel(force_refresh=refresh, limit=limit)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=f"잘못된 조회 파라미터입니다: {error}") from error
     except RuntimeError as error:
         raise HTTPException(status_code=502, detail=str(error)) from error
     return JSONResponse(payload, headers=NO_STORE_HEADERS)

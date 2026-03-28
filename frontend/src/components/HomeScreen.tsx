@@ -1649,6 +1649,27 @@ export function HomeScreen({
     }
   }
 
+  async function removeDeletedJobsFromCurrentState(deletedJobIds: string[]) {
+    const deletedSet = new Set(deletedJobIds.map((item) => String(item || "").trim()).filter(Boolean));
+    if (!deletedSet.size) {
+      return;
+    }
+
+    const identity = await resolveCurrentIdentity();
+    const currentResponseJobId = String(response?.job_id || "").trim();
+    if (currentResponseJobId && deletedSet.has(currentResponseJobId)) {
+      await applyStack([], identity);
+      return;
+    }
+
+    if (stackItems.length <= 1) {
+      const currentStackJobId = String(stackItems[0]?.response?.job_id || "").trim();
+      if (currentStackJobId && deletedSet.has(currentStackJobId)) {
+        await applyStack([], identity);
+      }
+    }
+  }
+
   async function handleHistoryDelete(item: ServerHistoryItem) {
     if (!canUseHistory) {
       setStatusTone("error");
@@ -1671,7 +1692,8 @@ export function HomeScreen({
     await waitForNextPaint();
 
     try {
-      await deleteHistoryItem(item.job_id, userId, userEmail, accessToken);
+      const deleteResult = await deleteHistoryItem(item.job_id, userId, userEmail, accessToken);
+      await removeDeletedJobsFromCurrentState(deleteResult.deleted_job_ids.length ? deleteResult.deleted_job_ids : [item.job_id]);
       await refreshHistory();
       setStatusTone("success");
       setStatusMessage(`${targetName} 항목을 삭제했습니다.`);
@@ -1708,7 +1730,9 @@ export function HomeScreen({
     await waitForNextPaint();
 
     try {
+      const identity = await resolveCurrentIdentity();
       await deleteAllHistoryItems(userId, userEmail, accessToken);
+      await applyStack([], identity);
       await refreshHistory();
       setStatusTone("success");
       setStatusMessage("히스토리를 전체삭제했습니다.");
@@ -2188,6 +2212,9 @@ export function HomeScreen({
             </div>
 
             <div className="doo-sidebar-footer">
+              <a href="/jobs" className="doo-jobs-link-button">
+                항공 채용 포털 열기
+              </a>
               <button type="button" className="doo-plan-guide-button" onClick={() => setShowPlanGuide(true)}>
                 요금제/기능 안내
               </button>
@@ -2802,7 +2829,7 @@ export function HomeScreen({
             <div className="doo-pricing-header">
               <div className="doo-pricing-tag">PLAN GUIDE</div>
               <h2>DOO Extractor 요금제</h2>
-              <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다.</p>
+              <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다. legacy유저 : 히스토리 보관 기한 90일</p>
             </div>
 
             <div className="doo-pricing-scroll">
@@ -2890,7 +2917,7 @@ export function HomeScreen({
                     <ul className="doo-pricing-list">
                       <li>월 KML 변환 무제한</li>
                       <li>1파일 최대 200MB</li>
-                      <li>히스토리 무기한 / 사실상 무제한</li>
+                      <li>히스토리 무기한 / 사실상 무제한 (구독종료시 15일뒤 히스토리 삭제)</li>
                       <li>Viewer 마지막 설정 저장</li>
                     </ul>
                   </div>

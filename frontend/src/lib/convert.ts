@@ -94,6 +94,21 @@ export type ServerHistoryItem = {
   uploaded_at: string;
 };
 
+export type HistoryDeleteResponse = {
+  ok: boolean;
+  deleted: boolean;
+  job_id: string;
+  deleted_count: number;
+  deleted_job_ids: string[];
+  source_hash?: string;
+};
+
+export type HistoryDeleteAllResponse = {
+  ok: boolean;
+  deleted_count: number;
+  deleted_job_ids: string[];
+};
+
 export type BillingPlan = {
   plan_code: "free" | "lite" | "pro";
   name: string;
@@ -480,26 +495,60 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
   return body as ConvertResponse;
 }
 
-export async function deleteHistoryItem(jobId: string, userId: string, userEmail = "", accessToken = ""): Promise<void> {
+export async function deleteHistoryItem(
+  jobId: string,
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<HistoryDeleteResponse> {
   const response = await fetch(`${API_BASE_URL}/api/history/${jobId}`, {
     method: "DELETE",
     headers: buildUserHeaders(userId, userEmail, accessToken),
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺 ??????????? 筌륁궢六??щ빍??"));
+    throw new Error(extractErrorMessage(body, rawText, "?????????????????????? ????????????"));
   }
+  if (!body || typeof body !== "object") {
+    throw new Error("???? ?? ??? ???? ?????.");
+  }
+  const payload = body as Partial<HistoryDeleteResponse>;
+  return {
+    ok: Boolean(payload.ok),
+    deleted: Boolean(payload.deleted),
+    job_id: String(payload.job_id || jobId),
+    deleted_count: Number(payload.deleted_count || 0),
+    deleted_job_ids: Array.isArray(payload.deleted_job_ids)
+      ? payload.deleted_job_ids.map((item) => String(item || "").trim()).filter(Boolean)
+      : [],
+    source_hash: typeof payload.source_hash === "string" ? payload.source_hash : "",
+  };
 }
 
-export async function deleteAllHistoryItems(userId: string, userEmail = "", accessToken = ""): Promise<void> {
+export async function deleteAllHistoryItems(
+  userId: string,
+  userEmail = "",
+  accessToken = "",
+): Promise<HistoryDeleteAllResponse> {
   const response = await fetch(`${API_BASE_URL}/api/history`, {
     method: "DELETE",
     headers: buildUserHeaders(userId, userEmail, accessToken),
   });
   const { body, rawText } = await parseResponseBody(response);
   if (!response.ok) {
-    throw new Error(extractErrorMessage(body, rawText, "??됰뮞?醫듼봺 ?袁⑷퍥???????쎈솭??됰뮸??덈뼄."));
+    throw new Error(extractErrorMessage(body, rawText, "????????????????????????????????????."));
   }
+  if (!body || typeof body !== "object") {
+    throw new Error("???? ???? ??? ???? ?????.");
+  }
+  const payload = body as Partial<HistoryDeleteAllResponse>;
+  return {
+    ok: Boolean(payload.ok),
+    deleted_count: Number(payload.deleted_count || 0),
+    deleted_job_ids: Array.isArray(payload.deleted_job_ids)
+      ? payload.deleted_job_ids.map((item) => String(item || "").trim()).filter(Boolean)
+      : [],
+  };
 }
 
 export async function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
@@ -772,7 +821,7 @@ export async function deleteUserBookmark(
 }
 
 export async function fetchPilotRecruitment(): Promise<PilotRecruitmentResponse> {
-  const response = await fetch(`/data/pilot-jobs.json`, {
+  const response = await fetch(`${API_BASE_URL}/api/jobs/pilot?limit=12`, {
     cache: "no-store",
   });
   const { body, rawText } = await parseResponseBody(response);

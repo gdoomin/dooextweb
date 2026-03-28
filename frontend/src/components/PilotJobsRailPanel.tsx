@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
-import { fetchPilotRecruitment, type PilotRecruitJobItem, type PilotRecruitmentResponse } from "@/lib/convert";
+import { fetchPilotJobsPanel, type PilotJobListItem, type PilotRecruitmentResponse } from "@/lib/jobs-client";
 
 const JOB_UPDATED_AT_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   month: "2-digit",
@@ -24,12 +25,12 @@ function formatJobUpdatedAt(value: string): string {
   return JOB_UPDATED_AT_FORMATTER.format(parsed);
 }
 
-function buildJobMetaText(item: PilotRecruitJobItem): string {
+function buildJobMetaText(item: PilotJobListItem): string {
   const parts = [item.location || "", item.employment_type || "", item.experience || ""].filter(Boolean);
   return parts.join(" · ");
 }
 
-function buildDeadlineBadge(item: PilotRecruitJobItem): string {
+function buildDeadlineBadge(item: PilotJobListItem): string {
   const dDay = String(item.d_day || "").trim();
   const deadlineText = String(item.deadline_text || "").trim();
   if (dDay) {
@@ -58,7 +59,7 @@ export function PilotJobsRailPanel() {
       setLoading(true);
       setError("");
       try {
-        const next = await fetchPilotRecruitment();
+        const next = await fetchPilotJobsPanel();
         if (!cancelled) {
           setPayload(next);
         }
@@ -95,8 +96,16 @@ export function PilotJobsRailPanel() {
   return (
     <section className="doo-rail-card doo-rail-card-jobs" aria-label="채용정보">
       <div className="doo-rail-jobs-summary">
-        <strong>채용정보</strong>
-        <div className="doo-rail-jobs-count">{loading ? "조회 중" : `${items.length}건`}</div>
+        <div className="doo-rail-jobs-summary-copy">
+          <strong>채용정보</strong>
+          <span>조종계열 공고 허브</span>
+        </div>
+        <div className="doo-rail-jobs-summary-actions">
+          <Link href="/jobs" className="doo-rail-jobs-link">
+            전체 보기
+          </Link>
+          <div className="doo-rail-jobs-count">{loading ? "조회 중" : `${items.length}건`}</div>
+        </div>
       </div>
       <div className="doo-rail-jobs-meta">
         <span>운항승무원 · 조종사 관련 공고</span>
