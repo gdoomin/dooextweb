@@ -2212,6 +2212,33 @@
       overflow-y: auto;
       padding-right: 6px;
     }
+    .leaflet-popup.doo-popup.weather-popup-shell .leaflet-popup-content-wrapper {
+      width: min(860px, calc(100vw - 40px));
+      max-width: min(860px, calc(100vw - 40px));
+      overflow: hidden;
+      box-sizing: border-box;
+      padding: 14px 16px;
+    }
+    .leaflet-popup.doo-popup.weather-popup-shell .leaflet-popup-content {
+      width: 100% !important;
+      max-width: none;
+      min-width: 0;
+      margin: 0;
+      box-sizing: border-box;
+      max-height: min(72vh, 760px);
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .leaflet-popup.doo-popup.weather-popup-shell .weather-popup-row {
+      grid-template-columns: 96px minmax(0, 1fr);
+      gap: 10px;
+      margin: 5px 0;
+    }
+    .leaflet-popup.doo-popup.weather-popup-shell .weather-popup-row strong,
+    .leaflet-popup.doo-popup.weather-popup-shell .weather-popup-row span {
+      white-space: nowrap;
+    }
     @media (max-width: 760px) {
       .atis-popup {
         width: 100%;
@@ -8573,10 +8600,16 @@
         if (Number.isFinite(current.dust)) {
           airQualitySummaryParts.push(`Dust ${formatWeatherNumber(current.dust, 0)}`);
         }
+        const regionLineCount = Number.isFinite(parseWeatherNumber(snapshot.regionLineCount))
+          ? Math.max(0, Math.round(parseWeatherNumber(snapshot.regionLineCount)))
+          : null;
+        const popupTitleParts = [
+          snapshot.regionLabel || `구역 ${index + 1}`,
+          Number.isFinite(regionLineCount) ? `${regionLineCount}개 라인` : '',
+          altitudeLabel ? `${altitudeLabel} 기상` : '기상',
+        ].filter(Boolean);
         const popupRows = [
-          ['구역', snapshot.regionLabel || `구역 ${index + 1}`],
-          ['라인 수', Number.isFinite(parseWeatherNumber(snapshot.regionLineCount)) ? `${Math.max(0, Math.round(parseWeatherNumber(snapshot.regionLineCount)))}개` : '-'],
-          [`풍속(${altitudeLabel})`, Number.isFinite(current.windKt) ? `${formatWeatherNumber(current.windKt, 0)}kt` : '-'],
+          ['풍속', Number.isFinite(current.windKt) ? `${formatWeatherNumber(current.windKt, 0)}kt` : '-'],
           ['돌풍', Number.isFinite(current.gustKt) ? `${formatWeatherNumber(current.gustKt, 0)}kt` : '-'],
           ['풍향', Number.isFinite(current.windDirDeg) ? `${Math.round(current.windDirDeg)}° (${describeWindDirection(current.windDirDeg)})` : '-'],
           ['선택고도 운량', Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-'],
@@ -8597,9 +8630,10 @@
           ['예보 기준', forecastReferenceText],
         ];
         marker.bindPopup(
-          buildWeatherPopupHtml(`${snapshot.regionLabel || `구역 ${index + 1}`} 기상`, popupRows, '', `${grade.icon} ${grade.label}`),
-          { className: 'doo-popup', maxWidth: 360 }
+          buildWeatherPopupHtml(popupTitleParts.join(' · '), popupRows, '', `${grade.icon} ${grade.label}`),
+          { className: 'doo-popup weather-popup-shell', maxWidth: getWeatherPopupMaxWidth() }
         );
+        attachAviationPopupDrag(marker);
         marker.addTo(weatherOverlayGroups.marker);
         weatherOverlayState.markerLayers.push(marker);
         marker.on('add', () => {
@@ -10496,6 +10530,14 @@
         return 560;
       }
       return clamp(viewportWidth - 40, 360, 560);
+    }
+
+    function getWeatherPopupMaxWidth() {
+      const viewportWidth = Number(window.innerWidth || document.documentElement.clientWidth || 0);
+      if (!Number.isFinite(viewportWidth) || viewportWidth <= 0) {
+        return 860;
+      }
+      return clamp(viewportWidth - 40, 420, 860);
     }
 
     function buildAtisPopupError(props, error) {
