@@ -81,6 +81,7 @@ const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
 });
 const LOADING_STATUS_KEYWORDS = /(불러오는 중|추가하는 중|변환하는 중|저장하는 중)/;
 const HOME_SYNC_VERSION = 1;
+const VIEWER_LAUNCH_VERSION = 2;
 const HOME_SYNC_POLL_MS = 15000;
 const HOME_SYNC_SAVE_DEBOUNCE_MS = 3000;
 const HOME_SYNC_DEVICE_STORAGE_KEY = "doo-home-sync-device-id";
@@ -1751,7 +1752,10 @@ export function HomeScreen({
       return;
     }
     const viewerPath = `${API_BASE_URL}/api/viewer/${response.job_id}`;
-    let viewerUrl = viewerPath;
+    const viewerParams = new URLSearchParams({
+      v: `viewer-${VIEWER_LAUNCH_VERSION}`,
+    });
+    let viewerUrl = `${viewerPath}?${viewerParams.toString()}`;
     const tokenForViewer = accessToken.trim();
     if (tokenForViewer) {
       viewerUrl = `${viewerUrl}#doo_access_token=${encodeURIComponent(tokenForViewer)}`;

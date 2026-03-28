@@ -3879,6 +3879,8 @@
     ];
     const WEATHER_OVERLAY_API_URL = resolveApiUrl('/api/weather/open-meteo/forecast');
     const WEATHER_AIR_QUALITY_API_URL = resolveApiUrl('/api/weather/open-meteo/air-quality');
+    const WEATHER_OVERLAY_API_FALLBACK_URL = 'https://api.open-meteo.com/v1/forecast';
+    const WEATHER_AIR_QUALITY_API_FALLBACK_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
     const WEATHER_OVERLAY_DAY_LABELS = ['오늘', '내일', '모레'];
     const WEATHER_OVERLAY_ALTITUDE_PRESETS = [
       { feet: 500, levelKey: 'surface', label: '500피트' },
@@ -7238,6 +7240,35 @@
       });
     }
 
+    async function fetchJsonWithFallbacks(urls, label = 'request') {
+      const candidates = Array.isArray(urls) ? urls.filter(Boolean) : [];
+      let lastError = null;
+      for (const candidate of candidates) {
+        const resolved = resolveApiUrl(candidate);
+        try {
+          const response = await fetch(resolved, { cache: 'no-store' });
+          if (!response.ok) {
+            const fallback = `${response.status} ${response.statusText}`.trim();
+            let detail = fallback;
+            try {
+              const payload = await response.json();
+              if (payload && payload.detail) {
+                detail = String(payload.detail);
+              }
+            } catch (error) {
+              // Ignore JSON parse failures and keep the HTTP status text.
+            }
+            throw new Error(detail);
+          }
+          return await response.json();
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error || `${label} failed`));
+          console.warn(`[weather overlay] ${label} fetch fallback`, resolved, lastError);
+        }
+      }
+      throw (lastError || new Error(`${label} failed`));
+    }
+
     function formatWeatherTime(value) {
       if (!value) {
         return '';
@@ -8818,18 +8849,14 @@
       const weatherQuery = buildWeatherOverlayApiQuery(center, forceRefresh);
       const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
       const [weatherResult, airQualityResult] = await Promise.allSettled([
-        fetch(`${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`, { cache: 'no-store' }).then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-          }
-          return response.json();
-        }),
-        fetch(`${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`, { cache: 'no-store' }).then((response) => {
-          if (!response.ok) {
-            throw new Error(`AQ HTTP ${response.status}`);
-          }
-          return response.json();
-        }),
+        fetchJsonWithFallbacks([
+          `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
+          `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherQuery.toString()}`,
+        ], 'forecast'),
+        fetchJsonWithFallbacks([
+          `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
+          `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
+        ], 'air-quality'),
       ]);
       if (weatherResult.status !== 'fulfilled') {
         throw weatherResult.reason;
