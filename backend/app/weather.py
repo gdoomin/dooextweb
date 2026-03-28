@@ -12,6 +12,14 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urlencode
 from urllib.request import Request, urlopen
 
+try:
+    import requests
+    from requests import RequestException
+except ImportError:  # pragma: no cover - installed in deployment
+    requests = None
+
+    class RequestException(Exception):
+        pass
 
 DEFAULT_WEATHER_BBOX = (33.0, 124.0, 39.0, 132.0)
 GK2A_IMAGE_PROXY_PATH = "/api/weather/satellite-image"
@@ -862,6 +870,23 @@ def _get_json(cache_key: str, url: str, ttl_seconds: int) -> Any:
 
 
 def _fetch_json(url: str) -> Any:
+    errors: list[str] = []
+
+    if requests is not None:
+        try:
+            response = requests.get(
+                url,
+                headers={
+                    "User-Agent": _USER_AGENT,
+                    "Accept": "application/json",
+                },
+                timeout=18,
+            )
+            response.raise_for_status()
+            return response.json()
+        except (RequestException, ValueError) as error:
+            errors.append(f"requests: {error}")
+
     request = Request(
         url,
         headers={
@@ -873,7 +898,10 @@ def _fetch_json(url: str) -> Any:
         with urlopen(request, timeout=18) as response:
             return json.load(response)
     except (HTTPError, URLError, TimeoutError, json.JSONDecodeError) as error:
-        raise WeatherProviderError(str(error)) from error
+        errors.append(f"urllib: {error}")
+
+    message = " / ".join(error for error in errors if error) or "weather fetch failed"
+    raise WeatherProviderError(message)
 
 
 def proxy_open_meteo_payload(base_url: str, query_params: dict[str, Any]) -> dict[str, Any]:
