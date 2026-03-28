@@ -3727,6 +3727,16 @@ def _external_base_url(request: Request) -> str:
     return str(request.base_url).rstrip("/")
 
 
+def _frontend_base_url() -> str:
+    origins = _allowed_origins()
+    for origin in origins:
+        normalized = str(origin or "").strip().rstrip("/")
+        if not normalized or "localhost" in normalized or "127.0.0.1" in normalized:
+            continue
+        return normalized
+    return str(origins[0]).strip().rstrip("/") if origins else ""
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "service": "doo-extractor-web"}
@@ -4005,6 +4015,7 @@ def get_viewer(job_id: str, request: Request):
     job = _load_job(job_id)
     payload = dict(job["map_payload"])
     payload["api_base_url"] = _external_base_url(request)
+    payload["frontend_base_url"] = _frontend_base_url()
     payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
     payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
 
@@ -4020,6 +4031,7 @@ def get_viewer(job_id: str, request: Request):
 def get_default_viewer(request: Request):
     payload = _default_viewer_payload()
     payload["api_base_url"] = _external_base_url(request)
+    payload["frontend_base_url"] = _frontend_base_url()
     viewer_user_id = _normalize_user_identity(str(request.query_params.get("user_id") or ""))
     viewer_user_email = _normalize_user_email(str(request.query_params.get("user_email") or ""))
     viewer_created_at = str(request.query_params.get("created_at") or "").strip()

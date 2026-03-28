@@ -865,22 +865,35 @@ def _get_json(cache_key: str, url: str, ttl_seconds: int) -> Any:
     if cached and cached[0] > now:
         return cached[1]
 
-    payload = _fetch_json(url)
+    try:
+        payload = _fetch_json(url)
+    except WeatherProviderError:
+        if cached:
+            return cached[1]
+        raise
     _CACHE[cache_key] = (now + ttl_seconds, payload)
     return payload
 
 
 def _fetch_json(url: str) -> Any:
     errors: list[str] = []
+    request_headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/136.0.0.0 Safari/537.36"
+        ),
+        "Accept": "application/json,text/plain,*/*",
+        "Accept-Encoding": "identity",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+    }
 
     if requests is not None:
         try:
             response = requests.get(
                 url,
-                headers={
-                    "User-Agent": _USER_AGENT,
-                    "Accept": "application/json",
-                },
+                headers=request_headers,
                 timeout=18,
             )
             response.raise_for_status()
@@ -890,10 +903,7 @@ def _fetch_json(url: str) -> Any:
 
     request = Request(
         url,
-        headers={
-            "User-Agent": _USER_AGENT,
-            "Accept": "application/json",
-        },
+        headers=request_headers,
     )
     try:
         with urlopen(request, timeout=18) as response:
@@ -902,6 +912,7 @@ def _fetch_json(url: str) -> Any:
         errors.append(f"urllib: {error}")
 
     message = " / ".join(error for error in errors if error) or "weather fetch failed"
+    print(f"[weather] fetch failed: {url} :: {message}", flush=True)
     raise WeatherProviderError(message)
 
 
@@ -925,6 +936,8 @@ def proxy_open_meteo_payload(base_url: str, query_params: dict[str, Any]) -> dic
     longitude = _as_float(params.get("longitude"))
     if latitude is None or longitude is None:
         raise ValueError("latitude and longitude are required")
+    params["latitude"] = f"{latitude:.2f}"
+    params["longitude"] = f"{longitude:.2f}"
 
     resolved_base_url = base_url
     if base_url == OPEN_METEO_FORECAST_URL:
@@ -936,9 +949,16 @@ def proxy_open_meteo_payload(base_url: str, query_params: dict[str, Any]) -> dic
     ordered_query = urlencode(sorted(params.items()))
     url = f"{resolved_base_url}?{ordered_query}"
     if force_refresh:
-        return _fetch_json(url)
+        try:
+            return _fetch_json(url)
+        except WeatherProviderError:
+            cache_key = f"weather:proxy:{resolved_base_url}:{ordered_query}"
+            cached = _CACHE.get(cache_key)
+            if cached:
+                return cached[1]
+            raise
     cache_key = f"weather:proxy:{resolved_base_url}:{ordered_query}"
-    return _get_json(cache_key, url, ttl_seconds=180)
+    return _get_json(cache_key, url, ttl_seconds=900)
 
 
 def _feature_list(data: Any) -> list[dict[str, Any]]:

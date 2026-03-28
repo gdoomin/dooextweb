@@ -3878,8 +3878,11 @@
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
+    const FRONTEND_BASE_URL = String(payload && payload.frontend_base_url ? payload.frontend_base_url : '').trim().replace(/\/+$/, '');
     const WEATHER_OVERLAY_API_URL = resolveApiUrl('/api/weather/open-meteo/forecast');
     const WEATHER_AIR_QUALITY_API_URL = resolveApiUrl('/api/weather/open-meteo/air-quality');
+    const WEATHER_OVERLAY_FRONTEND_PROXY_URL = FRONTEND_BASE_URL ? `${FRONTEND_BASE_URL}/api/weather/open-meteo/forecast` : '';
+    const WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL = FRONTEND_BASE_URL ? `${FRONTEND_BASE_URL}/api/weather/open-meteo/air-quality` : '';
     const WEATHER_OVERLAY_API_DIRECT_ECMWF_URL = 'https://api.open-meteo.com/v1/ecmwf';
     const WEATHER_OVERLAY_API_FALLBACK_URL = 'https://api.open-meteo.com/v1/forecast';
     const WEATHER_AIR_QUALITY_API_FALLBACK_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
@@ -3904,8 +3907,8 @@
         pm10: 100,
       }),
     });
-    const WEATHER_OVERLAY_MAX_REGION_CARDS = 4;
-    const WEATHER_OVERLAY_FETCH_CONCURRENCY = 2;
+    const WEATHER_OVERLAY_MAX_REGION_CARDS = 2;
+    const WEATHER_OVERLAY_FETCH_CONCURRENCY = 1;
     const NOTAM_GROUP_DEFINITIONS = [
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
       { key: 'acgz', label: 'NOTAM A,C,G,Z', defaultColor: '#4bc6ff' },
@@ -9073,11 +9076,13 @@
       const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
       const [weatherResult, airQualityResult] = await Promise.allSettled([
         fetchJsonWithFallbacks([
+          WEATHER_OVERLAY_FRONTEND_PROXY_URL ? `${WEATHER_OVERLAY_FRONTEND_PROXY_URL}?${weatherQuery.toString()}` : '',
           `${WEATHER_OVERLAY_API_DIRECT_ECMWF_URL}?${weatherDirectQuery.toString()}`,
           `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherQuery.toString()}`,
           `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
         ], 'forecast'),
         fetchJsonWithFallbacks([
+          WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL ? `${WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL}?${airQualityQuery.toString()}` : '',
           `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
           `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
         ], 'air-quality'),
@@ -9138,7 +9143,7 @@
       });
       if (!snapshots.length && regions.length > 1) {
         try {
-          const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(regions[0], true);
+          const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(regions[0], false);
           snapshots.push(fallbackSnapshot);
         } catch (error) {
           console.warn('[weather overlay] fallback single-region fetch failed', error);
@@ -9148,7 +9153,7 @@
         const fallbackRegion = buildWeatherOverlayFallbackRegion();
         if (fallbackRegion) {
           try {
-            const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(fallbackRegion, true);
+            const fallbackSnapshot = await fetchWeatherOverlayRegionSnapshot(fallbackRegion, false);
             snapshots.push(fallbackSnapshot);
           } catch (error) {
             console.warn('[weather overlay] fallback center-region fetch failed', error);
