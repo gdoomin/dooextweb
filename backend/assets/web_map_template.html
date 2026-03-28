@@ -1591,6 +1591,15 @@
       font-size: 12px;
       font-weight: 700;
     }
+    .weather-overlay-forecast-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: #d4dfeb;
+      font-size: 12px;
+      font-weight: 700;
+    }
     .weather-overlay-altitude-select {
       min-width: 132px;
       height: 30px;
@@ -3246,6 +3255,17 @@
           <option value="13000">1만3천피트</option>
         </select>
       </label>
+      <label class="weather-overlay-forecast-row" for="weatherOverlayForecastSelect">
+        <span>시점</span>
+        <select id="weatherOverlayForecastSelect" class="weather-overlay-altitude-select" aria-label="기상 예보 시점 선택">
+          <option value="0" selected>현재</option>
+          <option value="1">1시간뒤</option>
+          <option value="2">2시간뒤</option>
+          <option value="3">3시간뒤</option>
+          <option value="4">4시간뒤</option>
+          <option value="5">5시간뒤</option>
+        </select>
+      </label>
       <div class="weather-overlay-checks">
         <label title="기상 마커"><input id="weatherOverlayMarkerToggle" type="checkbox" checked aria-label="기상 마커"></label>
         <label title="촬영 가능 배지"><input id="weatherOverlayBadgeToggle" type="checkbox" checked aria-label="촬영 가능 배지"></label>
@@ -4002,6 +4022,7 @@
     const weatherOverlayWindToggle = document.getElementById('weatherOverlayWindToggle');
     const weatherOverlayTimelineToggle = document.getElementById('weatherOverlayTimelineToggle');
     const weatherOverlayAltitudeSelect = document.getElementById('weatherOverlayAltitudeSelect');
+    const weatherOverlayForecastSelect = document.getElementById('weatherOverlayForecastSelect');
     const weatherOverlayRefreshButton = document.getElementById('weatherOverlayRefreshButton');
     const weatherOverlayUpdatedAt = document.getElementById('weatherOverlayUpdatedAt');
     const weatherOverlayStatus = document.getElementById('weatherOverlayStatus');
@@ -4191,6 +4212,7 @@
       markerLayers: [],
       markerBaseZoom: null,
       altitudeFt: 10000,
+      forecastOffsetHours: 0,
       options: {
         marker: true,
         badge: true,
@@ -7466,6 +7488,35 @@
       return getWeatherOverlayAltitudePreset(feetValue).label;
     }
 
+    function normalizeWeatherOverlayForecastOffsetHours(value) {
+      const parsed = Math.round(Number(value));
+      if (!Number.isFinite(parsed)) {
+        return 0;
+      }
+      return clamp(parsed, 0, 5);
+    }
+
+    function getWeatherOverlayForecastOffsetLabel(hoursValue) {
+      const normalized = normalizeWeatherOverlayForecastOffsetHours(hoursValue);
+      return normalized <= 0 ? '현재' : `${normalized}시간뒤`;
+    }
+
+    function resolveWeatherOverlayForecastIndex(hourlyTimes, baseIndex, offsetHours) {
+      const safeTimes = Array.isArray(hourlyTimes) ? hourlyTimes : [];
+      if (!safeTimes.length) {
+        return -1;
+      }
+      const normalizedBaseIndex = Number.isFinite(baseIndex) ? Math.max(0, Math.round(baseIndex)) : 0;
+      const normalizedOffset = normalizeWeatherOverlayForecastOffsetHours(offsetHours);
+      return clamp(normalizedBaseIndex + normalizedOffset, 0, Math.max(0, safeTimes.length - 1));
+    }
+
+    function formatWeatherOverlayForecastReference(timeValue, offsetHours) {
+      const formatted = formatWeatherTime(timeValue) || '-';
+      const offsetLabel = getWeatherOverlayForecastOffsetLabel(offsetHours);
+      return `${formatted} (${offsetLabel})`;
+    }
+
     function interpolateWeatherNumeric(valueA, valueB, ratio) {
       const a = parseWeatherNumber(valueA);
       const b = parseWeatherNumber(valueB);
@@ -8025,43 +8076,76 @@
       const hourlyTimes = Array.isArray(hourly.time) ? hourly.time : [];
       const currentTime = typeof current.time === 'string' ? current.time : '';
       const currentIndex = resolveOpenMeteoTimeIndex(hourlyTimes, currentTime);
+      const forecastOffsetHours = normalizeWeatherOverlayForecastOffsetHours(weatherOverlayState.forecastOffsetHours);
+      const targetIndex = resolveWeatherOverlayForecastIndex(hourlyTimes, currentIndex, forecastOffsetHours);
+      const targetTime = targetIndex >= 0 ? String(hourlyTimes[targetIndex] || '') : '';
       const airQuality = airQualityPayload && typeof airQualityPayload === 'object' ? airQualityPayload : {};
       const airQualityCurrent = airQuality.current && typeof airQuality.current === 'object' ? airQuality.current : {};
       const airQualityHourly = airQuality.hourly && typeof airQuality.hourly === 'object' ? airQuality.hourly : {};
       const airQualityTimes = Array.isArray(airQualityHourly.time) ? airQualityHourly.time : [];
       const airQualityCurrentTime = typeof airQualityCurrent.time === 'string' ? airQualityCurrent.time : currentTime;
-      const airQualityIndex = resolveOpenMeteoTimeIndex(airQualityTimes, airQualityCurrentTime || currentTime);
+      const airQualityBaseIndex = resolveOpenMeteoTimeIndex(airQualityTimes, airQualityCurrentTime || currentTime);
+      let airQualityIndex = resolveOpenMeteoTimeIndex(airQualityTimes, targetTime || airQualityCurrentTime || currentTime);
+      if (airQualityIndex < 0 && airQualityBaseIndex >= 0) {
+        airQualityIndex = resolveWeatherOverlayForecastIndex(airQualityTimes, airQualityBaseIndex, forecastOffsetHours);
+      }
 
       const altitudePreset = getWeatherOverlayAltitudePreset(weatherOverlayState.altitudeFt);
-      const altitudeSampleCurrent = resolveWeatherOverlayAltitudeSample(hourly, currentIndex, altitudePreset.feet);
+      const altitudeSampleCurrent = resolveWeatherOverlayAltitudeSample(hourly, targetIndex, altitudePreset.feet);
       const selectedAltitudeFt = altitudePreset.feet;
       const actualAltitudeFt = weatherMetersToFeet(altitudeSampleCurrent.actualMeters);
 
-      const currentGust = parseWeatherNumber(current.wind_gusts_10m);
-      const currentVisibilityKm = visibilityMetersToKm(current.visibility);
+      const currentGust = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'wind_gusts_10m', targetIndex))
+        : parseWeatherNumber(current.wind_gusts_10m);
+      const currentVisibilityKm = forecastOffsetHours > 0
+        ? visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', targetIndex))
+        : visibilityMetersToKm(current.visibility);
 
       const windKt = Number.isFinite(altitudeSampleCurrent.windKt) ? altitudeSampleCurrent.windKt : null;
       const windDirDeg = Number.isFinite(altitudeSampleCurrent.windDirDeg) ? altitudeSampleCurrent.windDirDeg : null;
-      const gustKt = Number.isFinite(currentGust) ? currentGust : parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'wind_gusts_10m', currentIndex));
+      const gustKt = Number.isFinite(currentGust) ? currentGust : parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'wind_gusts_10m', targetIndex));
       const cloudCover = Number.isFinite(altitudeSampleCurrent.cloudCover) ? altitudeSampleCurrent.cloudCover : null;
-      const visibilityKm = Number.isFinite(currentVisibilityKm) ? currentVisibilityKm : visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', currentIndex));
+      const visibilityKm = Number.isFinite(currentVisibilityKm) ? currentVisibilityKm : visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', targetIndex));
       const temperatureC = Number.isFinite(altitudeSampleCurrent.temperatureC) ? altitudeSampleCurrent.temperatureC : null;
       const relativeHumidity = Number.isFinite(altitudeSampleCurrent.relativeHumidity) ? altitudeSampleCurrent.relativeHumidity : null;
-      const surfaceTemperatureC = getOpenMeteoSeriesValue(current, hourly, 'temperature_2m', currentIndex);
-      const surfaceRelativeHumidity = getOpenMeteoSeriesValue(current, hourly, 'relative_humidity_2m', currentIndex);
-      const surfaceDewPointC = getOpenMeteoSeriesValue(current, hourly, 'dew_point_2m', currentIndex);
-      const lowCloudCover = getOpenMeteoSeriesValue(current, hourly, 'cloud_cover_low', currentIndex);
-      const aerosolOpticalDepth = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'aerosol_optical_depth', airQualityIndex);
-      const pm25 = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm2_5', airQualityIndex);
-      const pm10 = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm10', airQualityIndex);
-      const dust = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'dust', airQualityIndex);
-      const cloudConstraintCurrent = resolveWeatherOverlayCloudConstraint(hourly, currentIndex, selectedAltitudeFt, altitudeSampleCurrent);
+      const surfaceTemperatureC = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'temperature_2m', targetIndex))
+        : getOpenMeteoSeriesValue(current, hourly, 'temperature_2m', targetIndex);
+      const surfaceRelativeHumidity = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'relative_humidity_2m', targetIndex))
+        : getOpenMeteoSeriesValue(current, hourly, 'relative_humidity_2m', targetIndex);
+      const surfaceDewPointC = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'dew_point_2m', targetIndex))
+        : getOpenMeteoSeriesValue(current, hourly, 'dew_point_2m', targetIndex);
+      const lowCloudCover = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'cloud_cover_low', targetIndex))
+        : getOpenMeteoSeriesValue(current, hourly, 'cloud_cover_low', targetIndex);
+      const aerosolOpticalDepth = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'aerosol_optical_depth', airQualityIndex))
+        : getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'aerosol_optical_depth', airQualityIndex);
+      const pm25 = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'pm2_5', airQualityIndex))
+        : getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm2_5', airQualityIndex);
+      const pm10 = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'pm10', airQualityIndex))
+        : getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm10', airQualityIndex);
+      const dust = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'dust', airQualityIndex))
+        : getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'dust', airQualityIndex);
+      const forecastWeatherCode = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'weather_code', targetIndex))
+        : parseWeatherNumber(current.weather_code);
+      const forecastIsDay = forecastOffsetHours > 0
+        ? parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'is_day', targetIndex))
+        : parseWeatherNumber(current.is_day);
+      const cloudConstraintCurrent = resolveWeatherOverlayCloudConstraint(hourly, targetIndex, selectedAltitudeFt, altitudeSampleCurrent);
       const effectiveCloudCover = Number.isFinite(cloudConstraintCurrent.effectiveCloudCover)
         ? cloudConstraintCurrent.effectiveCloudCover
         : cloudCover;
       const surfaceAssessment = buildWeatherOverlaySurfaceAssessment({
         visibilityKm,
-        weatherCode: parseWeatherNumber(current.weather_code),
+        weatherCode: forecastWeatherCode,
         relativeHumidity2m: surfaceRelativeHumidity,
         temperature2m: surfaceTemperatureC,
         dewPoint2m: surfaceDewPointC,
@@ -8134,7 +8218,7 @@
           lng: centerLatLng.lng,
         },
         current: {
-          time: currentTime || (hourlyTimes[currentIndex] || ''),
+          time: targetTime || currentTime || (hourlyTimes[targetIndex] || ''),
           windKt,
           windDirDeg,
           gustKt,
@@ -8155,8 +8239,8 @@
           pm10,
           dust,
           visibilityKm,
-          isDay: Number.isFinite(parseWeatherNumber(current.is_day)) ? Number(current.is_day) === 1 : true,
-          weatherCode: parseWeatherNumber(current.weather_code),
+          isDay: Number.isFinite(forecastIsDay) ? Number(forecastIsDay) === 1 : true,
+          weatherCode: forecastWeatherCode,
           altitudeFt: selectedAltitudeFt,
           altitudeLabel: getWeatherOverlayAltitudeLabel(selectedAltitudeFt),
           actualAltitudeFt,
@@ -8164,6 +8248,9 @@
           precisionMode: Number.isFinite(altitudeSampleCurrent.actualMeters),
           surfaceAssessment,
           grade,
+          forecastOffsetHours,
+          forecastLabel: getWeatherOverlayForecastOffsetLabel(forecastOffsetHours),
+          forecastReferenceText: formatWeatherOverlayForecastReference(targetTime || currentTime || (hourlyTimes[targetIndex] || ''), forecastOffsetHours),
         },
         days,
       };
@@ -8377,6 +8464,7 @@
       const surfacePhenomenonText = surfaceAssessment.label || '양호';
       const surfaceReasonText = surfaceAssessment.reason || '';
       const altitudeLabel = current.altitudeLabel || getWeatherOverlayAltitudeLabel(weatherOverlayState.altitudeFt);
+      const forecastReferenceText = current.forecastReferenceText || formatWeatherOverlayForecastReference(current.time, weatherOverlayState.forecastOffsetHours);
       const actualAltitudeText = Number.isFinite(current.actualAltitudeFt)
         ? `실고도 ${formatWeatherNumber(current.actualAltitudeFt, 0)}ft`
         : '실고도 계산 불가';
@@ -8406,7 +8494,7 @@
             <div class="weather-overlay-card__row">🌡️ 기온 ${escapeHtml(tempText)}</div>
             <div class="weather-overlay-card__row">💧 상대습도 ${escapeHtml(humidityText)}</div>
             <div class="weather-overlay-card__row">👁️ 시정 ${escapeHtml(visibilityText)}</div>
-            <div class="weather-overlay-card__row">🕐 현재 기준</div>
+            <div class="weather-overlay-card__row">🕐 예보 기준 ${escapeHtml(forecastReferenceText)}</div>
             <div class="weather-overlay-card__row">모델: ECMWF + Air Quality</div>
             <div class="weather-overlay-card__row">고도: ${escapeHtml(altitudeLabel)} 기준</div>
             <div class="weather-overlay-card__row">${escapeHtml(actualAltitudeText)}</div>
@@ -8449,6 +8537,7 @@
         const actualAltitudeText = Number.isFinite(current.actualAltitudeFt)
           ? `${formatWeatherNumber(current.actualAltitudeFt, 0)}ft`
           : '-';
+        const forecastReferenceText = current.forecastReferenceText || formatWeatherOverlayForecastReference(current.time, weatherOverlayState.forecastOffsetHours);
         const surfaceAssessment = current.surfaceAssessment && typeof current.surfaceAssessment === 'object'
           ? current.surfaceAssessment
           : buildWeatherOverlaySurfaceAssessment({
@@ -8497,7 +8586,7 @@
           ['실제 고도', actualAltitudeText],
           ['압력면 소스', current.levelSource || '-'],
           ['시정', Number.isFinite(current.visibilityKm) ? `${formatWeatherNumber(current.visibilityKm, 1)}km` : '-'],
-          ['기준시각', current.time || '-'],
+          ['예보 기준', forecastReferenceText],
         ];
         marker.bindPopup(
           buildWeatherPopupHtml(`${snapshot.regionLabel || `구역 ${index + 1}`} 기상`, popupRows, '', `${grade.icon} ${grade.label}`),
@@ -8604,6 +8693,7 @@
           'wind_gusts_10m',
           'wind_speed_10m',
           'wind_direction_10m',
+          'is_day',
           'visibility',
           'weather_code',
           'temperature_2m',
@@ -8753,6 +8843,11 @@
         weatherOverlayAltitudeSelect.value = String(altitudeFt);
         weatherOverlayAltitudeSelect.disabled = weatherOverlayMasterToggle.disabled || !!weatherOverlayState.loading;
       }
+      if (weatherOverlayForecastSelect) {
+        const forecastOffsetHours = normalizeWeatherOverlayForecastOffsetHours(weatherOverlayState.forecastOffsetHours);
+        weatherOverlayForecastSelect.value = String(forecastOffsetHours);
+        weatherOverlayForecastSelect.disabled = weatherOverlayMasterToggle.disabled || !!weatherOverlayState.loading;
+      }
       if (weatherOverlayRefreshButton) {
         weatherOverlayRefreshButton.disabled = weatherOverlayState.loading || !weatherOverlayState.enabled;
       }
@@ -8769,13 +8864,14 @@
         ? current.grade
         : classifyWeatherOverlayCondition(null, null);
       const altitudeLabel = current.altitudeLabel || getWeatherOverlayAltitudeLabel(weatherOverlayState.altitudeFt);
+      const forecastLabel = current.forecastLabel || getWeatherOverlayForecastOffsetLabel(weatherOverlayState.forecastOffsetHours);
       const regionCount = snapshots.length;
       const failedCount = Number.isFinite(parseWeatherNumber(weatherOverlayState.data && weatherOverlayState.data.failedRegionCount))
         ? Math.max(0, Math.round(parseWeatherNumber(weatherOverlayState.data.failedRegionCount)))
         : 0;
       const regionSummary = regionCount > 1 ? ` · ${regionCount}개 구역` : '';
       const failSummary = failedCount > 0 ? ` · 일부 실패 ${failedCount}` : '';
-      setWeatherOverlayStatus(`기상 오버레이 ON${regionSummary} · ${altitudeLabel} · ${grade.icon} ${grade.label}${failSummary}`, 'live');
+      setWeatherOverlayStatus(`기상 오버레이 ON${regionSummary} · ${forecastLabel} · ${altitudeLabel} · ${grade.icon} ${grade.label}${failSummary}`, 'live');
     }
 
     async function refreshWeatherOverlay(options = {}) {
@@ -16340,6 +16436,16 @@
           syncWeatherOverlayControlUi();
         }
         scheduleViewerStateSave();
+      });
+    }
+    if (weatherOverlayForecastSelect) {
+      weatherOverlayForecastSelect.addEventListener('change', async () => {
+        weatherOverlayState.forecastOffsetHours = normalizeWeatherOverlayForecastOffsetHours(weatherOverlayForecastSelect.value);
+        if (weatherOverlayState.enabled) {
+          await refreshWeatherOverlay({ manual: false, silentFail: true });
+        } else {
+          syncWeatherOverlayControlUi();
+        }
       });
     }
     if (weatherOverlayRefreshButton) {
