@@ -1672,17 +1672,20 @@
       max-width: 220px;
       padding: 8px 10px;
       border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.20);
-      background: rgba(0, 0, 0, 0.78);
+      border: 1px solid rgba(205, 228, 255, 0.34);
+      background: rgba(4, 11, 18, 0.92);
       color: #f4f8fd;
       font-size: 11px;
       line-height: 1.4;
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.34);
+      box-shadow: 0 12px 26px rgba(0, 0, 0, 0.42);
+      backdrop-filter: blur(2px);
     }
     .weather-overlay-marker-scale {
       --weather-marker-scale: 1;
       transform: scale(var(--weather-marker-scale));
       transform-origin: center center;
+      position: relative;
+      z-index: 2;
     }
     .weather-overlay-card__badge {
       display: inline-flex;
@@ -3899,6 +3902,8 @@
     map.getPane('koreaOutlinePane').style.zIndex = '245';
     map.createPane('weatherOverlayPane');
     map.getPane('weatherOverlayPane').style.zIndex = '650';
+    map.createPane('weatherOverlayCardPane');
+    map.getPane('weatherOverlayCardPane').style.zIndex = '670';
     map.createPane('notamPane');
     map.getPane('notamPane').style.zIndex = '350';
 
@@ -8520,7 +8525,7 @@
       }
       snapshots.forEach((snapshot, index) => {
         const marker = L.marker([snapshot.center.lat, snapshot.center.lng], {
-          pane: 'weatherOverlayPane',
+          pane: 'weatherOverlayCardPane',
           icon: L.divIcon({
             className: '',
             html: buildWeatherOverlayMarkerHtml(snapshot),
