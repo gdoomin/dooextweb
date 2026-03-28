@@ -3884,7 +3884,10 @@
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
-    const FRONTEND_BASE_URL = String(payload && payload.frontend_base_url ? payload.frontend_base_url : '').trim().replace(/\/+$/, '');
+    const DEFAULT_FRONTEND_PUBLIC_BASE_URL = 'https://dooext.dooheetv.com';
+    const FRONTEND_BASE_URL = String(
+      payload && payload.frontend_base_url ? payload.frontend_base_url : DEFAULT_FRONTEND_PUBLIC_BASE_URL,
+    ).trim().replace(/\/+$/, '');
     const WEATHER_OVERLAY_API_URL = resolveApiUrl('/api/weather/open-meteo/forecast');
     const WEATHER_AIR_QUALITY_API_URL = resolveApiUrl('/api/weather/open-meteo/air-quality');
     const WEATHER_OVERLAY_FRONTEND_PROXY_URL = FRONTEND_BASE_URL ? `${FRONTEND_BASE_URL}/api/weather/open-meteo/forecast` : '';
@@ -9139,13 +9142,13 @@
       const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
       const [weatherResult, airQualityResult] = await Promise.allSettled([
         fetchJsonWithFallbacks([
-          WEATHER_OVERLAY_FRONTEND_PROXY_URL ? `${WEATHER_OVERLAY_FRONTEND_PROXY_URL}?${weatherQuery.toString()}` : '',
+          `${WEATHER_OVERLAY_FRONTEND_PROXY_URL}?${weatherQuery.toString()}`,
+          `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherDirectQuery.toString()}`,
           `${WEATHER_OVERLAY_API_DIRECT_ECMWF_URL}?${weatherDirectQuery.toString()}`,
-          `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherQuery.toString()}`,
           `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
         ], 'forecast'),
         fetchJsonWithFallbacks([
-          WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL ? `${WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL}?${airQualityQuery.toString()}` : '',
+          `${WEATHER_AIR_QUALITY_FRONTEND_PROXY_URL}?${airQualityQuery.toString()}`,
           `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
           `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
         ], 'air-quality'),
