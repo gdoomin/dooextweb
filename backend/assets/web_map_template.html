@@ -13632,11 +13632,7 @@
         weatherOverlayState.timelineDayIndex = 0;
       }
       syncWeatherOverlayControlUi();
-      if (savedOverlay.enabled) {
-        await setWeatherOverlayEnabled(true, { persist: false, silentFail: true });
-      } else {
-        await setWeatherOverlayEnabled(false, { persist: false, silentFail: true });
-      }
+      await setWeatherOverlayEnabled(false, { persist: false, silentFail: true });
     }
 
     async function applySavedNotamState(savedNotam) {
