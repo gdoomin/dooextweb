@@ -7601,28 +7601,95 @@
         }));
     }
 
-    function getWeatherOverlayWorkRegions(maxCards = WEATHER_OVERLAY_MAX_REGION_CARDS) {
-      const candidates = buildWeatherOverlayRegionCandidates();
-      if (!candidates.length) {
-        let center = null;
-        if (bounds && typeof bounds.isValid === 'function' && bounds.isValid()) {
-          center = bounds.getCenter();
-        } else if (map && typeof map.getCenter === 'function') {
-          center = map.getCenter();
-        }
-        if (!center || !Number.isFinite(parseWeatherNumber(center.lat)) || !Number.isFinite(parseWeatherNumber(center.lng))) {
-          return [];
-        }
-        return [{
-          id: 'region-1',
-          index: 0,
-          label: '구역 1',
-          lineCount: 0,
-          center: L.latLng(center.lat, center.lng),
-          bounds: [[center.lat, center.lng], [center.lat, center.lng]],
-        }];
+    function getWeatherOverlayReferenceBounds() {
+      if (bounds && typeof bounds.isValid === 'function' && bounds.isValid()) {
+        return bounds;
       }
-      return buildWeatherOverlayRegionClusters(candidates, Math.max(1, maxCards));
+      if (map && typeof map.getBounds === 'function') {
+        const mapBounds = map.getBounds();
+        if (mapBounds && typeof mapBounds.isValid === 'function' && mapBounds.isValid()) {
+          return mapBounds;
+        }
+      }
+      return null;
+    }
+
+    function getWeatherOverlayGridDimensions(maxCards) {
+      const targetCount = Math.max(1, Math.round(parseWeatherNumber(maxCards) || 1));
+      if (targetCount >= 9) {
+        return { cols: 3, rows: 3 };
+      }
+      if (targetCount >= 6) {
+        return { cols: 3, rows: 2 };
+      }
+      if (targetCount >= 4) {
+        return { cols: 2, rows: 2 };
+      }
+      if (targetCount === 3) {
+        return { cols: 3, rows: 1 };
+      }
+      if (targetCount === 2) {
+        return { cols: 2, rows: 1 };
+      }
+      return { cols: 1, rows: 1 };
+    }
+
+    function getWeatherOverlayWorkRegions(maxCards = WEATHER_OVERLAY_MAX_REGION_CARDS) {
+      const referenceBounds = getWeatherOverlayReferenceBounds();
+      if (!referenceBounds) {
+        return [];
+      }
+      const candidates = buildWeatherOverlayRegionCandidates();
+      const { cols, rows } = getWeatherOverlayGridDimensions(maxCards);
+      const south = referenceBounds.getSouth();
+      const north = referenceBounds.getNorth();
+      const west = referenceBounds.getWest();
+      const east = referenceBounds.getEast();
+      const latStep = rows > 0 ? (north - south) / rows : 0;
+      const lngStep = cols > 0 ? (east - west) / cols : 0;
+      const regions = [];
+      const fallbackLineCount = Math.max(0, Array.isArray(resultLineEntries) ? resultLineEntries.length : 0);
+      for (let rowIndex = 0; rowIndex < rows; rowIndex += 1) {
+        for (let colIndex = 0; colIndex < cols; colIndex += 1) {
+          const cellSouth = rowIndex === rows - 1 ? south + (latStep * rowIndex) : south + (latStep * rowIndex);
+          const cellNorth = rowIndex === rows - 1 ? north : south + (latStep * (rowIndex + 1));
+          const cellWest = colIndex === cols - 1 ? west + (lngStep * colIndex) : west + (lngStep * colIndex);
+          const cellEast = colIndex === cols - 1 ? east : west + (lngStep * (colIndex + 1));
+          const centerLat = (cellSouth + cellNorth) / 2;
+          const centerLng = (cellWest + cellEast) / 2;
+          const lineCount = candidates.length
+            ? candidates.filter((candidate) => (
+              parseWeatherNumber(candidate.lat) >= cellSouth
+              && parseWeatherNumber(candidate.lat) <= cellNorth
+              && parseWeatherNumber(candidate.lng) >= cellWest
+              && parseWeatherNumber(candidate.lng) <= cellEast
+            )).length
+            : fallbackLineCount;
+          if (lineCount <= 0 && candidates.length) {
+            continue;
+          }
+          regions.push({
+            id: `region-${regions.length + 1}`,
+            index: regions.length,
+            label: `구역 ${regions.length + 1}`,
+            lineCount: Math.max(0, lineCount),
+            center: L.latLng(centerLat, centerLng),
+            bounds: [[cellSouth, cellWest], [cellNorth, cellEast]],
+          });
+        }
+      }
+      if (regions.length) {
+        return regions;
+      }
+      const center = referenceBounds.getCenter();
+      return [{
+        id: 'region-1',
+        index: 0,
+        label: '구역 1',
+        lineCount: fallbackLineCount,
+        center: L.latLng(center.lat, center.lng),
+        bounds: [[south, west], [north, east]],
+      }];
     }
 
     function getWeatherOverlayWorkCenter() {
