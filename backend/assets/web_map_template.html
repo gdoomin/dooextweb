@@ -7250,8 +7250,18 @@
       let lastError = null;
       for (const candidate of candidates) {
         const resolved = resolveApiUrl(candidate);
+        const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+        const timeoutId = controller ? window.setTimeout(() => controller.abort(), 10000) : null;
         try {
-          const response = await fetch(resolved, { cache: 'no-store' });
+          const response = await fetch(resolved, {
+            cache: 'no-store',
+            mode: /^https?:\/\//i.test(resolved) ? 'cors' : 'same-origin',
+            credentials: 'omit',
+            signal: controller ? controller.signal : undefined,
+          });
+          if (timeoutId) {
+            window.clearTimeout(timeoutId);
+          }
           if (!response.ok) {
             const fallback = `${response.status} ${response.statusText}`.trim();
             let detail = fallback;
@@ -7267,6 +7277,9 @@
           }
           return await response.json();
         } catch (error) {
+          if (timeoutId) {
+            window.clearTimeout(timeoutId);
+          }
           lastError = error instanceof Error ? error : new Error(String(error || `${label} failed`));
           console.warn(`[weather overlay] ${label} fetch fallback`, resolved, lastError);
         }
@@ -8860,12 +8873,12 @@
       const [weatherResult, airQualityResult] = await Promise.allSettled([
         fetchJsonWithFallbacks([
           `${WEATHER_OVERLAY_API_DIRECT_ECMWF_URL}?${weatherDirectQuery.toString()}`,
-          `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
           `${WEATHER_OVERLAY_API_FALLBACK_URL}?${weatherQuery.toString()}`,
+          `${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`,
         ], 'forecast'),
         fetchJsonWithFallbacks([
-          `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
           `${WEATHER_AIR_QUALITY_API_FALLBACK_URL}?${airQualityQuery.toString()}`,
+          `${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`,
         ], 'air-quality'),
       ]);
       if (weatherResult.status !== 'fulfilled') {
