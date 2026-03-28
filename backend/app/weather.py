@@ -39,6 +39,7 @@ GK2A_CHANNEL_MAP = {
 _CACHE: dict[str, tuple[float, Any]] = {}
 _USER_AGENT = "dooextweb-weather/0.1"
 OPEN_METEO_FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+OPEN_METEO_ECMWF_URL = "https://api.open-meteo.com/v1/ecmwf"
 OPEN_METEO_AIR_QUALITY_URL = "https://air-quality-api.open-meteo.com/v1/air-quality"
 OPEN_METEO_PROXY_ALLOWED_PARAMS = frozenset({
     "latitude",
@@ -925,11 +926,18 @@ def proxy_open_meteo_payload(base_url: str, query_params: dict[str, Any]) -> dic
     if latitude is None or longitude is None:
         raise ValueError("latitude and longitude are required")
 
+    resolved_base_url = base_url
+    if base_url == OPEN_METEO_FORECAST_URL:
+        model_name = str(params.get("models") or "").strip().lower()
+        if model_name.startswith("ecmwf"):
+            resolved_base_url = OPEN_METEO_ECMWF_URL
+            params.pop("models", None)
+
     ordered_query = urlencode(sorted(params.items()))
-    url = f"{base_url}?{ordered_query}"
+    url = f"{resolved_base_url}?{ordered_query}"
     if force_refresh:
         return _fetch_json(url)
-    cache_key = f"weather:proxy:{base_url}:{ordered_query}"
+    cache_key = f"weather:proxy:{resolved_base_url}:{ordered_query}"
     return _get_json(cache_key, url, ttl_seconds=180)
 
 
