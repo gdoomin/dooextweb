@@ -3810,6 +3810,7 @@
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
     const WEATHER_OVERLAY_API_URL = 'https://api.open-meteo.com/v1/forecast';
+    const WEATHER_AIR_QUALITY_API_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
     const WEATHER_OVERLAY_DAY_LABELS = ['오늘', '내일', '모레'];
     const WEATHER_OVERLAY_ALTITUDE_PRESETS = [
       { feet: 2500, levelKey: '925hPa', label: '2500피트' },
@@ -7649,6 +7650,44 @@
       return parsed;
     }
 
+    function resolveOpenMeteoTimeIndex(hourlyTimes, preferredTime = '') {
+      const safeTimes = Array.isArray(hourlyTimes) ? hourlyTimes : [];
+      if (!safeTimes.length) {
+        return -1;
+      }
+      if (preferredTime) {
+        const exactIndex = safeTimes.indexOf(preferredTime);
+        if (exactIndex >= 0) {
+          return exactIndex;
+        }
+      }
+      const nowMs = Date.now();
+      let closestIndex = -1;
+      let closestDiff = Infinity;
+      safeTimes.forEach((value, index) => {
+        const timestamp = Date.parse(value);
+        if (!Number.isFinite(timestamp)) {
+          return;
+        }
+        const diff = Math.abs(timestamp - nowMs);
+        if (diff < closestDiff) {
+          closestDiff = diff;
+          closestIndex = index;
+        }
+      });
+      return closestIndex;
+    }
+
+    function getOpenMeteoSeriesValue(currentData, hourlyData, key, index) {
+      const currentValue = currentData && typeof currentData === 'object'
+        ? parseWeatherNumber(currentData[key])
+        : null;
+      if (Number.isFinite(currentValue)) {
+        return currentValue;
+      }
+      return parseWeatherNumber(getOpenMeteoHourlyValue(hourlyData, key, index));
+    }
+
     function resolveWeatherOverlayCloudConstraint(hourly, index, selectedAltitudeFt, selectedSample = null) {
       const selectedFt = normalizeWeatherOverlayAltitudeFt(selectedAltitudeFt);
       const selected = selectedSample || resolveWeatherOverlayAltitudeSample(hourly, index, selectedFt);
@@ -7685,19 +7724,193 @@
       };
     }
 
-    function classifyWeatherOverlayCondition(cloudCoverPercent, visibilityKm) {
-      const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
-      const visibility = Number.isFinite(visibilityKm) ? visibilityKm : 999;
-      if (cloud > 80 || visibility < 3) {
+    function getWeatherOverlayGradeDescriptor(key) {
+      if (String(key || '').trim().toLowerCase() === 'bad') {
         return { key: 'bad', label: '촬영 불가', icon: '❌', color: '#F44336' };
       }
-      if (cloud >= 50 && cloud <= 80) {
+      if (String(key || '').trim().toLowerCase() === 'caution') {
         return { key: 'caution', label: '주의', icon: '⚠️', color: '#FFC107' };
       }
-      if (cloud <= 30 && visibility >= 5) {
-        return { key: 'ok', label: '촬영 가능', icon: '✅', color: '#4CAF50' };
+      return { key: 'ok', label: '촬영 가능', icon: '✅', color: '#4CAF50' };
+    }
+
+    function getWeatherOverlayGradeRank(value) {
+      const key = typeof value === 'string'
+        ? value
+        : (value && typeof value === 'object' ? value.key : '');
+      if (key === 'bad') {
+        return 2;
       }
-      return { key: 'caution', label: '주의', icon: '⚠️', color: '#FFC107' };
+      if (key === 'caution') {
+        return 1;
+      }
+      return 0;
+    }
+
+    function buildWeatherOverlaySurfaceAssessment(context = {}) {
+      const visibilityKm = parseWeatherNumber(context.visibilityKm);
+      const weatherCode = parseWeatherNumber(context.weatherCode);
+      const relativeHumidity2m = parseWeatherNumber(context.relativeHumidity2m);
+      const lowCloudCover = parseWeatherNumber(context.lowCloudCover);
+      const aerosolOpticalDepth = parseWeatherNumber(context.aerosolOpticalDepth);
+      const pm25 = parseWeatherNumber(context.pm25);
+      const pm10 = parseWeatherNumber(context.pm10);
+      const dust = parseWeatherNumber(context.dust);
+      const temperature2m = parseWeatherNumber(context.temperature2m);
+      const dewPoint2m = parseWeatherNumber(context.dewPoint2m);
+      const dewPointSpreadC = Number.isFinite(temperature2m) && Number.isFinite(dewPoint2m)
+        ? Math.max(0, temperature2m - dewPoint2m)
+        : null;
+      const visibilityText = Number.isFinite(visibilityKm)
+        ? `${visibilityKm >= 10 ? '10km+' : `${formatWeatherNumber(visibilityKm, 1)}km`}`
+        : '';
+      const humidityText = Number.isFinite(relativeHumidity2m)
+        ? `지상 RH ${Math.round(relativeHumidity2m)}%`
+        : '';
+      const spreadText = Number.isFinite(dewPointSpreadC)
+        ? `이슬점차 ${formatWeatherNumber(dewPointSpreadC, 1)}°C`
+        : '';
+      const lowCloudText = Number.isFinite(lowCloudCover)
+        ? `저층운 ${Math.round(lowCloudCover)}%`
+        : '';
+      const aerosolText = Number.isFinite(aerosolOpticalDepth)
+        ? `AOD ${formatWeatherNumber(aerosolOpticalDepth, 2)}`
+        : '';
+      const pm25Text = Number.isFinite(pm25)
+        ? `PM2.5 ${formatWeatherNumber(pm25, 0)}`
+        : '';
+      const pm10Text = Number.isFinite(pm10)
+        ? `PM10 ${formatWeatherNumber(pm10, 0)}`
+        : '';
+      const dustText = Number.isFinite(dust)
+        ? `Dust ${formatWeatherNumber(dust, 0)}`
+        : '';
+      const fogByCode = weatherCode === 45 || weatherCode === 48;
+      const fogLikely = fogByCode || (
+        Number.isFinite(visibilityKm)
+        && visibilityKm < 1.2
+        && (
+          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 95)
+          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 1.2)
+          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 85)
+        )
+      );
+      if (fogLikely) {
+        const detailParts = [visibilityText, humidityText, spreadText, lowCloudText].filter(Boolean);
+        return {
+          key: 'fog',
+          label: '안개 가능',
+          gradeKey: fogByCode || (Number.isFinite(visibilityKm) && visibilityKm < 1.0) ? 'bad' : 'caution',
+          reason: detailParts.join(' · '),
+          shortReason: detailParts.join(' / '),
+          surfaceRelativeHumidity: relativeHumidity2m,
+          dewPointSpreadC,
+          lowCloudCover,
+          aerosolOpticalDepth,
+          pm25,
+          pm10,
+          dust,
+          visibilityKm,
+        };
+      }
+
+      const mistLikely = Number.isFinite(visibilityKm)
+        && visibilityKm < 5
+        && (
+          (Number.isFinite(relativeHumidity2m) && relativeHumidity2m >= 88)
+          || (Number.isFinite(dewPointSpreadC) && dewPointSpreadC <= 2.5)
+          || (Number.isFinite(lowCloudCover) && lowCloudCover >= 70)
+        );
+      if (mistLikely) {
+        const detailParts = [visibilityText, humidityText, spreadText, lowCloudText].filter(Boolean);
+        return {
+          key: 'mist',
+          label: '박무 가능',
+          gradeKey: visibilityKm < 2.5 ? 'bad' : 'caution',
+          reason: detailParts.join(' · '),
+          shortReason: detailParts.join(' / '),
+          surfaceRelativeHumidity: relativeHumidity2m,
+          dewPointSpreadC,
+          lowCloudCover,
+          aerosolOpticalDepth,
+          pm25,
+          pm10,
+          dust,
+          visibilityKm,
+        };
+      }
+
+      const hazeLikely = Number.isFinite(visibilityKm)
+        && visibilityKm < 10
+        && (
+          (Number.isFinite(aerosolOpticalDepth) && aerosolOpticalDepth >= 0.28)
+          || (Number.isFinite(pm25) && pm25 >= 20)
+          || (Number.isFinite(pm10) && pm10 >= 40)
+          || (Number.isFinite(dust) && dust >= 10)
+        );
+      if (hazeLikely) {
+        const detailParts = [visibilityText, aerosolText, pm25Text, pm10Text, dustText].filter(Boolean);
+        return {
+          key: 'haze',
+          label: '연무 가능',
+          gradeKey: (
+            visibilityKm < 5
+            || (Number.isFinite(aerosolOpticalDepth) && aerosolOpticalDepth >= 0.45)
+            || (Number.isFinite(pm25) && pm25 >= 35)
+            || (Number.isFinite(pm10) && pm10 >= 80)
+            || (Number.isFinite(dust) && dust >= 20)
+          ) ? 'bad' : 'caution',
+          reason: detailParts.join(' · '),
+          shortReason: detailParts.join(' / '),
+          surfaceRelativeHumidity: relativeHumidity2m,
+          dewPointSpreadC,
+          lowCloudCover,
+          aerosolOpticalDepth,
+          pm25,
+          pm10,
+          dust,
+          visibilityKm,
+        };
+      }
+
+      return {
+        key: 'clear',
+        label: '양호',
+        gradeKey: 'ok',
+        reason: '',
+        shortReason: '',
+        surfaceRelativeHumidity: relativeHumidity2m,
+        dewPointSpreadC,
+        lowCloudCover,
+        aerosolOpticalDepth,
+        pm25,
+        pm10,
+        dust,
+        visibilityKm,
+      };
+    }
+
+    function classifyWeatherOverlayCondition(cloudCoverPercent, visibilityKm, surfaceAssessment = null) {
+      const cloud = Number.isFinite(cloudCoverPercent) ? cloudCoverPercent : 0;
+      const visibility = Number.isFinite(visibilityKm) ? visibilityKm : 999;
+      let baseKey = 'ok';
+      if (cloud > 80 || visibility < 3) {
+        baseKey = 'bad';
+      } else if (cloud >= 50 && cloud <= 80) {
+        baseKey = 'caution';
+      } else if (cloud <= 30 && visibility >= 5) {
+        baseKey = 'ok';
+      } else {
+        baseKey = 'caution';
+      }
+      const baseGrade = getWeatherOverlayGradeDescriptor(baseKey);
+      const surfaceGrade = surfaceAssessment && surfaceAssessment.gradeKey
+        ? getWeatherOverlayGradeDescriptor(surfaceAssessment.gradeKey)
+        : null;
+      if (surfaceGrade && getWeatherOverlayGradeRank(surfaceGrade) > getWeatherOverlayGradeRank(baseGrade)) {
+        return surfaceGrade;
+      }
+      return baseGrade;
     }
 
     function resolveWindArrowRotation(windDirectionDeg) {
@@ -7719,32 +7932,19 @@
       return series[index];
     }
 
-    function buildWeatherOverlayData(centerLatLng, payloadData) {
+    function buildWeatherOverlayData(centerLatLng, payloadData, airQualityPayload = null) {
       const data = payloadData && typeof payloadData === 'object' ? payloadData : {};
       const current = data.current && typeof data.current === 'object' ? data.current : {};
       const hourly = data.hourly && typeof data.hourly === 'object' ? data.hourly : {};
       const hourlyTimes = Array.isArray(hourly.time) ? hourly.time : [];
-
-      let currentIndex = -1;
       const currentTime = typeof current.time === 'string' ? current.time : '';
-      if (currentTime) {
-        currentIndex = hourlyTimes.indexOf(currentTime);
-      }
-      if (currentIndex < 0 && hourlyTimes.length) {
-        const nowMs = Date.now();
-        let closestDiff = Infinity;
-        hourlyTimes.forEach((value, index) => {
-          const timestamp = Date.parse(value);
-          if (!Number.isFinite(timestamp)) {
-            return;
-          }
-          const diff = Math.abs(timestamp - nowMs);
-          if (diff < closestDiff) {
-            closestDiff = diff;
-            currentIndex = index;
-          }
-        });
-      }
+      const currentIndex = resolveOpenMeteoTimeIndex(hourlyTimes, currentTime);
+      const airQuality = airQualityPayload && typeof airQualityPayload === 'object' ? airQualityPayload : {};
+      const airQualityCurrent = airQuality.current && typeof airQuality.current === 'object' ? airQuality.current : {};
+      const airQualityHourly = airQuality.hourly && typeof airQuality.hourly === 'object' ? airQuality.hourly : {};
+      const airQualityTimes = Array.isArray(airQualityHourly.time) ? airQualityHourly.time : [];
+      const airQualityCurrentTime = typeof airQualityCurrent.time === 'string' ? airQualityCurrent.time : currentTime;
+      const airQualityIndex = resolveOpenMeteoTimeIndex(airQualityTimes, airQualityCurrentTime || currentTime);
 
       const altitudePreset = getWeatherOverlayAltitudePreset(weatherOverlayState.altitudeFt);
       const altitudeSampleCurrent = resolveWeatherOverlayAltitudeSample(hourly, currentIndex, altitudePreset.feet);
@@ -7761,11 +7961,31 @@
       const visibilityKm = Number.isFinite(currentVisibilityKm) ? currentVisibilityKm : visibilityMetersToKm(getOpenMeteoHourlyValue(hourly, 'visibility', currentIndex));
       const temperatureC = Number.isFinite(altitudeSampleCurrent.temperatureC) ? altitudeSampleCurrent.temperatureC : null;
       const relativeHumidity = Number.isFinite(altitudeSampleCurrent.relativeHumidity) ? altitudeSampleCurrent.relativeHumidity : null;
+      const surfaceTemperatureC = getOpenMeteoSeriesValue(current, hourly, 'temperature_2m', currentIndex);
+      const surfaceRelativeHumidity = getOpenMeteoSeriesValue(current, hourly, 'relative_humidity_2m', currentIndex);
+      const surfaceDewPointC = getOpenMeteoSeriesValue(current, hourly, 'dew_point_2m', currentIndex);
+      const lowCloudCover = getOpenMeteoSeriesValue(current, hourly, 'cloud_cover_low', currentIndex);
+      const aerosolOpticalDepth = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'aerosol_optical_depth', airQualityIndex);
+      const pm25 = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm2_5', airQualityIndex);
+      const pm10 = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'pm10', airQualityIndex);
+      const dust = getOpenMeteoSeriesValue(airQualityCurrent, airQualityHourly, 'dust', airQualityIndex);
       const cloudConstraintCurrent = resolveWeatherOverlayCloudConstraint(hourly, currentIndex, selectedAltitudeFt, altitudeSampleCurrent);
       const effectiveCloudCover = Number.isFinite(cloudConstraintCurrent.effectiveCloudCover)
         ? cloudConstraintCurrent.effectiveCloudCover
         : cloudCover;
-      const grade = classifyWeatherOverlayCondition(effectiveCloudCover, visibilityKm);
+      const surfaceAssessment = buildWeatherOverlaySurfaceAssessment({
+        visibilityKm,
+        weatherCode: parseWeatherNumber(current.weather_code),
+        relativeHumidity2m: surfaceRelativeHumidity,
+        temperature2m: surfaceTemperatureC,
+        dewPoint2m: surfaceDewPointC,
+        lowCloudCover,
+        aerosolOpticalDepth,
+        pm25,
+        pm10,
+        dust,
+      });
+      const grade = classifyWeatherOverlayCondition(effectiveCloudCover, visibilityKm, surfaceAssessment);
 
       const dailyMap = new Map();
       hourlyTimes.forEach((timeValue, index) => {
@@ -7790,7 +8010,19 @@
         const rowEffectiveCloud = Number.isFinite(rowCloudConstraint.effectiveCloudCover)
           ? rowCloudConstraint.effectiveCloudCover
           : rowCloud;
-        const rowGrade = classifyWeatherOverlayCondition(rowEffectiveCloud, rowVisibilityKm);
+        const rowSurfaceAssessment = buildWeatherOverlaySurfaceAssessment({
+          visibilityKm: rowVisibilityKm,
+          weatherCode: parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'weather_code', index)),
+          relativeHumidity2m: parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'relative_humidity_2m', index)),
+          temperature2m: parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'temperature_2m', index)),
+          dewPoint2m: parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'dew_point_2m', index)),
+          lowCloudCover: parseWeatherNumber(getOpenMeteoHourlyValue(hourly, 'cloud_cover_low', index)),
+          aerosolOpticalDepth: parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'aerosol_optical_depth', index)),
+          pm25: parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'pm2_5', index)),
+          pm10: parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'pm10', index)),
+          dust: parseWeatherNumber(getOpenMeteoHourlyValue(airQualityHourly, 'dust', index)),
+        });
+        const rowGrade = classifyWeatherOverlayCondition(rowEffectiveCloud, rowVisibilityKm, rowSurfaceAssessment);
         dailyMap.get(dateKey).items.push({
           hour,
           windKt: rowWind,
@@ -7827,6 +8059,15 @@
           blockedByLowerCloud: !!cloudConstraintCurrent.blockedByLowerCloud,
           temperatureC,
           relativeHumidity,
+          surfaceTemperatureC,
+          surfaceRelativeHumidity,
+          surfaceDewPointC,
+          surfaceDewPointSpreadC: surfaceAssessment.dewPointSpreadC,
+          lowCloudCover,
+          aerosolOpticalDepth,
+          pm25,
+          pm10,
+          dust,
           visibilityKm,
           isDay: Number.isFinite(parseWeatherNumber(current.is_day)) ? Number(current.is_day) === 1 : true,
           weatherCode: parseWeatherNumber(current.weather_code),
@@ -7835,6 +8076,7 @@
           actualAltitudeFt,
           levelSource: altitudeSampleCurrent.sourceLabel || altitudePreset.levelKey,
           precisionMode: Number.isFinite(altitudeSampleCurrent.actualMeters),
+          surfaceAssessment,
           grade,
         },
         days,
@@ -8032,6 +8274,22 @@
       const visibilityText = Number.isFinite(current.visibilityKm)
         ? `${current.visibilityKm >= 10 ? '10km+' : `${formatWeatherNumber(current.visibilityKm, 1)}km`}`
         : '-';
+      const surfaceAssessment = current.surfaceAssessment && typeof current.surfaceAssessment === 'object'
+        ? current.surfaceAssessment
+        : buildWeatherOverlaySurfaceAssessment({
+          visibilityKm: current.visibilityKm,
+          weatherCode: current.weatherCode,
+          relativeHumidity2m: current.surfaceRelativeHumidity,
+          temperature2m: current.surfaceTemperatureC,
+          dewPoint2m: current.surfaceDewPointC,
+          lowCloudCover: current.lowCloudCover,
+          aerosolOpticalDepth: current.aerosolOpticalDepth,
+          pm25: current.pm25,
+          pm10: current.pm10,
+          dust: current.dust,
+        });
+      const surfacePhenomenonText = surfaceAssessment.label || '양호';
+      const surfaceReasonText = surfaceAssessment.reason || '';
       const altitudeLabel = current.altitudeLabel || getWeatherOverlayAltitudeLabel(weatherOverlayState.altitudeFt);
       const actualAltitudeText = Number.isFinite(current.actualAltitudeFt)
         ? `실고도 ${formatWeatherNumber(current.actualAltitudeFt, 0)}ft`
@@ -8057,11 +8315,13 @@
             <div class="weather-overlay-card__row">☁️ 선택고도 운량 ${escapeHtml(cloudText)}</div>
             <div class="weather-overlay-card__row">☁️ 판정 운량 ${escapeHtml(effectiveCloudText)}</div>
             ${current.blockedByLowerCloud && current.blockingAltitudeLabel ? `<div class="weather-overlay-card__row weather-overlay-card__reason">하층 구름 ${escapeHtml(current.blockingAltitudeLabel)} 때문에 지상 차폐</div>` : ''}
+            <div class="weather-overlay-card__row">🌫️ 지상 현상 ${escapeHtml(surfacePhenomenonText)}</div>
+            ${surfaceReasonText ? `<div class="weather-overlay-card__row weather-overlay-card__reason">지상 시정 영향 ${escapeHtml(surfaceReasonText)}</div>` : ''}
             <div class="weather-overlay-card__row">🌡️ 기온 ${escapeHtml(tempText)}</div>
             <div class="weather-overlay-card__row">💧 상대습도 ${escapeHtml(humidityText)}</div>
             <div class="weather-overlay-card__row">👁️ 시정 ${escapeHtml(visibilityText)}</div>
             <div class="weather-overlay-card__row">🕐 현재 기준</div>
-            <div class="weather-overlay-card__row">모델: ECMWF</div>
+            <div class="weather-overlay-card__row">모델: ECMWF + Air Quality</div>
             <div class="weather-overlay-card__row">고도: ${escapeHtml(altitudeLabel)} 기준</div>
             <div class="weather-overlay-card__row">${escapeHtml(actualAltitudeText)}</div>
             ${regionText ? `<div class="weather-overlay-card__row">${escapeHtml(regionText)}</div>` : ''}
@@ -8103,6 +8363,33 @@
         const actualAltitudeText = Number.isFinite(current.actualAltitudeFt)
           ? `${formatWeatherNumber(current.actualAltitudeFt, 0)}ft`
           : '-';
+        const surfaceAssessment = current.surfaceAssessment && typeof current.surfaceAssessment === 'object'
+          ? current.surfaceAssessment
+          : buildWeatherOverlaySurfaceAssessment({
+            visibilityKm: current.visibilityKm,
+            weatherCode: current.weatherCode,
+            relativeHumidity2m: current.surfaceRelativeHumidity,
+            temperature2m: current.surfaceTemperatureC,
+            dewPoint2m: current.surfaceDewPointC,
+            lowCloudCover: current.lowCloudCover,
+            aerosolOpticalDepth: current.aerosolOpticalDepth,
+            pm25: current.pm25,
+            pm10: current.pm10,
+            dust: current.dust,
+          });
+        const airQualitySummaryParts = [];
+        if (Number.isFinite(current.aerosolOpticalDepth)) {
+          airQualitySummaryParts.push(`AOD ${formatWeatherNumber(current.aerosolOpticalDepth, 2)}`);
+        }
+        if (Number.isFinite(current.pm25)) {
+          airQualitySummaryParts.push(`PM2.5 ${formatWeatherNumber(current.pm25, 0)}`);
+        }
+        if (Number.isFinite(current.pm10)) {
+          airQualitySummaryParts.push(`PM10 ${formatWeatherNumber(current.pm10, 0)}`);
+        }
+        if (Number.isFinite(current.dust)) {
+          airQualitySummaryParts.push(`Dust ${formatWeatherNumber(current.dust, 0)}`);
+        }
         const popupRows = [
           ['구역', snapshot.regionLabel || `구역 ${index + 1}`],
           ['라인 수', Number.isFinite(parseWeatherNumber(snapshot.regionLineCount)) ? `${Math.max(0, Math.round(parseWeatherNumber(snapshot.regionLineCount)))}개` : '-'],
@@ -8112,8 +8399,14 @@
           ['선택고도 운량', Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-'],
           ['판정 운량', Number.isFinite(current.effectiveCloudCover) ? `${Math.round(current.effectiveCloudCover)}%` : (Number.isFinite(current.cloudCover) ? `${Math.round(current.cloudCover)}%` : '-')],
           ['하층 구름 차단', current.blockedByLowerCloud && current.blockingAltitudeLabel ? `${current.blockingAltitudeLabel} 구름 때문에 지상 촬영 제한` : '-'],
+          ['지상 현상', surfaceAssessment.label || '양호'],
+          ['판정 근거', surfaceAssessment.shortReason || '-'],
           ['기온', Number.isFinite(current.temperatureC) ? `${formatWeatherNumber(current.temperatureC, 1)}°C` : '-'],
           ['상대습도', Number.isFinite(current.relativeHumidity) ? `${Math.round(current.relativeHumidity)}%` : '-'],
+          ['지상 RH', Number.isFinite(current.surfaceRelativeHumidity) ? `${Math.round(current.surfaceRelativeHumidity)}%` : '-'],
+          ['이슬점차', Number.isFinite(current.surfaceDewPointSpreadC) ? `${formatWeatherNumber(current.surfaceDewPointSpreadC, 1)}°C` : '-'],
+          ['저층운/안개층', Number.isFinite(current.lowCloudCover) ? `${Math.round(current.lowCloudCover)}%` : '-'],
+          ['에어로졸', airQualitySummaryParts.length ? airQualitySummaryParts.join(' / ') : '-'],
           ['실제 고도', actualAltitudeText],
           ['압력면 소스', current.levelSource || '-'],
           ['시정', Number.isFinite(current.visibilityKm) ? `${formatWeatherNumber(current.visibilityKm, 1)}km` : '-'],
@@ -8223,6 +8516,11 @@
         hourly: [
           'wind_gusts_10m',
           'visibility',
+          'weather_code',
+          'temperature_2m',
+          'relative_humidity_2m',
+          'dew_point_2m',
+          'cloud_cover_low',
           'temperature_925hPa',
           'relative_humidity_925hPa',
           'cloud_cover_925hPa',
@@ -8249,10 +8547,26 @@
           'geopotential_height_600hPa',
         ].join(','),
         models: 'ecmwf_ifs025',
-        current: 'wind_gusts_10m,weather_code,is_day,visibility',
+        current: 'wind_gusts_10m,weather_code,is_day,visibility,temperature_2m,relative_humidity_2m,dew_point_2m,cloud_cover_low',
         timezone: 'Asia/Tokyo',
         forecast_days: '3',
         wind_speed_unit: 'kn',
+      });
+      if (forceRefresh) {
+        query.set('_ts', `${Date.now()}_${Math.floor(Math.random() * 1000)}`);
+      }
+      return query;
+    }
+
+    function buildWeatherAirQualityApiQuery(center, forceRefresh = false) {
+      const query = new URLSearchParams({
+        latitude: center.lat.toFixed(4),
+        longitude: center.lng.toFixed(4),
+        hourly: 'pm10,pm2_5,dust,aerosol_optical_depth',
+        current: 'pm10,pm2_5,dust,aerosol_optical_depth',
+        domains: 'cams_global',
+        timezone: 'Asia/Tokyo',
+        forecast_days: '3',
       });
       if (forceRefresh) {
         query.set('_ts', `${Date.now()}_${Math.floor(Math.random() * 1000)}`);
@@ -8265,13 +8579,33 @@
       if (!center) {
         throw new Error('invalid region center');
       }
-      const query = buildWeatherOverlayApiQuery(center, forceRefresh);
-      const response = await fetch(`${WEATHER_OVERLAY_API_URL}?${query.toString()}`, { cache: 'no-store' });
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+      const weatherQuery = buildWeatherOverlayApiQuery(center, forceRefresh);
+      const airQualityQuery = buildWeatherAirQualityApiQuery(center, forceRefresh);
+      const [weatherResult, airQualityResult] = await Promise.allSettled([
+        fetch(`${WEATHER_OVERLAY_API_URL}?${weatherQuery.toString()}`, { cache: 'no-store' }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+          }
+          return response.json();
+        }),
+        fetch(`${WEATHER_AIR_QUALITY_API_URL}?${airQualityQuery.toString()}`, { cache: 'no-store' }).then((response) => {
+          if (!response.ok) {
+            throw new Error(`AQ HTTP ${response.status}`);
+          }
+          return response.json();
+        }),
+      ]);
+      if (weatherResult.status !== 'fulfilled') {
+        throw weatherResult.reason;
       }
-      const json = await response.json();
-      const snapshot = buildWeatherOverlayData(center, json);
+      if (airQualityResult.status !== 'fulfilled') {
+        console.warn('[weather overlay] air quality fetch failed', region && region.label ? region.label : '', airQualityResult.reason);
+      }
+      const snapshot = buildWeatherOverlayData(
+        center,
+        weatherResult.value,
+        airQualityResult.status === 'fulfilled' ? airQualityResult.value : null
+      );
       snapshot.regionId = region.id || '';
       snapshot.regionLabel = region.label || '';
       snapshot.regionIndex = Number.isFinite(parseWeatherNumber(region.index)) ? Math.max(0, Math.round(parseWeatherNumber(region.index))) : 0;
