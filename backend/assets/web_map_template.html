@@ -4070,7 +4070,7 @@
       buildWeatherKbsSite('kbs-9980', '충남 태안 근흥면 신진항', "36°40'40.37\"N", "126°8'11.51\"E", '9980', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9980'),
       buildWeatherKbsSite('kbs-9975', '충북 단양 도담삼봉', "37°0'1.87\"N", "128°20'30.95\"E", '9975', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9975'),
       buildWeatherKbsSite('kbs-9968', '충북 청주 사직동(무심천)', "36°38'8.99\"N", "127°28'56.17\"E", '9968', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9968'),
-    ].filter((site) => Number.isFinite(Number(site && site.lat)) && Number.isFinite(Number(site && site.lng)));
+    ].filter((site) => Number.isFinite(Number(site && site.lat)) && Number.isFinite(Number(site && site.lng))));
     // CCTV_TEST_FEATURE_END
     const DEFAULT_FRONTEND_PUBLIC_BASE_URL = 'https://dooext.dooheetv.com';
     const rawFrontendBaseUrl = String(payload && payload.frontend_base_url ? payload.frontend_base_url : '').trim().replace(/\/+$/, '');
