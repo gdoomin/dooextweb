@@ -2008,6 +2008,49 @@
       white-space: nowrap;
       pointer-events: auto;
     }
+    .cctv-test-marker {
+      background: transparent;
+      border: 0;
+    }
+    .cctv-test-marker__card {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      min-height: 28px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid rgba(125, 211, 252, 0.55);
+      background: linear-gradient(180deg, rgba(7, 18, 30, 0.95), rgba(10, 28, 42, 0.92));
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+      color: #d8f0ff;
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      white-space: nowrap;
+      pointer-events: auto;
+    }
+    .cctv-test-popup {
+      display: grid;
+      gap: 8px;
+      min-width: 190px;
+      color: #e6edf3;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .cctv-test-popup strong {
+      color: #9fd8ff;
+      font-size: 13px;
+    }
+    .cctv-test-popup a {
+      color: #7ee6ff;
+      text-decoration: none;
+      font-weight: 700;
+    }
+    .cctv-test-popup a:hover {
+      text-decoration: underline;
+    }
     .atis-popup {
       width: 100%;
       min-width: 0;
@@ -3279,6 +3322,18 @@
     <p class="weather-title">기상</p>
     <p class="weather-help">실험용 실황/준실황 오버레이입니다. 체크하면 현재 지도 범위 기준으로 외부 기상 정보를 겹쳐 보여줍니다.</p>
     <div id="weatherRows"></div>
+    <!-- CCTV_TEST_FEATURE_START -->
+    <div id="weatherCctvTestRow" class="weather-row">
+      <label for="weatherCctvTestToggle">
+        <input id="weatherCctvTestToggle" type="checkbox" aria-label="CCTV 표시">
+        <span class="weather-label">
+          <span class="weather-name">CCTV</span>
+          <span class="weather-note">테스트 카메라 1개 표시</span>
+        </span>
+      </label>
+      <span id="weatherCctvTestBadge" class="weather-badge" data-tone="idle">OFF</span>
+    </div>
+    <!-- CCTV_TEST_FEATURE_END -->
     <div class="weather-overlay-box">
       <label class="weather-overlay-master">
         <input id="weatherOverlayMasterToggle" type="checkbox" aria-label="기상 체크">
@@ -3884,6 +3939,14 @@
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
       { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
     ];
+    // CCTV_TEST_FEATURE_START
+    const WEATHER_CCTV_TEST = Object.freeze({
+      lat: 37.2562277778,
+      lng: 126.113475,
+      url: 'http://218.148.169.193/content/channelView.hu?cctv_idx=42',
+      label: 'CCTV #42',
+    });
+    // CCTV_TEST_FEATURE_END
     const DEFAULT_FRONTEND_PUBLIC_BASE_URL = 'https://dooext.dooheetv.com';
     const rawFrontendBaseUrl = String(payload && payload.frontend_base_url ? payload.frontend_base_url : '').trim().replace(/\/+$/, '');
     let FRONTEND_BASE_URL = rawFrontendBaseUrl || DEFAULT_FRONTEND_PUBLIC_BASE_URL;
@@ -4102,6 +4165,10 @@
     const layerRows = document.getElementById('layerRows');
     const weatherPanel = document.getElementById('weatherPanel');
     const weatherRows = document.getElementById('weatherRows');
+    // CCTV_TEST_FEATURE_START
+    const weatherCctvTestToggle = document.getElementById('weatherCctvTestToggle');
+    const weatherCctvTestBadge = document.getElementById('weatherCctvTestBadge');
+    // CCTV_TEST_FEATURE_END
     const weatherOverlayMasterToggle = document.getElementById('weatherOverlayMasterToggle');
     const weatherOverlayMarkerToggle = document.getElementById('weatherOverlayMarkerToggle');
     const weatherOverlayBadgeToggle = document.getElementById('weatherOverlayBadgeToggle');
@@ -4245,6 +4312,10 @@
       atis: L.layerGroup(),
       satelliteOutline: L.layerGroup(),
     };
+    // CCTV_TEST_FEATURE_START
+    const weatherCctvTestGroup = L.layerGroup();
+    let weatherCctvTestMarker = null;
+    // CCTV_TEST_FEATURE_END
     const weatherOverlayGroups = {
       root: L.layerGroup(),
       marker: L.layerGroup(),
@@ -7378,6 +7449,79 @@
       const controls = weatherControls.get(key);
       return !!(controls && controls.toggle.checked);
     }
+
+    // CCTV_TEST_FEATURE_START
+    function setWeatherCctvTestBadge(text, tone = 'idle') {
+      if (!weatherCctvTestBadge) {
+        return;
+      }
+      weatherCctvTestBadge.textContent = String(text || '');
+      weatherCctvTestBadge.dataset.tone = String(tone || 'idle');
+    }
+
+    function buildWeatherCctvTestPopupHtml() {
+      return `
+        <div class="cctv-test-popup">
+          <strong>${escapeHtml(WEATHER_CCTV_TEST.label)}</strong>
+          <span>${escapeHtml('37°15\'22.42"N 126°06\'48.51"E')}</span>
+          <a href="${escapeHtml(WEATHER_CCTV_TEST.url)}" target="_blank" rel="noreferrer noopener">CCTV 열기</a>
+        </div>
+      `;
+    }
+
+    function ensureWeatherCctvTestMarker() {
+      if (weatherCctvTestMarker) {
+        return weatherCctvTestMarker;
+      }
+      weatherCctvTestMarker = L.marker([WEATHER_CCTV_TEST.lat, WEATHER_CCTV_TEST.lng], {
+        pane: 'weatherOverlayPane',
+        keyboard: true,
+        icon: L.divIcon({
+          className: 'cctv-test-marker',
+          html: '<div class="cctv-test-marker__card">CCTV 42</div>',
+          iconSize: [72, 30],
+          iconAnchor: [36, 15],
+        }),
+      });
+      weatherCctvTestMarker.bindTooltip('CCTV #42', {
+        className: 'doo-tooltip',
+        direction: 'top',
+        offset: [0, -8],
+        opacity: 0.96,
+      });
+      weatherCctvTestMarker.bindPopup(buildWeatherCctvTestPopupHtml(), {
+        className: 'doo-popup weather-popup-shell',
+        maxWidth: 280,
+        autoPan: true,
+        keepInView: true,
+        autoPanPaddingTopLeft: [24, 24],
+        autoPanPaddingBottomRight: [24, 24],
+      });
+      weatherCctvTestGroup.clearLayers();
+      weatherCctvTestGroup.addLayer(weatherCctvTestMarker);
+      return weatherCctvTestMarker;
+    }
+
+    function syncWeatherCctvTestLayer() {
+      if (!weatherCctvTestToggle) {
+        return;
+      }
+      const visible = !!weatherCctvTestToggle.checked;
+      if (!visible) {
+        map.removeLayer(weatherCctvTestGroup);
+        if (weatherCctvTestMarker && typeof weatherCctvTestMarker.closePopup === 'function') {
+          weatherCctvTestMarker.closePopup();
+        }
+        setWeatherCctvTestBadge('OFF', 'idle');
+        return;
+      }
+      ensureWeatherCctvTestMarker();
+      if (!map.hasLayer(weatherCctvTestGroup)) {
+        map.addLayer(weatherCctvTestGroup);
+      }
+      setWeatherCctvTestBadge('1개', 'live');
+    }
+    // CCTV_TEST_FEATURE_END
 
     function getWeatherBoundsQuery() {
       const bounds = map.getBounds().pad(0.18);
@@ -14531,7 +14675,7 @@
     function buildWeatherRows() {
       weatherRows.innerHTML = '';
       weatherControls.clear();
-      const hasAnyAllowed = !!viewerAccess.weatherOverlay || WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
+      const hasAnyAllowed = !!weatherCctvTestToggle || !!viewerAccess.weatherOverlay || WEATHER_LAYER_DEFS.some((item) => isWeatherFeatureAllowed(item.key));
       if (!hasAnyAllowed) {
         weatherButton.disabled = true;
         weatherPanel.classList.remove('is-visible');
@@ -16821,6 +16965,15 @@
         await setWeatherOverlayEnabled(!!weatherOverlayMasterToggle.checked, { persist: true, silentFail: false });
       });
     }
+    // CCTV_TEST_FEATURE_START
+    if (weatherCctvTestToggle) {
+      weatherCctvTestToggle.addEventListener('change', () => {
+        syncWeatherCctvTestLayer();
+        scheduleViewerStateSave();
+      });
+      syncWeatherCctvTestLayer();
+    }
+    // CCTV_TEST_FEATURE_END
     if (weatherOverlayMarkerToggle) {
       weatherOverlayMarkerToggle.addEventListener('change', () => {
         weatherOverlayState.options.marker = !!weatherOverlayMarkerToggle.checked;
