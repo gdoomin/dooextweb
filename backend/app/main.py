@@ -17,7 +17,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import Any, Literal
 from urllib.error import HTTPError, URLError
-from urllib.parse import parse_qsl, quote, urlencode, urlparse
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urljoin, urlparse
 from urllib.request import Request as UrlRequest, urlopen
 from uuid import uuid4
 
@@ -117,12 +117,30 @@ KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
-# CCTV42_TEST_FEATURE_START
+# CCTV_TEST_FEATURE_START
 CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
 CCTV42_ENTRY_PATH = "playlist.m3u8"
-CCTV42_TIMEOUT_SECONDS = 12
 CCTV42_ALLOWED_PATH_RE = re.compile(r"^(playlist\.m3u8|chunklist_[A-Za-z0-9_-]+\.m3u8|media_[A-Za-z0-9_-]+_\d+\.ts)$")
-# CCTV42_TEST_FEATURE_END
+CCTV_STREAM_PROXY_TIMEOUT_SECONDS = 14
+CCTV_PAJU9956_API_URL = "https://kbsapi.loomex.net/v1/api/cctvRequest/9956/WpMtqkAFduUaXGdpsI+/sFwBd4KK/FsOo5ASzA+HkuJda+3lrbvo6CIXO6iYReFV!hls"
+CCTV_CAMERA_REFERERS = {
+    "42": "http://218.148.169.193/content/channelView.hu?cctv_idx=42",
+    "paju9956": "https://md.kbs.co.kr/special/cctvShare?cctvId=9956",
+    "jiri7": "https://m.knps.or.kr/live/cctv7.do",
+    "deogyu10": "http://www.knps.or.kr/common/cctv/cctv10.html",
+}
+CCTV_CAMERA_ROOT_URLS = {
+    "42": f"{CCTV42_BASE_STREAM_URL}{CCTV42_ENTRY_PATH}",
+    "jiri7": "https://live.knps.or.kr/cctv/hls/zjangteo.m3u8",
+    "deogyu10": "https://live.knps.or.kr/cctv/hls/zsulchun.m3u8",
+}
+CCTV_ALLOWED_HOST_PATH_PREFIX: dict[str, tuple[str, ...]] = {
+    "218.148.169.193": ("/live/40.stream/",),
+    "kbscctv-cache.loomex.net": ("/lowStream/_definst_/9956_low.stream/",),
+    "live.knps.or.kr": ("/cctv/hls/",),
+    "kbsapi.loomex.net": ("/v1/api/cctvRequest/9956/",),
+}
+# CCTV_TEST_FEATURE_END
 AIRPORTAL_WORK_LIST_API_URL = "https://www.airportal.go.kr/work/getAirworkJobList.do"
 AIRPORTAL_WORK_DETAIL_URL = "https://www.airportal.go.kr/work/employment/workDetail.do"
 AIRPORTAL_TIMEOUT_SECONDS = 20
@@ -5535,19 +5553,8 @@ def get_font_asset(font_file: str):
     return FileResponse(font_path, media_type=media_type)
 
 
-# CCTV42_TEST_FEATURE_START
-def _normalize_cctv42_path(raw_path: str | None) -> str:
-    value = str(raw_path or CCTV42_ENTRY_PATH).strip()
-    if not value:
-        return CCTV42_ENTRY_PATH
-    value = value.split("?", 1)[0].strip().lstrip("/")
-    if not CCTV42_ALLOWED_PATH_RE.match(value):
-        raise ValueError("unsupported cctv path")
-    return value
-
-
-def _proxy_cctv42_remote(path: str, range_header: str | None = None) -> tuple[bytes, str, int, str]:
-    remote_url = f"{CCTV42_BASE_STREAM_URL}{path}"
+# CCTV_TEST_FEATURE_START
+def _cctv_proxy_headers(referer: str = "") -> dict[str, str]:
     headers = {
         "User-Agent": (
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -5557,12 +5564,29 @@ def _proxy_cctv42_remote(path: str, range_header: str | None = None) -> tuple[by
         "Accept": "*/*",
         "Cache-Control": "no-cache",
         "Pragma": "no-cache",
-        "Referer": "http://218.148.169.193/content/channelView.hu?cctv_idx=42",
     }
+    if referer:
+        headers["Referer"] = referer
+    return headers
+
+
+def _is_allowed_cctv_url(raw_url: str) -> bool:
+    parsed = urlparse(str(raw_url or "").strip())
+    host = str(parsed.hostname or "").lower()
+    if parsed.scheme not in {"http", "https"}:
+        return False
+    if host not in CCTV_ALLOWED_HOST_PATH_PREFIX:
+        return False
+    prefixes = CCTV_ALLOWED_HOST_PATH_PREFIX[host]
+    return any(str(parsed.path or "").startswith(prefix) for prefix in prefixes)
+
+
+def _fetch_cctv_url(raw_url: str, *, range_header: str | None = None, referer: str = "") -> tuple[bytes, str, int, str]:
+    request_headers = _cctv_proxy_headers(referer=referer)
     if range_header:
-        headers["Range"] = str(range_header)
-    request = UrlRequest(url=remote_url, method="GET", headers=headers)
-    with urlopen(request, timeout=CCTV42_TIMEOUT_SECONDS) as response:
+        request_headers["Range"] = str(range_header)
+    request = UrlRequest(url=raw_url, method="GET", headers=request_headers)
+    with urlopen(request, timeout=CCTV_STREAM_PROXY_TIMEOUT_SECONDS) as response:
         raw = response.read()
         content_type = str(response.headers.get("Content-Type") or "").strip()
         status_code = int(getattr(response, "status", 200) or 200)
@@ -5570,36 +5594,74 @@ def _proxy_cctv42_remote(path: str, range_header: str | None = None) -> tuple[by
     return raw, content_type, status_code, content_range
 
 
-def _rewrite_cctv42_m3u8(raw_text: str) -> str:
+def _resolve_cctv_root_url(camera_key: str) -> str:
+    normalized = str(camera_key or "").strip().lower()
+    if normalized == "paju9956":
+        raw, _, _, _ = _fetch_cctv_url(
+            CCTV_PAJU9956_API_URL,
+            referer=CCTV_CAMERA_REFERERS.get("paju9956", ""),
+        )
+        stream_url = raw.decode("utf-8", errors="ignore").strip()
+        if not stream_url or not _is_allowed_cctv_url(stream_url):
+            raise ValueError("invalid cctv stream url")
+        return stream_url
+    if normalized == "42":
+        return CCTV_CAMERA_ROOT_URLS["42"]
+    if normalized == "jiri7":
+        return CCTV_CAMERA_ROOT_URLS["jiri7"]
+    if normalized == "deogyu10":
+        return CCTV_CAMERA_ROOT_URLS["deogyu10"]
+    raise ValueError("unsupported cctv key")
+
+
+def _rewrite_cctv_m3u8(raw_text: str, source_url: str, endpoint_path: str) -> str:
     rewritten_lines: list[str] = []
     for raw_line in str(raw_text or "").splitlines():
         line = raw_line.strip()
         if not line or line.startswith("#"):
             rewritten_lines.append(raw_line)
             continue
-        candidate = line.split("?", 1)[0].strip().lstrip("/")
-        if not CCTV42_ALLOWED_PATH_RE.match(candidate):
+        absolute_url = urljoin(source_url, line)
+        if not _is_allowed_cctv_url(absolute_url):
             continue
-        rewritten_lines.append(f"/api/cctv/42/hls?path={quote(candidate)}")
+        encoded = quote(absolute_url, safe="")
+        rewritten_lines.append(f"{endpoint_path}?u={encoded}")
     if not rewritten_lines:
         return "#EXTM3U\n"
     return "\n".join(rewritten_lines) + "\n"
 
 
-@app.get("/api/cctv/42/hls")
-def get_cctv42_hls(request: Request):
-    try:
-        path = _normalize_cctv42_path(request.query_params.get("path"))
-    except ValueError as error:
-        raise HTTPException(status_code=400, detail=str(error)) from error
+def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
+    encoded_url = str(request.query_params.get("u") or "").strip()
+    if encoded_url:
+        decoded_url = unquote(encoded_url).strip()
+        if not _is_allowed_cctv_url(decoded_url):
+            raise ValueError("unsupported cctv source url")
+        return decoded_url
 
+    if str(camera_key).strip().lower() == "42":
+        raw_path = str(request.query_params.get("path") or "").strip()
+        if raw_path:
+            candidate = raw_path.split("?", 1)[0].strip().lstrip("/")
+            if not CCTV42_ALLOWED_PATH_RE.match(candidate):
+                raise ValueError("unsupported cctv path")
+            resolved = f"{CCTV42_BASE_STREAM_URL}{candidate}"
+            if not _is_allowed_cctv_url(resolved):
+                raise ValueError("unsupported cctv source url")
+            return resolved
+    return _resolve_cctv_root_url(camera_key)
+
+
+def _proxy_cctv_camera(camera_key: str, request: Request) -> Response:
+    source_url = _resolve_cctv_source_url(camera_key, request)
+    normalized_key = str(camera_key or "").strip().lower()
+    referer = CCTV_CAMERA_REFERERS.get(normalized_key, "")
     range_header = request.headers.get("range")
-    try:
-        raw, content_type, status_code, content_range = _proxy_cctv42_remote(path, range_header=range_header)
-    except HTTPError as error:
-        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
-    except (URLError, TimeoutError, OSError) as error:
-        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+    raw, content_type, status_code, content_range = _fetch_cctv_url(
+        source_url,
+        range_header=range_header,
+        referer=referer,
+    )
 
     headers = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
@@ -5608,18 +5670,72 @@ def get_cctv42_hls(request: Request):
     }
     if content_range:
         headers["Content-Range"] = content_range
-    if path.endswith(".m3u8"):
-        text = raw.decode("utf-8", errors="ignore")
-        rewritten = _rewrite_cctv42_m3u8(text).encode("utf-8")
+
+    lowered_ct = str(content_type or "").lower()
+    is_m3u8 = source_url.lower().endswith(".m3u8") or "mpegurl" in lowered_ct
+    if is_m3u8:
+        rewritten = _rewrite_cctv_m3u8(
+            raw.decode("utf-8", errors="ignore"),
+            source_url,
+            f"/api/cctv/{normalized_key}/hls",
+        ).encode("utf-8")
         return Response(
             content=rewritten,
             media_type="application/vnd.apple.mpegurl",
             headers=headers,
             status_code=status_code,
         )
-    media_type = content_type or ("video/MP2T" if path.endswith(".ts") else "application/octet-stream")
+    media_type = content_type or ("video/MP2T" if source_url.lower().endswith(".ts") else "application/octet-stream")
     return Response(content=raw, media_type=media_type, headers=headers, status_code=status_code)
-# CCTV42_TEST_FEATURE_END
+
+
+@app.get("/api/cctv/42/hls")
+def get_cctv42_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("42", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/paju9956/hls")
+def get_cctv_paju9956_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("paju9956", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/jiri7/hls")
+def get_cctv_jiri7_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("jiri7", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/deogyu10/hls")
+def get_cctv_deogyu10_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("deogyu10", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+# CCTV_TEST_FEATURE_END
 
 
 @app.get("/api/weather/config")
