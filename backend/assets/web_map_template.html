@@ -2020,10 +2020,10 @@
       min-height: 28px;
       padding: 0 10px;
       border-radius: 8px;
-      border: 1px solid rgba(125, 211, 252, 0.55);
-      background: linear-gradient(180deg, rgba(7, 18, 30, 0.95), rgba(10, 28, 42, 0.92));
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
-      color: #d8f0ff;
+      border: 1px solid #000000;
+      background: #ffd200;
+      box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28);
+      color: #000000;
       font-size: 10px;
       font-weight: 800;
       letter-spacing: 0.04em;
@@ -2048,6 +2048,21 @@
       background: rgba(0, 0, 0, 0.45);
     }
     .cctv-test-popup__video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #07111d;
+    }
+    .cctv-test-popup__image-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .cctv-test-popup__image {
       width: 100%;
       height: 100%;
       object-fit: cover;
@@ -3999,6 +4014,20 @@
       };
     }
 
+    function buildWeatherImageSite(key, label, latDms, lngDms, imageUrl, sourceUrl) {
+      const lat = parseWeatherCctvDms(latDms);
+      const lng = parseWeatherCctvDms(lngDms);
+      return {
+        key: key,
+        lat: lat,
+        lng: lng,
+        label: String(label || ''),
+        mediaType: 'image',
+        imageUrl: String(imageUrl || ''),
+        url: String(sourceUrl || imageUrl || ''),
+      };
+    }
+
     const WEATHER_CCTV_TEST_SITES = Object.freeze([
       {
         key: '42',
@@ -4024,6 +4053,31 @@
         label: '덕유산 국립공원',
         streamApiPath: '/api/cctv/deogyu10/hls',
       },
+      {
+        key: 'knps22-hakampo',
+        lat: parseWeatherCctvDms("36°54'0.96\"N"),
+        lng: parseWeatherCctvDms("126°12'39.07\"E"),
+        url: 'http://www.knps.or.kr/common/cctv/cctv22.html',
+        label: '학암포 해수욕장',
+        streamApiPath: '/api/cctv/knps22/hls',
+      },
+      {
+        key: 'ongjin40-deokjeok',
+        lat: parseWeatherCctvDms("36°55'28.87\"N"),
+        lng: parseWeatherCctvDms("126°10'21.94\"E"),
+        url: 'http://218.148.169.193/content/channelView.hu?cctv_idx=40',
+        label: '덕적면',
+        streamApiPath: '/api/cctv/ongjin/hls',
+        streamQuery: { stream: '37.stream' },
+      },
+      buildWeatherImageSite(
+        'kloa-skynuri',
+        '우정문화마을회관',
+        "37°6'50.12\"N",
+        "126°47'56.71\"E",
+        'https://ais.kloa.kr/api/amos/rvr/image?code=skynuri',
+        'https://ais.kloa.kr/api/amos/rvr/image?code=skynuri',
+      ),
       buildWeatherKbsSite('kbs-9956-base', '경기 파주 감악산', "37°57'3.77\"N", "126°58'46.51\"E", '9956', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9956'),
       buildWeatherKbsSite('kbs-9952', '강원 강릉 용강동', "37°45'7.47\"N", "128°53'28.18\"E", '9952', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9952'),
       buildWeatherKbsSite('kbs-9995', '강원 강릉 주문진방파제', "37°53'36.28\"N", "128°50'0.60\"E", '9995', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9995'),
@@ -7611,9 +7665,21 @@
         : `${baseUrl}?${params.toString()}`;
     }
 
+    function buildWeatherCctvTestImageUrl(site) {
+      const safeSite = site && typeof site === 'object' ? site : {};
+      const baseUrl = String(safeSite.imageUrl || safeSite.url || '').trim();
+      if (!baseUrl) {
+        return '';
+      }
+      const separator = baseUrl.includes('?') ? '&' : '?';
+      return `${baseUrl}${separator}_ts=${Date.now()}`;
+    }
+
     function buildWeatherCctvTestPopupHtml(site) {
       const safeSite = site && typeof site === 'object' ? site : {};
+      const mediaType = String(safeSite.mediaType || 'video').trim().toLowerCase();
       const streamUrl = buildWeatherCctvTestStreamUrl(safeSite);
+      const imageUrl = buildWeatherCctvTestImageUrl(safeSite);
       const lat = Number(safeSite.lat);
       const lng = Number(safeSite.lng);
       const coordText = Number.isFinite(lat) && Number.isFinite(lng)
@@ -7621,12 +7687,17 @@
         : '';
       return `
         <div class="cctv-test-popup">
-          <div class="cctv-test-popup__video-wrap">
-            <video class="cctv-test-popup__video" autoplay muted playsinline controls preload="none" data-stream-url="${escapeHtml(streamUrl)}"></video>
-          </div>
+          ${mediaType === 'image'
+            ? `<div class="cctv-test-popup__image-wrap">
+                <img class="cctv-test-popup__image" src="${escapeHtml(imageUrl)}" data-image-base="${escapeHtml(String(safeSite.imageUrl || ''))}" alt="${escapeHtml(String(safeSite.label || 'CCTV'))}">
+              </div>`
+            : `<div class="cctv-test-popup__video-wrap">
+                <video class="cctv-test-popup__video" autoplay muted playsinline controls preload="none" data-stream-url="${escapeHtml(streamUrl)}"></video>
+              </div>`
+          }
           <strong>${escapeHtml(String(safeSite.label || 'CCTV'))}</strong>
           <span>${escapeHtml(coordText)}</span>
-          <span class="cctv-test-popup__status">영상 연결 중...</span>
+          <span class="cctv-test-popup__status">${mediaType === 'image' ? '실시간 스냅샷' : '영상 연결 중...'}</span>
           <a href="${escapeHtml(String(safeSite.url || '#'))}" target="_blank" rel="noreferrer noopener">CCTV 열기</a>
         </div>
       `;
@@ -7696,8 +7767,23 @@
       if (!popupElement) {
         return;
       }
-      const video = popupElement.querySelector('.cctv-test-popup__video');
+      const mediaType = String(site.mediaType || 'video').trim().toLowerCase();
       const status = popupElement.querySelector('.cctv-test-popup__status');
+      if (mediaType === 'image') {
+        const image = popupElement.querySelector('.cctv-test-popup__image');
+        if (image) {
+          const baseImageUrl = String(site.imageUrl || image.dataset.imageBase || '').trim();
+          if (baseImageUrl) {
+            const separator = baseImageUrl.includes('?') ? '&' : '?';
+            image.src = `${baseImageUrl}${separator}_ts=${Date.now()}`;
+          }
+        }
+        if (status) {
+          status.textContent = '실시간 스냅샷';
+        }
+        return;
+      }
+      const video = popupElement.querySelector('.cctv-test-popup__video');
       if (!video) {
         return;
       }

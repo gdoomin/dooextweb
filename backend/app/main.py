@@ -121,20 +121,24 @@ ATIS_GURU_CACHE_TTL_SECONDS = 120
 CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
 CCTV42_ENTRY_PATH = "playlist.m3u8"
 CCTV42_ALLOWED_PATH_RE = re.compile(r"^(playlist\.m3u8|chunklist_[A-Za-z0-9_-]+\.m3u8|media_[A-Za-z0-9_-]+_\d+\.ts)$")
+CCTV_ONGJIN_STREAM_RE = re.compile(r"^\d+\.stream$")
 CCTV_STREAM_PROXY_TIMEOUT_SECONDS = 14
 KBS_CCTV_API_CACHE_TTL_SECONDS = 1800
 CCTV_CAMERA_REFERERS = {
     "42": "http://218.148.169.193/content/channelView.hu?cctv_idx=42",
+    "ongjin": "http://218.148.169.193/content/channelView.hu?cctv_idx=40",
     "jiri7": "https://m.knps.or.kr/live/cctv7.do",
+    "knps22": "http://www.knps.or.kr/common/cctv/cctv22.html",
     "deogyu10": "http://www.knps.or.kr/common/cctv/cctv10.html",
 }
 CCTV_CAMERA_ROOT_URLS = {
     "42": f"{CCTV42_BASE_STREAM_URL}{CCTV42_ENTRY_PATH}",
     "jiri7": "https://live.knps.or.kr/cctv/hls/zjangteo.m3u8",
+    "knps22": "https://live.knps.or.kr/cctv/hls/hakampo.m3u8",
     "deogyu10": "https://live.knps.or.kr/cctv/hls/zsulchun.m3u8",
 }
 CCTV_ALLOWED_HOST_PATH_PREFIX: dict[str, tuple[str, ...]] = {
-    "218.148.169.193": ("/live/40.stream/",),
+    "218.148.169.193": ("/live/",),
     "kbscctv-cache.loomex.net": (
         "/lowStream/_definst_/",
         "/middleStream/_definst_/",
@@ -5607,6 +5611,15 @@ def _normalize_kbs_cctv_id(raw_id: str | None) -> str:
     return cctv_id
 
 
+def _normalize_ongjin_stream_name(raw_name: str | None) -> str:
+    stream_name = str(raw_name or "").strip()
+    if not stream_name:
+        raise ValueError("unsupported ongjin stream")
+    if not CCTV_ONGJIN_STREAM_RE.match(stream_name):
+        raise ValueError("unsupported ongjin stream")
+    return stream_name
+
+
 def _build_kbs_cctv_share_url(cctv_id: str) -> str:
     return f"https://md.kbs.co.kr/special/cctvShare?cctvId={cctv_id}"
 
@@ -5656,8 +5669,12 @@ def _resolve_cctv_root_url(camera_key: str) -> str:
         return stream_url
     if normalized == "42":
         return CCTV_CAMERA_ROOT_URLS["42"]
+    if normalized == "ongjin":
+        return "http://218.148.169.193:1935/live/40.stream/playlist.m3u8"
     if normalized == "jiri7":
         return CCTV_CAMERA_ROOT_URLS["jiri7"]
+    if normalized == "knps22":
+        return CCTV_CAMERA_ROOT_URLS["knps22"]
     if normalized == "deogyu10":
         return CCTV_CAMERA_ROOT_URLS["deogyu10"]
     raise ValueError("unsupported cctv key")
@@ -5696,6 +5713,9 @@ def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
     kbs_cctv_id = ""
     if normalized_camera_key == "kbs":
         kbs_cctv_id = _normalize_kbs_cctv_id(request.query_params.get("id"))
+    ongjin_stream_name = ""
+    if normalized_camera_key == "ongjin":
+        ongjin_stream_name = _normalize_ongjin_stream_name(request.query_params.get("stream"))
 
     encoded_url = str(request.query_params.get("u") or "").strip()
     if encoded_url:
@@ -5714,6 +5734,11 @@ def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
             if not _is_allowed_cctv_url(resolved):
                 raise ValueError("unsupported cctv source url")
             return resolved
+    if normalized_camera_key == "ongjin":
+        resolved = f"http://218.148.169.193:1935/live/{ongjin_stream_name}/playlist.m3u8"
+        if not _is_allowed_cctv_url(resolved):
+            raise ValueError("unsupported cctv source url")
+        return resolved
     if normalized_camera_key == "kbs":
         return _resolve_cctv_root_url(f"kbs:{kbs_cctv_id}")
     return _resolve_cctv_root_url(camera_key)
@@ -5728,6 +5753,10 @@ def _proxy_cctv_camera(camera_key: str, request: Request) -> Response:
         kbs_cctv_id = _normalize_kbs_cctv_id(request.query_params.get("id"))
         referer = _build_kbs_cctv_share_url(kbs_cctv_id)
         extra_query = {"id": kbs_cctv_id}
+    if normalized_key == "ongjin":
+        ongjin_stream_name = _normalize_ongjin_stream_name(request.query_params.get("stream"))
+        referer = "http://218.148.169.193/content/channelView.hu?cctv_idx=40"
+        extra_query = {"stream": ongjin_stream_name}
     range_header = request.headers.get("range")
     raw, content_type, status_code, content_range = _fetch_cctv_url(
         source_url,
@@ -5802,6 +5831,30 @@ def get_cctv_kbs_hls(request: Request):
 def get_cctv_jiri7_hls(request: Request):
     try:
         return _proxy_cctv_camera("jiri7", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/knps22/hls")
+def get_cctv_knps22_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("knps22", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/ongjin/hls")
+def get_cctv_ongjin_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("ongjin", request)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except HTTPError as error:
