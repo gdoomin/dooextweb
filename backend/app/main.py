@@ -117,6 +117,12 @@ KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
+# CCTV42_TEST_FEATURE_START
+CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
+CCTV42_ENTRY_PATH = "playlist.m3u8"
+CCTV42_TIMEOUT_SECONDS = 12
+CCTV42_ALLOWED_PATH_RE = re.compile(r"^(playlist\.m3u8|chunklist_[A-Za-z0-9_-]+\.m3u8|media_[A-Za-z0-9_-]+_\d+\.ts)$")
+# CCTV42_TEST_FEATURE_END
 AIRPORTAL_WORK_LIST_API_URL = "https://www.airportal.go.kr/work/getAirworkJobList.do"
 AIRPORTAL_WORK_DETAIL_URL = "https://www.airportal.go.kr/work/employment/workDetail.do"
 AIRPORTAL_TIMEOUT_SECONDS = 20
@@ -5527,6 +5533,93 @@ def get_font_asset(font_file: str):
     }.get(font_path.suffix.lower(), "application/octet-stream")
 
     return FileResponse(font_path, media_type=media_type)
+
+
+# CCTV42_TEST_FEATURE_START
+def _normalize_cctv42_path(raw_path: str | None) -> str:
+    value = str(raw_path or CCTV42_ENTRY_PATH).strip()
+    if not value:
+        return CCTV42_ENTRY_PATH
+    value = value.split("?", 1)[0].strip().lstrip("/")
+    if not CCTV42_ALLOWED_PATH_RE.match(value):
+        raise ValueError("unsupported cctv path")
+    return value
+
+
+def _proxy_cctv42_remote(path: str, range_header: str | None = None) -> tuple[bytes, str, int, str]:
+    remote_url = f"{CCTV42_BASE_STREAM_URL}{path}"
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/136.0.0.0 Safari/537.36"
+        ),
+        "Accept": "*/*",
+        "Cache-Control": "no-cache",
+        "Pragma": "no-cache",
+        "Referer": "http://218.148.169.193/content/channelView.hu?cctv_idx=42",
+    }
+    if range_header:
+        headers["Range"] = str(range_header)
+    request = UrlRequest(url=remote_url, method="GET", headers=headers)
+    with urlopen(request, timeout=CCTV42_TIMEOUT_SECONDS) as response:
+        raw = response.read()
+        content_type = str(response.headers.get("Content-Type") or "").strip()
+        status_code = int(getattr(response, "status", 200) or 200)
+        content_range = str(response.headers.get("Content-Range") or "").strip()
+    return raw, content_type, status_code, content_range
+
+
+def _rewrite_cctv42_m3u8(raw_text: str) -> str:
+    rewritten_lines: list[str] = []
+    for raw_line in str(raw_text or "").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            rewritten_lines.append(raw_line)
+            continue
+        candidate = line.split("?", 1)[0].strip().lstrip("/")
+        if not CCTV42_ALLOWED_PATH_RE.match(candidate):
+            continue
+        rewritten_lines.append(f"/api/cctv/42/hls?path={quote(candidate)}")
+    if not rewritten_lines:
+        return "#EXTM3U\n"
+    return "\n".join(rewritten_lines) + "\n"
+
+
+@app.get("/api/cctv/42/hls")
+def get_cctv42_hls(request: Request):
+    try:
+        path = _normalize_cctv42_path(request.query_params.get("path"))
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+    range_header = request.headers.get("range")
+    try:
+        raw, content_type, status_code, content_range = _proxy_cctv42_remote(path, range_header=range_header)
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    if content_range:
+        headers["Content-Range"] = content_range
+    if path.endswith(".m3u8"):
+        text = raw.decode("utf-8", errors="ignore")
+        rewritten = _rewrite_cctv42_m3u8(text).encode("utf-8")
+        return Response(
+            content=rewritten,
+            media_type="application/vnd.apple.mpegurl",
+            headers=headers,
+            status_code=status_code,
+        )
+    media_type = content_type or ("video/MP2T" if path.endswith(".ts") else "application/octet-stream")
+    return Response(content=raw, media_type=media_type, headers=headers, status_code=status_code)
+# CCTV42_TEST_FEATURE_END
 
 
 @app.get("/api/weather/config")

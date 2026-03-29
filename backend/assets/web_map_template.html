@@ -2034,10 +2034,30 @@
     .cctv-test-popup {
       display: grid;
       gap: 8px;
-      min-width: 190px;
+      min-width: 260px;
       color: #e6edf3;
       font-size: 12px;
       line-height: 1.45;
+    }
+    .cctv-test-popup__video-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(125, 211, 252, 0.35);
+      background: rgba(0, 0, 0, 0.45);
+    }
+    .cctv-test-popup__video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      background: #07111d;
+    }
+    .cctv-test-popup__status {
+      color: #a6bdd4;
+      font-size: 11px;
+      line-height: 1.35;
     }
     .cctv-test-popup strong {
       color: #9fd8ff;
@@ -3945,6 +3965,8 @@
       lng: 126.113475,
       url: 'http://218.148.169.193/content/channelView.hu?cctv_idx=42',
       label: 'CCTV #42',
+      streamApiPath: '/api/cctv/42/hls',
+      hlsJsUrl: 'https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js',
     });
     // CCTV_TEST_FEATURE_END
     const DEFAULT_FRONTEND_PUBLIC_BASE_URL = 'https://dooext.dooheetv.com';
@@ -4315,6 +4337,7 @@
     // CCTV_TEST_FEATURE_START
     const weatherCctvTestGroup = L.layerGroup();
     let weatherCctvTestMarker = null;
+    let weatherCctvTestHlsScriptPromise = null;
     // CCTV_TEST_FEATURE_END
     const weatherOverlayGroups = {
       root: L.layerGroup(),
@@ -7460,13 +7483,133 @@
     }
 
     function buildWeatherCctvTestPopupHtml() {
+      const streamUrl = `${resolveApiUrl(WEATHER_CCTV_TEST.streamApiPath)}?path=${encodeURIComponent('playlist.m3u8')}&_ts=${Date.now()}`;
       return `
         <div class="cctv-test-popup">
+          <div class="cctv-test-popup__video-wrap">
+            <video class="cctv-test-popup__video" autoplay muted playsinline controls preload="none" data-stream-url="${escapeHtml(streamUrl)}"></video>
+          </div>
           <strong>${escapeHtml(WEATHER_CCTV_TEST.label)}</strong>
           <span>${escapeHtml('37°15\'22.42"N 126°06\'48.51"E')}</span>
+          <span class="cctv-test-popup__status">영상 연결 중...</span>
           <a href="${escapeHtml(WEATHER_CCTV_TEST.url)}" target="_blank" rel="noreferrer noopener">CCTV 열기</a>
         </div>
       `;
+    }
+
+    function ensureWeatherCctvTestHlsScript() {
+      if (window.Hls) {
+        return Promise.resolve(window.Hls);
+      }
+      if (weatherCctvTestHlsScriptPromise) {
+        return weatherCctvTestHlsScriptPromise;
+      }
+      weatherCctvTestHlsScriptPromise = new Promise((resolve, reject) => {
+        const existing = document.querySelector('script[data-cctv-hls-test="1"]');
+        if (existing) {
+          existing.addEventListener('load', () => resolve(window.Hls || null), { once: true });
+          existing.addEventListener('error', () => reject(new Error('hls.js load failed')), { once: true });
+          return;
+        }
+        const script = document.createElement('script');
+        script.src = WEATHER_CCTV_TEST.hlsJsUrl;
+        script.async = true;
+        script.dataset.cctvHlsTest = '1';
+        script.onload = () => resolve(window.Hls || null);
+        script.onerror = () => reject(new Error('hls.js load failed'));
+        document.head.appendChild(script);
+      }).catch((error) => {
+        weatherCctvTestHlsScriptPromise = null;
+        throw error;
+      });
+      return weatherCctvTestHlsScriptPromise;
+    }
+
+    function stopWeatherCctvTestPlayback(marker) {
+      if (!marker) {
+        return;
+      }
+      if (marker._cctvHlsInstance && typeof marker._cctvHlsInstance.destroy === 'function') {
+        marker._cctvHlsInstance.destroy();
+      }
+      marker._cctvHlsInstance = null;
+      const video = marker._cctvVideoElement;
+      if (video) {
+        try {
+          video.pause();
+        } catch (error) {
+          // ignore
+        }
+        video.removeAttribute('src');
+        if (typeof video.load === 'function') {
+          video.load();
+        }
+      }
+      marker._cctvVideoElement = null;
+    }
+
+    async function startWeatherCctvTestPlayback(marker) {
+      if (!marker || typeof marker.getPopup !== 'function') {
+        return;
+      }
+      const popup = marker.getPopup();
+      const popupElement = popup && typeof popup.getElement === 'function' ? popup.getElement() : null;
+      if (!popupElement) {
+        return;
+      }
+      const video = popupElement.querySelector('.cctv-test-popup__video');
+      const status = popupElement.querySelector('.cctv-test-popup__status');
+      if (!video) {
+        return;
+      }
+      stopWeatherCctvTestPlayback(marker);
+      marker._cctvVideoElement = video;
+      const streamUrl = `${resolveApiUrl(WEATHER_CCTV_TEST.streamApiPath)}?path=${encodeURIComponent('playlist.m3u8')}&_ts=${Date.now()}`;
+      if (status) {
+        status.textContent = '영상 연결 중...';
+      }
+      try {
+        if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = streamUrl;
+          await video.play().catch(() => null);
+          if (status) {
+            status.textContent = '실시간 영상';
+          }
+          return;
+        }
+        const HlsCtor = await ensureWeatherCctvTestHlsScript();
+        if (HlsCtor && typeof HlsCtor.isSupported === 'function' && HlsCtor.isSupported()) {
+          const hls = new HlsCtor({
+            enableWorker: true,
+            lowLatencyMode: true,
+            liveSyncDurationCount: 3,
+            liveMaxLatencyDurationCount: 5,
+          });
+          marker._cctvHlsInstance = hls;
+          hls.on(HlsCtor.Events.ERROR, (_event, data) => {
+            if (!status || !data) {
+              return;
+            }
+            const fatal = !!data.fatal;
+            status.textContent = fatal ? '영상 연결 실패(링크로 열기)' : '영상 수신 중...';
+          });
+          hls.loadSource(streamUrl);
+          hls.attachMedia(video);
+          if (status) {
+            status.textContent = '실시간 영상';
+          }
+          return;
+        }
+        video.src = streamUrl;
+        await video.play().catch(() => null);
+        if (status) {
+          status.textContent = '실시간 영상';
+        }
+      } catch (error) {
+        if (status) {
+          status.textContent = '영상 연결 실패(링크로 열기)';
+        }
+      }
     }
 
     function ensureWeatherCctvTestMarker() {
@@ -7491,11 +7634,17 @@
       });
       weatherCctvTestMarker.bindPopup(buildWeatherCctvTestPopupHtml(), {
         className: 'doo-popup weather-popup-shell',
-        maxWidth: 280,
+        maxWidth: 340,
         autoPan: true,
         keepInView: true,
         autoPanPaddingTopLeft: [24, 24],
         autoPanPaddingBottomRight: [24, 24],
+      });
+      weatherCctvTestMarker.on('popupopen', () => {
+        startWeatherCctvTestPlayback(weatherCctvTestMarker);
+      });
+      weatherCctvTestMarker.on('popupclose', () => {
+        stopWeatherCctvTestPlayback(weatherCctvTestMarker);
       });
       weatherCctvTestGroup.clearLayers();
       weatherCctvTestGroup.addLayer(weatherCctvTestMarker);
@@ -7512,6 +7661,7 @@
         if (weatherCctvTestMarker && typeof weatherCctvTestMarker.closePopup === 'function') {
           weatherCctvTestMarker.closePopup();
         }
+        stopWeatherCctvTestPlayback(weatherCctvTestMarker);
         setWeatherCctvTestBadge('OFF', 'idle');
         return;
       }
