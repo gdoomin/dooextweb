@@ -2040,12 +2040,14 @@
       line-height: 1.45;
     }
     .cctv-test-popup__video-wrap {
-      width: 100%;
+      width: 90%;
+      margin: 0 auto;
       aspect-ratio: 16 / 9;
       border-radius: 10px;
       overflow: hidden;
       border: 1px solid rgba(125, 211, 252, 0.35);
       background: rgba(0, 0, 0, 0.45);
+      position: relative;
     }
     .cctv-test-popup__video {
       width: 100%;
@@ -2055,12 +2057,14 @@
       background: #07111d;
     }
     .cctv-test-popup__image-wrap {
-      width: 100%;
+      width: 90%;
+      margin: 0 auto;
       aspect-ratio: 16 / 9;
       border-radius: 10px;
       overflow: hidden;
       border: 1px solid rgba(125, 211, 252, 0.35);
       background: rgba(0, 0, 0, 0.45);
+      position: relative;
     }
     .cctv-test-popup__image {
       width: 100%;
@@ -2073,6 +2077,24 @@
       color: #a6bdd4;
       font-size: 11px;
       line-height: 1.35;
+    }
+    .cctv-test-popup__status--overlay {
+      position: absolute;
+      left: 50%;
+      bottom: 12px;
+      transform: translateX(-50%);
+      margin: 0;
+      color: #ffd200;
+      font-size: 33px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: 0.01em;
+      text-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.82),
+        0 0 10px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+      white-space: nowrap;
+      z-index: 3;
     }
     .cctv-test-popup strong {
       color: #9fd8ff;
@@ -7680,24 +7702,21 @@
       const mediaType = String(safeSite.mediaType || 'video').trim().toLowerCase();
       const streamUrl = buildWeatherCctvTestStreamUrl(safeSite);
       const imageUrl = buildWeatherCctvTestImageUrl(safeSite);
-      const lat = Number(safeSite.lat);
-      const lng = Number(safeSite.lng);
-      const coordText = Number.isFinite(lat) && Number.isFinite(lng)
-        ? `${lat.toFixed(6)}, ${lng.toFixed(6)}`
-        : '';
+      const isImageType = mediaType === 'image';
+      const initialStatusText = isImageType ? '실시간 스냅샷' : '영상 연결 중..';
       return `
         <div class="cctv-test-popup">
-          ${mediaType === 'image'
+          ${isImageType
             ? `<div class="cctv-test-popup__image-wrap">
                 <img class="cctv-test-popup__image" src="${escapeHtml(imageUrl)}" data-image-base="${escapeHtml(String(safeSite.imageUrl || ''))}" alt="${escapeHtml(String(safeSite.label || 'CCTV'))}">
+                <span class="cctv-test-popup__status cctv-test-popup__status--overlay">${initialStatusText}</span>
               </div>`
             : `<div class="cctv-test-popup__video-wrap">
                 <video class="cctv-test-popup__video" autoplay muted playsinline controls preload="none" data-stream-url="${escapeHtml(streamUrl)}"></video>
+                <span class="cctv-test-popup__status cctv-test-popup__status--overlay">${initialStatusText}</span>
               </div>`
           }
           <strong>${escapeHtml(String(safeSite.label || 'CCTV'))}</strong>
-          <span>${escapeHtml(coordText)}</span>
-          <span class="cctv-test-popup__status">${mediaType === 'image' ? '실시간 스냅샷' : '영상 연결 중...'}</span>
           <a href="${escapeHtml(String(safeSite.url || '#'))}" target="_blank" rel="noreferrer noopener">CCTV 열기</a>
         </div>
       `;
@@ -7797,7 +7816,7 @@
         return;
       }
       if (status) {
-        status.textContent = '영상 연결 중...';
+        status.textContent = '영상 연결 중..';
       }
       try {
         if (video.canPlayType('application/vnd.apple.mpegurl')) {
