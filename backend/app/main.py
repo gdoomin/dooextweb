@@ -122,10 +122,9 @@ CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
 CCTV42_ENTRY_PATH = "playlist.m3u8"
 CCTV42_ALLOWED_PATH_RE = re.compile(r"^(playlist\.m3u8|chunklist_[A-Za-z0-9_-]+\.m3u8|media_[A-Za-z0-9_-]+_\d+\.ts)$")
 CCTV_STREAM_PROXY_TIMEOUT_SECONDS = 14
-CCTV_PAJU9956_API_URL = "https://kbsapi.loomex.net/v1/api/cctvRequest/9956/WpMtqkAFduUaXGdpsI+/sFwBd4KK/FsOo5ASzA+HkuJda+3lrbvo6CIXO6iYReFV!hls"
+KBS_CCTV_API_CACHE_TTL_SECONDS = 1800
 CCTV_CAMERA_REFERERS = {
     "42": "http://218.148.169.193/content/channelView.hu?cctv_idx=42",
-    "paju9956": "https://md.kbs.co.kr/special/cctvShare?cctvId=9956",
     "jiri7": "https://m.knps.or.kr/live/cctv7.do",
     "deogyu10": "http://www.knps.or.kr/common/cctv/cctv10.html",
 }
@@ -136,9 +135,14 @@ CCTV_CAMERA_ROOT_URLS = {
 }
 CCTV_ALLOWED_HOST_PATH_PREFIX: dict[str, tuple[str, ...]] = {
     "218.148.169.193": ("/live/40.stream/",),
-    "kbscctv-cache.loomex.net": ("/lowStream/_definst_/9956_low.stream/",),
+    "kbscctv-cache.loomex.net": (
+        "/lowStream/_definst_/",
+        "/middleStream/_definst_/",
+        "/highStream/_definst_/",
+    ),
+    "kbscctv.loomex.net": ("/v1/api/river/",),
     "live.knps.or.kr": ("/cctv/hls/",),
-    "kbsapi.loomex.net": ("/v1/api/cctvRequest/9956/",),
+    "kbsapi.loomex.net": ("/v1/api/cctvRequest/",),
 }
 # CCTV_TEST_FEATURE_END
 AIRPORTAL_WORK_LIST_API_URL = "https://www.airportal.go.kr/work/getAirworkJobList.do"
@@ -208,6 +212,8 @@ ATIS_VISIBLE_ICAOS = {
 _ATIS_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _ATIS_CACHE_LOCK = threading.Lock()
 _PILOT_JOBS_CACHE_LOCK = threading.Lock()
+_KBS_CCTV_API_URL_CACHE: dict[str, tuple[float, str]] = {}
+_KBS_CCTV_API_CACHE_LOCK = threading.Lock()
 HTML2CANVAS_PATH = ASSETS_DIR / "html2canvas.min.js"
 BANNER_PATH = ASSETS_DIR / "doogpx.png"
 ADS_TXT_PATH = ASSETS_DIR / "ads.txt"
@@ -5594,12 +5600,55 @@ def _fetch_cctv_url(raw_url: str, *, range_header: str | None = None, referer: s
     return raw, content_type, status_code, content_range
 
 
+def _normalize_kbs_cctv_id(raw_id: str | None) -> str:
+    cctv_id = str(raw_id or "").strip()
+    if not cctv_id or not cctv_id.isdigit():
+        raise ValueError("unsupported kbs cctv id")
+    return cctv_id
+
+
+def _build_kbs_cctv_share_url(cctv_id: str) -> str:
+    return f"https://md.kbs.co.kr/special/cctvShare?cctvId={cctv_id}"
+
+
+def _extract_kbs_cctv_api_url_from_share_html(cctv_id: str, html_text: str) -> str:
+    pattern = re.compile(
+        rf"https://kbsapi\.loomex\.net/v1/api/cctvRequest/{re.escape(cctv_id)}/[^'\"\s]+!hls",
+        re.IGNORECASE,
+    )
+    matched = pattern.search(str(html_text or ""))
+    if not matched:
+        raise ValueError("kbs cctv api url not found")
+    return matched.group(0)
+
+
+def _resolve_kbs_cctv_api_url(cctv_id: str) -> str:
+    now = time.time()
+    with _KBS_CCTV_API_CACHE_LOCK:
+        cached = _KBS_CCTV_API_URL_CACHE.get(cctv_id)
+        if cached and (now - cached[0]) <= KBS_CCTV_API_CACHE_TTL_SECONDS:
+            return cached[1]
+
+    share_url = _build_kbs_cctv_share_url(cctv_id)
+    raw_share_html, _, _, _ = _fetch_cctv_url(share_url, referer=share_url)
+    api_url = _extract_kbs_cctv_api_url_from_share_html(
+        cctv_id,
+        raw_share_html.decode("utf-8", errors="ignore"),
+    )
+    with _KBS_CCTV_API_CACHE_LOCK:
+        _KBS_CCTV_API_URL_CACHE[cctv_id] = (now, api_url)
+    return api_url
+
+
 def _resolve_cctv_root_url(camera_key: str) -> str:
     normalized = str(camera_key or "").strip().lower()
     if normalized == "paju9956":
+        normalized = "kbs:9956"
+    if normalized.startswith("kbs:"):
+        kbs_cctv_id = _normalize_kbs_cctv_id(normalized.split(":", 1)[1])
         raw, _, _, _ = _fetch_cctv_url(
-            CCTV_PAJU9956_API_URL,
-            referer=CCTV_CAMERA_REFERERS.get("paju9956", ""),
+            _resolve_kbs_cctv_api_url(kbs_cctv_id),
+            referer=_build_kbs_cctv_share_url(kbs_cctv_id),
         )
         stream_url = raw.decode("utf-8", errors="ignore").strip()
         if not stream_url or not _is_allowed_cctv_url(stream_url):
@@ -5614,7 +5663,13 @@ def _resolve_cctv_root_url(camera_key: str) -> str:
     raise ValueError("unsupported cctv key")
 
 
-def _rewrite_cctv_m3u8(raw_text: str, source_url: str, endpoint_path: str) -> str:
+def _rewrite_cctv_m3u8(
+    raw_text: str,
+    source_url: str,
+    endpoint_path: str,
+    *,
+    extra_query: dict[str, str] | None = None,
+) -> str:
     rewritten_lines: list[str] = []
     for raw_line in str(raw_text or "").splitlines():
         line = raw_line.strip()
@@ -5624,14 +5679,24 @@ def _rewrite_cctv_m3u8(raw_text: str, source_url: str, endpoint_path: str) -> st
         absolute_url = urljoin(source_url, line)
         if not _is_allowed_cctv_url(absolute_url):
             continue
-        encoded = quote(absolute_url, safe="")
-        rewritten_lines.append(f"{endpoint_path}?u={encoded}")
+        query_dict: dict[str, str] = {}
+        if extra_query:
+            for key, value in extra_query.items():
+                if str(key or "").strip() and str(value or "").strip():
+                    query_dict[str(key)] = str(value)
+        query_dict["u"] = absolute_url
+        rewritten_lines.append(f"{endpoint_path}?{urlencode(query_dict)}")
     if not rewritten_lines:
         return "#EXTM3U\n"
     return "\n".join(rewritten_lines) + "\n"
 
 
 def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
+    normalized_camera_key = str(camera_key or "").strip().lower()
+    kbs_cctv_id = ""
+    if normalized_camera_key == "kbs":
+        kbs_cctv_id = _normalize_kbs_cctv_id(request.query_params.get("id"))
+
     encoded_url = str(request.query_params.get("u") or "").strip()
     if encoded_url:
         decoded_url = unquote(encoded_url).strip()
@@ -5639,7 +5704,7 @@ def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
             raise ValueError("unsupported cctv source url")
         return decoded_url
 
-    if str(camera_key).strip().lower() == "42":
+    if normalized_camera_key == "42":
         raw_path = str(request.query_params.get("path") or "").strip()
         if raw_path:
             candidate = raw_path.split("?", 1)[0].strip().lstrip("/")
@@ -5649,13 +5714,20 @@ def _resolve_cctv_source_url(camera_key: str, request: Request) -> str:
             if not _is_allowed_cctv_url(resolved):
                 raise ValueError("unsupported cctv source url")
             return resolved
+    if normalized_camera_key == "kbs":
+        return _resolve_cctv_root_url(f"kbs:{kbs_cctv_id}")
     return _resolve_cctv_root_url(camera_key)
 
 
 def _proxy_cctv_camera(camera_key: str, request: Request) -> Response:
     source_url = _resolve_cctv_source_url(camera_key, request)
     normalized_key = str(camera_key or "").strip().lower()
+    extra_query: dict[str, str] | None = None
     referer = CCTV_CAMERA_REFERERS.get(normalized_key, "")
+    if normalized_key == "kbs":
+        kbs_cctv_id = _normalize_kbs_cctv_id(request.query_params.get("id"))
+        referer = _build_kbs_cctv_share_url(kbs_cctv_id)
+        extra_query = {"id": kbs_cctv_id}
     range_header = request.headers.get("range")
     raw, content_type, status_code, content_range = _fetch_cctv_url(
         source_url,
@@ -5678,6 +5750,7 @@ def _proxy_cctv_camera(camera_key: str, request: Request) -> Response:
             raw.decode("utf-8", errors="ignore"),
             source_url,
             f"/api/cctv/{normalized_key}/hls",
+            extra_query=extra_query,
         ).encode("utf-8")
         return Response(
             content=rewritten,
@@ -5705,6 +5778,18 @@ def get_cctv42_hls(request: Request):
 def get_cctv_paju9956_hls(request: Request):
     try:
         return _proxy_cctv_camera("paju9956", request)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except HTTPError as error:
+        raise HTTPException(status_code=int(getattr(error, "code", 502) or 502), detail=f"cctv upstream error: {error}") from error
+    except (URLError, TimeoutError, OSError) as error:
+        raise HTTPException(status_code=502, detail=f"cctv unavailable: {error}") from error
+
+
+@app.get("/api/cctv/kbs/hls")
+def get_cctv_kbs_hls(request: Request):
+    try:
+        return _proxy_cctv_camera("kbs", request)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
     except HTTPError as error:

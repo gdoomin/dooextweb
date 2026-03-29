@@ -3348,7 +3348,7 @@
         <input id="weatherCctvTestToggle" type="checkbox" aria-label="CCTV 표시">
         <span class="weather-label">
           <span class="weather-name">CCTV</span>
-          <span class="weather-note">테스트 카메라 4개 표시</span>
+          <span class="weather-note">CCTV 지점 표시</span>
         </span>
       </label>
       <span id="weatherCctvTestBadge" class="weather-badge" data-tone="idle">OFF</span>
@@ -3961,6 +3961,44 @@
     ];
     // CCTV_TEST_FEATURE_START
     const WEATHER_CCTV_TEST_HLS_JS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js';
+
+    function parseWeatherCctvDms(rawValue) {
+      const value = String(rawValue || '').trim();
+      if (!value) {
+        return NaN;
+      }
+      const match = value.match(/(\d+)\s*°\s*(\d+)\s*'\s*([\d.]+)\s*\"?\s*([NSEW])/i);
+      if (!match) {
+        return NaN;
+      }
+      const degree = Number(match[1]);
+      const minute = Number(match[2]);
+      const second = Number(match[3]);
+      const hemisphere = String(match[4] || '').toUpperCase();
+      if (!Number.isFinite(degree) || !Number.isFinite(minute) || !Number.isFinite(second)) {
+        return NaN;
+      }
+      const absolute = degree + (minute / 60) + (second / 3600);
+      if (hemisphere === 'S' || hemisphere === 'W') {
+        return -absolute;
+      }
+      return absolute;
+    }
+
+    function buildWeatherKbsSite(key, label, latDms, lngDms, cctvId, sourceUrl) {
+      const lat = parseWeatherCctvDms(latDms);
+      const lng = parseWeatherCctvDms(lngDms);
+      return {
+        key: key,
+        lat: lat,
+        lng: lng,
+        url: String(sourceUrl || `https://md.kbs.co.kr/special/cctvShare?cctvId=${encodeURIComponent(String(cctvId || ''))}`),
+        label: String(label || ''),
+        streamApiPath: '/api/cctv/kbs/hls',
+        streamQuery: { id: String(cctvId || '') },
+      };
+    }
+
     const WEATHER_CCTV_TEST_SITES = Object.freeze([
       {
         key: '42',
@@ -3969,14 +4007,6 @@
         url: 'http://218.148.169.193/content/channelView.hu?cctv_idx=42',
         label: '인천 부리물량장',
         streamApiPath: '/api/cctv/42/hls',
-      },
-      {
-        key: 'paju9956',
-        lat: 37.9510472222,
-        lng: 126.9795861111,
-        url: 'https://md.kbs.co.kr/special/cctvShare?cctvId=9956',
-        label: '경기 파주 감악산',
-        streamApiPath: '/api/cctv/paju9956/hls',
       },
       {
         key: 'jiri7',
@@ -3994,7 +4024,53 @@
         label: '덕유산 국립공원',
         streamApiPath: '/api/cctv/deogyu10/hls',
       },
-    ]);
+      buildWeatherKbsSite('kbs-9956-base', '경기 파주 감악산', "37°57'3.77\"N", "126°58'46.51\"E", '9956', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9956'),
+      buildWeatherKbsSite('kbs-9952', '강원 강릉 용강동', "37°45'7.47\"N", "128°53'28.18\"E", '9952', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9952'),
+      buildWeatherKbsSite('kbs-9995', '강원 강릉 주문진방파제', "37°53'36.28\"N", "128°50'0.60\"E", '9995', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9995'),
+      buildWeatherKbsSite('kbs-9986', '강원 속초 등대전망대', "38°12'48.20\"N", "128°36'0.36\"E", '9986', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9986'),
+      buildWeatherKbsSite('kbs-9989', '강원 평창 대관령', "37°41'52.94\"N", "128°45'19.01\"E", '9989', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9989'),
+      buildWeatherKbsSite('kbs-9972', '경기 가평 가평2교(북한강)', "37°49'51.64\"N", "127°31'22.40\"E", '9972', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9972'),
+      buildWeatherKbsSite('kbs-9974', '경기 구리 수택동(왕숙천)', "37°35'57.77\"N", "127°9'0.83\"E", '9974', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9974'),
+      buildWeatherKbsSite('kbs-9956-extra', '경기 파주 감악산 일대', "37°56'30.13\"N", "126°58'12.72\"E", '9956', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9956'),
+      buildWeatherKbsSite('kbs-9977', '경남 밀양 삼랑진(낙동강)', "35°23'4.38\"N", "128°49'30.72\"E", '9977', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9977'),
+      buildWeatherKbsSite('kbs-9985', '경남 창원 마산항', "35°11'52.26\"N", "128°34'33.60\"E", '9985', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9985'),
+      buildWeatherKbsSite('kbs-9987', '경북 울릉 저동항', "37°29'28.75\"N", "130°54'43.88\"E", '9987', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9987'),
+      buildWeatherKbsSite('kbs-9988', '경북 포항 두호동 해안로', "36°3'45.68\"N", "129°23'22.52\"E", '9988', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9988'),
+      buildWeatherKbsSite('kbs-9969', '대구 동구 신천동(신천)', "35°52'32.20\"N", "128°36'35.03\"E", '9969', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9969'),
+      buildWeatherKbsSite('kbs-9970', '대전 유성 구성동(갑천)', "36°22'20.68\"N", "127°22'25.86\"E", '9970', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9970'),
+      buildWeatherKbsSite('kbs-9957', '독도', "37°14'21.70\"N", "131°52'6.96\"E", '9957', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9957'),
+      buildWeatherKbsSite('kbs-9967', '부산 동래 세병교(온천천)', "35°11'51.65\"N", "129°4'57.00\"E", '9967', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9967'),
+      buildWeatherKbsSite('kbs-9991', '부산 수영 민락항 앞', "35°9'13.54\"N", "129°7'52.36\"E", '9991', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9991'),
+      buildWeatherKbsSite('kbs-9999', '서울 강남 강남대로', "37°30'4.86\"N", "127°1'34.32\"E", '9999', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9999'),
+      buildWeatherKbsSite('kbs-9996', '서울 강남 대치역사거리', "37°29'40.24\"N", "127°3'46.22\"E", '9996', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9996'),
+      buildWeatherKbsSite('kbs-9966', '서울 노원 월계동(중랑천)', "37°37'56.57\"N", "127°3'45.72\"E", '9966', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9966'),
+      buildWeatherKbsSite('kbs-9965', '서울 마포 성산교(홍제천)', "37°33'45.68\"N", "126°53'59.73\"E", '9965', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9965'),
+      buildWeatherKbsSite('kbs-9998', '서울 서초 반포한강공원', "37°30'42.19\"N", "126°59'49.62\"E", '9998', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9998'),
+      buildWeatherKbsSite('kbs-9990', '서울 서초 서초대로', "37°29'49.70\"N", "127°1'27.64\"E", '9990', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9990'),
+      buildWeatherKbsSite('kbs-9973', '서울 서초 양재동(양재천)', "37°28'23.77\"N", "127°2'16.66\"E", '9973', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9973'),
+      buildWeatherKbsSite('kbs-9961', '서울 영등포 여의도', "37°31'19.88\"N", "126°55'11.75\"E", '9961', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9961'),
+      buildWeatherKbsSite('kbs-9959', '서울 용산 한강', "37°31'39.90\"N", "127°0'18.43\"E", '9959', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9959'),
+      buildWeatherKbsSite('kbs-9962', '서울 중구 서울광장', "37°33'56.05\"N", "126°58'40.80\"E", '9962', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9962'),
+      buildWeatherKbsSite('kbs-9955', '울산 남구 달동 일대', "35°32'39.11\"N", "129°19'35.54\"E", '9955', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9955'),
+      buildWeatherKbsSite('kbs-9958', '인천 옹진 연평도', "37°39'43.20\"N", "125°41'40.20\"E", '9958', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9958'),
+      buildWeatherKbsSite('kbs-9981', '인천 중구 연안부두', "37°27'14.90\"N", "126°35'55.03\"E", '9981', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9981'),
+      buildWeatherKbsSite('kbs-9978', '전남 나주 나주대교(영산강)', "35°2'13.88\"N", "126°43'55.81\"E", '9978', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9978'),
+      buildWeatherKbsSite('kbs-9992', '전남 목포 죽교동 북항', "34°48'15.12\"N", "126°21'54.72\"E", '9992', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9992'),
+      buildWeatherKbsSite('kbs-9983', '전남 신안 가거도', "34°3'10.55\"N", "125°7'45.37\"E", '9983', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9983'),
+      buildWeatherKbsSite('kbs-9993', '전남 여수 거문도', "34°1'23.38\"N", "127°18'26.57\"E", '9993', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9993'),
+      buildWeatherKbsSite('kbs-9994', '전남 여수 오동도 앞', "34°44'27.53\"N", "127°45'20.52\"E", '9994', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9994'),
+      buildWeatherKbsSite('kbs-9984', '전남 완도 완도항', "34°19'15.28\"N", "126°44'55.88\"E", '9984', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9984'),
+      buildWeatherKbsSite('kbs-9979', '전북 군산 비응항', "35°56'7.12\"N", "126°31'35.54\"E", '9979', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9979'),
+      buildWeatherKbsSite('kbs-9971', '전북 남원 뱀사골(지리산)', "35°22'22.40\"N", "127°34'46.45\"E", '9971', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9971'),
+      buildWeatherKbsSite('kbs-9951', '전북 전주 효자동3가', "35°49'22.42\"N", "127°6'18.14\"E", '9951', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9951'),
+      buildWeatherKbsSite('kbs-9954', '제주 도남동 일대', "33°29'20.62\"N", "126°31'10.20\"E", '9954', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9954'),
+      buildWeatherKbsSite('kbs-9982', '제주 서귀포 마라도', "33°6'50.12\"N", "126°16'6.17\"E", '9982', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9982'),
+      buildWeatherKbsSite('kbs-36032', '충남 공주 금강교(금강)', "36°28'12.00\"N", "127°7'39.00\"E", '36032', 'https://md.kbs.co.kr/special/cctvShare?cctvId=36032'),
+      buildWeatherKbsSite('kbs-9976', '충남 공주 금강교(금강)', "36°28'15.31\"N", "127°7'35.00\"E", '9976', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9976'),
+      buildWeatherKbsSite('kbs-9980', '충남 태안 근흥면 신진항', "36°40'40.37\"N", "126°8'11.51\"E", '9980', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9980'),
+      buildWeatherKbsSite('kbs-9975', '충북 단양 도담삼봉', "37°0'1.87\"N", "128°20'30.95\"E", '9975', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9975'),
+      buildWeatherKbsSite('kbs-9968', '충북 청주 사직동(무심천)', "36°38'8.99\"N", "127°28'56.17\"E", '9968', 'https://md.kbs.co.kr/special/cctvShare?cctvId=9968'),
+    ].filter((site) => Number.isFinite(Number(site && site.lat)) && Number.isFinite(Number(site && site.lng)));
     // CCTV_TEST_FEATURE_END
     const DEFAULT_FRONTEND_PUBLIC_BASE_URL = 'https://dooext.dooheetv.com';
     const rawFrontendBaseUrl = String(payload && payload.frontend_base_url ? payload.frontend_base_url : '').trim().replace(/\/+$/, '');
@@ -7509,10 +7585,35 @@
       weatherCctvTestBadge.dataset.tone = String(tone || 'idle');
     }
 
+    function buildWeatherCctvTestStreamUrl(site) {
+      const safeSite = site && typeof site === 'object' ? site : {};
+      const streamApiPath = String(safeSite.streamApiPath || '').trim();
+      if (!streamApiPath) {
+        return '';
+      }
+      const baseUrl = resolveApiUrl(streamApiPath);
+      const params = new URLSearchParams();
+      const streamQuery = safeSite.streamQuery && typeof safeSite.streamQuery === 'object'
+        ? safeSite.streamQuery
+        : null;
+      if (streamQuery) {
+        Object.entries(streamQuery).forEach(([key, value]) => {
+          const normalizedKey = String(key || '').trim();
+          const normalizedValue = value == null ? '' : String(value).trim();
+          if (normalizedKey && normalizedValue) {
+            params.set(normalizedKey, normalizedValue);
+          }
+        });
+      }
+      params.set('_ts', String(Date.now()));
+      return baseUrl.includes('?')
+        ? `${baseUrl}&${params.toString()}`
+        : `${baseUrl}?${params.toString()}`;
+    }
+
     function buildWeatherCctvTestPopupHtml(site) {
       const safeSite = site && typeof site === 'object' ? site : {};
-      const streamApiPath = String(safeSite.streamApiPath || '');
-      const streamUrl = `${resolveApiUrl(streamApiPath)}?_ts=${Date.now()}`;
+      const streamUrl = buildWeatherCctvTestStreamUrl(safeSite);
       const lat = Number(safeSite.lat);
       const lng = Number(safeSite.lng);
       const coordText = Number.isFinite(lat) && Number.isFinite(lng)
@@ -7602,7 +7703,13 @@
       }
       stopWeatherCctvTestPlayback(marker);
       marker._cctvVideoElement = video;
-      const streamUrl = `${resolveApiUrl(site.streamApiPath)}?_ts=${Date.now()}`;
+      const streamUrl = buildWeatherCctvTestStreamUrl(site);
+      if (!streamUrl) {
+        if (status) {
+          status.textContent = '영상 연결 실패(링크로 열기)';
+        }
+        return;
+      }
       if (status) {
         status.textContent = '영상 연결 중...';
       }
