@@ -1,7 +1,7 @@
 {
   "updated_at": "2026-03-28T12:25:33.585952+00:00",
   "last_successful_at": "2026-03-28T12:25:33.585952+00:00",
-  "last_attempted_at": "2026-04-01T04:18:33.490518+00:00",
+  "last_attempted_at": "2026-04-01T06:50:42.969861+00:00",
   "source_label": "Airportal 항공일자리",
   "cache_status": "stale",
   "cache_warning": "Airportal 연결 문제로 이전 캐시를 표시 중입니다.",
