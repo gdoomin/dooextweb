@@ -6,8 +6,8 @@ import path from "node:path";
 import { fetchPilotJobsIndex, type JobsFilterOption, type PilotJobListItem } from "@/lib/jobs-client";
 
 export const metadata: Metadata = {
-  title: "Pilot Jobs Portal",
-  description: "조종사, 기장, 부기장, 비행교관 채용정보를 한곳에서 찾는 항공 채용 포털",
+  title: "조종계열 채용 포털 | DOO Extractor",
+  description: "조종사, 기장, 부기장, 비행교관 채용정보를 한곳에서 찾는 조종계열 채용 포털",
 };
 
 export const dynamic = "force-dynamic";
@@ -35,7 +35,7 @@ const ROLE_LABELS: Record<string, string> = {
   captain: "기장",
   first_officer: "부기장",
   flight_instructor: "비행교관",
-  cadet: "Cadet",
+  cadet: "사관후보 조종사",
   helicopter_pilot: "회전익 조종사",
   special_mission_pilot: "특수임무 조종사",
   other_flight_crew: "항공승무",
@@ -90,7 +90,15 @@ function buildJobsHref(params: Record<string, string | number | undefined>) {
 }
 
 function buildMetaLine(item: PilotJobListItem) {
-  return [item.location || "", item.employment_type || "", item.experience || ""].filter(Boolean).join(" · ");
+  const experienceText = String(item.experience || "").trim();
+  const shouldShowExperience =
+    !!experienceText &&
+    !/^\d+$/.test(experienceText) &&
+    !/^[\d\s./-]+$/.test(experienceText);
+
+  return [item.location || "", item.employment_type || "", shouldShowExperience ? experienceText : ""]
+    .filter(Boolean)
+    .join(" · ");
 }
 
 function buildJobBadge(item: PilotJobListItem) {
@@ -99,6 +107,27 @@ function buildJobBadge(item: PilotJobListItem) {
     return ROLE_LABELS[roleKey];
   }
   return item.matched_keywords?.[0] || "조종사";
+}
+
+function shouldRenderSummary(summaryText: string, metaLine: string) {
+  const summary = String(summaryText || "").trim();
+  const meta = String(metaLine || "").trim();
+  if (!summary) {
+    return false;
+  }
+  if (!meta) {
+    return true;
+  }
+  if (summary === meta) {
+    return false;
+  }
+  if (summary.startsWith(meta)) {
+    const trailing = summary.slice(meta.length).trim();
+    if (!trailing || /^·\s*[\d./-]+$/.test(trailing)) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function buildPageTitle(totalCount: number, query: string) {
@@ -304,14 +333,14 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
     <main className="jobs-portal-shell">
       <section className="jobs-portal-hero">
         <div className="jobs-portal-topline">
-          <span className="jobs-portal-badge">FLIGHT CREW PORTAL</span>
+          <span className="jobs-portal-badge">조종계열 채용 포털</span>
           <Link href="/" className="jobs-portal-home-link">
-            홈으로
+            메인으로
           </Link>
         </div>
         <div className="jobs-portal-hero-copy">
           <h1>조종계열 채용 포털</h1>
-          <p>조종사, 기장, 부기장, Cadet, 비행교관 공고를 역할과 자격 기준으로 한 번에 찾을 수 있도록 정리했습니다.</p>
+          <p>조종사, 기장, 부기장, 사관후보 조종사, 비행교관 공고를 한 화면에서 찾고 직무·지역·고용형태·상태 기준으로 빠르게 정리할 수 있도록 구성했습니다.</p>
         </div>
 
         <form method="get" className="jobs-search-panel">
@@ -348,7 +377,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
         <div className="jobs-portal-status">
           <div className="jobs-portal-status-copy">
             <strong>{buildPageTitle(totalCount, q)}</strong>
-            <span>{payload?.source_label || "채용정보 소스"}</span>
+            <span>항공사 · 취업포털 통합 수집 기준</span>
           </div>
           <div className="jobs-portal-status-meta">
             <span>{updatedAtText ? `마지막 성공 ${updatedAtText}` : "최신 시각 확인 중"}</span>
@@ -383,6 +412,8 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
           <section className="jobs-results-grid">
             {payload.items.map((item) => {
               const metaLine = buildMetaLine(item);
+              const summaryText = String(item.summary || "").trim();
+              const shouldShowSummary = shouldRenderSummary(summaryText, metaLine);
               const chips = [
                 buildJobBadge(item),
                 ...(item.license_tags || []).slice(0, 2),
@@ -390,20 +421,20 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
               ].filter(Boolean);
 
               return (
-                <article key={item.id} className="jobs-card">
+                <article key={item.id} className={`jobs-card ${item.status === "closed" ? "is-closed" : "is-open"}`}>
                   <div className="jobs-card-top">
                     <div className="jobs-card-company-wrap">
                       <span className="jobs-card-company">{item.company}</span>
                       <span className="jobs-card-source">{item.source}</span>
                     </div>
-                    <span className="jobs-card-deadline">
+                    <span className={`jobs-card-deadline ${item.status === "closed" ? "is-closed" : "is-open"}`}>
                       {item.status === "closed" ? "채용종료" : item.d_day || item.deadline_text || "채용중"}
                     </span>
                   </div>
 
                   <h2 className="jobs-card-title">{item.title}</h2>
                   {metaLine ? <p className="jobs-card-meta">{metaLine}</p> : null}
-                  {item.summary ? <p className="jobs-card-summary">{item.summary}</p> : null}
+                  {shouldShowSummary ? <p className="jobs-card-summary">{summaryText}</p> : null}
 
                   {chips.length ? (
                     <div className="jobs-card-chips">

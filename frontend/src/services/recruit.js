@@ -43,7 +43,12 @@ export function formatRecruitUpdatedAt(value) {
 }
 
 export function buildRecruitMetaText(item) {
-  const parts = [item.location || "", item.employment_type || "", item.experience || ""].filter(Boolean);
+  const experienceText = String(item.experience || "").trim();
+  const shouldShowExperience =
+    !!experienceText &&
+    !/^\d+$/.test(experienceText) &&
+    !/^[\d\s./-]+$/.test(experienceText);
+  const parts = [item.location || "", item.employment_type || "", shouldShowExperience ? experienceText : ""].filter(Boolean);
   return parts.join(" · ");
 }
 
