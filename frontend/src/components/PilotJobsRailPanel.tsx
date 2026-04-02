@@ -1,97 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-
-import { fetchPilotJobsPanel, type PilotJobListItem, type PilotRecruitmentResponse } from "@/lib/jobs-client";
-
-const JOB_UPDATED_AT_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
-  month: "2-digit",
-  day: "2-digit",
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: false,
-});
-
-function formatJobUpdatedAt(value: string): string {
-  const text = String(value || "").trim();
-  if (!text) {
-    return "";
-  }
-  const parsed = new Date(text);
-  if (Number.isNaN(parsed.getTime())) {
-    return "";
-  }
-  return JOB_UPDATED_AT_FORMATTER.format(parsed);
-}
-
-function buildJobMetaText(item: PilotJobListItem): string {
-  const parts = [item.location || "", item.employment_type || "", item.experience || ""].filter(Boolean);
-  return parts.join(" · ");
-}
-
-function buildDeadlineBadge(item: PilotJobListItem): string {
-  const dDay = String(item.d_day || "").trim();
-  const deadlineText = String(item.deadline_text || "").trim();
-  if (dDay) {
-    return dDay;
-  }
-  return deadlineText || "채용중";
-}
+import { buildRecruitDeadlineBadge, buildRecruitMetaText, useRecruitRailPanel } from "@/services/recruit";
 
 export function PilotJobsRailPanel() {
-  const [payload, setPayload] = useState<PilotRecruitmentResponse>({
-    items: [],
-    source_label: "Airportal 항공일자리",
-    updated_at: "",
-    last_successful_at: "",
-    last_attempted_at: "",
-    cache_status: "",
-    cache_warning: "",
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function run() {
-      setLoading(true);
-      setError("");
-      try {
-        const next = await fetchPilotJobsPanel();
-        if (!cancelled) {
-          setPayload(next);
-        }
-      } catch (fetchError) {
-        if (!cancelled) {
-          const message = fetchError instanceof Error ? fetchError.message : "채용정보를 불러오지 못했습니다.";
-          setError(message);
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
-      }
-    }
-
-    void run();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const items = payload.items || [];
-  const updatedAtText = useMemo(
-    () => formatJobUpdatedAt(payload.last_successful_at || payload.updated_at || ""),
-    [payload.last_successful_at, payload.updated_at],
-  );
-  const attemptedAtText = useMemo(
-    () => formatJobUpdatedAt(payload.last_attempted_at || ""),
-    [payload.last_attempted_at],
-  );
-  const sourceLabel = String(payload.source_label || "Airportal 항공일자리").trim() || "Airportal 항공일자리";
-  const isStaleCache = payload.cache_status === "stale";
+  const { payload, items, loading, error, updatedAtText, attemptedAtText, sourceLabel, isStaleCache } =
+    useRecruitRailPanel();
 
   return (
     <section className="doo-rail-card doo-rail-card-jobs" aria-label="채용정보">
@@ -127,7 +41,7 @@ export function PilotJobsRailPanel() {
       ) : items.length ? (
         <div className="doo-rail-jobs-list">
           {items.map((item) => {
-            const metaText = buildJobMetaText(item);
+            const metaText = buildRecruitMetaText(item);
             const primaryKeyword = item.matched_keywords?.[0] || "조종사";
             return (
               <a
@@ -144,7 +58,7 @@ export function PilotJobsRailPanel() {
                 </div>
                 <div className="doo-rail-job-top">
                   <strong className="doo-rail-job-company">{item.company || "항공 채용"}</strong>
-                  <span className="doo-rail-job-deadline">{buildDeadlineBadge(item)}</span>
+                  <span className="doo-rail-job-deadline">{buildRecruitDeadlineBadge(item)}</span>
                 </div>
                 <div className="doo-rail-job-title">{item.title}</div>
                 {metaText ? <div className="doo-rail-job-meta-line">{metaText}</div> : null}
