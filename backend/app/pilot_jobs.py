@@ -8,7 +8,7 @@ import re
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urljoin
 from urllib.request import Request as UrlRequest, urlopen
 
 
@@ -40,6 +40,82 @@ PILOT_JOB_FETCH_TERMS = [
     "pilot",
 ]
 
+PILOT_JOBS_AGGREGATE_SOURCE_CODE = "pilot-jobs-hub"
+PILOT_JOBS_AGGREGATE_SOURCE_LABEL = "Integrated pilot jobs"
+PILOT_JOB_PORTAL_FETCH_TERMS = tuple(PILOT_JOB_FETCH_TERMS)
+
+PILOT_JOB_RECRUITER_SOURCES: tuple[dict[str, str], ...] = (
+    {
+        "code": "koreanair",
+        "label": "Korean Air Careers",
+        "company_name": "Korean Air",
+        "base_url": "https://koreanair.recruiter.co.kr",
+        "careers_url": "https://koreanair.recruiter.co.kr/career/home",
+    },
+    {
+        "code": "jinair",
+        "label": "Jin Air Careers",
+        "company_name": "Jin Air",
+        "base_url": "https://jinair.recruiter.co.kr",
+        "careers_url": "https://jinair.recruiter.co.kr/app/jobnotice/list",
+    },
+    {
+        "code": "tway",
+        "label": "T'way Air Careers",
+        "company_name": "T'way Air",
+        "base_url": "https://twayair.recruiter.co.kr",
+        "careers_url": "https://twayair.recruiter.co.kr/career/home",
+    },
+    {
+        "code": "airbusan",
+        "label": "Air Busan Careers",
+        "company_name": "Air Busan",
+        "base_url": "https://airbusan.recruiter.co.kr",
+        "careers_url": "https://airbusan.recruiter.co.kr/app/jobnotice/list",
+    },
+    {
+        "code": "jejuair",
+        "label": "Jeju Air Careers",
+        "company_name": "Jeju Air",
+        "base_url": "https://jejuair.recruiter.co.kr",
+        "careers_url": "https://jejuair.recruiter.co.kr/career/home",
+    },
+)
+
+PILOT_JOB_PORTAL_SOURCES: tuple[dict[str, str], ...] = (
+    {
+        "code": "saramin",
+        "label": "Saramin Search",
+        "company_name": "Saramin",
+        "base_url": "https://www.saramin.co.kr",
+        "careers_url": "https://www.saramin.co.kr/zf_user/search",
+    },
+    {
+        "code": "jobkorea",
+        "label": "JobKorea Search",
+        "company_name": "JobKorea",
+        "base_url": "https://www.jobkorea.co.kr",
+        "careers_url": "https://www.jobkorea.co.kr/Search/",
+    },
+)
+
+PILOT_JOB_ALL_SOURCE_DEFINITIONS: tuple[dict[str, str], ...] = (
+    {
+        "code": PILOT_JOBS_SOURCE_CODE,
+        "label": PILOT_JOBS_SOURCE_LABEL,
+        "company_name": "Airportal",
+        "base_url": PILOT_JOBS_SOURCE_BASE_URL,
+        "careers_url": PILOT_JOBS_SOURCE_CAREERS_URL,
+    },
+    *PILOT_JOB_RECRUITER_SOURCES,
+    *PILOT_JOB_PORTAL_SOURCES,
+)
+
+PILOT_JOB_SOURCE_META_BY_CODE = {
+    definition["code"]: definition
+    for definition in PILOT_JOB_ALL_SOURCE_DEFINITIONS
+}
+
 PILOT_JOB_NEGATIVE_KEYWORDS = [
     "드론",
     "uav",
@@ -69,6 +145,116 @@ PILOT_JOB_POSITIVE_OVERRIDE_KEYWORDS = [
     "c208",
     "helicopter",
     "rotary",
+]
+
+PILOT_JOB_STRONG_AVIATION_KEYWORDS = [
+    "항공기 조종사",
+    "항공기조종사",
+    "비행기 조종사",
+    "비행기조종사",
+    "헬리콥터 조종사",
+    "회전익 조종사",
+    "교관 조종사",
+    "비행교관",
+    "운항승무원",
+    "사업용 조종사",
+    "사업용조종사",
+    "운송용 조종사",
+    "운송용조종사",
+    "사업용 면장",
+    "운송용 면장",
+    "captain pilot",
+    "first officer",
+    "flight instructor",
+    "cadet pilot",
+    "aircraft pilot",
+    "airline pilot",
+    "helicopter pilot",
+    "rotary wing",
+]
+
+PILOT_JOB_AVIATION_CONTEXT_KEYWORDS = [
+    "항공",
+    "항공기",
+    "비행",
+    "운항",
+    "헬리콥터",
+    "회전익",
+    "민항",
+    "시뮬레이터",
+    "조종훈련",
+    "aircraft",
+    "airline",
+    "aviation",
+    "flight crew",
+    "flight deck",
+    "cockpit",
+    "helicopter",
+    "rotary",
+    "simulator",
+]
+
+PILOT_JOB_COMPANY_AVIATION_KEYWORDS = [
+    "항공",
+    "에어",
+    "air",
+    "aero",
+    "aviation",
+    "flight",
+    "헬기",
+    "helicopter",
+    "jet",
+]
+
+PILOT_JOB_NON_AVIATION_BLOCKERS = [
+    "굴삭기",
+    "포크레인",
+    "지게차",
+    "크레인",
+    "타워크레인",
+    "중장비",
+    "옵셋",
+    "인쇄",
+    "printing",
+    "세무",
+    "회계",
+    "경리",
+    "조리",
+    "주방",
+    "카페",
+    "대게",
+    "만찬",
+    "식당",
+    "배송",
+    "택배",
+    "납품",
+    "화물",
+    "트럭",
+    "버스",
+    "택시",
+    "선박",
+    "선장",
+    "요트",
+    "보트",
+    "크루즈",
+    "해운",
+    "기관사",
+    "기계",
+    "생산직",
+    "공장",
+    "오퍼레이터",
+    "세병교",
+    "반포한강",
+]
+
+PILOT_JOB_GIJANG_GEO_KEYWORDS = [
+    "기장군",
+    "기장읍",
+    "정관읍",
+    "일광읍",
+    "철마면",
+    "부산 기장",
+    "기장 일광",
 ]
 
 AIRCRAFT_TYPE_PATTERNS: tuple[tuple[str, str], ...] = (
@@ -160,6 +346,43 @@ def slugify_text(value: str, fallback_prefix: str) -> str:
     return f"{fallback_prefix}-{digest}"
 
 
+def count_keyword_hits(normalized_text: str, keywords: list[str]) -> int:
+    return sum(1 for keyword in keywords if keyword and keyword in normalized_text)
+
+
+def has_aviation_company_context(company_text: str) -> bool:
+    normalized_company = normalize_search_text(company_text)
+    if not normalized_company:
+        return False
+    return any(keyword in normalized_company for keyword in PILOT_JOB_COMPANY_AVIATION_KEYWORDS)
+
+
+def aviation_relevance_score(normalized_text: str, company_text: str = "") -> int:
+    score = 0
+    aircraft_types = extract_aircraft_types(normalized_text)
+    if count_keyword_hits(normalized_text, PILOT_JOB_STRONG_AVIATION_KEYWORDS):
+        score += 3
+    if aircraft_types:
+        score += 3
+    if any(
+        keyword in normalized_text
+        for keyword in ("사업용 면장", "사업용조종사", "운송용 면장", "운송용조종사", " atpl", " cpl", "type rating", "자격한정")
+    ):
+        score += 2
+    score += min(count_keyword_hits(normalized_text, PILOT_JOB_AVIATION_CONTEXT_KEYWORDS), 2)
+    if has_aviation_company_context(company_text):
+        score += 2
+    blocker_score = min(count_keyword_hits(normalized_text, PILOT_JOB_NON_AVIATION_BLOCKERS), 3)
+    if any(keyword in normalized_text for keyword in PILOT_JOB_GIJANG_GEO_KEYWORDS):
+        blocker_score += 2
+    score -= blocker_score * 2
+    return score
+
+
+def is_aviation_relevant_text(normalized_text: str, company_text: str = "") -> bool:
+    return aviation_relevance_score(normalized_text, company_text) >= 2
+
+
 def airportal_job_detail_url(job_no: Any) -> str:
     return f"{AIRPORTAL_WORK_DETAIL_URL}?num={quote(str(job_no or '').strip())}"
 
@@ -211,6 +434,135 @@ def post_airportal_jobs(payload: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def fetch_text_response(
+    url: str,
+    *,
+    method: str = "GET",
+    headers: dict[str, str] | None = None,
+    data: bytes | None = None,
+    timeout: int = AIRPORTAL_TIMEOUT_SECONDS,
+) -> str:
+    request = UrlRequest(
+        url=url,
+        method=method,
+        headers=headers
+        or {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+        },
+        data=data,
+    )
+    with urlopen(request, timeout=timeout) as response:
+        raw = response.read()
+        charset = response.headers.get_content_charset() or "utf-8"
+    try:
+        return raw.decode(charset, errors="ignore")
+    except LookupError:
+        return raw.decode("utf-8", errors="ignore")
+
+
+def post_form_json(url: str, payload: dict[str, Any], *, timeout: int = AIRPORTAL_TIMEOUT_SECONDS) -> Any:
+    body = urlencode(
+        {
+            key: "true" if value is True else "false" if value is False else value
+            for key, value in payload.items()
+        }
+    ).encode("utf-8")
+    return json.loads(
+        fetch_text_response(
+            url,
+            method="POST",
+            headers={
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "X-Requested-With": "XMLHttpRequest",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36",
+            },
+            data=body,
+            timeout=timeout,
+        )
+        or "{}"
+    )
+
+
+def strip_html_tags(value: Any) -> str:
+    text = normalize_space_text(value)
+    if not text:
+        return ""
+    text = re.sub(r"<br\s*/?>", " ", text, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", " ", text)
+    return normalize_space_text(text)
+
+
+def recruiter_date_to_iso(value: Any) -> str:
+    if isinstance(value, dict):
+        timestamp = value.get("time")
+        if isinstance(timestamp, (int, float)):
+            return datetime.fromtimestamp(float(timestamp) / 1000, tz=timezone.utc).astimezone(KST).isoformat()
+    return normalize_space_text(value)
+
+
+def iso_to_dot_date(value: Any) -> str:
+    text = normalize_space_text(value)
+    if not text:
+        return ""
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return ""
+    return parsed.astimezone(KST).strftime("%Y.%m.%d")
+
+
+def parse_month_day_deadline(value: Any) -> str:
+    text = normalize_space_text(value)
+    match = re.search(r"(\d{2})/(\d{2})", text)
+    if not match:
+        return ""
+    month = int(match.group(1))
+    day = int(match.group(2))
+    now = datetime.now(KST)
+    year = now.year
+    try:
+        parsed = datetime(year, month, day, 23, 59, 59, tzinfo=KST)
+    except ValueError:
+        return ""
+    if parsed.date() < now.date() and month < max(now.month - 6, 1):
+        try:
+            parsed = parsed.replace(year=year + 1)
+        except ValueError:
+            return ""
+    return parsed.isoformat()
+
+
+def parse_two_digit_korean_date(value: Any) -> str:
+    text = normalize_space_text(value)
+    match = re.search(r"(\d{2})/(\d{2})/(\d{2})", text)
+    if not match:
+        return ""
+    year = 2000 + int(match.group(1))
+    month = int(match.group(2))
+    day = int(match.group(3))
+    try:
+        parsed = datetime(year, month, day, 0, 0, 0, tzinfo=KST)
+    except ValueError:
+        return ""
+    return parsed.isoformat()
+
+
+def extract_html_attr(text: str, pattern: str) -> str:
+    match = re.search(pattern, text, flags=re.IGNORECASE | re.DOTALL)
+    if not match:
+        return ""
+    return html.unescape(normalize_space_text(match.group(1)))
+
+
+def build_recruiter_detail_url(base_url: str, item: dict[str, Any]) -> str:
+    system_kind_code = normalize_space_text(item.get("systemKindCode")) or "MRS2"
+    jobnotice_sn = normalize_space_text(item.get("jobnoticeSn"))
+    return urljoin(
+        f"{base_url.rstrip('/')}/",
+        f"app/jobnotice/view?systemKindCode={quote(system_kind_code)}&jobnoticeSn={quote(jobnotice_sn)}",
+    )
+
+
 def extract_pilot_job_matches(item: dict[str, Any]) -> list[str]:
     title = normalize_space_text(item.get("title"))
     company = normalize_space_text(item.get("compNm"))
@@ -227,14 +579,36 @@ def extract_pilot_job_matches(item: dict[str, Any]) -> list[str]:
     if has_negative_keyword and not has_positive_override:
         return []
 
-    first_officer_hit = any(keyword in normalized for keyword in ("부기장", "first officer"))
-    captain_hit = bool(re.search(r"(?<!부)기장", normalized)) or "captain" in normalized
+    aviation_relevant = is_aviation_relevant_text(normalized, company)
+    explicit_pilot_phrase_hit = any(
+        keyword in normalized
+        for keyword in (
+            "항공기 조종사",
+            "항공기조종사",
+            "비행기 조종사",
+            "비행기조종사",
+            "헬리콥터 조종사",
+            "회전익 조종사",
+            "captain pilot",
+            "aircraft pilot",
+            "airline pilot",
+            "helicopter pilot",
+        )
+    )
+
+    first_officer_hit = any(keyword in normalized for keyword in ("부기장", "first officer")) and aviation_relevant
+    captain_hit = (bool(re.search(r"(?<!부)기장", normalized)) or "captain" in normalized) and aviation_relevant
     instructor_hit = any(keyword in normalized for keyword in ("비행교관", "교관 조종사", "flight instructor", "cfi"))
     flight_crew_hit = any(keyword in normalized for keyword in ("운항승무원", "flight crew"))
     cadet_hit = any(keyword in normalized for keyword in ("cadet pilot", "cadet"))
     cpl_hit = any(keyword in normalized for keyword in ("사업용 면장", "사업용조종사", "사업용 조종사", "사업용 조종사면장", " cpl"))
     atpl_hit = any(keyword in normalized for keyword in ("운송용 면장", "운송용조종사", "운송용 조종사", " atpl"))
-    pilot_hit = any(keyword in normalized for keyword in ("비행기조종사", "조종사", "파일럿", "pilot"))
+    pilot_hit = explicit_pilot_phrase_hit or (
+        any(keyword in normalized for keyword in ("비행기조종사", "조종사", "파일럿", "pilot")) and aviation_relevant
+    )
+
+    if not any((pilot_hit, first_officer_hit, captain_hit, instructor_hit, flight_crew_hit, cadet_hit, cpl_hit, atpl_hit)):
+        return []
 
     matched: list[str] = []
     if flight_crew_hit:
@@ -257,6 +631,19 @@ def extract_pilot_job_matches(item: dict[str, Any]) -> list[str]:
         matched.append("Cadet")
 
     return dedupe_preserve_order(matched)
+
+
+def extract_pilot_job_matches_from_text(text: str) -> list[str]:
+    return extract_pilot_job_matches(
+        {
+            "title": text,
+            "compNm": "",
+            "areaCodeNm": "",
+            "workRegion": "",
+            "jobDutyCodeNmList": [],
+            "jobExpCodeNmList": [],
+        }
+    )
 
 
 def extract_license_tags(normalized_text: str, matched_keywords: list[str]) -> list[str]:
@@ -374,16 +761,31 @@ def is_open_pilot_job(item: dict[str, Any]) -> bool:
     return parsed_deadline.date() >= datetime.now(KST).date()
 
 
-def pilot_job_sort_key(item: dict[str, Any]) -> tuple[int, datetime, str]:
-    deadline_text = normalize_space_text(item.get("deadline_date"))
-    parsed_deadline = parse_dot_date(deadline_text)
-    if parsed_deadline is None:
-        parsed_deadline = datetime.max.replace(tzinfo=timezone.utc)
-        always_rank = 1
-    else:
-        always_rank = 0
+def parse_iso_datetime(value: Any) -> datetime | None:
+    text = normalize_space_text(value)
+    if not text:
+        return None
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def pilot_job_sort_key(item: dict[str, Any]) -> tuple[int, float, float, str]:
+    status_rank = 0 if normalize_space_text(item.get("status")) != "closed" else 1
+    latest_reference = (
+        parse_iso_datetime(item.get("posted_at"))
+        or parse_iso_datetime(item.get("deadline_at"))
+        or parse_dot_date(item.get("deadline_date"))
+    )
+    latest_timestamp = latest_reference.timestamp() if latest_reference is not None else 0.0
+    deadline_reference = parse_iso_datetime(item.get("deadline_at")) or parse_dot_date(item.get("deadline_date"))
+    deadline_timestamp = deadline_reference.timestamp() if deadline_reference is not None else 0.0
     title = normalize_space_text(item.get("title")).lower()
-    return always_rank, parsed_deadline, title
+    return status_rank, -latest_timestamp, -deadline_timestamp, title
 
 
 def normalize_pilot_job_item(item: dict[str, Any], matched_keywords: list[str]) -> dict[str, Any]:
@@ -501,7 +903,178 @@ def normalize_pilot_job_item(item: dict[str, Any], matched_keywords: list[str]) 
     }
 
 
-def fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
+def build_generic_pilot_job_item(
+    *,
+    source_code: str,
+    source_label: str,
+    source_job_key: str,
+    title: str,
+    company: str,
+    source_url: str,
+    location: str = "",
+    employment_type: str = "",
+    experience: str = "",
+    deadline_text: str = "",
+    deadline_date: str = "",
+    period_text: str = "",
+    d_day: str = "",
+    posted_at: str = "",
+    deadline_at: str = "",
+    is_always_open: bool = False,
+    extra_text: str = "",
+    raw_payload: dict[str, Any] | None = None,
+) -> dict[str, Any] | None:
+    source_job_key = normalize_space_text(source_job_key)
+    title = normalize_space_text(title)
+    company = normalize_space_text(company)
+    source_url = normalize_space_text(source_url)
+    location = normalize_space_text(location)
+    employment_type = normalize_space_text(employment_type)
+    experience = normalize_space_text(experience)
+    deadline_text = normalize_space_text(deadline_text)
+    deadline_at = normalize_space_text(deadline_at)
+    posted_at = normalize_space_text(posted_at)
+    deadline_date = normalize_space_text(deadline_date) or iso_to_dot_date(deadline_at)
+    period_text = normalize_space_text(period_text)
+    d_day = normalize_space_text(d_day)
+    extra_text = normalize_space_text(extra_text)
+    if not source_job_key or not title or not source_url:
+        return None
+
+    matched_keywords = extract_pilot_job_matches_from_text(
+        " ".join(part for part in [title, company, location, employment_type, experience, extra_text] if part)
+    )
+    if not matched_keywords:
+        return None
+
+    normalized_text = normalize_search_text(
+        " ".join(part for part in [title, company, location, employment_type, experience, extra_text, " ".join(matched_keywords)] if part)
+    )
+    aircraft_types = extract_aircraft_types(normalized_text)
+    role_family = derive_role_family(normalized_text, matched_keywords, aircraft_types)
+    license_tags = extract_license_tags(normalized_text, matched_keywords)
+    aircraft_category = derive_aircraft_category(normalized_text, aircraft_types)
+    location_country, location_region, location_city = derive_location_fields(location)
+    employment_type_code = derive_employment_type_code(employment_type or extra_text, is_always_open)
+    experience_level = derive_experience_level(experience or extra_text)
+    company_slug = slugify_text(company or f"{source_code}-company", f"{source_code}-company")
+    slug = slugify_text(" ".join(part for part in [company, title, source_job_key] if part), f"{source_code}-job")
+    summary = " · ".join(part for part in [location, employment_type, experience] if part)
+    search_document = compose_search_document(
+        [
+            title,
+            company,
+            location,
+            employment_type,
+            experience,
+            extra_text,
+            " ".join(matched_keywords),
+            " ".join(license_tags),
+            " ".join(aircraft_types),
+            ROLE_FAMILY_LABELS.get(role_family, ""),
+        ]
+    )
+    item_id = source_job_key or hashlib.sha256(f"{source_code}:{company}:{title}".encode("utf-8")).hexdigest()[:16]
+    normalized_payload = {
+        "id": item_id,
+        "job_no": source_job_key,
+        "title": title,
+        "company": company,
+        "location": location,
+        "employment_type": employment_type,
+        "experience": experience,
+        "deadline_text": deadline_text,
+        "deadline_date": deadline_date,
+        "period_text": period_text,
+        "d_day": d_day,
+        "matched_keywords": matched_keywords,
+        "source": source_label,
+        "url": source_url,
+        "role_family": role_family,
+        "license_tags": license_tags,
+        "aircraft_category": aircraft_category,
+        "aircraft_types": aircraft_types,
+        "summary": summary,
+    }
+    item = {
+        "id": item_id,
+        "slug": slug,
+        "job_no": source_job_key,
+        "source_job_key": source_job_key,
+        "title": title,
+        "company": company,
+        "company_slug": company_slug,
+        "location": location,
+        "employment_type": employment_type,
+        "employment_type_code": employment_type_code,
+        "experience": experience,
+        "experience_level": experience_level,
+        "deadline_text": deadline_text,
+        "deadline_date": deadline_date,
+        "period_text": period_text,
+        "d_day": d_day,
+        "matched_keywords": matched_keywords,
+        "source": source_label,
+        "source_code": source_code,
+        "source_label": source_label,
+        "url": source_url,
+        "source_url": source_url,
+        "role_family": role_family,
+        "license_tags": license_tags,
+        "aircraft_category": aircraft_category,
+        "aircraft_types": aircraft_types,
+        "summary": summary,
+        "posted_at": posted_at,
+        "deadline_at": deadline_at,
+        "is_always_open": is_always_open,
+        "location_country": location_country,
+        "location_region": location_region,
+        "location_city": location_city,
+        "search_document": search_document,
+        "raw_payload": {
+            "source_record": raw_payload or {},
+            "normalized": normalized_payload,
+        },
+    }
+    if not is_open_pilot_job(item):
+        return None
+    return item
+
+
+def merge_collected_job_item(collected: dict[str, dict[str, Any]], item: dict[str, Any] | None) -> None:
+    if not item:
+        return
+    source_code = normalize_space_text(item.get("source_code"))
+    source_job_key = normalize_space_text(item.get("source_job_key"))
+    if not source_code or not source_job_key:
+        return
+    composite_key = f"{source_code}:{source_job_key}"
+    existing = collected.get(composite_key)
+    if existing is None:
+        collected[composite_key] = item
+        return
+
+    existing["matched_keywords"] = dedupe_preserve_order((existing.get("matched_keywords") or []) + (item.get("matched_keywords") or []))
+    existing["license_tags"] = dedupe_preserve_order((existing.get("license_tags") or []) + (item.get("license_tags") or []))
+    existing["aircraft_types"] = dedupe_preserve_order((existing.get("aircraft_types") or []) + (item.get("aircraft_types") or []))
+    for field in (
+        "location",
+        "employment_type",
+        "experience",
+        "deadline_text",
+        "deadline_date",
+        "period_text",
+        "d_day",
+        "summary",
+        "posted_at",
+        "deadline_at",
+        "search_document",
+    ):
+        if not normalize_space_text(existing.get(field)) and normalize_space_text(item.get(field)):
+            existing[field] = item.get(field)
+
+
+def collect_airportal_pilot_jobs() -> list[dict[str, Any]]:
     collected: dict[str, dict[str, Any]] = {}
     for search_term in PILOT_JOB_FETCH_TERMS:
         response_payload = post_airportal_jobs({"searchNm": search_term, "pageNumber": 1, "pageSize": 40})
@@ -511,18 +1084,207 @@ def fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
             matched_keywords = extract_pilot_job_matches(raw_item)
             if not matched_keywords:
                 continue
-            normalized_item = normalize_pilot_job_item(raw_item, matched_keywords)
-            job_key = normalize_space_text(normalized_item.get("source_job_key"))
-            if not job_key or not is_open_pilot_job(normalized_item):
+            merge_collected_job_item(collected, normalize_pilot_job_item(raw_item, matched_keywords))
+    return list(collected.values())
+
+
+def collect_recruiter_pilot_jobs(source_meta: dict[str, str]) -> list[dict[str, Any]]:
+    response_payload = post_form_json(
+        urljoin(f"{source_meta['base_url'].rstrip('/')}/", "app/jobnotice/list.json"),
+        {
+            "recruitClassSn": "",
+            "recruitClassName": "",
+            "jobnoticeStateCode": "10",
+            "currentPage": "1",
+            "pageSize": "50",
+            "keyword": "",
+            "searchByNameOnly": True,
+        },
+    )
+    if not isinstance(response_payload, dict):
+        return []
+    items: list[dict[str, Any]] = []
+    for raw_item in response_payload.get("list") or []:
+        if not isinstance(raw_item, dict):
+            continue
+        deadline_at = recruiter_date_to_iso(raw_item.get("applyEndDate"))
+        deadline_date = iso_to_dot_date(deadline_at)
+        start_at = recruiter_date_to_iso(raw_item.get("applyStartDate"))
+        recruit_class = normalize_space_text(raw_item.get("recruitClassName"))
+        title = normalize_space_text(raw_item.get("jobnoticeName"))
+        end_year = raw_item.get("applyEndDate", {}).get("year") if isinstance(raw_item.get("applyEndDate"), dict) else None
+        item = build_generic_pilot_job_item(
+            source_code=source_meta["code"],
+            source_label=source_meta["label"],
+            source_job_key=normalize_space_text(raw_item.get("jobnoticeSn")),
+            title=title,
+            company=source_meta["company_name"],
+            source_url=build_recruiter_detail_url(source_meta["base_url"], raw_item),
+            employment_type=recruit_class,
+            experience=recruit_class,
+            deadline_text=deadline_date or recruit_class,
+            deadline_date=deadline_date,
+            period_text=" ~ ".join(part for part in [iso_to_dot_date(start_at), deadline_date] if part),
+            posted_at=start_at,
+            deadline_at=deadline_at,
+            is_always_open=isinstance(end_year, int) and end_year >= 160,
+            extra_text=" ".join(
+                part
+                for part in [
+                    normalize_space_text(raw_item.get("recruitTypeCode")),
+                    normalize_space_text(raw_item.get("systemKindCode")),
+                    title,
+                ]
+                if part
+            ),
+            raw_payload=raw_item,
+        )
+        if item:
+            items.append(item)
+    return items
+
+
+def collect_saramin_pilot_jobs() -> list[dict[str, Any]]:
+    collected: dict[str, dict[str, Any]] = {}
+    base_url = "https://www.saramin.co.kr"
+    for search_term in PILOT_JOB_PORTAL_FETCH_TERMS:
+        html_text = fetch_text_response(
+            f"{base_url}/zf_user/search?searchType=search&searchword={quote(search_term)}"
+        )
+        for match in re.finditer(r'<div class="item_recruit"\s+value="(?P<id>\d+)"(?P<body>.*?)</div>\s*</div>\s*</div>', html_text, re.DOTALL):
+            raw_id = normalize_space_text(match.group("id"))
+            body = match.group("body")
+            title = extract_html_attr(body, r'<h2 class="job_tit">.*?<a[^>]+title="([^"]+)"')
+            href = extract_html_attr(body, r'<h2 class="job_tit">.*?<a[^>]+href="([^"]+)"')
+            company_match = re.search(r'<strong class="corp_name">\s*(.*?)\s*</strong>', body, re.DOTALL)
+            company = strip_html_tags(company_match.group(1)) if company_match else ""
+            condition_match = re.search(r'<div class="job_condition">(.*?)</div>', body, re.DOTALL)
+            condition_parts = [
+                strip_html_tags(value)
+                for value in re.findall(r"<span[^>]*>(.*?)</span>", condition_match.group(1), re.DOTALL)
+            ] if condition_match else []
+            location = normalize_space_text(" ".join(part for part in condition_parts[:1] if part))
+            experience = condition_parts[1] if len(condition_parts) > 1 else ""
+            employment_type = condition_parts[3] if len(condition_parts) > 3 else (condition_parts[-1] if condition_parts else "")
+            deadline_text = extract_html_attr(body, r'<div class="job_date">.*?<span class="date">([^<]+)</span>')
+            posted_text = extract_html_attr(body, r'<span class="job_day">([^<]+)</span>')
+            sector_match = re.search(r'<div class="job_sector">(.*?)</div>', body, re.DOTALL)
+            sector_text = strip_html_tags(sector_match.group(1)) if sector_match else ""
+            item = build_generic_pilot_job_item(
+                source_code="saramin",
+                source_label="Saramin Search",
+                source_job_key=raw_id,
+                title=title,
+                company=company,
+                source_url=urljoin(f"{base_url}/", href.replace("&amp;", "&")),
+                location=location,
+                employment_type=employment_type,
+                experience=experience,
+                deadline_text=deadline_text,
+                deadline_date=iso_to_dot_date(parse_month_day_deadline(deadline_text)),
+                posted_at=parse_two_digit_korean_date(posted_text),
+                deadline_at=parse_month_day_deadline(deadline_text),
+                extra_text=sector_text,
+                raw_payload={
+                    "search_term": search_term,
+                    "deadline_text": deadline_text,
+                    "posted_text": posted_text,
+                    "sector_text": sector_text,
+                },
+            )
+            merge_collected_job_item(collected, item)
+    return list(collected.values())
+
+
+def extract_jobkorea_results(html_text: str) -> list[dict[str, Any]]:
+    marker = '\\"postingCompanyName\\"'
+    content_marker = '\\"content\\":['
+    posting_index = html_text.find(marker)
+    if posting_index < 0:
+        return []
+    content_index = html_text.rfind(content_marker, 0, posting_index)
+    if content_index < 0:
+        return []
+    array_start = content_index + len(content_marker) - 1
+    depth = 0
+    array_end = -1
+    for index in range(array_start, len(html_text)):
+        char = html_text[index]
+        if char == "[":
+            depth += 1
+        elif char == "]":
+            depth -= 1
+            if depth == 0:
+                array_end = index + 1
+                break
+    if array_end < 0:
+        return []
+    array_text = html_text[array_start:array_end]
+    normalized_array_text = array_text.replace('\\"', '"').replace("\\/", "/").replace("\\\\", "\\")
+    try:
+        payload = json.loads(normalized_array_text)
+    except json.JSONDecodeError:
+        return []
+    return payload if isinstance(payload, list) else []
+
+
+def collect_jobkorea_pilot_jobs() -> list[dict[str, Any]]:
+    collected: dict[str, dict[str, Any]] = {}
+    base_url = "https://www.jobkorea.co.kr"
+    for search_term in PILOT_JOB_PORTAL_FETCH_TERMS:
+        html_text = fetch_text_response(f"{base_url}/Search/?stext={quote(search_term)}")
+        for raw_item in extract_jobkorea_results(html_text):
+            if not isinstance(raw_item, dict):
                 continue
-            existing = collected.get(job_key)
-            if existing:
-                merged = dedupe_preserve_order((existing.get("matched_keywords") or []) + (normalized_item.get("matched_keywords") or []))
-                existing["matched_keywords"] = merged[:6]
-                existing["license_tags"] = dedupe_preserve_order((existing.get("license_tags") or []) + (normalized_item.get("license_tags") or []))
-                existing["aircraft_types"] = dedupe_preserve_order((existing.get("aircraft_types") or []) + (normalized_item.get("aircraft_types") or []))
-                continue
-            collected[job_key] = normalized_item
+            location = normalize_space_text(raw_item.get("_internal_featureLocationCode"))
+            experience = normalize_space_text(raw_item.get("careerType"))
+            extra_text = " ".join(
+                part
+                for part in [
+                    normalize_space_text(raw_item.get("jobClassificationOrIndustry")),
+                    normalize_space_text(raw_item.get("_internal_featureToolCode")),
+                    normalize_space_text(raw_item.get("_internal_featureSkillCode")),
+                    location,
+                ]
+                if part
+            )
+            item = build_generic_pilot_job_item(
+                source_code="jobkorea",
+                source_label="JobKorea Search",
+                source_job_key=normalize_space_text(raw_item.get("id") or raw_item.get("legacyJobNo")),
+                title=normalize_space_text(raw_item.get("title")),
+                company=normalize_space_text(raw_item.get("postingCompanyName") or raw_item.get("companyName")),
+                source_url=f"{base_url}/Recruit/GI_Read/{quote(normalize_space_text(raw_item.get('id')))}",
+                location=location,
+                experience=experience,
+                deadline_text=iso_to_dot_date(normalize_space_text((raw_item.get("applicationPeriod") or {}).get("end"))),
+                deadline_date=iso_to_dot_date(normalize_space_text((raw_item.get("applicationPeriod") or {}).get("end"))),
+                posted_at=normalize_space_text(raw_item.get("createdAt")),
+                deadline_at=normalize_space_text((raw_item.get("applicationPeriod") or {}).get("end")),
+                is_always_open=normalize_space_text((raw_item.get("applicationPeriod") or {}).get("end")).startswith("2070-"),
+                extra_text=extra_text,
+                raw_payload=raw_item,
+            )
+            merge_collected_job_item(collected, item)
+    return list(collected.values())
+
+
+def fetch_pilot_jobs_from_source() -> list[dict[str, Any]]:
+    collected: dict[str, dict[str, Any]] = {}
+    collectors: list[tuple[str, Any]] = [
+        (PILOT_JOBS_SOURCE_CODE, collect_airportal_pilot_jobs),
+        *[(normalize_space_text(source_meta.get("code")), lambda source_meta=source_meta: collect_recruiter_pilot_jobs(source_meta)) for source_meta in PILOT_JOB_RECRUITER_SOURCES],
+        ("saramin", collect_saramin_pilot_jobs),
+        ("jobkorea", collect_jobkorea_pilot_jobs),
+    ]
+
+    for _source_code, collector in collectors:
+        try:
+            source_items = collector()
+        except Exception:
+            continue
+        for item in source_items or []:
+            merge_collected_job_item(collected, item)
 
     items = list(collected.values())
     items.sort(key=pilot_job_sort_key)
@@ -535,7 +1297,7 @@ def load_cache_payload(cache_path: Path) -> dict[str, Any]:
             "updated_at": "",
             "last_successful_at": "",
             "last_attempted_at": "",
-            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "source_label": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
             "cache_status": "",
             "cache_warning": "",
             "items": [],
@@ -547,7 +1309,7 @@ def load_cache_payload(cache_path: Path) -> dict[str, Any]:
             "updated_at": "",
             "last_successful_at": "",
             "last_attempted_at": "",
-            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "source_label": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
             "cache_status": "",
             "cache_warning": "",
             "items": [],
@@ -557,7 +1319,7 @@ def load_cache_payload(cache_path: Path) -> dict[str, Any]:
             "updated_at": "",
             "last_successful_at": "",
             "last_attempted_at": "",
-            "source_label": PILOT_JOBS_SOURCE_LABEL,
+            "source_label": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
             "cache_status": "",
             "cache_warning": "",
             "items": [],
@@ -568,7 +1330,7 @@ def load_cache_payload(cache_path: Path) -> dict[str, Any]:
         "updated_at": updated_at,
         "last_successful_at": normalize_space_text(payload.get("last_successful_at")) or updated_at,
         "last_attempted_at": normalize_space_text(payload.get("last_attempted_at")),
-        "source_label": normalize_space_text(payload.get("source_label")) or PILOT_JOBS_SOURCE_LABEL,
+        "source_label": normalize_space_text(payload.get("source_label")) or PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
         "cache_status": normalize_space_text(payload.get("cache_status")),
         "cache_warning": normalize_space_text(payload.get("cache_warning")),
         "items": items if isinstance(items, list) else [],
@@ -585,7 +1347,7 @@ def build_fresh_cache_payload(items: list[dict[str, Any]], attempted_at: str) ->
         "updated_at": attempted_at,
         "last_successful_at": attempted_at,
         "last_attempted_at": attempted_at,
-        "source_label": PILOT_JOBS_SOURCE_LABEL,
+        "source_label": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
         "cache_status": "fresh",
         "cache_warning": "",
         "items": items,
@@ -598,7 +1360,7 @@ def build_stale_cache_payload(existing_payload: dict[str, Any], attempted_at: st
         "last_successful_at": normalize_space_text(existing_payload.get("last_successful_at"))
         or normalize_space_text(existing_payload.get("updated_at")),
         "last_attempted_at": attempted_at,
-        "source_label": normalize_space_text(existing_payload.get("source_label")) or PILOT_JOBS_SOURCE_LABEL,
+        "source_label": normalize_space_text(existing_payload.get("source_label")) or PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
         "cache_status": "stale",
         "cache_warning": warning_text,
         "items": existing_payload.get("items") or [],
@@ -610,7 +1372,7 @@ def build_error_cache_payload(attempted_at: str, warning_text: str) -> dict[str,
         "updated_at": "",
         "last_successful_at": "",
         "last_attempted_at": attempted_at,
-        "source_label": PILOT_JOBS_SOURCE_LABEL,
+        "source_label": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
         "cache_status": "error",
         "cache_warning": warning_text,
         "items": [],
@@ -699,13 +1461,25 @@ def fetch_all_company_rows(config: dict[str, str]) -> list[dict[str, Any]]:
     return rows if isinstance(rows, list) else []
 
 
-def fetch_source_row(config: dict[str, str]) -> dict[str, Any] | None:
+def fetch_source_rows(config: dict[str, str]) -> list[dict[str, Any]]:
     rows = supabase_request(
         config,
         config["sources_table"],
         query_items=[
             ("select", "id,code,name,last_success_at,last_attempt_at,last_status"),
-            ("code", f"eq.{PILOT_JOBS_SOURCE_CODE}"),
+            ("limit", "5000"),
+        ],
+    )
+    return [row for row in rows if isinstance(row, dict)] if isinstance(rows, list) else []
+
+
+def fetch_source_row(config: dict[str, str], source_code: str = PILOT_JOBS_SOURCE_CODE) -> dict[str, Any] | None:
+    rows = supabase_request(
+        config,
+        config["sources_table"],
+        query_items=[
+            ("select", "id,code,name,last_success_at,last_attempt_at,last_status"),
+            ("code", f"eq.{quote(normalize_space_text(source_code), safe='-_')}"),
             ("limit", "1"),
         ],
     )
@@ -740,11 +1514,11 @@ def sync_pilot_jobs_to_supabase(items: list[dict[str, Any]], attempted_at: str) 
         query_items=[("on_conflict", "code")],
         payload=[
             {
-                "code": PILOT_JOBS_SOURCE_CODE,
-                "name": PILOT_JOBS_SOURCE_LABEL,
+                "code": normalize_space_text(source_definition.get("code")),
+                "name": normalize_space_text(source_definition.get("label")),
                 "source_type": "web",
-                "base_url": PILOT_JOBS_SOURCE_BASE_URL,
-                "careers_url": PILOT_JOBS_SOURCE_CAREERS_URL,
+                "base_url": normalize_space_text(source_definition.get("base_url")),
+                "careers_url": normalize_space_text(source_definition.get("careers_url")),
                 "is_active": True,
                 "refresh_interval_minutes": 180,
                 "last_success_at": attempted_at,
@@ -752,25 +1526,30 @@ def sync_pilot_jobs_to_supabase(items: list[dict[str, Any]], attempted_at: str) 
                 "last_status": "success",
                 "updated_at": attempted_at,
             }
+            for source_definition in PILOT_JOB_ALL_SOURCE_DEFINITIONS
         ],
         require_write=True,
         prefer="resolution=merge-duplicates,return=representation",
     )
 
-    source_row = fetch_source_row(config)
-    if source_row is None:
-        raise RuntimeError("pilot_job_sources 행을 확인하지 못했습니다.")
-    source_id = normalize_space_text(source_row.get("id"))
-    if not source_id:
-        raise RuntimeError("pilot_job_sources id가 비어 있습니다.")
-
-    existing_rows = fetch_existing_job_rows(config, source_id)
-    existing_keys = {normalize_space_text(row.get("source_job_key")) for row in existing_rows if isinstance(row, dict)}
-    existing_row_by_key = {
-        normalize_space_text(row.get("source_job_key")): row
-        for row in existing_rows
-        if isinstance(row, dict) and normalize_space_text(row.get("source_job_key"))
+    source_rows = fetch_source_rows(config)
+    source_row_by_code = {
+        normalize_space_text(row.get("code")): row
+        for row in source_rows
+        if isinstance(row, dict) and normalize_space_text(row.get("code"))
     }
+    if not source_row_by_code:
+        raise RuntimeError("pilot_job_sources 행을 확인하지 못했습니다.")
+
+    items_by_source_code: dict[str, list[dict[str, Any]]] = {
+        normalize_space_text(source_definition.get("code")): []
+        for source_definition in PILOT_JOB_ALL_SOURCE_DEFINITIONS
+    }
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        source_code = normalize_space_text(item.get("source_code")) or PILOT_JOBS_SOURCE_CODE
+        items_by_source_code.setdefault(source_code, []).append(item)
 
     company_payload = []
     for item in items:
@@ -806,113 +1585,143 @@ def sync_pilot_jobs_to_supabase(items: list[dict[str, Any]], attempted_at: str) 
         if isinstance(row, dict)
     }
 
-    jobs_payload = []
-    incoming_keys: set[str] = set()
-    for item in items:
-        source_job_key = normalize_space_text(item.get("source_job_key"))
-        if not source_job_key:
-            continue
-        incoming_keys.add(source_job_key)
-        jobs_payload.append(
-            {
-                "source_id": source_id,
-                "company_id": company_id_by_slug.get(normalize_space_text(item.get("company_slug"))) or None,
-                "source_job_key": source_job_key,
-                "slug": normalize_space_text(item.get("slug")) or slugify_text(source_job_key, f"{PILOT_JOBS_SOURCE_CODE}-job"),
-                "source_url": normalize_space_text(item.get("source_url") or item.get("url")),
-                "title": normalize_space_text(item.get("title")),
-                "summary": normalize_space_text(item.get("summary")),
-                "body_text": normalize_space_text(item.get("period_text")),
-                "role_family": normalize_space_text(item.get("role_family")) or "pilot",
-                "license_tags": item.get("license_tags") or [],
-                "aircraft_category": normalize_space_text(item.get("aircraft_category")),
-                "aircraft_types": item.get("aircraft_types") or [],
-                "experience_level": normalize_space_text(item.get("experience_level")) or "open",
-                "employment_type": normalize_space_text(item.get("employment_type_code")) or "open_recruiting",
-                "location_country": normalize_space_text(item.get("location_country")),
-                "location_region": normalize_space_text(item.get("location_region") or item.get("location")),
-                "location_city": normalize_space_text(item.get("location_city")),
-                "required_languages": [],
-                "matched_keywords": item.get("matched_keywords") or [],
-                "status": "open",
-                "is_always_open": bool(item.get("is_always_open")),
-                "posted_at": normalize_space_text(item.get("posted_at")) or None,
-                "deadline_at": normalize_space_text(item.get("deadline_at")) or None,
-                "last_seen_at": attempted_at,
-                "closed_at": None,
-                "search_document": normalize_space_text(item.get("search_document")),
-                "raw_payload": item.get("raw_payload") or {},
-                "updated_at": attempted_at,
-            }
-        )
+    total_inserted = 0
+    total_updated = 0
+    total_closed = 0
 
-    if jobs_payload:
+    for source_definition in PILOT_JOB_ALL_SOURCE_DEFINITIONS:
+        source_code = normalize_space_text(source_definition.get("code"))
+        source_row = source_row_by_code.get(source_code)
+        if source_row is None:
+            raise RuntimeError(f"pilot_job_sources 행을 확인하지 못했습니다: {source_code}")
+        source_id = normalize_space_text(source_row.get("id"))
+        if not source_id:
+            raise RuntimeError(f"pilot_job_sources id가 비어 있습니다: {source_code}")
+
+        source_items = items_by_source_code.get(source_code, [])
+        existing_rows = fetch_existing_job_rows(config, source_id)
+        existing_keys = {
+            normalize_space_text(row.get("source_job_key"))
+            for row in existing_rows
+            if isinstance(row, dict)
+        }
+        existing_row_by_key = {
+            normalize_space_text(row.get("source_job_key")): row
+            for row in existing_rows
+            if isinstance(row, dict) and normalize_space_text(row.get("source_job_key"))
+        }
+
+        jobs_payload = []
+        incoming_keys: set[str] = set()
+        for item in source_items:
+            source_job_key = normalize_space_text(item.get("source_job_key"))
+            if not source_job_key:
+                continue
+            incoming_keys.add(source_job_key)
+            jobs_payload.append(
+                {
+                    "source_id": source_id,
+                    "company_id": company_id_by_slug.get(normalize_space_text(item.get("company_slug"))) or None,
+                    "source_job_key": source_job_key,
+                    "slug": normalize_space_text(item.get("slug")) or slugify_text(source_job_key, f"{source_code}-job"),
+                    "source_url": normalize_space_text(item.get("source_url") or item.get("url")),
+                    "title": normalize_space_text(item.get("title")),
+                    "summary": normalize_space_text(item.get("summary")),
+                    "body_text": normalize_space_text(item.get("period_text")),
+                    "role_family": normalize_space_text(item.get("role_family")) or "pilot",
+                    "license_tags": item.get("license_tags") or [],
+                    "aircraft_category": normalize_space_text(item.get("aircraft_category")),
+                    "aircraft_types": item.get("aircraft_types") or [],
+                    "experience_level": normalize_space_text(item.get("experience_level")) or "open",
+                    "employment_type": normalize_space_text(item.get("employment_type_code")) or "open_recruiting",
+                    "location_country": normalize_space_text(item.get("location_country")),
+                    "location_region": normalize_space_text(item.get("location_region") or item.get("location")),
+                    "location_city": normalize_space_text(item.get("location_city")),
+                    "required_languages": [],
+                    "matched_keywords": item.get("matched_keywords") or [],
+                    "status": "open",
+                    "is_always_open": bool(item.get("is_always_open")),
+                    "posted_at": normalize_space_text(item.get("posted_at")) or None,
+                    "deadline_at": normalize_space_text(item.get("deadline_at")) or None,
+                    "last_seen_at": attempted_at,
+                    "closed_at": None,
+                    "search_document": normalize_space_text(item.get("search_document")),
+                    "raw_payload": item.get("raw_payload") or {},
+                    "updated_at": attempted_at,
+                }
+            )
+
+        if jobs_payload:
+            supabase_request(
+                config,
+                config["jobs_table"],
+                method="POST",
+                query_items=[("on_conflict", "source_id,source_job_key")],
+                payload=jobs_payload,
+                require_write=True,
+                prefer="resolution=merge-duplicates,return=minimal",
+            )
+
+        closed_count = 0
+        for source_job_key, row in existing_row_by_key.items():
+            if source_job_key in incoming_keys:
+                continue
+            job_id = normalize_space_text(row.get("id"))
+            if not job_id:
+                continue
+            supabase_request(
+                config,
+                config["jobs_table"],
+                method="PATCH",
+                query_items=[("id", f"eq.{quote(job_id, safe='-')}")],
+                payload={"status": "closed", "closed_at": attempted_at, "updated_at": attempted_at},
+                require_write=True,
+                prefer="return=minimal",
+            )
+            closed_count += 1
+
+        inserted_count = len(incoming_keys - existing_keys)
+        updated_count = len(incoming_keys & existing_keys)
+        total_inserted += inserted_count
+        total_updated += updated_count
+        total_closed += closed_count
+
         supabase_request(
             config,
-            config["jobs_table"],
+            config["runs_table"],
             method="POST",
-            query_items=[("on_conflict", "source_id,source_job_key")],
-            payload=jobs_payload,
-            require_write=True,
-            prefer="resolution=merge-duplicates,return=minimal",
-        )
-
-    closed_count = 0
-    for source_job_key, row in existing_row_by_key.items():
-        if source_job_key in incoming_keys:
-            continue
-        job_id = normalize_space_text(row.get("id"))
-        if not job_id:
-            continue
-        supabase_request(
-            config,
-            config["jobs_table"],
-            method="PATCH",
-            query_items=[("id", f"eq.{quote(job_id, safe='-')}")],
-            payload={"status": "closed", "closed_at": attempted_at, "updated_at": attempted_at},
+            payload=[
+                {
+                    "source_id": source_id,
+                    "status": "success",
+                    "started_at": attempted_at,
+                    "finished_at": utc_now_iso(),
+                    "fetched_count": len(source_items),
+                    "normalized_count": len(source_items),
+                    "inserted_count": inserted_count,
+                    "updated_count": updated_count,
+                    "closed_count": closed_count,
+                    "raw_summary": {
+                        "source_code": source_code,
+                        "source_label": normalize_space_text(source_definition.get("label")),
+                        "item_count": len(source_items),
+                    },
+                }
+            ],
             require_write=True,
             prefer="return=minimal",
         )
-        closed_count += 1
-
-    inserted_count = len(incoming_keys - existing_keys)
-    updated_count = len(incoming_keys & existing_keys)
-
-    supabase_request(
-        config,
-        config["runs_table"],
-        method="POST",
-        payload=[
-            {
-                "source_id": source_id,
-                "status": "success",
-                "started_at": attempted_at,
-                "finished_at": utc_now_iso(),
-                "fetched_count": len(items),
-                "normalized_count": len(items),
-                "inserted_count": inserted_count,
-                "updated_count": updated_count,
-                "closed_count": closed_count,
-                "raw_summary": {
-                    "source_code": PILOT_JOBS_SOURCE_CODE,
-                    "item_count": len(items),
-                },
-            }
-        ],
-        require_write=True,
-        prefer="return=minimal",
-    )
 
     return {
         "synced": True,
-        "inserted_count": inserted_count,
-        "updated_count": updated_count,
-        "closed_count": closed_count,
+        "inserted_count": total_inserted,
+        "updated_count": total_updated,
+        "closed_count": total_closed,
         "item_count": len(items),
     }
 
 
-def build_public_item_from_cache(item: dict[str, Any], source_label: str = PILOT_JOBS_SOURCE_LABEL) -> dict[str, Any]:
+def build_public_item_from_cache(item: dict[str, Any], source_label: str = PILOT_JOBS_AGGREGATE_SOURCE_LABEL) -> dict[str, Any]:
     raw_payload = item.get("raw_payload") if isinstance(item.get("raw_payload"), dict) else {}
     normalized_payload = raw_payload.get("normalized") if isinstance(raw_payload.get("normalized"), dict) else {}
     title = normalize_space_text(item.get("title") or normalized_payload.get("title"))
@@ -955,6 +1764,7 @@ def build_public_item_from_cache(item: dict[str, Any], source_label: str = PILOT
         "matched_keywords": matched_keywords,
         "source": normalize_space_text(item.get("source") or normalized_payload.get("source")) or source_label,
         "url": normalize_space_text(item.get("url") or normalized_payload.get("url")),
+        "status": normalize_space_text(item.get("status")) or "open",
         "role_family": role_family,
         "license_tags": license_tags,
         "aircraft_category": aircraft_category,
@@ -963,6 +1773,39 @@ def build_public_item_from_cache(item: dict[str, Any], source_label: str = PILOT
         "summary": normalize_space_text(item.get("summary") or normalized_payload.get("summary")),
         "posted_at": posted_at,
         "deadline_at": deadline_at,
+    }
+
+
+def build_aggregate_source_row(source_rows: list[dict[str, Any]]) -> dict[str, Any] | None:
+    normalized_rows = [row for row in source_rows if isinstance(row, dict)]
+    if not normalized_rows:
+        return None
+    last_success = max(
+        (normalize_space_text(row.get("last_success_at")) for row in normalized_rows if normalize_space_text(row.get("last_success_at"))),
+        default="",
+    )
+    last_attempt = max(
+        (normalize_space_text(row.get("last_attempt_at")) for row in normalized_rows if normalize_space_text(row.get("last_attempt_at"))),
+        default="",
+    )
+    statuses = {
+        normalize_space_text(row.get("last_status"))
+        for row in normalized_rows
+        if normalize_space_text(row.get("last_status"))
+    }
+    aggregate_status = "success"
+    if any(status in {"failed", "stale"} for status in statuses):
+        aggregate_status = "stale" if last_success else "failed"
+    elif "success" in statuses:
+        aggregate_status = "success"
+    elif statuses:
+        aggregate_status = sorted(statuses)[0]
+    return {
+        "code": PILOT_JOBS_AGGREGATE_SOURCE_CODE,
+        "name": PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
+        "last_success_at": last_success,
+        "last_attempt_at": last_attempt,
+        "last_status": aggregate_status,
     }
 
 
@@ -981,7 +1824,7 @@ def fetch_public_items_from_supabase() -> tuple[list[dict[str, Any]], dict[str, 
                     "experience_level,employment_type,location_country,location_region,location_city,matched_keywords,status,"
                     "is_always_open,posted_at,deadline_at,last_seen_at,raw_payload",
                 ),
-                ("status", "eq.open"),
+                ("status", "in.(open,closed)"),
                 ("order", "deadline_at.asc.nullslast,title.asc"),
                 ("limit", "5000"),
             ],
@@ -993,7 +1836,7 @@ def fetch_public_items_from_supabase() -> tuple[list[dict[str, Any]], dict[str, 
 
     try:
         company_rows = fetch_all_company_rows(config)
-        source_row = fetch_source_row(config)
+        source_rows = fetch_source_rows(config)
     except Exception:
         return [], None
     company_name_by_id = {
@@ -1001,7 +1844,12 @@ def fetch_public_items_from_supabase() -> tuple[list[dict[str, Any]], dict[str, 
         for row in company_rows
         if isinstance(row, dict)
     }
-    source_label = normalize_space_text((source_row or {}).get("name")) or PILOT_JOBS_SOURCE_LABEL
+    source_label_by_id = {
+        normalize_space_text(row.get("id")): normalize_space_text(row.get("name"))
+        for row in source_rows
+        if isinstance(row, dict) and normalize_space_text(row.get("id"))
+    }
+    aggregate_source_row = build_aggregate_source_row(source_rows)
 
     items: list[dict[str, Any]] = []
     for row in rows:
@@ -1037,8 +1885,11 @@ def fetch_public_items_from_supabase() -> tuple[list[dict[str, Any]], dict[str, 
                 "period_text": normalize_space_text(normalized_payload.get("period_text")),
                 "d_day": normalize_space_text(normalized_payload.get("d_day")),
                 "matched_keywords": dedupe_preserve_order(list(row.get("matched_keywords") or [])),
-                "source": source_label,
+                "source": source_label_by_id.get(normalize_space_text(row.get("source_id")))
+                or normalize_space_text(normalized_payload.get("source"))
+                or PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
                 "url": normalize_space_text(row.get("source_url") or normalized_payload.get("url")),
+                "status": normalize_space_text(row.get("status")) or "open",
                 "role_family": normalize_space_text(row.get("role_family")) or "pilot",
                 "license_tags": dedupe_preserve_order(list(row.get("license_tags") or [])),
                 "aircraft_category": normalize_space_text(row.get("aircraft_category")),
@@ -1050,7 +1901,7 @@ def fetch_public_items_from_supabase() -> tuple[list[dict[str, Any]], dict[str, 
             }
         )
 
-    return items, source_row
+    return items, aggregate_source_row
 
 
 def build_source_status(cache_payload: dict[str, Any], source_row: dict[str, Any] | None) -> dict[str, str]:
@@ -1062,7 +1913,7 @@ def build_source_status(cache_payload: dict[str, Any], source_row: dict[str, Any
             "updated_at": last_success,
             "last_successful_at": last_success,
             "last_attempted_at": last_attempt,
-            "source_label": normalize_space_text(source_row.get("name")) or PILOT_JOBS_SOURCE_LABEL,
+            "source_label": normalize_space_text(source_row.get("name")) or PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
             "cache_status": "stale" if source_status in {"failed", "stale"} else "fresh",
             "cache_warning": "최근 수집이 불안정해 마지막 성공 기준 데이터를 표시 중입니다." if source_status in {"failed", "stale"} else "",
         }
@@ -1070,7 +1921,7 @@ def build_source_status(cache_payload: dict[str, Any], source_row: dict[str, Any
         "updated_at": normalize_space_text(cache_payload.get("updated_at")),
         "last_successful_at": normalize_space_text(cache_payload.get("last_successful_at")) or normalize_space_text(cache_payload.get("updated_at")),
         "last_attempted_at": normalize_space_text(cache_payload.get("last_attempted_at")),
-        "source_label": normalize_space_text(cache_payload.get("source_label")) or PILOT_JOBS_SOURCE_LABEL,
+        "source_label": normalize_space_text(cache_payload.get("source_label")) or PILOT_JOBS_AGGREGATE_SOURCE_LABEL,
         "cache_status": normalize_space_text(cache_payload.get("cache_status")) or "fresh",
         "cache_warning": normalize_space_text(cache_payload.get("cache_warning")),
     }
@@ -1082,7 +1933,7 @@ def collect_public_job_snapshot(cache_path: Path) -> tuple[list[dict[str, Any]],
     if db_items:
         return db_items, build_source_status(cache_payload, source_row)
     cache_items = [
-        build_public_item_from_cache(item, source_label=str(cache_payload.get("source_label") or PILOT_JOBS_SOURCE_LABEL))
+        build_public_item_from_cache(item, source_label=str(cache_payload.get("source_label") or PILOT_JOBS_AGGREGATE_SOURCE_LABEL))
         for item in cache_payload.get("items") or []
         if isinstance(item, dict)
     ]
@@ -1096,11 +1947,13 @@ def filter_public_items(
     role_family: str = "",
     location: str = "",
     employment_type: str = "",
+    status: str = "",
 ) -> list[dict[str, Any]]:
     query_text = normalize_search_text(query)
     role_filter = normalize_space_text(role_family)
     location_filter = normalize_space_text(location)
     employment_filter = normalize_space_text(employment_type)
+    status_filter = normalize_space_text(status)
 
     filtered: list[dict[str, Any]] = []
     for item in items:
@@ -1127,6 +1980,8 @@ def filter_public_items(
             continue
         if employment_filter and normalize_space_text(item.get("employment_type")) != employment_filter:
             continue
+        if status_filter and normalize_space_text(item.get("status")) != status_filter:
+            continue
         filtered.append(item)
     filtered.sort(key=pilot_job_sort_key)
     return filtered
@@ -1137,17 +1992,21 @@ def build_filter_facets(items: list[dict[str, Any]]) -> dict[str, list[dict[str,
     location_counts: dict[str, int] = {}
     employment_counts: dict[str, int] = {}
     license_counts: dict[str, int] = {}
+    status_counts: dict[str, int] = {}
 
     for item in items:
         role_value = normalize_space_text(item.get("role_family"))
         location_value = normalize_space_text(item.get("location"))
         employment_value = normalize_space_text(item.get("employment_type"))
+        status_value = normalize_space_text(item.get("status")) or "open"
         if role_value:
             role_counts[role_value] = role_counts.get(role_value, 0) + 1
         if location_value:
             location_counts[location_value] = location_counts.get(location_value, 0) + 1
         if employment_value:
             employment_counts[employment_value] = employment_counts.get(employment_value, 0) + 1
+        if status_value:
+            status_counts[status_value] = status_counts.get(status_value, 0) + 1
         for tag in item.get("license_tags") or []:
             normalized_tag = normalize_space_text(tag)
             if not normalized_tag:
@@ -1167,6 +2026,14 @@ def build_filter_facets(items: list[dict[str, Any]]) -> dict[str, list[dict[str,
             {"value": value, "label": value, "count": count}
             for value, count in sorted(employment_counts.items(), key=lambda pair: (pair[1] * -1, pair[0]))
         ],
+        "statuses": [
+            {
+                "value": value,
+                "label": "채용중" if value == "open" else "채용종료" if value == "closed" else value,
+                "count": count,
+            }
+            for value, count in sorted(status_counts.items(), key=lambda pair: (0 if pair[0] == "open" else 1, pair[0]))
+        ],
         "license_tags": [
             {"value": value, "label": value, "count": count}
             for value, count in sorted(license_counts.items(), key=lambda pair: (pair[1] * -1, pair[0]))
@@ -1181,6 +2048,7 @@ def build_jobs_list_response(
     role_family: str = "",
     location: str = "",
     employment_type: str = "",
+    status: str = "",
     limit: int = 24,
     offset: int = 0,
 ) -> dict[str, Any]:
@@ -1191,6 +2059,7 @@ def build_jobs_list_response(
         role_family=role_family,
         location=location,
         employment_type=employment_type,
+        status=status,
     )
     safe_limit = min(max(int(limit or 24), 1), 100)
     safe_offset = max(int(offset or 0), 0)

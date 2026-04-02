@@ -1,5 +1,7 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import Link from "next/link";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 import { fetchPilotJobsIndex, type JobsFilterOption, type PilotJobListItem } from "@/lib/jobs-client";
 
@@ -16,6 +18,18 @@ type JobsPageProps = {
   searchParams?: Promise<Record<string, SearchParamValue>>;
 };
 
+type JobsIndexPayload = Awaited<ReturnType<typeof fetchPilotJobsIndex>>;
+
+type StaticJobsPayload = {
+  updated_at?: string;
+  last_successful_at?: string;
+  last_attempted_at?: string;
+  source_label?: string;
+  cache_status?: "fresh" | "stale" | "error" | "";
+  cache_warning?: string;
+  items?: PilotJobListItem[];
+};
+
 const ROLE_LABELS: Record<string, string> = {
   pilot: "조종사",
   captain: "기장",
@@ -23,8 +37,8 @@ const ROLE_LABELS: Record<string, string> = {
   flight_instructor: "비행교관",
   cadet: "Cadet",
   helicopter_pilot: "회전익 조종사",
-  special_mission_pilot: "특수운항 조종사",
-  other_flight_crew: "운항승무원",
+  special_mission_pilot: "특수임무 조종사",
+  other_flight_crew: "항공승무",
 };
 
 const JOB_UPDATED_AT_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
@@ -89,9 +103,111 @@ function buildJobBadge(item: PilotJobListItem) {
 
 function buildPageTitle(totalCount: number, query: string) {
   if (query) {
-    return `"${query}" 검색 결과 ${totalCount}건`;
+    return `"${query}" 검색결과 ${totalCount}건`;
   }
   return `전체 공고 ${totalCount}건`;
+}
+
+function buildFilterOptions(
+  items: PilotJobListItem[],
+  pick: (item: PilotJobListItem) => string[],
+  resolveLabel?: (value: string) => string,
+): JobsFilterOption[] {
+  const counts = new Map<string, number>();
+  items.forEach((item) => {
+    pick(item)
+      .map((value) => String(value || "").trim())
+      .filter(Boolean)
+      .forEach((value) => {
+        counts.set(value, (counts.get(value) || 0) + 1);
+      });
+  });
+
+  return [...counts.entries()]
+    .sort((a, b) => {
+      if (b[1] !== a[1]) {
+        return b[1] - a[1];
+      }
+      return a[0].localeCompare(b[0], "ko");
+    })
+    .map(([value, count]) => ({ value, label: resolveLabel ? resolveLabel(value) : value, count }));
+}
+
+function matchesJobsQuery(item: PilotJobListItem, query: string) {
+  const needle = String(query || "").trim().toLocaleLowerCase("ko-KR");
+  if (!needle) {
+    return true;
+  }
+
+  const haystack = [
+    item.title,
+    item.company,
+    item.location,
+    item.summary,
+    item.role_family,
+    ...(item.matched_keywords || []),
+    ...(item.aircraft_types || []),
+    ...(item.license_tags || []),
+  ]
+    .map((value) => String(value || "").toLocaleLowerCase("ko-KR"))
+    .join(" ");
+
+  return haystack.includes(needle);
+}
+
+async function readFallbackJobsIndex(params: {
+  q: string;
+  roleFamily: string;
+  location: string;
+  employmentType: string;
+  status: string;
+  page: number;
+  limit: number;
+}): Promise<JobsIndexPayload> {
+  const filePath = path.join(process.cwd(), "public", "data", "pilot-jobs.json");
+  const rawText = await readFile(filePath, "utf-8");
+  const payload = JSON.parse(rawText) as StaticJobsPayload;
+  const allItems = Array.isArray(payload.items) ? payload.items : [];
+
+  const filteredItems = allItems.filter((item) => {
+    if (params.roleFamily && item.role_family !== params.roleFamily) {
+      return false;
+    }
+    if (params.location && item.location !== params.location) {
+      return false;
+    }
+    if (params.employmentType && item.employment_type !== params.employmentType) {
+      return false;
+    }
+    if (params.status && (item.status || "open") !== params.status) {
+      return false;
+    }
+    return matchesJobsQuery(item, params.q);
+  });
+
+  const offset = (params.page - 1) * params.limit;
+
+  return {
+    updated_at: payload.updated_at || "",
+    last_successful_at: payload.last_successful_at || "",
+    last_attempted_at: payload.last_attempted_at || "",
+    source_label: payload.source_label || "",
+    cache_status: payload.cache_status || "fresh",
+    cache_warning: payload.cache_warning || "",
+    total_count: filteredItems.length,
+    limit: params.limit,
+    offset,
+    page: params.page,
+    has_more: offset + params.limit < filteredItems.length,
+    filters: {
+      role_families: buildFilterOptions(allItems, (item) => [item.role_family || ""], (value) => ROLE_LABELS[value] || value),
+      locations: buildFilterOptions(allItems, (item) => [item.location || ""]),
+      employment_types: buildFilterOptions(allItems, (item) => [item.employment_type || ""]),
+      statuses: buildFilterOptions(allItems, (item) => [item.status || "open"], (value) => (value === "closed" ? "채용종료" : "채용중")),
+      license_tags: buildFilterOptions(allItems, (item) => item.license_tags || []),
+    },
+    items: filteredItems.slice(offset, offset + params.limit),
+  };
 }
 
 function FilterSelect({
@@ -126,10 +242,11 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
   const roleFamily = firstValue(resolvedSearchParams.role_family);
   const location = firstValue(resolvedSearchParams.location);
   const employmentType = firstValue(resolvedSearchParams.employment_type);
+  const status = firstValue(resolvedSearchParams.status);
   const page = toPositiveInt(resolvedSearchParams.page, 1);
   const limit = 24;
 
-  let payload: Awaited<ReturnType<typeof fetchPilotJobsIndex>> | null = null;
+  let payload: JobsIndexPayload | null = null;
   let errorMessage = "";
 
   try {
@@ -138,31 +255,47 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       role_family: roleFamily,
       location,
       employment_type: employmentType,
+      status,
       page,
       limit,
     });
   } catch (error) {
-    errorMessage = error instanceof Error ? error.message : "채용 목록을 불러오지 못했습니다.";
+    try {
+      payload = await readFallbackJobsIndex({
+        q,
+        roleFamily,
+        location,
+        employmentType,
+        status,
+        page,
+        limit,
+      });
+    } catch {
+      errorMessage = error instanceof Error ? error.message : "채용 목록을 불러오지 못했습니다.";
+    }
   }
 
   const totalCount = payload?.total_count ?? 0;
   const updatedAtText = formatUpdatedAt(payload?.last_successful_at || payload?.updated_at || "");
   const attemptedAtText = formatUpdatedAt(payload?.last_attempted_at || "");
-  const previousPageHref = page > 1
-    ? buildJobsHref({
-        q,
-        role_family: roleFamily,
-        location,
-        employment_type: employmentType,
-        page: page - 1,
-      })
-    : "";
+  const previousPageHref =
+    page > 1
+      ? buildJobsHref({
+          q,
+          role_family: roleFamily,
+          location,
+          employment_type: employmentType,
+          status,
+          page: page - 1,
+        })
+      : "";
   const nextPageHref = payload?.has_more
     ? buildJobsHref({
         q,
         role_family: roleFamily,
         location,
         employment_type: employmentType,
+        status,
         page: page + 1,
       })
     : "";
@@ -192,24 +325,15 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
             />
           </label>
 
-          <FilterSelect
-            name="role_family"
-            value={roleFamily}
-            options={payload?.filters.role_families ?? []}
-            placeholder="직무"
-          />
-          <FilterSelect
-            name="location"
-            value={location}
-            options={payload?.filters.locations ?? []}
-            placeholder="지역"
-          />
+          <FilterSelect name="role_family" value={roleFamily} options={payload?.filters.role_families ?? []} placeholder="직무" />
+          <FilterSelect name="location" value={location} options={payload?.filters.locations ?? []} placeholder="지역" />
           <FilterSelect
             name="employment_type"
             value={employmentType}
             options={payload?.filters.employment_types ?? []}
             placeholder="고용형태"
           />
+          <FilterSelect name="status" value={status} options={payload?.filters.statuses ?? []} placeholder="상태" />
 
           <div className="jobs-search-actions">
             <button type="submit" className="jobs-search-submit">
@@ -250,7 +374,7 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
       {!errorMessage && payload && !payload.items.length ? (
         <section className="jobs-empty-state">
           <strong>조건에 맞는 공고가 없습니다.</strong>
-          <span>검색어를 줄이거나 직무·지역 필터를 초기화한 뒤 다시 확인해 보세요.</span>
+          <span>검색어를 줄이거나 직무·지역·고용형태 필터를 초기화한 뒤 다시 확인해 보세요.</span>
         </section>
       ) : null}
 
@@ -272,7 +396,9 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
                       <span className="jobs-card-company">{item.company}</span>
                       <span className="jobs-card-source">{item.source}</span>
                     </div>
-                    <span className="jobs-card-deadline">{item.d_day || item.deadline_text || "채용중"}</span>
+                    <span className="jobs-card-deadline">
+                      {item.status === "closed" ? "채용종료" : item.d_day || item.deadline_text || "채용중"}
+                    </span>
                   </div>
 
                   <h2 className="jobs-card-title">{item.title}</h2>
@@ -291,15 +417,16 @@ export default async function JobsPage({ searchParams }: JobsPageProps) {
 
                   <div className="jobs-card-footer">
                     <div className="jobs-card-dates">
-                      {item.deadline_date ? <span>마감 {item.deadline_date}</span> : <span>상시채용</span>}
+                      {item.status === "closed" ? (
+                        <span>종료 공고</span>
+                      ) : item.deadline_date ? (
+                        <span>마감 {item.deadline_date}</span>
+                      ) : (
+                        <span>상시채용</span>
+                      )}
                       {item.posted_at ? <span>수집 {formatUpdatedAt(item.posted_at)}</span> : null}
                     </div>
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="jobs-card-link"
-                    >
+                    <a href={item.url} target="_blank" rel="noopener noreferrer" className="jobs-card-link">
                       원문 보기
                     </a>
                   </div>

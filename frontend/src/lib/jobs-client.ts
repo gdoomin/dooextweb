@@ -16,6 +16,7 @@ export type PilotJobListItem = {
   matched_keywords?: string[];
   source?: string;
   url: string;
+  status?: string;
   role_family?: string;
   license_tags?: string[];
   aircraft_category?: string;
@@ -58,6 +59,7 @@ export type PilotJobsListResponse = {
     role_families: JobsFilterOption[];
     locations: JobsFilterOption[];
     employment_types: JobsFilterOption[];
+    statuses: JobsFilterOption[];
     license_tags: JobsFilterOption[];
   };
   items: PilotJobListItem[];
@@ -68,6 +70,7 @@ type JobsQueryParams = {
   role_family?: string;
   location?: string;
   employment_type?: string;
+  status?: string;
   limit?: number;
   page?: number;
 };
@@ -121,6 +124,7 @@ function normalizeJobItem(item: unknown): PilotJobListItem | null {
       : [],
     source: typeof row.source === "string" ? row.source : "",
     url: typeof row.url === "string" ? row.url : "",
+    status: typeof row.status === "string" ? row.status : "open",
     role_family: typeof row.role_family === "string" ? row.role_family : "",
     license_tags: Array.isArray(row.license_tags)
       ? row.license_tags.map((value) => String(value || "").trim()).filter(Boolean)
@@ -213,6 +217,9 @@ export async function fetchPilotJobsIndex(params: JobsQueryParams = {}): Promise
   if (params.employment_type) {
     searchParams.set("employment_type", params.employment_type);
   }
+  if (params.status) {
+    searchParams.set("status", params.status);
+  }
   searchParams.set("limit", String(params.limit ?? 24));
   searchParams.set("page", String(params.page ?? 1));
 
@@ -250,6 +257,9 @@ export async function fetchPilotJobsIndex(params: JobsQueryParams = {}): Promise
         : [],
       employment_types: Array.isArray(filters.employment_types)
         ? filters.employment_types.map((item) => normalizeFilterOption(item)).filter((item): item is JobsFilterOption => Boolean(item))
+        : [],
+      statuses: Array.isArray(filters.statuses)
+        ? filters.statuses.map((item) => normalizeFilterOption(item)).filter((item): item is JobsFilterOption => Boolean(item))
         : [],
       license_tags: Array.isArray(filters.license_tags)
         ? filters.license_tags.map((item) => normalizeFilterOption(item)).filter((item): item is JobsFilterOption => Boolean(item))

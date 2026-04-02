@@ -12,7 +12,6 @@ export function PilotJobsRailPanel() {
       <div className="doo-rail-jobs-summary">
         <div className="doo-rail-jobs-summary-copy">
           <strong>채용정보</strong>
-          <span>조종계열 공고 허브</span>
         </div>
         <div className="doo-rail-jobs-summary-actions">
           <Link href="/jobs" className="doo-rail-jobs-link">
@@ -22,7 +21,6 @@ export function PilotJobsRailPanel() {
         </div>
       </div>
       <div className="doo-rail-jobs-meta">
-        <span>운항승무원 · 조종사 관련 공고</span>
         <span>{sourceLabel}</span>
         <span>{updatedAtText ? `${isStaleCache ? "마지막 성공" : "업데이트"} ${updatedAtText}` : "최신 캐시 기준"}</span>
       </div>
@@ -42,7 +40,7 @@ export function PilotJobsRailPanel() {
         <div className="doo-rail-jobs-list">
           {items.map((item) => {
             const metaText = buildRecruitMetaText(item);
-            const primaryKeyword = item.matched_keywords?.[0] || "조종사";
+            const visibleKeywords = (item.matched_keywords || []).filter((keyword) => keyword !== "조종사").slice(0, 3);
             return (
               <a
                 key={item.id}
@@ -52,28 +50,21 @@ export function PilotJobsRailPanel() {
                 className="doo-rail-job-card"
                 title={item.title}
               >
-                <div className="doo-rail-job-strip">
-                  <span className="doo-rail-job-role">{primaryKeyword}</span>
-                  <span className="doo-rail-job-runway">FLIGHT DECK</span>
-                </div>
                 <div className="doo-rail-job-top">
                   <strong className="doo-rail-job-company">{item.company || "항공 채용"}</strong>
                   <span className="doo-rail-job-deadline">{buildRecruitDeadlineBadge(item)}</span>
                 </div>
                 <div className="doo-rail-job-title">{item.title}</div>
                 {metaText ? <div className="doo-rail-job-meta-line">{metaText}</div> : null}
-                <div className="doo-rail-job-footer">
-                  {item.matched_keywords?.length ? (
-                    <div className="doo-rail-job-keywords">
-                      {item.matched_keywords.slice(0, 3).map((keyword) => (
-                        <span key={`${item.id}-${keyword}`} className="doo-rail-job-chip">
-                          {keyword}
-                        </span>
-                      ))}
-                    </div>
-                  ) : <span />}
-                  <span className="doo-rail-job-cta">원문 보기</span>
-                </div>
+                {visibleKeywords.length ? (
+                  <div className="doo-rail-job-keywords">
+                    {visibleKeywords.map((keyword) => (
+                      <span key={`${item.id}-${keyword}`} className="doo-rail-job-chip">
+                        {keyword}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
               </a>
             );
           })}

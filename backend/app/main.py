@@ -1889,14 +1889,52 @@ def _refresh_pilot_jobs_snapshot(limit: int = 12) -> dict[str, Any]:
         raise RuntimeError(f"채용정보를 불러오지 못했습니다: {error}") from error
 
 
+def _pilot_jobs_reference_timestamp(payload: dict[str, Any]) -> str:
+    for key in ("last_successful_at", "updated_at", "last_attempted_at"):
+        value = str(payload.get(key) or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _parse_pilot_jobs_timestamp(value: str) -> datetime | None:
+    text = str(value or "").strip()
+    if not text:
+        return None
+    try:
+        return datetime.fromisoformat(text.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
+def _should_refresh_pilot_jobs_snapshot(payload: dict[str, Any]) -> bool:
+    items = payload.get("items")
+    if not isinstance(items, list) or not items:
+        return True
+
+    cache_status = str(payload.get("cache_status") or "").strip().lower()
+    if cache_status in {"stale", "error"}:
+        return True
+
+    reference_time = _parse_pilot_jobs_timestamp(_pilot_jobs_reference_timestamp(payload))
+    if reference_time is None:
+        return True
+
+    if reference_time.tzinfo is None:
+        reference_time = reference_time.replace(tzinfo=timezone.utc)
+
+    age_seconds = (datetime.now(timezone.utc) - reference_time.astimezone(timezone.utc)).total_seconds()
+    return age_seconds >= PILOT_JOBS_CACHE_TTL_SECONDS
+
+
 def _get_pilot_jobs_panel(force_refresh: bool = False, limit: int = 12) -> dict[str, Any]:
     if force_refresh:
         return _refresh_pilot_jobs_snapshot(limit=limit)
 
     payload = build_pilot_jobs_panel_payload(PILOT_JOBS_CACHE_PATH, limit=limit)
-    if payload.get("items"):
-        return payload
-    return _refresh_pilot_jobs_snapshot(limit=limit)
+    if _should_refresh_pilot_jobs_snapshot(payload):
+        return _refresh_pilot_jobs_snapshot(limit=limit)
+    return payload
 
 
 def _default_promo_code_store() -> dict[str, Any]:
@@ -5976,11 +6014,13 @@ def get_jobs(request: Request):
         role_family = str(request.query_params.get("role_family") or "").strip()
         location = str(request.query_params.get("location") or "").strip()
         employment_type = str(request.query_params.get("employment_type") or "").strip()
+        status = str(request.query_params.get("status") or "").strip()
         limit = max(int(request.query_params.get("limit", "24")), 1)
         page = max(int(request.query_params.get("page", "1")), 1)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=f"잘못된 조회 파라미터입니다: {error}") from error
 
+    _get_pilot_jobs_panel(force_refresh=False, limit=limit)
     offset = (page - 1) * limit
     payload = build_pilot_jobs_list_response(
         PILOT_JOBS_CACHE_PATH,
@@ -5988,6 +6028,7 @@ def get_jobs(request: Request):
         role_family=role_family,
         location=location,
         employment_type=employment_type,
+        status=status,
         limit=limit,
         offset=offset,
     )
