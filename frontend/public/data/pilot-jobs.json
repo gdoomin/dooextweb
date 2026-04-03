@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-03T12:29:12.480946+00:00",
-  "last_successful_at": "2026-04-03T12:29:12.480946+00:00",
-  "last_attempted_at": "2026-04-03T12:29:12.480946+00:00",
+  "updated_at": "2026-04-03T15:29:06.241841+00:00",
+  "last_successful_at": "2026-04-03T15:29:06.241841+00:00",
+  "last_attempted_at": "2026-04-03T15:29:06.241841+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -108,7 +108,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 5149.874,
+          "_internal_score": 5061.1787,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -161,153 +161,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "김포공항,송정,강서구 · 3"
-        }
-      }
-    },
-    {
-      "id": "48861847",
-      "slug": "명화지리정보-명화지리정보주-운항승무원-채용경력-48861847",
-      "job_no": "48861847",
-      "source_job_key": "48861847",
-      "title": "명화지리정보(주) 운항승무원 채용(경력)",
-      "company": "명화지리정보㈜",
-      "company_slug": "명화지리정보",
-      "location": "김포공항,송정,강서구",
-      "employment_type": "",
-      "employment_type_code": "full_time",
-      "experience": "2",
-      "experience_level": "open",
-      "deadline_text": "2026.04.03",
-      "deadline_date": "2026.04.03",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "JobKorea Search",
-      "source_code": "jobkorea",
-      "source_label": "JobKorea Search",
-      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48861847",
-      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48861847",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "김포공항,송정,강서구 · 2",
-      "posted_at": "2026-03-27T11:21:22.467+09:00",
-      "deadline_at": "2026-04-03T23:00:00+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "김포공항,송정,강서구",
-      "location_city": "",
-      "search_document": "명화지리정보(주) 운항승무원 채용(경력) 명화지리정보㈜ 김포공항,송정,강서구 2 ,디자인·CAD,조종·기관사, 항공신체검사,mel 운항승무원,보안,측량,운항,ir 김포공항,송정,강서구 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "id": "48861847",
-          "legacyJobNo": "50618531",
-          "title": "명화지리정보(주) 운항승무원 채용(경력)",
-          "createdAt": "2026-03-27T11:21:22.467+09:00",
-          "postingCompanyName": "명화지리정보㈜",
-          "userRefType": "C",
-          "memberSystemNo": "50991363",
-          "jobOrIndustryCodeList": [
-            "1000037",
-            "1000276"
-          ],
-          "employmentTypeCodeList": [
-            "1/0"
-          ],
-          "areaCodeList": [
-            "I040"
-          ],
-          "careerType": "2",
-          "careerRange": 2,
-          "educationCode": "4",
-          "benefitNameList": [],
-          "companyName": "명화지리정보㈜",
-          "companyType": "0",
-          "isExposeWorkCompany": false,
-          "receptionOptionType": "100000",
-          "applicationPeriod": {
-            "start": "2026-03-27T00:00:00+09:00",
-            "end": "2026-04-03T23:00:00+09:00"
-          },
-          "isSubcontract": false,
-          "isNewcomerJob": false,
-          "jobTypeCode": null,
-          "isExistProductLogo": false,
-          "stockTypeCode": "0",
-          "companyRank": 0,
-          "companySubsidiary": null,
-          "smallGiantCompanyTypeCode": "0",
-          "excellentSmallCompanyTypeCode": 0,
-          "awardInfo": "0",
-          "goodWorkCompanyCodeList": null,
-          "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2026/3/27/JK_CO_dy4xsvR26032711294371.png?v=202604032131",
-          "textLogoPath": null,
-          "oemNo": "1",
-          "rewardAmount": 0,
-          "readCount": 1788,
-          "badges": [
-            {
-              "code": "DEADLINE_TODAY",
-              "attributes": {}
-            }
-          ],
-          "badgesV2": [
-            {
-              "code": "DEADLINE_TODAY",
-              "attributes": {}
-            }
-          ],
-          "_internal_score": 6346.401,
-          "_internal_weightValue": 10,
-          "_internal_keywordList": [
-            "CAD"
-          ],
-          "_internal_featureWorkCode": "기관사,조종",
-          "_internal_featureIndustryCode": "CAD,디자인,항공촬영,보안,측량",
-          "_internal_featureToolCode": "항공신체검사,mel",
-          "_internal_featureSkillCode": "운항승무원,보안,측량,운항,ir",
-          "_internal_featureCompanyCode": "명화지리정보",
-          "_internal_featureLocationCode": "김포공항,송정,강서구",
-          "_internal_featureTotalCode": "항공촬영,김포공항,CAD,측량,디자인,mel,기관사,강서구,조종,항공신체검사,보안,송정,명화지리정보,운항,ir,운항승무원",
-          "popularityScore": 1796,
-          "payRange": {
-            "start": "0",
-            "end": "0"
-          },
-          "isAppliedJob": false,
-          "jobClassificationOrIndustry": ",디자인·CAD,조종·기관사,",
-          "memberId": "mhjiri4057",
-          "payTypeCode": 0,
-          "isStarter": null,
-          "urlName": null,
-          "companyTypeCode": 1
-        },
-        "normalized": {
-          "id": "48861847",
-          "job_no": "48861847",
-          "title": "명화지리정보(주) 운항승무원 채용(경력)",
-          "company": "명화지리정보㈜",
-          "location": "김포공항,송정,강서구",
-          "employment_type": "",
-          "experience": "2",
-          "deadline_text": "2026.04.03",
-          "deadline_date": "2026.04.03",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "JobKorea Search",
-          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48861847",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "김포공항,송정,강서구 · 2"
         }
       }
     },
@@ -400,7 +253,7 @@
           "readCount": 403,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
@@ -410,7 +263,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2022.7797,
+          "_internal_score": 1988.755,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -559,7 +412,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2149.3071,
+          "_internal_score": 2114.053,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -698,12 +551,12 @@
           "readCount": 369,
           "badges": [
             {
-              "code": "RECOMMENDED_JOB_CHANGE",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2219.9546,
+          "_internal_score": 2184.0903,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -845,12 +698,12 @@
           "readCount": 364,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2147.9795,
+          "_internal_score": 2112.734,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "A330",
@@ -991,7 +844,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/9/20/JK_CO_I8mqf3c25092011323175.png?v=202604032131",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/9/20/JK_CO_I8mqf3c25092011323175.png?v=202604040030",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -1003,7 +856,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 3918.0505,
+          "_internal_score": 3838.6719,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -1126,7 +979,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 272,
+          "deadlineCount": 271,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1226,7 +1079,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 272,
+          "deadlineCount": 271,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1326,7 +1179,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 272,
+          "deadlineCount": 271,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1430,7 +1283,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 387199,
-          "deadlineCount": 3,
+          "deadlineCount": 2,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1488,8 +1341,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1527,7 +1380,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -1562,8 +1415,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
       "role_family": "flight_instructor",
       "license_tags": [
         "FI"
@@ -1602,7 +1455,7 @@
             "비행교관"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=50506af2-ead1-4b57-8090-2fc82e8b151f",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d8ce0ff2-c323-4b2f-a7ee-55e3300742bc",
           "role_family": "flight_instructor",
           "license_tags": [
             "FI"
@@ -1636,8 +1489,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=267d718f-f08c-4174-86ed-4c10496a9cb0",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=267d718f-f08c-4174-86ed-4c10496a9cb0",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=a64aa288-fd3c-46e0-8555-52efaf1c5452",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=a64aa288-fd3c-46e0-8555-52efaf1c5452",
       "role_family": "other_flight_crew",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -1673,7 +1526,7 @@
             "운항승무원"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=267d718f-f08c-4174-86ed-4c10496a9cb0",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=a64aa288-fd3c-46e0-8555-52efaf1c5452",
           "role_family": "other_flight_crew",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
