@@ -249,6 +249,8 @@ PAYAPP_SUPPORTED_OPENPAYTYPE_TOKENS = {
     "tosspay",
     "dvpay",
 }
+NOTAM_DEFAULT_SNAPSHOT_URL = "https://raw.githubusercontent.com/gdoomin/notam-json/main/notam-latest.json"
+NOTAM_SNAPSHOT_TIMEOUT_SECONDS = 12
 NOTAM_DEFAULT_SUPABASE_URL = "https://zxocgwaogeyhwkefqmts.supabase.co"
 NOTAM_DEFAULT_SUPABASE_ANON_KEY = (
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9."
@@ -3538,6 +3540,21 @@ def _notam_supabase_config() -> tuple[str, str]:
     return supabase_url, api_key
 
 
+
+def _notam_snapshot_url() -> str:
+    snapshot_url = str(
+        os.getenv("DOO_NOTAM_SNAPSHOT_URL")
+        or os.getenv("NOTAM_SNAPSHOT_URL")
+        or os.getenv("NEXT_PUBLIC_NOTAM_SNAPSHOT_URL")
+        or NOTAM_DEFAULT_SNAPSHOT_URL
+        or ""
+    ).strip()
+    if not snapshot_url:
+        raise HTTPException(status_code=503, detail="NOTAM snapshot URL? ???? ?????.")
+    if not _is_http_url(snapshot_url):
+        raise HTTPException(status_code=503, detail="NOTAM snapshot URL ??? ???? ????.")
+    return snapshot_url
+
 def _supabase_request_payload(method: str, url: str, api_key: str, payload: dict | None = None):
     body = json.dumps(payload).encode("utf-8") if payload is not None else None
     headers = {
@@ -3570,6 +3587,38 @@ def _supabase_request_payload(method: str, url: str, api_key: str, payload: dict
     except Exception:
         return {}
 
+
+
+def _notam_snapshot_request_payload(url: str):
+    request = UrlRequest(
+        url=url,
+        method="GET",
+        headers={
+            "Accept": "application/json",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+            "User-Agent": "DOO-Extractor-NOTAM/1.0",
+        },
+    )
+    try:
+        with urlopen(request, timeout=NOTAM_SNAPSHOT_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except HTTPError as error:
+        detail = ""
+        try:
+            detail = error.read().decode("utf-8", errors="ignore").strip()
+        except Exception:
+            detail = ""
+        raise HTTPException(status_code=502, detail=detail or "NOTAM snapshot ??? ???? ?????.") from error
+    except (URLError, TimeoutError) as error:
+        raise HTTPException(status_code=502, detail="NOTAM snapshot ??? ??????.") from error
+
+    if not raw:
+        return []
+    try:
+        return json.loads(raw.decode("utf-8"))
+    except Exception as error:
+        raise HTTPException(status_code=502, detail="NOTAM snapshot JSON ??? ??????.") from error
 
 def _normalize_notam_series(value: str | None, fallback_notam_id: str | None = None) -> str:
     raw = str(value or "").strip().upper()
@@ -3617,6 +3666,65 @@ def _notam_query_items(bbox: tuple[float, float, float, float] | None, limit: in
             )
     return items
 
+
+
+def _notam_row_in_bbox(lat: float, lng: float, bbox: tuple[float, float, float, float] | None) -> bool:
+    if bbox is None:
+        return True
+    south, west, north, east = bbox
+    if lat < south or lat > north:
+        return False
+    if west <= east:
+        return west <= lng <= east
+    return lng >= west or lng <= east
+
+
+def _fetch_notam_rows_from_snapshot(snapshot_url: str, bbox: tuple[float, float, float, float] | None, limit: int) -> list[dict]:
+    bust = int(time.time() // 60)
+    separator = "&" if "?" in snapshot_url else "?"
+    payload = _notam_snapshot_request_payload(f"{snapshot_url}{separator}ts={bust}")
+
+    if isinstance(payload, dict):
+        raw_items = payload.get("items")
+        if not isinstance(raw_items, list):
+            raw_items = payload.get("data")
+        if not isinstance(raw_items, list):
+            raw_items = []
+    elif isinstance(payload, list):
+        raw_items = payload
+    else:
+        raw_items = []
+
+    rows: list[dict] = []
+    for raw_item in raw_items:
+        if not isinstance(raw_item, dict):
+            continue
+        try:
+            lat = float(raw_item.get("lat"))
+            lng = float(raw_item.get("lng"))
+        except (TypeError, ValueError):
+            continue
+        if lat < -90 or lat > 90 or lng < -180 or lng > 180:
+            continue
+        if not _notam_row_in_bbox(lat, lng, bbox):
+            continue
+
+        rows.append(
+            {
+                "id": raw_item.get("id"),
+                "notam_id": str(raw_item.get("notam_id") or "").strip(),
+                "content": str(raw_item.get("content") or ""),
+                "lat": lat,
+                "lng": lng,
+                "series": str(raw_item.get("series") or ""),
+                "start_date": str(raw_item.get("start_date") or ""),
+                "end_date": str(raw_item.get("end_date") or ""),
+                "created_at": str(raw_item.get("created_at") or ""),
+            }
+        )
+        if len(rows) >= limit:
+            break
+    return rows
 
 def _fetch_notam_rows(supabase_url: str, api_key: str, bbox: tuple[float, float, float, float] | None, limit: int) -> list[dict]:
     raw_tables = str(os.getenv("DOO_NOTAM_TABLES") or os.getenv("DOO_NOTAM_TABLE") or "notam_scraper,notams")
@@ -5005,8 +5113,15 @@ def get_notam_overlay(request: Request):
         raise HTTPException(status_code=400, detail="limit 揶쏅?????而?몴?? ??녿뮸??덈뼄.") from error
     limit = max(1, min(requested_limit, NOTAM_MAX_LIMIT))
 
-    supabase_url, api_key = _notam_supabase_config()
-    rows = _fetch_notam_rows(supabase_url, api_key, bbox=bbox, limit=limit)
+    source_name = "snapshot"
+    rows: list[dict]
+    try:
+        snapshot_url = _notam_snapshot_url()
+        rows = _fetch_notam_rows_from_snapshot(snapshot_url, bbox=bbox, limit=limit)
+    except HTTPException:
+        supabase_url, api_key = _notam_supabase_config()
+        rows = _fetch_notam_rows(supabase_url, api_key, bbox=bbox, limit=limit)
+        source_name = "supabase-fallback"
 
     items: list[dict] = []
     counts = {"de": 0, "acgz": 0}
@@ -5045,7 +5160,7 @@ def get_notam_overlay(request: Request):
     return JSONResponse(
         {
             "ok": True,
-            "source": "supabase",
+            "source": source_name,
             "total": len(items),
             "counts": counts,
             "items": items,
