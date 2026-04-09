@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { LayerGroup, Map as LeafletMap } from "leaflet";
@@ -11,38 +11,66 @@ type NotamApiItem = {
   id?: string | number | null;
   notam_id?: string;
   series?: string;
-  group?: string;
   lat?: number;
   lng?: number;
   start_date?: string;
   end_date?: string;
-  created_at?: string;
   airport?: string;
   content?: string;
 };
 
 type NotamApiResponse = {
-  ok?: boolean;
-  total?: number;
   items?: NotamApiItem[];
-  source?: string;
-  fetched_at?: string;
+  detail?: string;
+};
+
+type LayerFeature = {
+  type?: string;
+  name?: string;
+  points?: unknown;
+};
+
+type LayerPayload = {
+  layers?: Array<{
+    key?: string;
+    features?: LayerFeature[];
+  }>;
 };
 
 type NotamMarkerType = "D" | "R" | "E" | "M";
 type NotamFilter = "ALL" | NotamMarkerType;
 
-type NotamMapItem = {
-  id: string;
+type CoordPoint = {
+  latitude: number;
+  longitude: number;
+};
+
+type RestrictFeature = {
+  code: string;
+  name: string;
+  featureType: "polygon" | "line";
+  coords: CoordPoint[];
+};
+
+type ParsedNotamItem = {
+  raw: NotamApiItem;
+  content: string;
   notamId: string;
-  lat: number;
-  lng: number;
   type: NotamMarkerType;
-  airport: string;
   areaLabel: string;
   altitudeLabel: string;
   validityLabel: string;
-  content: string;
+  lat: number;
+  lng: number;
+  radiusMeters: number | null;
+  qCircleLat: number | null;
+  qCircleLng: number | null;
+  qCircleRadiusMeters: number | null;
+  restrictedAreaFeatures: RestrictFeature[];
+  polygonCoords: CoordPoint[] | null;
+  polylineCoords: CoordPoint[] | null;
+  corridorCenterlineCoords: CoordPoint[] | null;
+  corridorPolygonCoords: CoordPoint[] | null;
 };
 
 const INITIAL_CENTER: [number, number] = [36.5, 127.8];
@@ -61,13 +89,14 @@ const NOTAM_COLORS: Record<NotamMarkerType, string> = {
   E: "#3B6D11",
   M: "#7F77DD",
 };
+const Q_CIRCLE_COLOR = "#000080";
 
 function escapeHtml(value: string) {
   return String(value || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
 
@@ -75,35 +104,383 @@ function collapseWhitespace(value: string) {
   return String(value || "").replace(/\s+/g, " ").trim();
 }
 
-function extractAirportCode(content: string, fallback = "") {
-  const match = String(content || "").toUpperCase().match(/\bA\)\s*([A-Z0-9]{4})\b/);
-  return match?.[1] || fallback;
-}
-
-function extractSectionValue(content: string, section: string) {
-  const expression = new RegExp(`\\b${section}\\)\\s*([\\s\\S]*?)(?=\\s+[A-Z]\\)|$)`, "i");
-  const match = String(content || "").match(expression);
-  return collapseWhitespace(match?.[1] || "");
-}
-
-function normalizeDateLabel(value: string) {
-  const raw = collapseWhitespace(value);
+function sanitizeNotamContent(raw: string) {
   if (!raw) {
     return "";
   }
-  return raw.replace(/UTC/gi, "").trim();
+  return String(raw)
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<\/p>/gi, "\n")
+    .replace(/<\/h\d>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
-function resolveNotamType(item: Pick<NotamApiItem, "notam_id" | "series" | "content">): NotamMarkerType {
-  const notamId = String(item.notam_id || "").trim().toUpperCase();
-  const series = String(item.series || "").trim().toUpperCase() || notamId.slice(0, 1);
-  const content = String(item.content || "").toUpperCase();
-
-  if (content.includes("RESTRICTED AREA") || content.includes("/QRTCA")) {
-    return "R";
+function extractNotamSectionValue(content: string, section: string) {
+  const text = sanitizeNotamContent(content);
+  const tokenRe = /\b([A-Z])\)\s*/gi;
+  const marks: Array<{ sec: string; idx: number; end: number }> = [];
+  let match: RegExpExecArray | null = null;
+  while ((match = tokenRe.exec(text)) !== null) {
+    marks.push({ sec: String(match[1] || "").toUpperCase(), idx: match.index, end: tokenRe.lastIndex });
   }
-  if (content.includes("DANGER AREA") || content.includes("/QRDCA")) {
+  const upperSection = String(section || "").trim().toUpperCase();
+  const startMark = marks.find((mark) => mark.sec === upperSection);
+  if (!startMark) {
+    return "";
+  }
+  const nextMark = marks.find((mark) => mark.idx > startMark.idx);
+  return text.slice(startMark.end, nextMark ? nextMark.idx : text.length).trim();
+}
+
+function extractNotamESection(content: string) {
+  return extractNotamSectionValue(content, "E");
+}
+
+function parseAngleToken(token: string, isLat: boolean) {
+  const raw = String(token || "").trim().toUpperCase();
+  const hemi = raw.slice(-1);
+  const numeric = raw.slice(0, -1);
+  if (!numeric || !/[NSEW]/.test(hemi)) {
+    return null;
+  }
+  const segments = numeric.split(".");
+  const intPart = String(segments[0] || "");
+  const fracPart = String(segments[1] || "");
+  const digits = intPart.replace(/\D/g, "");
+  let deg = 0;
+  let min = 0;
+  let sec = 0;
+  if (isLat) {
+    if (digits.length <= 4) {
+      deg = Number(digits.slice(0, 2));
+      min = Number(`${digits.slice(2)}${fracPart ? `.${fracPart}` : ""}`);
+    } else {
+      deg = Number(digits.slice(0, 2));
+      min = Number(digits.slice(2, 4));
+      sec = Number(`${digits.slice(4)}${fracPart ? `.${fracPart}` : ""}`);
+    }
+  } else if (digits.length <= 5) {
+    deg = Number(digits.slice(0, 3));
+    min = Number(`${digits.slice(3)}${fracPart ? `.${fracPart}` : ""}`);
+  } else {
+    deg = Number(digits.slice(0, 3));
+    min = Number(digits.slice(3, 5));
+    sec = Number(`${digits.slice(5)}${fracPart ? `.${fracPart}` : ""}`);
+  }
+  const value = deg + min / 60 + sec / 3600;
+  return Number.isFinite(value) ? (hemi === "S" || hemi === "W" ? -value : value) : null;
+}
+
+function parseCoordPair(latToken: string, lonToken: string) {
+  const lat = parseAngleToken(latToken, true);
+  const lon = parseAngleToken(lonToken, false);
+  if (typeof lat !== "number" || typeof lon !== "number") {
+    return null;
+  }
+  return { latitude: lat, longitude: lon };
+}
+
+function extractNotamCoordPairsFromText(text: string) {
+  const compact = String(text || "").replace(/[–—−]/g, "-").replace(/\s+/g, "");
+  const out: CoordPoint[] = [];
+  const pairRe = /(\d{4,6}(?:\.\d+)?[NS])[\s,/-]*(\d{5,7}(?:\.\d+)?[EW])/gi;
+  let match: RegExpExecArray | null = null;
+  while ((match = pairRe.exec(compact)) !== null) {
+    const parsed = parseCoordPair(match[1], match[2]);
+    if (parsed) {
+      out.push(parsed);
+    }
+  }
+  return out;
+}
+function removeClosingPointIfNeeded(points: CoordPoint[]) {
+  if (!Array.isArray(points) || points.length < 2) {
+    return Array.isArray(points) ? points.slice() : [];
+  }
+  const out = points.slice();
+  const first = out[0];
+  const last = out[out.length - 1];
+  if (
+    first &&
+    last &&
+    Math.abs(first.latitude - last.latitude) < 0.0000001 &&
+    Math.abs(first.longitude - last.longitude) < 0.0000001
+  ) {
+    out.pop();
+  }
+  return out;
+}
+
+function isClosedCoordPath(points: CoordPoint[]) {
+  if (!Array.isArray(points) || points.length < 4) {
+    return false;
+  }
+  const first = points[0];
+  const last = points[points.length - 1];
+  return !!first && !!last && first.latitude === last.latitude && first.longitude === last.longitude;
+}
+
+function extractNotamCorridorHalfWidthNm(content: string) {
+  const eSection = extractNotamESection(content);
+  const normalized = String(eSection || "").replace(/[–—−]/g, "-").replace(/\s+/g, " ").trim();
+  const halfWidthPatterns = [
+    /(\d+(?:\.\d+)?)\s*NM\s*(?:ON\s+)?(?:EITHER|EACH)\s+SIDE(?:\s+OF\s+(?:THE\s+)?)?(?:LINE|CENTER\s*LINE)?/i,
+    /(?:ON\s+)?(?:EITHER|EACH)\s+SIDE(?:\s+OF\s+(?:THE\s+)?)?(?:LINE|CENTER\s*LINE)?\s*(\d+(?:\.\d+)?)\s*NM/i,
+    /HALF[-\s]?WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i,
+  ];
+  for (const pattern of halfWidthPatterns) {
+    const match = normalized.match(pattern);
+    const value = match ? Number(match[1]) : NaN;
+    if (Number.isFinite(value) && value > 0) {
+      return value;
+    }
+  }
+  const fullWidthPatterns = [/(\d+(?:\.\d+)?)\s*NM\s*WIDE/i, /WIDTH\s*(\d+(?:\.\d+)?)\s*NM/i];
+  for (const pattern of fullWidthPatterns) {
+    const match = normalized.match(pattern);
+    const value = match ? Number(match[1]) : NaN;
+    if (Number.isFinite(value) && value > 0) {
+      return value / 2;
+    }
+  }
+  return null;
+}
+
+function extractNotamCorridorCenterline(content: string) {
+  const eSection = extractNotamESection(content);
+  const normalized = String(eSection || "").replace(/[–—−]/g, "-").replace(/\s+/g, " ").trim();
+  const lineMatch = normalized.match(/\b(?:CENTER\s*)?LINE\b([\s\S]*)$/i);
+  const primaryPoints = removeClosingPointIfNeeded(extractNotamCoordPairsFromText(lineMatch?.[1] ? lineMatch[1] : normalized));
+  if (primaryPoints.length >= 2) {
+    return primaryPoints;
+  }
+  const fallbackPoints = removeClosingPointIfNeeded(extractNotamCoordPairsFromText(normalized));
+  return fallbackPoints.length >= 2 ? fallbackPoints : null;
+}
+
+function toRadians(value: number) {
+  return (value * Math.PI) / 180;
+}
+
+function bearingDeg(a: CoordPoint, b: CoordPoint) {
+  const lat1 = toRadians(a.latitude);
+  const lat2 = toRadians(b.latitude);
+  const dLon = toRadians(b.longitude - a.longitude);
+  const y = Math.sin(dLon) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+  if (!Number.isFinite(x) || !Number.isFinite(y)) {
+    return 0;
+  }
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+function offsetCoordByMeters(base: CoordPoint, headingDeg: number, meters: number) {
+  const radius = 6378137;
+  const bearing = toRadians(headingDeg);
+  const lat1 = toRadians(base.latitude);
+  const lon1 = toRadians(base.longitude);
+  const distance = meters / radius;
+  const lat2 = Math.asin(
+    Math.sin(lat1) * Math.cos(distance) + Math.cos(lat1) * Math.sin(distance) * Math.cos(bearing),
+  );
+  const lon2 = lon1 + Math.atan2(
+    Math.sin(bearing) * Math.sin(distance) * Math.cos(lat1),
+    Math.cos(distance) - Math.sin(lat1) * Math.sin(lat2),
+  );
+  return { latitude: (lat2 * 180) / Math.PI, longitude: (lon2 * 180) / Math.PI };
+}
+
+function blendBearing(a: number, b: number) {
+  const ar = toRadians(a);
+  const br = toRadians(b);
+  const x = Math.cos(ar) + Math.cos(br);
+  const y = Math.sin(ar) + Math.sin(br);
+  if (Math.abs(x) < 0.000001 && Math.abs(y) < 0.000001) {
+    return a;
+  }
+  return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+function buildNotamCorridorPolygon(centerline: CoordPoint[], halfWidthMeters: number) {
+  if (!Array.isArray(centerline) || centerline.length < 2 || !Number.isFinite(halfWidthMeters) || halfWidthMeters <= 0) {
+    return null;
+  }
+  const left: CoordPoint[] = [];
+  const right: CoordPoint[] = [];
+  for (let index = 0; index < centerline.length; index += 1) {
+    const curr = centerline[index];
+    const prev = centerline[Math.max(0, index - 1)];
+    const next = centerline[Math.min(centerline.length - 1, index + 1)];
+    const prevBearing = bearingDeg(prev, curr);
+    const nextBearing = bearingDeg(curr, next);
+    const bearing = index === 0 ? nextBearing : index === centerline.length - 1 ? prevBearing : blendBearing(prevBearing, nextBearing);
+    left.push(offsetCoordByMeters(curr, bearing - 90, halfWidthMeters));
+    right.push(offsetCoordByMeters(curr, bearing + 90, halfWidthMeters));
+  }
+  const polygon = left.concat(right.reverse());
+  return polygon.length >= 4 ? polygon : null;
+}
+
+function extractNotamPolygon(content: string) {
+  const points = extractNotamCoordPairsFromText(extractNotamESection(content));
+  if (!isClosedCoordPath(points)) {
+    return null;
+  }
+  const polygonPoints = removeClosingPointIfNeeded(points);
+  return polygonPoints.length >= 3 ? polygonPoints : null;
+}
+
+function extractNotamOpenPolyline(content: string) {
+  const points = extractNotamCoordPairsFromText(extractNotamESection(content));
+  if (isClosedCoordPath(points)) {
+    return null;
+  }
+  const polylinePoints = removeClosingPointIfNeeded(points);
+  return polylinePoints.length >= 2 ? polylinePoints : null;
+}
+
+function centroid(coords: CoordPoint[]) {
+  if (!Array.isArray(coords) || !coords.length) {
+    return null;
+  }
+  const sum = coords.reduce(
+    (acc, point) => ({ latitude: acc.latitude + point.latitude, longitude: acc.longitude + point.longitude }),
+    { latitude: 0, longitude: 0 },
+  );
+  return { latitude: sum.latitude / coords.length, longitude: sum.longitude / coords.length };
+}
+
+function normalizeNotamRestrictedAreaCode(value: string) {
+  const compact = String(value || "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+  const match = compact.match(/^RKR(\d{1,4}[A-Z]?)$/);
+  return match ? `RKR${match[1]}` : "";
+}
+
+function extractNotamRestrictedAreaCodes(content: string) {
+  const eSection = extractNotamESection(content);
+  if (!eSection || !/\bRESTRICT(?:ED)?\s+AREA\b/i.test(eSection)) {
+    return [];
+  }
+  const out = new Set<string>();
+  (eSection.match(/\bRK\s*R\s*\d{1,4}[A-Z]?\b/gi) || []).forEach((token) => {
+    const code = normalizeNotamRestrictedAreaCode(token);
+    if (code) {
+      out.add(code);
+    }
+  });
+  if (!out.size && /\bRK\b/i.test(eSection)) {
+    (eSection.match(/\bR\s*\d{1,4}[A-Z]?\b/gi) || []).forEach((token) => {
+      const code = normalizeNotamRestrictedAreaCode(`RK ${token}`);
+      if (code) {
+        out.add(code);
+      }
+    });
+  }
+  return Array.from(out);
+}
+function mapLayerPointsToNotamCoords(points: unknown): CoordPoint[] {
+  if (!Array.isArray(points)) {
+    return [];
+  }
+  return points
+    .map((point) => {
+      if (!Array.isArray(point) || point.length < 2) {
+        return null;
+      }
+      const lat = Number(point[0]);
+      const lng = Number(point[1]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+        return null;
+      }
+      return { latitude: lat, longitude: lng };
+    })
+    .filter((point): point is CoordPoint => !!point);
+}
+
+function buildRestrictLookup(payload: LayerPayload | null | undefined) {
+  const lookup = new Map<string, RestrictFeature[]>();
+  const layer = payload?.layers?.find((entry) => String(entry?.key || "").toLowerCase() === "restrict");
+  (layer?.features || []).forEach((feature) => {
+    const featureName = String(feature?.name || "").trim();
+    const code = normalizeNotamRestrictedAreaCode(featureName);
+    if (!code) {
+      return;
+    }
+    const featureType = String(feature?.type || "").toLowerCase() === "line" ? "line" : "polygon";
+    const coords = mapLayerPointsToNotamCoords(feature?.points);
+    if ((featureType === "polygon" && coords.length < 3) || (featureType === "line" && coords.length < 2)) {
+      return;
+    }
+    const existing = lookup.get(code) || [];
+    existing.push({ code, name: featureName, featureType, coords });
+    lookup.set(code, existing);
+  });
+  return lookup;
+}
+
+function resolveNotamRestrictedAreaFeatures(content: string, lookup: Map<string, RestrictFeature[]>) {
+  const codes = extractNotamRestrictedAreaCodes(content);
+  const matched: RestrictFeature[] = [];
+  codes.forEach((code) => {
+    const features = lookup.get(code) || [];
+    features.forEach((feature) => matched.push(feature));
+  });
+  return matched;
+}
+
+function extractNotamQRadiusNm(content: string) {
+  const qSection = extractNotamSectionValue(content, "Q");
+  const match = qSection.match(/\b(\d{3})\b(?!.*\b\d{3}\b)/);
+  const value = match ? Number(match[1]) : NaN;
+  if (!Number.isFinite(value) || value <= 0 || value >= 999) {
+    return null;
+  }
+  return value;
+}
+
+function extractNotamRadiusNm(content: string) {
+  const qRadius = extractNotamQRadiusNm(content);
+  if (Number.isFinite(qRadius ?? NaN) && (qRadius ?? 0) > 0) {
+    return qRadius;
+  }
+  const eSection = extractNotamESection(content);
+  const match = eSection.match(/\bRADIUS\s*(\d+(?:\.\d+)?)\s*NM\b/i);
+  const value = match ? Number(match[1]) : NaN;
+  return Number.isFinite(value) && value > 0 ? value : null;
+}
+
+function extractNotamQCenterCoord(content: string) {
+  const qSection = extractNotamSectionValue(content, "Q");
+  const match = qSection.match(/(\d{4,6}(?:\.\d+)?[NS])\s*(\d{5,7}(?:\.\d+)?[EW])/i);
+  if (!match) {
+    return null;
+  }
+  return parseCoordPair(match[1], match[2]);
+}
+
+function extractAirportCode(value: string) {
+  const match = String(value || "").match(/\bRK[A-Z]{2}\b/i);
+  return match ? match[0].toUpperCase() : "";
+}
+
+function resolveNotamType(raw: NotamApiItem, content: string): NotamMarkerType {
+  const series = String(raw.series || "").trim().toUpperCase();
+  const fullText = `${String(raw.notam_id || "")}\n${content}`.toUpperCase();
+  if (fullText.includes("DANGER AREA") || fullText.includes("QRDCA")) {
     return "D";
+  }
+  if (fullText.includes("RESTRICTED AREA") || fullText.includes("QRTCA")) {
+    return "R";
   }
   if (series === "E") {
     return "E";
@@ -111,257 +488,403 @@ function resolveNotamType(item: Pick<NotamApiItem, "notam_id" | "series" | "cont
   return "M";
 }
 
-function resolveAreaLabel(item: Pick<NotamApiItem, "airport" | "content">, type: NotamMarkerType) {
-  const airport = extractAirportCode(item.content || "", String(item.airport || "").trim().toUpperCase());
-  const typeLabel =
-    type === "D" ? "위험구역" : type === "R" ? "제한구역" : type === "E" ? "항행경보" : "기타 NOTAM";
+function resolveAreaLabel(raw: NotamApiItem, content: string) {
+  const airport = collapseWhitespace(String(raw.airport || ""));
   if (airport) {
-    return `${airport} · ${typeLabel}`;
+    return airport;
   }
-  return typeLabel;
+  const restrictedCodes = extractNotamRestrictedAreaCodes(content);
+  if (restrictedCodes.length) {
+    return restrictedCodes.join(", ");
+  }
+  const airportCode = extractAirportCode(content);
+  if (airportCode) {
+    return airportCode;
+  }
+  return "구역 정보 없음";
 }
 
-function resolveAltitudeLabel(item: Pick<NotamApiItem, "content">) {
-  const content = String(item.content || "");
-  const lower = extractSectionValue(content, "F");
-  const upper = extractSectionValue(content, "G");
-  if (lower && upper) {
-    return `${lower} ~ ${upper}`;
+function resolveAltitudeLabel(content: string) {
+  const qSection = extractNotamSectionValue(content, "Q");
+  const match = qSection.match(/\/(\d{3})\/(\d{3})\//);
+  if (match) {
+    return `${match[1]}-${match[2]}`;
   }
-  const qMatch = content.toUpperCase().match(/Q\)[^/]*\/[^/]*\/[^/]*\/[^/]*\/(\d{3})\/(\d{3})\//);
-  if (qMatch) {
-    return `${qMatch[1]} ~ ${qMatch[2]}`;
-  }
-  return "정보 없음";
+  return "고도 정보 없음";
 }
 
-function resolveValidityLabel(item: Pick<NotamApiItem, "content" | "start_date" | "end_date">) {
-  const start = normalizeDateLabel(String(item.start_date || "")) || extractSectionValue(item.content || "", "B");
-  const end = normalizeDateLabel(String(item.end_date || "")) || extractSectionValue(item.content || "", "C");
+function resolveValidityLabel(raw: NotamApiItem) {
+  const start = collapseWhitespace(String(raw.start_date || ""));
+  const end = collapseWhitespace(String(raw.end_date || ""));
   if (start && end) {
     return `${start} ~ ${end}`;
   }
-  return start || end || "정보 없음";
+  if (start) {
+    return `${start} ~`;
+  }
+  if (end) {
+    return `~ ${end}`;
+  }
+  return "유효기간 정보 없음";
 }
 
-function buildPopupHtml(item: NotamMapItem) {
+function buildParsedNotamItem(raw: NotamApiItem, restrictLookup: Map<string, RestrictFeature[]>) {
+  const content = sanitizeNotamContent(String(raw.content || ""));
+  const restrictedAreaFeatures = resolveNotamRestrictedAreaFeatures(content, restrictLookup);
+  const polygonCoords = extractNotamPolygon(content);
+  const polylineCoords = extractNotamOpenPolyline(content);
+  const corridorCenterlineCoords = extractNotamCorridorCenterline(content);
+  const corridorHalfWidthNm = extractNotamCorridorHalfWidthNm(content);
+  const corridorPolygonCoords =
+    corridorCenterlineCoords && corridorHalfWidthNm
+      ? buildNotamCorridorPolygon(corridorCenterlineCoords, corridorHalfWidthNm * 1852)
+      : null;
+  const qCenter = extractNotamQCenterCoord(content);
+  const qRadiusNm = extractNotamQRadiusNm(content);
+  const radiusNm = extractNotamRadiusNm(content);
+  const derivedCenter =
+    qCenter ||
+    centroid(polygonCoords || []) ||
+    centroid(corridorPolygonCoords || []) ||
+    centroid(polylineCoords || []) ||
+    restrictedAreaFeatures.flatMap((feature) => feature.coords)[0] ||
+    null;
+  const lat = Number(raw.lat);
+  const lng = Number(raw.lng);
+  const fallbackLat = derivedCenter?.latitude ?? INITIAL_CENTER[0];
+  const fallbackLng = derivedCenter?.longitude ?? INITIAL_CENTER[1];
+  return {
+    raw,
+    content,
+    notamId: collapseWhitespace(String(raw.notam_id || raw.id || "NOTAM")),
+    type: resolveNotamType(raw, content),
+    areaLabel: resolveAreaLabel(raw, content),
+    altitudeLabel: resolveAltitudeLabel(content),
+    validityLabel: resolveValidityLabel(raw),
+    lat: Number.isFinite(lat) ? lat : fallbackLat,
+    lng: Number.isFinite(lng) ? lng : fallbackLng,
+    radiusMeters: radiusNm ? radiusNm * 1852 : null,
+    qCircleLat: qCenter?.latitude ?? null,
+    qCircleLng: qCenter?.longitude ?? null,
+    qCircleRadiusMeters: qRadiusNm ? qRadiusNm * 1852 : null,
+    restrictedAreaFeatures,
+    polygonCoords,
+    polylineCoords,
+    corridorCenterlineCoords,
+    corridorPolygonCoords,
+  };
+}
+
+function buildPopupHtml(item: ParsedNotamItem) {
   return `
     <div class="doo-notam-popup">
       <div class="doo-notam-popup-title">${escapeHtml(item.notamId)}</div>
       <div class="doo-notam-popup-row"><strong>구역</strong><span>${escapeHtml(item.areaLabel)}</span></div>
       <div class="doo-notam-popup-row"><strong>고도</strong><span>${escapeHtml(item.altitudeLabel)}</span></div>
-      <div class="doo-notam-popup-row"><strong>유효기간</strong><span>${escapeHtml(item.validityLabel)}</span></div>
-      <div class="doo-notam-popup-content">${escapeHtml(item.content)}</div>
+      <div class="doo-notam-popup-row"><strong>유효</strong><span>${escapeHtml(item.validityLabel)}</span></div>
+      <div class="doo-notam-popup-content">${escapeHtml(item.content || "내용 없음").replace(/\n/g, "<br />")}</div>
     </div>
   `;
 }
 
-function buildPinIcon(leaflet: LeafletModule, color: string) {
-  const svg = `
-    <svg viewBox="0 0 30 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M15 40C15 40 28 25.18 28 15.4C28 7.45 22.18 2 15 2S2 7.45 2 15.4C2 25.18 15 40 15 40Z" fill="${color}" stroke="#08131f" stroke-width="1.8"/>
-      <circle cx="15" cy="15" r="5.2" fill="rgba(255,255,255,0.92)"/>
-    </svg>
-  `;
-  return leaflet.divIcon({
-    className: "doo-notam-pin-icon",
-    html: svg,
-    iconSize: [30, 42],
-    iconAnchor: [15, 39],
-    popupAnchor: [0, -34],
-  });
+function pathStyle(type: NotamMarkerType) {
+  const color = NOTAM_COLORS[type] || NOTAM_COLORS.M;
+  return {
+    color,
+    weight: 2,
+    opacity: 0.9,
+    fillColor: color,
+    fillOpacity: 0.12,
+  };
 }
 
-async function fetchNotamItems(signal?: AbortSignal): Promise<NotamMapItem[]> {
-  const response = await fetch(`${API_BASE_URL}/api/notam?limit=${NOTAM_LIMIT}`, {
-    cache: "no-store",
-    signal,
-  });
-  let payload: NotamApiResponse | null = null;
-  try {
-    payload = (await response.json()) as NotamApiResponse;
-  } catch {
-    payload = null;
-  }
+function qCircleStyle() {
+  return {
+    color: Q_CIRCLE_COLOR,
+    weight: 1.5,
+    opacity: 0.95,
+    fillColor: Q_CIRCLE_COLOR,
+    fillOpacity: 0.06,
+    dashArray: "6 4",
+  };
+}
 
+async function fetchNotamItems(signal?: AbortSignal) {
+  const response = await fetch(`${API_BASE_URL}/api/notam?limit=${NOTAM_LIMIT}`, { cache: "no-store", signal });
+  const payload = (await response.json().catch(() => null)) as NotamApiResponse | null;
   if (!response.ok) {
-    const message =
-      typeof payload === "object" && payload && "detail" in payload && typeof (payload as { detail?: unknown }).detail === "string"
-        ? String((payload as { detail?: string }).detail)
-        : "NOTAM 정보를 불러오지 못했습니다.";
-    throw new Error(message);
+    throw new Error(payload?.detail || "NOTAM 정보를 불러오지 못했습니다.");
   }
-
-  const items = Array.isArray(payload?.items) ? payload.items : [];
-  return items
-    .map((item) => {
-      const lat = Number(item.lat);
-      const lng = Number(item.lng);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-        return null;
-      }
-      const content = collapseWhitespace(String(item.content || ""));
-      const notamId = String(item.notam_id || "").trim();
-      const type = resolveNotamType(item);
-      return {
-        id: String(item.id || notamId || `${lat}:${lng}`),
-        notamId: notamId || "NOTAM",
-        lat,
-        lng,
-        type,
-        airport: extractAirportCode(content, String(item.airport || "")),
-        areaLabel: resolveAreaLabel(item, type),
-        altitudeLabel: resolveAltitudeLabel(item),
-        validityLabel: resolveValidityLabel(item),
-        content,
-      } satisfies NotamMapItem;
-    })
-    .filter((item): item is NotamMapItem => Boolean(item));
+  return Array.isArray(payload?.items) ? payload.items : [];
 }
 
+async function fetchRestrictLookup(signal?: AbortSignal) {
+  const response = await fetch(`${API_BASE_URL}/api/viewer-default/layers.json`, { cache: "no-store", signal });
+  const payload = (await response.json().catch(() => null)) as LayerPayload | null;
+  if (!response.ok) {
+    throw new Error("공역 레이어를 불러오지 못했습니다.");
+  }
+  return buildRestrictLookup(payload);
+}
 export function NotamMiniMap() {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
+  const layerGroupRef = useRef<LayerGroup | null>(null);
   const leafletRef = useRef<LeafletModule | null>(null);
-  const markerLayerRef = useRef<LayerGroup | null>(null);
-  const [items, setItems] = useState<NotamMapItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [activeFilter, setActiveFilter] = useState<NotamFilter>("ALL");
+  const [items, setItems] = useState<ParsedNotamItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasLoaded, setHasLoaded] = useState(false);
 
-  const filteredItems = useMemo(
-    () => (activeFilter === "ALL" ? items : items.filter((item) => item.type === activeFilter)),
-    [activeFilter, items],
-  );
-
-  const loadItems = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const nextItems = await fetchNotamItems();
-      setItems(nextItems);
-    } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : "NOTAM 정보를 불러오지 못했습니다.";
-      setError(message);
-    } finally {
-      setLoading(false);
+  const filteredItems = useMemo(() => {
+    if (activeFilter === "ALL") {
+      return items;
     }
-  }, []);
+    return items.filter((item) => item.type === activeFilter);
+  }, [activeFilter, items]);
 
   useEffect(() => {
-    void loadItems();
-  }, [loadItems]);
+    let cancelled = false;
 
-  useEffect(() => {
-    let isDisposed = false;
-    let resizeObserver: ResizeObserver | null = null;
-
-    void import("leaflet").then((leaflet) => {
-      if (isDisposed || !containerRef.current || mapRef.current) {
+    async function setupMap() {
+      if (!containerRef.current || mapRef.current) {
+        return;
+      }
+      const leaflet = await import("leaflet");
+      if (cancelled || !containerRef.current) {
         return;
       }
       leafletRef.current = leaflet;
       const map = leaflet.map(containerRef.current, {
         center: INITIAL_CENTER,
         zoom: INITIAL_ZOOM,
-        scrollWheelZoom: true,
         zoomControl: true,
-        attributionControl: true,
+        scrollWheelZoom: true,
       });
-      leaflet
-        .tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "&copy; OpenStreetMap",
-        })
-        .addTo(map);
-      markerLayerRef.current = leaflet.layerGroup().addTo(map);
+      leaflet.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      const layerGroup = leaflet.layerGroup().addTo(map);
       mapRef.current = map;
+      layerGroupRef.current = layerGroup;
 
-      resizeObserver = new ResizeObserver(() => {
-        window.requestAnimationFrame(() => {
-          map.invalidateSize();
+      if (typeof ResizeObserver !== "undefined") {
+        const observer = new ResizeObserver(() => {
+          requestAnimationFrame(() => {
+            map.invalidateSize();
+          });
         });
-      });
-      resizeObserver.observe(containerRef.current);
-      window.setTimeout(() => map.invalidateSize(), 0);
-    });
+        observer.observe(containerRef.current);
+        resizeObserverRef.current = observer;
+      }
+    }
+
+    setupMap();
 
     return () => {
-      isDisposed = true;
-      resizeObserver?.disconnect();
-      markerLayerRef.current?.clearLayers();
-      markerLayerRef.current = null;
+      cancelled = true;
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      layerGroupRef.current?.clearLayers();
+      layerGroupRef.current = null;
       mapRef.current?.remove();
       mapRef.current = null;
-      leafletRef.current = null;
     };
+  }, []);
+
+  const loadItems = useCallback(async () => {
+    const controller = new AbortController();
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [rawItems, restrictLookup] = await Promise.all([
+        fetchNotamItems(controller.signal),
+        fetchRestrictLookup(controller.signal),
+      ]);
+      const parsed = rawItems.map((item) => buildParsedNotamItem(item, restrictLookup));
+      setItems(parsed);
+      setHasLoaded(true);
+      requestAnimationFrame(() => {
+        mapRef.current?.invalidateSize();
+      });
+    } catch (fetchError) {
+      setHasLoaded(true);
+      setItems([]);
+      setError(fetchError instanceof Error ? fetchError.message : "NOTAM 정보를 불러오지 못했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+    return () => controller.abort();
   }, []);
 
   useEffect(() => {
     const leaflet = leafletRef.current;
-    const layerGroup = markerLayerRef.current;
     const map = mapRef.current;
-    if (!leaflet || !layerGroup || !map) {
+    const layerGroup = layerGroupRef.current;
+    if (!leaflet || !map || !layerGroup) {
       return;
     }
 
     layerGroup.clearLayers();
 
+    if (!hasLoaded || !filteredItems.length) {
+      return;
+    }
+
+    const allBounds: Array<[number, number]> = [];
+
     filteredItems.forEach((item) => {
-      const marker = leaflet.marker([item.lat, item.lng], {
-        icon: buildPinIcon(leaflet, NOTAM_COLORS[item.type]),
-        title: item.notamId,
+      const popupHtml = buildPopupHtml(item);
+      const addCoordsToBounds = (coords: CoordPoint[]) => {
+        coords.forEach((coord) => allBounds.push([coord.latitude, coord.longitude]));
+      };
+
+      item.restrictedAreaFeatures.forEach((feature) => {
+        addCoordsToBounds(feature.coords);
+        const latLngs = feature.coords.map((coord) => [coord.latitude, coord.longitude] as [number, number]);
+        const shape = feature.featureType === "line"
+          ? leaflet.polyline(latLngs, pathStyle(item.type))
+          : leaflet.polygon(latLngs, pathStyle(item.type));
+        shape.bindPopup(popupHtml, { maxWidth: 320 });
+        shape.addTo(layerGroup);
       });
-      marker.bindPopup(buildPopupHtml(item), {
-        maxWidth: 320,
-        className: "doo-notam-leaflet-popup",
-      });
-      marker.addTo(layerGroup);
+
+      if (item.corridorPolygonCoords && item.corridorPolygonCoords.length >= 3) {
+        addCoordsToBounds(item.corridorPolygonCoords);
+        leaflet
+          .polygon(
+            item.corridorPolygonCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
+            pathStyle(item.type),
+          )
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
+
+      if (item.corridorCenterlineCoords && item.corridorCenterlineCoords.length >= 2) {
+        addCoordsToBounds(item.corridorCenterlineCoords);
+        leaflet
+          .polyline(
+            item.corridorCenterlineCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
+            {
+              color: NOTAM_COLORS[item.type],
+              weight: 2,
+              opacity: 0.95,
+              dashArray: "6 4",
+            },
+          )
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
+
+      if (item.polygonCoords && item.polygonCoords.length >= 3) {
+        addCoordsToBounds(item.polygonCoords);
+        leaflet
+          .polygon(
+            item.polygonCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
+            pathStyle(item.type),
+          )
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
+
+      if (item.polylineCoords && item.polylineCoords.length >= 2) {
+        addCoordsToBounds(item.polylineCoords);
+        leaflet
+          .polyline(
+            item.polylineCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
+            pathStyle(item.type),
+          )
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
+
+      if (item.radiusMeters && item.radiusMeters > 0) {
+        allBounds.push([item.lat, item.lng]);
+        leaflet
+          .circle([item.lat, item.lng], {
+            radius: item.radiusMeters,
+            ...pathStyle(item.type),
+          })
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
+
+      if (item.qCircleLat != null && item.qCircleLng != null && item.qCircleRadiusMeters && item.qCircleRadiusMeters > 0) {
+        allBounds.push([item.qCircleLat, item.qCircleLng]);
+        leaflet
+          .circle([item.qCircleLat, item.qCircleLng], {
+            radius: item.qCircleRadiusMeters,
+            ...qCircleStyle(),
+          })
+          .bindPopup(popupHtml, { maxWidth: 320 })
+          .addTo(layerGroup);
+      }
     });
 
-    window.requestAnimationFrame(() => {
-      map.invalidateSize();
-    });
-  }, [filteredItems]);
+    if (allBounds.length) {
+      map.fitBounds(allBounds, {
+        padding: [18, 18],
+        maxZoom: 9,
+      });
+    } else {
+      map.setView(INITIAL_CENTER, INITIAL_ZOOM);
+    }
+  }, [filteredItems, hasLoaded]);
+
+  const overlayMessage = useMemo(() => {
+    if (isLoading) {
+      return { className: "doo-notam-map-overlay doo-notam-map-overlay-loading", text: "NOTAM 불러오는 중..." };
+    }
+    if (!hasLoaded) {
+      return { className: "doo-notam-map-overlay", text: "빈 지도입니다. NOTAM UPDATE를 누르면 표시됩니다." };
+    }
+    if (error) {
+      return { className: "doo-notam-map-overlay doo-notam-map-overlay-error", text: error };
+    }
+    if (!items.length) {
+      return { className: "doo-notam-map-overlay", text: "표시할 NOTAM이 없습니다." };
+    }
+    if (!filteredItems.length) {
+      return {
+        className: "doo-notam-map-overlay",
+        text: `${activeFilter} 타입으로 표시할 NOTAM이 없습니다.`,
+      };
+    }
+    return null;
+  }, [activeFilter, error, filteredItems.length, hasLoaded, isLoading, items.length]);
 
   return (
     <section className="doo-rail-card doo-rail-card-notam" aria-label="NOTAM 현황">
-      <div className="doo-rail-card-head">
-        <div className="doo-rail-card-copy">
-          <strong>NOTAM 현황</strong>
-          <span>총 {items.length}건</span>
+      <div className="doo-rail-card-header doo-pilot-jobs-head">
+        <div className="doo-pilot-jobs-headline">
+          <span className="doo-pilot-jobs-title">NOTAM 현황</span>
         </div>
-        <button type="button" className="doo-rail-refresh" onClick={() => void loadItems()} disabled={loading}>
-          {loading ? "..." : "새로고침"}
-        </button>
+        <div className="doo-pilot-jobs-head-actions">
+          <button type="button" className="doo-pilot-jobs-link" onClick={() => void loadItems()} disabled={isLoading}>
+            {isLoading ? "불러오는 중" : "NOTAM UPDATE"}
+          </button>
+          <span className="doo-pilot-jobs-count">총 {hasLoaded ? items.length : 0}건</span>
+        </div>
       </div>
 
-      <div className="doo-notam-toolbar" role="tablist" aria-label="NOTAM 타입 필터">
-        {FILTER_OPTIONS.map((filterOption) => {
-          const isActive = activeFilter === filterOption.value;
-          return (
-            <button
-              key={filterOption.value}
-              type="button"
-              className={`doo-notam-filter${isActive ? " is-active" : ""}`}
-              onClick={() => setActiveFilter(filterOption.value)}
-            >
-              {filterOption.label}
-            </button>
-          );
-        })}
+      <div className="doo-notam-toolbar" role="group" aria-label="NOTAM 타입 필터">
+        {FILTER_OPTIONS.map((option) => (
+          <button
+            key={option.value}
+            type="button"
+            className={`doo-notam-filter${activeFilter === option.value ? " is-active" : ""}`}
+            onClick={() => setActiveFilter(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="doo-notam-map-shell">
         <div ref={containerRef} className="doo-notam-map-canvas" />
-        {loading ? (
-          <div className="doo-notam-map-overlay doo-notam-map-overlay-loading">NOTAM 불러오는 중...</div>
-        ) : null}
-        {!loading && error ? <div className="doo-notam-map-overlay doo-notam-map-overlay-error">{error}</div> : null}
-        {!loading && !error && !filteredItems.length ? (
-          <div className="doo-notam-map-overlay">
-            {activeFilter === "ALL" ? "표시할 좌표형 NOTAM이 없습니다." : `${activeFilter} 타입으로 표시할 NOTAM이 없습니다.`}
-          </div>
-        ) : null}
+        {overlayMessage ? <div className={overlayMessage.className}>{overlayMessage.text}</div> : null}
       </div>
     </section>
   );
