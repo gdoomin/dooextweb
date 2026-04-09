@@ -123,6 +123,21 @@ textarea {
   font-size: 13px;
 }
 
+.doo-version-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(121, 192, 255, 0.28);
+  background: rgba(22, 34, 48, 0.92);
+  color: #9cc8f0;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
+}
+
 .doo-info-button {
   width: 42px;
   height: 42px;

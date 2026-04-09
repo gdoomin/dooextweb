@@ -76,6 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -2312,7 +2313,7 @@ export function HomeScreen({
                 className="doo-info-button"
                 title="메뉴"
                 onClick={() =>
-                  window.alert("DOO Extractor\n\n버전: 4.0.0 WEB Version\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com")
+                  window.alert(`DOO Extractor\n\n버전: ${APP_VERSION} WEB Version\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com`)
                 }
               >
                 ☰
@@ -2320,6 +2321,9 @@ export function HomeScreen({
               <div>
                 <h1>DOO Extractor</h1>
                 <p>KML to DMS 좌표 변환기</p>
+                <div className="doo-version-badge" title="현재 배포 버전">
+                  WEB {APP_VERSION}
+                </div>
               </div>
             </div>
 
