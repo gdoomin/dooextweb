@@ -1486,7 +1486,7 @@ textarea {
 
 .doo-result-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(420px, 1fr);
+  grid-template-columns: minmax(360px, 0.8fr) minmax(520px, 1.2fr);
   gap: 14px;
   flex: 1 1 auto;
   min-height: 0;
@@ -1663,7 +1663,7 @@ textarea {
   overflow: auto;
   border-radius: 16px;
   background: #0d1117;
-  color: #c9d1d9;
+  color: #f5d25c;
   padding: 12px;
   font-family: Consolas, "Courier New", monospace;
   font-size: 13px;
