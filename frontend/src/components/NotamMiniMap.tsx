@@ -37,8 +37,8 @@ type LayerPayload = {
   }>;
 };
 
-type NotamMarkerType = "D" | "R" | "E" | "M";
-type NotamFilter = "ALL" | NotamMarkerType;
+type NotamGroupKey = "de" | "acgz";
+type NotamFilter = "ALL" | NotamGroupKey;
 
 type CoordPoint = {
   latitude: number;
@@ -56,7 +56,8 @@ type ParsedNotamItem = {
   raw: NotamApiItem;
   content: string;
   notamId: string;
-  type: NotamMarkerType;
+  series: string;
+  groupKey: NotamGroupKey;
   areaLabel: string;
   altitudeLabel: string;
   validityLabel: string;
@@ -78,16 +79,14 @@ const INITIAL_ZOOM = 6;
 const NOTAM_LIMIT = 1200;
 const FILTER_OPTIONS: Array<{ value: NotamFilter; label: string }> = [
   { value: "ALL", label: "전체" },
-  { value: "D", label: "D" },
-  { value: "R", label: "R" },
-  { value: "E", label: "E" },
-  { value: "M", label: "M" },
+  { value: "de", label: "NOTAM D,E" },
+  { value: "acgz", label: "NOTAM A,C,G,Z" },
 ];
-const NOTAM_COLORS: Record<NotamMarkerType, string> = {
-  D: "#E24B4A",
-  R: "#BA7517",
-  E: "#3B6D11",
-  M: "#7F77DD",
+const NOTAM_SERIES_DE = new Set(["D", "E"]);
+const NOTAM_SERIES_ACGZ = new Set(["A", "C", "G", "Z"]);
+const NOTAM_GROUP_COLORS: Record<NotamGroupKey, string> = {
+  de: "#ff7e67",
+  acgz: "#4bc6ff",
 };
 const Q_CIRCLE_COLOR = "#000080";
 
@@ -473,19 +472,45 @@ function extractAirportCode(value: string) {
   return match ? match[0].toUpperCase() : "";
 }
 
-function resolveNotamType(raw: NotamApiItem, content: string): NotamMarkerType {
-  const series = String(raw.series || "").trim().toUpperCase();
-  const fullText = `${String(raw.notam_id || "")}\n${content}`.toUpperCase();
-  if (fullText.includes("DANGER AREA") || fullText.includes("QRDCA")) {
-    return "D";
+function normalizeNotamSeries(seriesValue: string | undefined | null, notamIdValue = "") {
+  const raw = String(seriesValue || "")
+    .trim()
+    .toUpperCase();
+  if (raw) {
+    return raw.charAt(0);
   }
-  if (fullText.includes("RESTRICTED AREA") || fullText.includes("QRTCA")) {
-    return "R";
+  const fallback = String(notamIdValue || "")
+    .trim()
+    .toUpperCase();
+  return fallback ? fallback.charAt(0) : "";
+}
+
+function resolveNotamGroupKey(seriesValue: string | undefined | null, notamIdValue = ""): NotamGroupKey | "" {
+  const series = normalizeNotamSeries(seriesValue, notamIdValue);
+  if (NOTAM_SERIES_DE.has(series)) {
+    return "de";
   }
-  if (series === "E") {
-    return "E";
+  if (NOTAM_SERIES_ACGZ.has(series)) {
+    return "acgz";
   }
-  return "M";
+  return "";
+}
+
+function getNotamSeriesLabel(notamIdValue: string, seriesValue = "") {
+  const normalized = normalizeNotamSeries(seriesValue, notamIdValue);
+  return normalized || "N";
+}
+
+function isNotamQrpca(content: string) {
+  return /\bQRPCA\b/i.test(String(content || ""));
+}
+
+function getNotamCoordKey(latitude: number, longitude: number) {
+  return `${Number(latitude).toFixed(6)}|${Number(longitude).toFixed(6)}`;
+}
+
+function notamCoordsKey(coords: CoordPoint[]) {
+  return coords.map((point) => `${point.latitude.toFixed(6)}:${point.longitude.toFixed(6)}`).join("|");
 }
 
 function resolveAreaLabel(raw: NotamApiItem, content: string) {
@@ -531,14 +556,14 @@ function resolveValidityLabel(raw: NotamApiItem) {
 function buildParsedNotamItem(raw: NotamApiItem, restrictLookup: Map<string, RestrictFeature[]>) {
   const content = sanitizeNotamContent(String(raw.content || ""));
   const restrictedAreaFeatures = resolveNotamRestrictedAreaFeatures(content, restrictLookup);
-  const polygonCoords = extractNotamPolygon(content);
-  const polylineCoords = extractNotamOpenPolyline(content);
-  const corridorCenterlineCoords = extractNotamCorridorCenterline(content);
   const corridorHalfWidthNm = extractNotamCorridorHalfWidthNm(content);
+  const corridorCenterlineCoords = corridorHalfWidthNm != null ? extractNotamCorridorCenterline(content) : null;
   const corridorPolygonCoords =
     corridorCenterlineCoords && corridorHalfWidthNm
       ? buildNotamCorridorPolygon(corridorCenterlineCoords, corridorHalfWidthNm * 1852)
       : null;
+  const polygonCoords = corridorPolygonCoords ? null : extractNotamPolygon(content);
+  const polylineCoords = corridorPolygonCoords || polygonCoords ? null : extractNotamOpenPolyline(content);
   const qCenter = extractNotamQCenterCoord(content);
   const qRadiusNm = extractNotamQRadiusNm(content);
   const radiusNm = extractNotamRadiusNm(content);
@@ -553,20 +578,46 @@ function buildParsedNotamItem(raw: NotamApiItem, restrictLookup: Map<string, Res
   const lng = Number(raw.lng);
   const fallbackLat = derivedCenter?.latitude ?? INITIAL_CENTER[0];
   const fallbackLng = derivedCenter?.longitude ?? INITIAL_CENTER[1];
+  const notamId = collapseWhitespace(String(raw.notam_id || raw.id || "NOTAM"));
+  const series = normalizeNotamSeries(raw.series, notamId);
+  const groupKey = resolveNotamGroupKey(series, notamId);
+  if (!groupKey) {
+    return null;
+  }
+  let qCircleLat = qCenter?.latitude ?? null;
+  let qCircleLng = qCenter?.longitude ?? null;
+  let qCircleRadiusMeters = qRadiusNm ? qRadiusNm * 1852 : null;
+  let radiusMeters = radiusNm ? radiusNm * 1852 : null;
+  if (
+    (qCircleLat == null || qCircleLng == null || !Number.isFinite(qCircleRadiusMeters ?? NaN) || (qCircleRadiusMeters ?? 0) <= 0) &&
+    Number.isFinite(radiusMeters ?? NaN) &&
+    (radiusMeters ?? 0) > 0
+  ) {
+    qCircleLat = Number.isFinite(lat) ? lat : fallbackLat;
+    qCircleLng = Number.isFinite(lng) ? lng : fallbackLng;
+    qCircleRadiusMeters = radiusMeters;
+  }
+  if (restrictedAreaFeatures.length > 0) {
+    radiusMeters = null;
+    qCircleLat = null;
+    qCircleLng = null;
+    qCircleRadiusMeters = null;
+  }
   return {
     raw,
     content,
-    notamId: collapseWhitespace(String(raw.notam_id || raw.id || "NOTAM")),
-    type: resolveNotamType(raw, content),
+    notamId,
+    series,
+    groupKey,
     areaLabel: resolveAreaLabel(raw, content),
     altitudeLabel: resolveAltitudeLabel(content),
     validityLabel: resolveValidityLabel(raw),
     lat: Number.isFinite(lat) ? lat : fallbackLat,
     lng: Number.isFinite(lng) ? lng : fallbackLng,
-    radiusMeters: radiusNm ? radiusNm * 1852 : null,
-    qCircleLat: qCenter?.latitude ?? null,
-    qCircleLng: qCenter?.longitude ?? null,
-    qCircleRadiusMeters: qRadiusNm ? qRadiusNm * 1852 : null,
+    radiusMeters,
+    qCircleLat,
+    qCircleLng,
+    qCircleRadiusMeters,
     restrictedAreaFeatures,
     polygonCoords,
     polylineCoords,
@@ -587,30 +638,87 @@ function buildPopupHtml(item: ParsedNotamItem) {
   `;
 }
 
-function pathStyle(type: NotamMarkerType) {
-  const color = NOTAM_COLORS[type] || NOTAM_COLORS.M;
+function notamPathStyle(groupKey: NotamGroupKey, geometryType = "polygon") {
+  const color = NOTAM_GROUP_COLORS[groupKey] || NOTAM_GROUP_COLORS.acgz;
+  const isCenterline = geometryType === "corridor-centerline";
+  const isLine = isCenterline || geometryType === "polyline";
+  const fillOpacity = geometryType === "corridor-polygon" ? 0.1 : 0.12;
+  const strokeWeight = isCenterline ? 2.5 : isLine ? 1.8 : 1.5;
   return {
     color,
-    weight: 2,
-    opacity: 0.9,
+    weight: strokeWeight,
+    opacity: 0.95,
     fillColor: color,
-    fillOpacity: 0.12,
+    fillOpacity: isLine ? 0 : fillOpacity,
+    lineCap: "round" as const,
+    lineJoin: "round" as const,
+    dashArray: isCenterline ? "8 6" : undefined,
   };
 }
 
-function qCircleStyle() {
+function notamQCircleStyle() {
   return {
     color: Q_CIRCLE_COLOR,
-    weight: 1.5,
-    opacity: 0.95,
+    weight: 1.7,
+    opacity: 0.96,
     fillColor: Q_CIRCLE_COLOR,
-    fillOpacity: 0.06,
-    dashArray: "6 4",
+    fillOpacity: 0.14,
+    lineCap: "round" as const,
+    lineJoin: "round" as const,
   };
 }
 
-async function fetchNotamItems(signal?: AbortSignal) {
-  const response = await fetch(`${API_BASE_URL}/api/notam?limit=${NOTAM_LIMIT}`, { cache: "no-store", signal });
+function notamLabelIcon(leaflet: LeafletModule, text: string, kind: "single" | "cluster" | "qrpca" = "single") {
+  const safeText = escapeHtml(String(text || "").trim() || "N");
+  const kindClass = kind === "qrpca" ? " qrpca" : kind === "cluster" ? " cluster" : "";
+  return leaflet.divIcon({
+    className: "",
+    html: `<div class="doo-notam-label-chip${kindClass}">${safeText}</div>`,
+    iconSize: [0, 0],
+  });
+}
+
+function buildBoundsQuery(map: LeafletMap | null) {
+  if (!map) {
+    return "";
+  }
+  try {
+    const bounds = map.getBounds().pad(0.22);
+    return `${bounds.getSouth().toFixed(4)},${bounds.getWest().toFixed(4)},${bounds.getNorth().toFixed(4)},${bounds
+      .getEast()
+      .toFixed(4)}`;
+  } catch {
+    return "";
+  }
+}
+
+function buildGroupPopupHtml(items: ParsedNotamItem[]) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return "";
+  }
+  if (items.length === 1) {
+    return buildPopupHtml(items[0]);
+  }
+  const lines = items
+    .slice(0, 14)
+    .map(
+      (item) =>
+        `<div class="doo-notam-popup-row"><strong>${escapeHtml(item.notamId)}</strong><span>${escapeHtml(item.areaLabel)}</span></div>`,
+    )
+    .join("");
+  return `
+    <div class="doo-notam-popup">
+      <div class="doo-notam-popup-title">NOTAM ${items.length}건</div>
+      ${lines}
+      <div class="doo-notam-popup-content">${escapeHtml("상세 내용은 Viewer의 NOTAM에서 확인하세요.")}</div>
+    </div>
+  `;
+}
+
+async function fetchNotamItems(map: LeafletMap | null, signal?: AbortSignal) {
+  const bbox = buildBoundsQuery(map);
+  const query = bbox ? `?bbox=${encodeURIComponent(bbox)}&limit=${NOTAM_LIMIT}` : `?limit=${NOTAM_LIMIT}`;
+  const response = await fetch(`${API_BASE_URL}/api/notam${query}`, { cache: "no-store", signal });
   const payload = (await response.json().catch(() => null)) as NotamApiResponse | null;
   if (!response.ok) {
     throw new Error(payload?.detail || "NOTAM 정보를 불러오지 못했습니다.");
@@ -642,7 +750,7 @@ export function NotamMiniMap() {
     if (activeFilter === "ALL") {
       return items;
     }
-    return items.filter((item) => item.type === activeFilter);
+    return items.filter((item) => item.groupKey === activeFilter);
   }, [activeFilter, items]);
 
   useEffect(() => {
@@ -700,10 +808,12 @@ export function NotamMiniMap() {
     setError(null);
     try {
       const [rawItems, restrictLookup] = await Promise.all([
-        fetchNotamItems(controller.signal),
+        fetchNotamItems(mapRef.current, controller.signal),
         fetchRestrictLookup(controller.signal),
       ]);
-      const parsed = rawItems.map((item) => buildParsedNotamItem(item, restrictLookup));
+      const parsed = rawItems
+        .map((item) => buildParsedNotamItem(item, restrictLookup))
+        .filter((item): item is ParsedNotamItem => !!item);
       setItems(parsed);
       setHasLoaded(true);
       requestAnimationFrame(() => {
@@ -734,93 +844,210 @@ export function NotamMiniMap() {
     }
 
     const allBounds: Array<[number, number]> = [];
+    const addCoordsToBounds = (coords: CoordPoint[]) => {
+      coords.forEach((coord) => allBounds.push([coord.latitude, coord.longitude]));
+    };
+    const addInteractive = (layer: any, popupHtml: string, tooltipText: string) => {
+      if (!layer) {
+        return;
+      }
+      if (tooltipText && typeof layer.bindTooltip === "function") {
+        layer.bindTooltip(tooltipText, {
+          className: "doo-tooltip",
+          direction: "top",
+          offset: [0, -5],
+          opacity: 0.97,
+        });
+      }
+      layer.bindPopup(popupHtml, { maxWidth: 340 });
+      layer.addTo(layerGroup);
+    };
 
-    filteredItems.forEach((item) => {
-      const popupHtml = buildPopupHtml(item);
-      const addCoordsToBounds = (coords: CoordPoint[]) => {
-        coords.forEach((coord) => allBounds.push([coord.latitude, coord.longitude]));
-      };
+    (["de", "acgz"] as NotamGroupKey[]).forEach((groupKey) => {
+      const groupItems = filteredItems.filter((item) => item.groupKey === groupKey);
+      if (!groupItems.length) {
+        return;
+      }
 
-      item.restrictedAreaFeatures.forEach((feature) => {
-        addCoordsToBounds(feature.coords);
-        const latLngs = feature.coords.map((coord) => [coord.latitude, coord.longitude] as [number, number]);
-        const shape = feature.featureType === "line"
-          ? leaflet.polyline(latLngs, pathStyle(item.type))
-          : leaflet.polygon(latLngs, pathStyle(item.type));
-        shape.bindPopup(popupHtml, { maxWidth: 320 });
-        shape.addTo(layerGroup);
+      const groupedByCoord = new Map<
+        string,
+        {
+          lat: number;
+          lng: number;
+          items: ParsedNotamItem[];
+        }
+      >();
+      groupItems.forEach((item) => {
+        const coordKey = getNotamCoordKey(item.lat, item.lng);
+        if (!groupedByCoord.has(coordKey)) {
+          groupedByCoord.set(coordKey, { lat: item.lat, lng: item.lng, items: [] });
+        }
+        groupedByCoord.get(coordKey)?.items.push(item);
       });
 
-      if (item.corridorPolygonCoords && item.corridorPolygonCoords.length >= 3) {
-        addCoordsToBounds(item.corridorPolygonCoords);
-        leaflet
-          .polygon(
-            item.corridorPolygonCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
-            pathStyle(item.type),
-          )
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
+      groupedByCoord.forEach((groupItem) => {
+        const uniqueCorridorPolygons: CoordPoint[][] = [];
+        const uniqueCorridorCenterlines: CoordPoint[][] = [];
+        const uniquePolygons: CoordPoint[][] = [];
+        const uniquePolylines: CoordPoint[][] = [];
+        const corridorKeys = new Set<string>();
+        const polygonKeys = new Set<string>();
+        const polylineKeys = new Set<string>();
+        const uniqueRadii = new Set<number>();
+        const uniqueNavyCircles: Array<{ lat: number; lng: number; radiusMeters: number }> = [];
+        const navyCircleKeys = new Set<string>();
 
-      if (item.corridorCenterlineCoords && item.corridorCenterlineCoords.length >= 2) {
-        addCoordsToBounds(item.corridorCenterlineCoords);
-        leaflet
-          .polyline(
-            item.corridorCenterlineCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
-            {
-              color: NOTAM_COLORS[item.type],
-              weight: 2,
-              opacity: 0.95,
-              dashArray: "6 4",
-            },
-          )
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
+        groupItem.items.forEach((item) => {
+          if (Array.isArray(item.restrictedAreaFeatures) && item.restrictedAreaFeatures.length) {
+            item.restrictedAreaFeatures.forEach((feature) => {
+              if (!feature || !Array.isArray(feature.coords)) {
+                return;
+              }
+              if (feature.featureType === "polygon" && feature.coords.length >= 3) {
+                const polygonKey = notamCoordsKey(feature.coords);
+                if (!polygonKeys.has(polygonKey)) {
+                  polygonKeys.add(polygonKey);
+                  uniquePolygons.push(feature.coords);
+                }
+                return;
+              }
+              if (feature.featureType === "line" && feature.coords.length >= 2) {
+                const polylineKey = notamCoordsKey(feature.coords);
+                if (!polylineKeys.has(polylineKey)) {
+                  polylineKeys.add(polylineKey);
+                  uniquePolylines.push(feature.coords);
+                }
+              }
+            });
+          }
+          if (Array.isArray(item.corridorPolygonCoords) && item.corridorPolygonCoords.length >= 4) {
+            const corridorKey = notamCoordsKey(item.corridorPolygonCoords);
+            if (!corridorKeys.has(corridorKey)) {
+              corridorKeys.add(corridorKey);
+              uniqueCorridorPolygons.push(item.corridorPolygonCoords);
+              if (Array.isArray(item.corridorCenterlineCoords) && item.corridorCenterlineCoords.length >= 2) {
+                uniqueCorridorCenterlines.push(item.corridorCenterlineCoords);
+              }
+            }
+            return;
+          }
+          if (Array.isArray(item.polygonCoords) && item.polygonCoords.length >= 3) {
+            const polygonKey = notamCoordsKey(item.polygonCoords);
+            if (!polygonKeys.has(polygonKey)) {
+              polygonKeys.add(polygonKey);
+              uniquePolygons.push(item.polygonCoords);
+            }
+            return;
+          }
+          if (Array.isArray(item.polylineCoords) && item.polylineCoords.length >= 2) {
+            const polylineKey = notamCoordsKey(item.polylineCoords);
+            if (!polylineKeys.has(polylineKey)) {
+              polylineKeys.add(polylineKey);
+              uniquePolylines.push(item.polylineCoords);
+            }
+            return;
+          }
+          if (Number.isFinite(item.radiusMeters) && (item.radiusMeters ?? 0) > 0) {
+            uniqueRadii.add(Math.round(item.radiusMeters as number));
+          }
+          const qCircleLat = Number(item.qCircleLat);
+          const qCircleLng = Number(item.qCircleLng);
+          const qCircleRadiusMeters = Number(item.qCircleRadiusMeters);
+          if (
+            Number.isFinite(qCircleLat) &&
+            Number.isFinite(qCircleLng) &&
+            Number.isFinite(qCircleRadiusMeters) &&
+            qCircleRadiusMeters > 0
+          ) {
+            const navyKey = `${qCircleLat.toFixed(6)}|${qCircleLng.toFixed(6)}|${Math.round(qCircleRadiusMeters)}`;
+            if (!navyCircleKeys.has(navyKey)) {
+              navyCircleKeys.add(navyKey);
+              uniqueNavyCircles.push({
+                lat: qCircleLat,
+                lng: qCircleLng,
+                radiusMeters: qCircleRadiusMeters,
+              });
+            }
+          }
+        });
 
-      if (item.polygonCoords && item.polygonCoords.length >= 3) {
-        addCoordsToBounds(item.polygonCoords);
-        leaflet
-          .polygon(
-            item.polygonCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
-            pathStyle(item.type),
-          )
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
+        const tooltipTitle =
+          groupItem.items.length === 1 ? groupItem.items[0].notamId || "NOTAM" : `NOTAM ${groupItem.items.length}건`;
+        const popupHtml = buildGroupPopupHtml(groupItem.items);
 
-      if (item.polylineCoords && item.polylineCoords.length >= 2) {
-        addCoordsToBounds(item.polylineCoords);
-        leaflet
-          .polyline(
-            item.polylineCoords.map((coord) => [coord.latitude, coord.longitude] as [number, number]),
-            pathStyle(item.type),
-          )
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
+        uniqueCorridorPolygons.forEach((coords) => {
+          addCoordsToBounds(coords);
+          const layer = leaflet.polygon(
+            coords.map((point) => [point.latitude, point.longitude] as [number, number]),
+            notamPathStyle(groupKey, "corridor-polygon"),
+          );
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
+        uniqueCorridorCenterlines.forEach((coords) => {
+          addCoordsToBounds(coords);
+          const layer = leaflet.polyline(
+            coords.map((point) => [point.latitude, point.longitude] as [number, number]),
+            notamPathStyle(groupKey, "corridor-centerline"),
+          );
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
+        uniquePolygons.forEach((coords) => {
+          addCoordsToBounds(coords);
+          const layer = leaflet.polygon(
+            coords.map((point) => [point.latitude, point.longitude] as [number, number]),
+            notamPathStyle(groupKey, "polygon"),
+          );
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
+        uniquePolylines.forEach((coords) => {
+          addCoordsToBounds(coords);
+          const layer = leaflet.polyline(
+            coords.map((point) => [point.latitude, point.longitude] as [number, number]),
+            notamPathStyle(groupKey, "polyline"),
+          );
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
+        Array.from(uniqueRadii.values()).forEach((radiusMeters) => {
+          allBounds.push([groupItem.lat, groupItem.lng]);
+          const layer = leaflet.circle([groupItem.lat, groupItem.lng], {
+            ...notamPathStyle(groupKey, "circle"),
+            radius: radiusMeters,
+          });
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
+        uniqueNavyCircles.forEach((circle) => {
+          allBounds.push([circle.lat, circle.lng]);
+          const layer = leaflet.circle([circle.lat, circle.lng], {
+            ...notamQCircleStyle(),
+            radius: circle.radiusMeters,
+          });
+          addInteractive(layer, popupHtml, tooltipTitle);
+        });
 
-      if (item.radiusMeters && item.radiusMeters > 0) {
-        allBounds.push([item.lat, item.lng]);
-        leaflet
-          .circle([item.lat, item.lng], {
-            radius: item.radiusMeters,
-            ...pathStyle(item.type),
-          })
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
-
-      if (item.qCircleLat != null && item.qCircleLng != null && item.qCircleRadiusMeters && item.qCircleRadiusMeters > 0) {
-        allBounds.push([item.qCircleLat, item.qCircleLng]);
-        leaflet
-          .circle([item.qCircleLat, item.qCircleLng], {
-            radius: item.qCircleRadiusMeters,
-            ...qCircleStyle(),
-          })
-          .bindPopup(popupHtml, { maxWidth: 320 })
-          .addTo(layerGroup);
-      }
+        const labelText =
+          groupItem.items.length > 1
+            ? String(groupItem.items.length)
+            : getNotamSeriesLabel(groupItem.items[0].notamId, groupItem.items[0].series);
+        const hasDESeries = groupItem.items.some((item) => {
+          const seriesLabel = getNotamSeriesLabel(item.notamId, item.series);
+          return seriesLabel === "D" || seriesLabel === "E";
+        });
+        const hasQrpca = groupItem.items.some((item) => isNotamQrpca(item.content));
+        const currentZoom = map.getZoom();
+        const shouldShowLabel = currentZoom >= 7 || hasDESeries;
+        if (shouldShowLabel) {
+          const center = { latitude: groupItem.lat, longitude: groupItem.lng };
+          const markerCoord = currentZoom >= 7 ? offsetCoordByMeters(center, 45, 130) : center;
+          const labelKind = hasQrpca ? "qrpca" : groupItem.items.length > 1 ? "cluster" : "single";
+          const labelMarker = leaflet.marker([markerCoord.latitude, markerCoord.longitude], {
+            icon: notamLabelIcon(leaflet, labelText, labelKind),
+            interactive: true,
+            keyboard: false,
+            riseOnHover: true,
+          });
+          addInteractive(labelMarker, popupHtml, tooltipTitle);
+        }
+      });
     });
 
     if (allBounds.length) {
@@ -849,7 +1076,7 @@ export function NotamMiniMap() {
     if (!filteredItems.length) {
       return {
         className: "doo-notam-map-overlay",
-        text: `${activeFilter} 타입으로 표시할 NOTAM이 없습니다.`,
+        text: `${activeFilter === "de" ? "NOTAM D,E" : "NOTAM A,C,G,Z"} 타입으로 표시할 NOTAM이 없습니다.`,
       };
     }
     return null;

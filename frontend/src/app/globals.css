@@ -1029,6 +1029,37 @@ textarea {
   margin: 14px 16px;
 }
 
+.doo-notam-map-shell .doo-notam-label-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  padding: 3px 8px;
+  border-radius: 7px;
+  border: 1px solid rgba(70, 45, 0, 0.9);
+  background: rgba(255, 170, 0, 0.93);
+  color: #1e1300;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+  white-space: nowrap;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.doo-notam-map-shell .doo-notam-label-chip.cluster {
+  border-color: rgba(185, 217, 255, 0.95);
+  background: rgba(20, 76, 164, 0.95);
+  color: #eaf4ff;
+}
+
+.doo-notam-map-shell .doo-notam-label-chip.qrpca {
+  border-color: rgba(255, 208, 208, 0.95);
+  background: rgba(206, 36, 45, 0.96);
+  color: #ffffff;
+}
+
 .doo-rail-card-jobs {
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
