@@ -441,7 +441,7 @@ function extractNotamQRadiusNm(content: string) {
   const qSection = extractNotamSectionValue(content, "Q");
   const match = qSection.match(/\b(\d{3})\b(?!.*\b\d{3}\b)/);
   const value = match ? Number(match[1]) : NaN;
-  if (!Number.isFinite(value) || value <= 0 || value >= 999) {
+  if (!Number.isFinite(value) || value <= 0 || value >= 999 || Math.abs(value - 60) < 0.0001) {
     return null;
   }
   return value;
@@ -455,7 +455,13 @@ function extractNotamRadiusNm(content: string) {
   const eSection = extractNotamESection(content);
   const match = eSection.match(/\bRADIUS\s*(\d+(?:\.\d+)?)\s*NM\b/i);
   const value = match ? Number(match[1]) : NaN;
-  return Number.isFinite(value) && value > 0 ? value : null;
+  if (!Number.isFinite(value) || value <= 0) {
+    return null;
+  }
+  if (Math.abs(value - 60) < 0.0001) {
+    return null;
+  }
+  return value;
 }
 
 function extractNotamQCenterCoord(content: string) {
