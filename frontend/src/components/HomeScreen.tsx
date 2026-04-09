@@ -14,7 +14,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import { AdSenseSlot } from "@/components/AdSenseSlot";
 import { HimawariRailPanel } from "@/components/HimawariRailPanel";
 import { LoginForm } from "@/components/LoginForm";
-import { PilotJobsRailPanel } from "@/components/PilotJobsRailPanel";
+import { NotamMiniMap } from "@/components/NotamMiniMap";
 import {
   API_BASE_URL,
   type BillingStatusResponse,
@@ -2793,7 +2793,7 @@ export function HomeScreen({
                   <HimawariRailPanel />
                 </div>
                 <div className="doo-rail-slot doo-rail-slot-bottom">
-                  <PilotJobsRailPanel />
+                  <NotamMiniMap />
                 </div>
               </div>
             </div>
