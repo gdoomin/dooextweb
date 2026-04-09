@@ -368,6 +368,7 @@ class ClientConvertPayload(BaseModel):
     results: list[dict]
     source_file_bytes: int = 0
     source_hash: str = ""
+    shared_viewer_state: dict[str, Any] | None = None
 
 
 class PopupNoticeAuthPayload(BaseModel):
@@ -4610,6 +4611,16 @@ def _job_response(job: dict, base_url: str) -> dict:
     }
 
 
+def _sanitize_shared_viewer_state(payload: Any) -> dict[str, Any]:
+    if not isinstance(payload, dict):
+        return {}
+    sanitized = dict(payload)
+    sanitized.pop("weather", None)
+    sanitized.pop("weatherOverlay", None)
+    sanitized.pop("notam", None)
+    return sanitized
+
+
 def _external_base_url(request: Request) -> str:
     forwarded_proto = str(request.headers.get("X-Forwarded-Proto") or request.url.scheme).split(",")[0].strip()
     forwarded_host = str(request.headers.get("X-Forwarded-Host") or request.headers.get("Host") or request.url.netloc).split(",")[0].strip()
@@ -4805,6 +4816,7 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
             )
 
     source_hash = _normalize_source_hash(payload.source_hash)
+    shared_viewer_state = _sanitize_shared_viewer_state(payload.shared_viewer_state)
     job_data = {
         "job_id": job_id,
         "filename": payload.filename,
@@ -4820,6 +4832,8 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
         "source_file_bytes": int(payload.source_file_bytes or 0),
         "source_hash": source_hash,
     }
+    if shared_viewer_state:
+        job_data["shared_viewer_state"] = shared_viewer_state
     payload_bucket, payload_path = _job_payload_supabase_store(job_data, access_token=access_token)
     if payload_bucket and payload_path:
         job_data["payload_bucket"] = payload_bucket
@@ -5060,9 +5074,10 @@ def get_viewer_state(job_id: str, request: Request):
     access_token = _extract_bearer_token(request)
     _request_identity_with_created_at(request, required=False)
     job = _load_job(job_id, access_token=access_token)
+    embedded_state = _sanitize_shared_viewer_state(job.get("shared_viewer_state"))
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
-        return JSONResponse({})
+        return JSONResponse(embedded_state)
     remote_state = _viewer_state_supabase_fetch(job, access_token=access_token)
     if isinstance(remote_state, dict):
         return JSONResponse(remote_state)
@@ -5070,7 +5085,7 @@ def get_viewer_state(job_id: str, request: Request):
         data = _load_json(path, {})
         if isinstance(data, dict) and data:
             return JSONResponse(data)
-    return JSONResponse({})
+    return JSONResponse(embedded_state)
 
 
 @app.post("/api/viewer/{job_id}/viewer-state")

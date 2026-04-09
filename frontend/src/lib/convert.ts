@@ -176,6 +176,23 @@ export type ClientConvertRequestBody = {
   results: Array<Record<string, unknown>>;
   source_file_bytes?: number;
   source_hash?: string;
+  shared_viewer_state?: Record<string, unknown>;
+};
+
+export type SharedConvertPackage = {
+  format: "dooextractor-share";
+  version: 1;
+  exported_at: string;
+  entry: {
+    job_id?: string;
+    filename: string;
+    project_name: string;
+    mode: "linestring" | "polygon";
+    result_count: number;
+    source_hash?: string;
+  };
+  convert_payload: ClientConvertRequestBody;
+  viewer_state: Record<string, unknown>;
 };
 
 export type HomeSyncStatePayload = {
@@ -493,6 +510,127 @@ export async function reopenHistoryItem(jobId: string, userId: string, userEmail
     throw new Error("??됰뮞?醫듼봺 ?臾먮뼗 ?類ㅻ뻼????而?몴?? ??녿뮸??덈뼄.");
   }
   return body as ConvertResponse;
+}
+
+export async function fetchViewerStateSnapshot(
+  jobId: string,
+  userId = "",
+  userEmail = "",
+  accessToken = "",
+): Promise<Record<string, unknown>> {
+  const response = await fetch(`${API_BASE_URL}/api/viewer/${jobId}/viewer-state`, {
+    headers: buildUserHeaders(userId, userEmail, accessToken),
+    cache: "no-store",
+  });
+  const { body, rawText } = await parseResponseBody(response);
+  if (!response.ok) {
+    throw new Error(extractErrorMessage(body, rawText, "도식화 설정을 불러오지 못했습니다."));
+  }
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return {};
+  }
+  return body as Record<string, unknown>;
+}
+
+export function downloadSharedConvertPackageFile(pkg: SharedConvertPackage, preferredName: string) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const safeBase =
+    String(preferredName || "dooextractor-share")
+      .trim()
+      .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, "_")
+      .replace(/\s+/g, " ")
+      .replace(/\.+$/g, "")
+      .slice(0, 120) || "dooextractor-share";
+  const filename = safeBase.toLowerCase().endsWith(".dooex") ? safeBase : `${safeBase}.dooex`;
+  const blob = new Blob([JSON.stringify(pkg, null, 2)], { type: "application/json;charset=utf-8" });
+  const downloadUrl = window.URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = downloadUrl;
+  anchor.download = filename;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  window.URL.revokeObjectURL(downloadUrl);
+}
+
+export async function parseSharedConvertPackageFile(file: File): Promise<SharedConvertPackage> {
+  const rawText = await file.text();
+  let body: unknown = null;
+  try {
+    body = JSON.parse(rawText);
+  } catch {
+    throw new Error("공유 파일 형식이 올바르지 않습니다.");
+  }
+
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    throw new Error("공유 파일 형식이 올바르지 않습니다.");
+  }
+
+  const payload = body as Partial<SharedConvertPackage> & { convert_payload?: ClientConvertRequestBody };
+  const convertPayload = payload.convert_payload;
+  const viewerState = payload.viewer_state;
+
+  if (
+    payload.format !== "dooextractor-share" ||
+    payload.version !== 1 ||
+    !convertPayload ||
+    typeof convertPayload !== "object" ||
+    !convertPayload.filename ||
+    !convertPayload.project_name ||
+    (convertPayload.mode !== "linestring" && convertPayload.mode !== "polygon") ||
+    !convertPayload.map_payload ||
+    !Array.isArray(convertPayload.results)
+  ) {
+    throw new Error("DOO Extractor 공유 파일이 아닙니다.");
+  }
+
+  return {
+    format: "dooextractor-share",
+    version: 1,
+    exported_at: typeof payload.exported_at === "string" ? payload.exported_at : "",
+    entry: {
+      job_id: typeof payload.entry?.job_id === "string" ? payload.entry.job_id : "",
+      filename: typeof payload.entry?.filename === "string" ? payload.entry.filename : String(convertPayload.filename || ""),
+      project_name:
+        typeof payload.entry?.project_name === "string"
+          ? payload.entry.project_name
+          : String(convertPayload.project_name || ""),
+      mode: convertPayload.mode,
+      result_count:
+        typeof payload.entry?.result_count === "number" && Number.isFinite(payload.entry.result_count)
+          ? payload.entry.result_count
+          : Number(convertPayload.result_count || 0),
+      source_hash:
+        typeof payload.entry?.source_hash === "string"
+          ? payload.entry.source_hash
+          : typeof convertPayload.source_hash === "string"
+            ? convertPayload.source_hash
+            : "",
+    },
+    convert_payload: {
+      filename: String(convertPayload.filename || ""),
+      project_name: String(convertPayload.project_name || ""),
+      mode: convertPayload.mode,
+      result_count: Number(convertPayload.result_count || 0),
+      text_output: String(convertPayload.text_output || ""),
+      map_payload:
+        convertPayload.map_payload && typeof convertPayload.map_payload === "object" && !Array.isArray(convertPayload.map_payload)
+          ? convertPayload.map_payload
+          : ({} as MapPayload),
+      results: Array.isArray(convertPayload.results) ? convertPayload.results : [],
+      source_file_bytes:
+        typeof convertPayload.source_file_bytes === "number" && Number.isFinite(convertPayload.source_file_bytes)
+          ? convertPayload.source_file_bytes
+          : 0,
+      source_hash: typeof convertPayload.source_hash === "string" ? convertPayload.source_hash : "",
+    },
+    viewer_state:
+      viewerState && typeof viewerState === "object" && !Array.isArray(viewerState)
+        ? (viewerState as Record<string, unknown>)
+        : {},
+  };
 }
 
 export async function deleteHistoryItem(

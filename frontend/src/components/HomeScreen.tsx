@@ -25,16 +25,20 @@ import {
   type MapPayload,
   type PolygonResult,
   type ServerHistoryItem,
+  type SharedConvertPackage,
   type UserBookmarkItem,
   deleteAllHistoryItems,
   deleteUserBookmark,
   deleteHistoryItem,
   cancelBillingSubscription,
+  downloadSharedConvertPackageFile,
   fetchBillingStatus,
   fetchHomeSyncState,
+  fetchViewerStateSnapshot,
   fetchUserBookmark,
   fetchUserHistory,
   loadLastConvert,
+  parseSharedConvertPackageFile,
   persistConvertedJob,
   redeemBillingPromoCode,
   reopenHistoryItem,
@@ -70,7 +74,8 @@ type PopupNoticeResponse = {
 const DOOGPX_APPSTORE_URL =
   "https://apps.apple.com/kr/app/doo-gpx-%EB%B9%84%ED%96%89%EC%A7%80%EB%8F%84/id6759362581";
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
-const DEFAULT_FILE_ACCEPT = ".kml,.kmz,.gpx,.geojson,.json,.csv,.txt";
+const SHARED_FILE_EXTENSION = ".dooex";
+const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -618,6 +623,62 @@ function buildLocalizedFileDisplay(filename: string): { primary: string; seconda
   return { primary, secondary: `(${regionKo} ${unitText})` };
 }
 
+function isSharedConvertFilename(filename: string): boolean {
+  return String(filename || "").trim().toLowerCase().endsWith(SHARED_FILE_EXTENSION);
+}
+
+function sanitizeSharedViewerStateForExport(viewerState: Record<string, unknown>): Record<string, unknown> {
+  if (!viewerState || typeof viewerState !== "object") {
+    return {};
+  }
+  const sanitized = { ...viewerState };
+  delete sanitized.weather;
+  delete sanitized.weatherOverlay;
+  delete sanitized.notam;
+  return sanitized;
+}
+
+function buildSharedConvertPayload(response: ConvertResponse): ClientConvertRequestBody {
+  return {
+    filename: response.filename,
+    project_name: response.project_name,
+    mode: response.mode,
+    result_count: response.result_count,
+    text_output: response.text_output,
+    map_payload: response.map_payload,
+    results: response.results,
+    source_hash: response.source_hash,
+  };
+}
+
+function buildSharedConvertPackage(
+  response: ConvertResponse,
+  viewerState: Record<string, unknown>,
+): SharedConvertPackage {
+  return {
+    format: "dooextractor-share",
+    version: 1,
+    exported_at: new Date().toISOString(),
+    entry: {
+      job_id: response.job_id,
+      filename: response.filename,
+      project_name: response.project_name,
+      mode: response.mode,
+      result_count: response.result_count,
+      source_hash: response.source_hash,
+    },
+    convert_payload: buildSharedConvertPayload(response),
+    viewer_state: sanitizeSharedViewerStateForExport(viewerState),
+  };
+}
+
+function buildSharedDownloadName(item: ServerHistoryItem, response: ConvertResponse): string {
+  const baseName = stripDisplayExtensions(
+    item.filename || response.filename || item.project_name || response.project_name || "dooextractor-share",
+  );
+  return baseName || "dooextractor-share";
+}
+
 function canUseLocalizedViewerTitle(response: ConvertResponse): boolean {
   const mode = String(response.mode || "").trim().toLowerCase();
   const sourceFormat = String(response.map_payload?.source_format || "").trim().toLowerCase();
@@ -769,6 +830,7 @@ export function HomeScreen({
   const [isLoading, setIsLoading] = useState(false);
   const [historyOpeningId, setHistoryOpeningId] = useState("");
   const [historyAppendingId, setHistoryAppendingId] = useState("");
+  const [historySharingId, setHistorySharingId] = useState("");
   const [historyDeletingId, setHistoryDeletingId] = useState("");
   const [historyDeletingAll, setHistoryDeletingAll] = useState(false);
   const [userEmail, setUserEmail] = useState(initialUserEmail);
@@ -1475,26 +1537,49 @@ export function HomeScreen({
       return;
     }
 
+    const isSharedFile = isSharedConvertFilename(file.name);
+
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage("브라우저에서 파일을 변환하는 중입니다...");
+    setStatusMessage(isSharedFile ? "공유 파일을 불러오는 중입니다..." : "브라우저에서 파일을 변환하는 중입니다...");
     await waitForNextPaint();
 
     try {
-      const convertedForUpload = attachViewerTitleLabelToPayload(await convertKmlFileInBrowser(file));
-      setStatusMessage("변환이 완료되어 서버에 저장하는 중입니다...");
-
       const identity = await resolveCurrentIdentity();
       const uploadAuthenticated = Boolean(identity.id);
-      const converted = await persistConvertedJob(
-        {
-          ...convertedForUpload,
-          source_file_bytes: file.size,
-        },
-        identity.id,
-        identity.email,
-        identity.token,
-      );
+      let converted: ConvertResponse;
+
+      if (isSharedFile) {
+        const sharedPackage = await parseSharedConvertPackageFile(file);
+        setStatusMessage("공유 파일을 복원해 서버에 저장하는 중입니다...");
+        converted = await persistConvertedJob(
+          {
+            ...sharedPackage.convert_payload,
+            source_file_bytes:
+              typeof sharedPackage.convert_payload.source_file_bytes === "number" &&
+              Number.isFinite(sharedPackage.convert_payload.source_file_bytes)
+                ? sharedPackage.convert_payload.source_file_bytes
+                : file.size,
+            shared_viewer_state: sanitizeSharedViewerStateForExport(sharedPackage.viewer_state),
+          },
+          identity.id,
+          identity.email,
+          identity.token,
+        );
+      } else {
+        const convertedForUpload = attachViewerTitleLabelToPayload(await convertKmlFileInBrowser(file));
+        setStatusMessage("변환이 완료되어 서버에 저장하는 중입니다...");
+        converted = await persistConvertedJob(
+          {
+            ...convertedForUpload,
+            source_file_bytes: file.size,
+          },
+          identity.id,
+          identity.email,
+          identity.token,
+        );
+      }
+
       const nextStack = filePickMode === "append" && stackItems.length > 0
         ? [...stackItems, createStackEntry(converted)]
         : [createStackEntry(converted)];
@@ -1502,13 +1587,21 @@ export function HomeScreen({
 
       setStatusTone("success");
       setStatusMessage(
-        uploadAuthenticated
-          ? filePickMode === "append" && nextStack.length > 1
-            ? `${nextStack.length}개 파일을 중첩했고 합본 결과를 히스토리에 저장했습니다.`
-            : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
-          : filePickMode === "append" && nextStack.length > 1
-            ? `${nextStack.length}개 파일을 중첩했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`
-            : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
+        isSharedFile
+          ? uploadAuthenticated
+            ? filePickMode === "append" && nextStack.length > 1
+              ? `${nextStack.length}개 파일을 중첩했고 공유 설정까지 복원했습니다.`
+              : "공유 파일과 도식화 설정을 복원했습니다."
+            : filePickMode === "append" && nextStack.length > 1
+              ? `${nextStack.length}개 파일을 중첩했고 공유 설정까지 복원했습니다.`
+              : "공유 파일과 도식화 설정을 복원했습니다."
+          : uploadAuthenticated
+            ? filePickMode === "append" && nextStack.length > 1
+              ? `${nextStack.length}개 파일을 중첩했고 합본 결과를 히스토리에 저장했습니다.`
+              : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
+            : filePickMode === "append" && nextStack.length > 1
+              ? `${nextStack.length}개 파일을 중첩했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`
+              : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
 
       if (uploadAuthenticated) {
@@ -1517,7 +1610,14 @@ export function HomeScreen({
     } catch (error) {
       console.error("[KML convert] failed", error);
       setStatusTone("error");
-      setStatusMessage("파일 변환에 실패했습니다. 형식과 내용을 다시 확인해 주세요.");
+      setStatusMessage(
+        describeUnknownError(
+          error,
+          isSharedFile
+            ? "공유 파일을 열지 못했습니다. 파일 형식과 내용을 다시 확인해 주세요."
+            : "파일 변환에 실패했습니다. 형식과 내용을 다시 확인해 주세요.",
+        ),
+      );
     } finally {
       setIsLoading(false);
       if (fileInputRef.current) {
@@ -1597,6 +1697,38 @@ export function HomeScreen({
       setStatusMessage(describeUnknownError(error, "히스토리 항목을 스택에 추가하지 못했습니다."));
     } finally {
       setHistoryAppendingId("");
+    }
+  }
+
+  async function handleHistoryShare(item: ServerHistoryItem) {
+    if (!canUseHistory) {
+      setStatusTone("error");
+      setStatusMessage("현재 플랜에서는 공유 파일 저장을 사용할 수 없습니다.");
+      return;
+    }
+    if (!requireAuth("히스토리 항목을 공유하려면 로그인해 주세요.")) {
+      return;
+    }
+
+    setHistorySharingId(item.job_id);
+    setStatusTone("loading");
+    setStatusMessage(`${item.project_name || item.filename} 공유 파일을 만드는 중입니다...`);
+    await waitForNextPaint();
+
+    try {
+      const reopened = attachViewerTitleLabelToResponse(
+        await reopenHistoryItem(item.job_id, userId, userEmail, accessToken),
+      );
+      const viewerState = await fetchViewerStateSnapshot(item.job_id, userId, userEmail, accessToken);
+      const sharedPackage = buildSharedConvertPackage(reopened, viewerState);
+      downloadSharedConvertPackageFile(sharedPackage, buildSharedDownloadName(item, reopened));
+      setStatusTone("success");
+      setStatusMessage("공유 파일을 저장했습니다. 받은 사람도 파일 열기로 같은 도식화 결과를 열 수 있습니다.");
+    } catch (error) {
+      setStatusTone("error");
+      setStatusMessage(describeUnknownError(error, "공유 파일을 만들지 못했습니다."));
+    } finally {
+      setHistorySharingId("");
     }
   }
 
@@ -2507,6 +2639,7 @@ export function HomeScreen({
                       const isCurrent = response?.job_id === item.job_id;
                       const isOpening = historyOpeningId === item.job_id;
                       const isAppending = historyAppendingId === item.job_id;
+                      const isSharing = historySharingId === item.job_id;
                       const isDeleting = historyDeletingId === item.job_id;
                       return (
                         <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
@@ -2522,7 +2655,7 @@ export function HomeScreen({
                               type="button"
                               className="doo-history-open"
                               onClick={() => handleHistoryOpen(item)}
-                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
+                              disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
                               {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
                             </button>
@@ -2530,9 +2663,17 @@ export function HomeScreen({
                               type="button"
                               className="doo-history-append"
                               onClick={() => void handleHistoryAppend(item)}
-                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
+                              disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
                               {isAppending ? "추가 중..." : "스택추가"}
+                            </button>
+                            <button
+                              type="button"
+                              className="doo-history-share"
+                              onClick={() => void handleHistoryShare(item)}
+                              disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
+                            >
+                              {isSharing ? "공유 중..." : "공유"}
                             </button>
                             <button
                               type="button"
@@ -2540,7 +2681,7 @@ export function HomeScreen({
                               title="히스토리 삭제"
                               aria-label="히스토리 삭제"
                               onClick={() => handleHistoryDelete(item)}
-                              disabled={isOpening || isAppending || isDeleting || historyDeletingAll}
+                              disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
                               {isDeleting ? "..." : "🗑"}
                             </button>

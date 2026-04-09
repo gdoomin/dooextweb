@@ -2155,6 +2155,33 @@ textarea {
   opacity: 0.72;
 }
 
+.doo-history-share {
+  border: 0;
+  border-radius: 12px;
+  background: #36506c;
+  color: #e1efff;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.doo-history-share:hover:enabled {
+  filter: brightness(1.08);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12) inset,
+    0 0 18px rgba(123, 187, 255, 0.18);
+}
+
+.doo-history-share:disabled {
+  cursor: default;
+  opacity: 0.72;
+}
+
 .doo-history-actions {
   display: flex;
   align-items: center;
