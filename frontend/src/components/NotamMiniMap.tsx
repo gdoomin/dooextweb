@@ -857,15 +857,32 @@ export function NotamMiniMap() {
 
   return (
     <section className="doo-rail-card doo-rail-card-notam" aria-label="NOTAM 현황">
-      <div className="doo-rail-card-header doo-pilot-jobs-head">
-        <div className="doo-pilot-jobs-headline">
-          <span className="doo-pilot-jobs-title">NOTAM 현황</span>
+      <div className="doo-notam-head">
+        <div className="doo-notam-headline">
+          <span className="doo-notam-title">NOTAM 현황</span>
         </div>
-        <div className="doo-pilot-jobs-head-actions">
-          <button type="button" className="doo-pilot-jobs-link" onClick={() => void loadItems()} disabled={isLoading}>
-            {isLoading ? "불러오는 중" : "NOTAM UPDATE"}
+        <div className="doo-notam-head-actions">
+          <button
+            type="button"
+            className="doo-notam-update-button"
+            onClick={() => void loadItems()}
+            disabled={isLoading}
+            aria-label="NOTAM UPDATE"
+            title="NOTAM UPDATE"
+          >
+            {isLoading ? (
+              <>
+                <span>불러오는</span>
+                <span>중...</span>
+              </>
+            ) : (
+              <>
+                <span>NOTAM</span>
+                <span>UPDATE</span>
+              </>
+            )}
           </button>
-          <span className="doo-pilot-jobs-count">총 {hasLoaded ? items.length : 0}건</span>
+          <span className="doo-notam-total-count">총 {hasLoaded ? items.length : 0}건</span>
         </div>
       </div>
 

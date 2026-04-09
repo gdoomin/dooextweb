@@ -812,6 +812,88 @@ textarea {
   padding: 12px;
 }
 
+.doo-notam-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.doo-notam-headline {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.doo-notam-title {
+  color: #eff6ff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.doo-notam-head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.doo-notam-update-button {
+  flex: 0 0 auto;
+  min-width: 86px;
+  min-height: 44px;
+  border: 1px solid rgba(255, 205, 73, 0.3);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(76, 59, 20, 0.96) 0%, rgba(55, 42, 14, 0.98) 100%);
+  color: #ffe099;
+  padding: 6px 10px;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  row-gap: 1px;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.04;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 20px rgba(0, 0, 0, 0.22);
+  transition: transform 120ms ease, filter 160ms ease, border-color 160ms ease;
+}
+
+.doo-notam-update-button span {
+  display: block;
+}
+
+.doo-notam-update-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
+  border-color: rgba(255, 222, 141, 0.48);
+}
+
+.doo-notam-update-button:disabled {
+  opacity: 0.72;
+  cursor: progress;
+  transform: none;
+}
+
+.doo-notam-total-count {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 205, 73, 0.24);
+  background: rgba(73, 57, 19, 0.45);
+  color: #ffd773;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
 .doo-notam-toolbar {
   display: flex;
   flex-wrap: wrap;
