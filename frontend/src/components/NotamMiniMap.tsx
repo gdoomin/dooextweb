@@ -89,6 +89,8 @@ const NOTAM_GROUP_COLORS: Record<NotamGroupKey, string> = {
   acgz: "#4bc6ff",
 };
 const Q_CIRCLE_COLOR = "#000080";
+const NOTAM_CIRCLE_MAX_NM = 60;
+const NOTAM_CIRCLE_MAX_METERS = NOTAM_CIRCLE_MAX_NM * 1852;
 
 function escapeHtml(value: string) {
   return String(value || "")
@@ -441,7 +443,7 @@ function extractNotamQRadiusNm(content: string) {
   const qSection = extractNotamSectionValue(content, "Q");
   const match = qSection.match(/\b(\d{3})\b(?!.*\b\d{3}\b)/);
   const value = match ? Number(match[1]) : NaN;
-  if (!Number.isFinite(value) || value <= 0 || value >= 999 || Math.abs(value - 60) < 0.0001) {
+  if (!Number.isFinite(value) || value <= 0 || value >= 999 || value >= 60) {
     return null;
   }
   return value;
@@ -455,10 +457,7 @@ function extractNotamRadiusNm(content: string) {
   const eSection = extractNotamESection(content);
   const match = eSection.match(/\bRADIUS\s*(\d+(?:\.\d+)?)\s*NM\b/i);
   const value = match ? Number(match[1]) : NaN;
-  if (!Number.isFinite(value) || value <= 0) {
-    return null;
-  }
-  if (Math.abs(value - 60) < 0.0001) {
+  if (!Number.isFinite(value) || value <= 0 || value >= 60) {
     return null;
   }
   return value;
@@ -953,7 +952,11 @@ export function NotamMiniMap() {
             }
             return;
           }
-          if (Number.isFinite(item.radiusMeters) && (item.radiusMeters ?? 0) > 0) {
+          if (
+            Number.isFinite(item.radiusMeters) &&
+            (item.radiusMeters ?? 0) > 0 &&
+            (item.radiusMeters ?? 0) < NOTAM_CIRCLE_MAX_METERS
+          ) {
             uniqueRadii.add(Math.round(item.radiusMeters as number));
           }
           const qCircleLat = Number(item.qCircleLat);
@@ -963,7 +966,8 @@ export function NotamMiniMap() {
             Number.isFinite(qCircleLat) &&
             Number.isFinite(qCircleLng) &&
             Number.isFinite(qCircleRadiusMeters) &&
-            qCircleRadiusMeters > 0
+            qCircleRadiusMeters > 0 &&
+            qCircleRadiusMeters < NOTAM_CIRCLE_MAX_METERS
           ) {
             const navyKey = `${qCircleLat.toFixed(6)}|${qCircleLng.toFixed(6)}|${Math.round(qCircleRadiusMeters)}`;
             if (!navyCircleKeys.has(navyKey)) {

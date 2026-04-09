@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? "dev";
+const APP_VERSION = "4.0.4";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -2648,9 +2648,13 @@ export function HomeScreen({
                       return (
                         <article key={item.job_id} className={`doo-history-row${isCurrent ? " is-current" : ""}`}>
                           <div className="doo-history-body">
-                            <strong>{item.filename || item.project_name}</strong>
+                            <div className="doo-history-title-row">
+                              <strong>{item.filename || item.project_name}</strong>
+                              <span className="doo-history-count-inline">
+                                {item.mode === "linestring" ? "라인" : "폴리곤"} {item.result_count}개
+                              </span>
+                            </div>
                             <span className="doo-history-meta">
-                              {item.mode === "linestring" ? "라인" : "폴리곤"} · {item.result_count}개 ·{" "}
                               <span className="doo-history-date">{item.savedAtText}</span>
                             </span>
                           </div>

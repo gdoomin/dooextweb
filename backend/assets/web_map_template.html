@@ -4193,6 +4193,8 @@
       { key: 'de', label: 'NOTAM D, E', defaultColor: '#ff7e67' },
       { key: 'acgz', label: 'NOTAM A,C,G,Z', defaultColor: '#4bc6ff' },
     ];
+    const NOTAM_CIRCLE_MAX_NM = 60;
+    const NOTAM_CIRCLE_MAX_METERS = NOTAM_CIRCLE_MAX_NM * 1852;
     const NOTAM_SERIES_DE = new Set(['D', 'E']);
     const NOTAM_SERIES_ACGZ = new Set(['A', 'C', 'G', 'Z']);
     const NOTAM_FIR_MAP = {
@@ -10436,7 +10438,7 @@
         return null;
       }
       const radius = Number(match[3]);
-      if (!Number.isFinite(radius) || radius <= 0 || radius === 999 || Math.abs(radius - 60) < 0.0001) {
+      if (!Number.isFinite(radius) || radius <= 0 || radius === 999 || radius >= 60) {
         return null;
       }
       return radius;
@@ -10447,21 +10449,21 @@
       const radiusNmMatch = text.match(/RADIUS\s*([0-9.]+)\s*NM/i);
       if (radiusNmMatch) {
         const radiusNm = Number(radiusNmMatch[1]);
-        if (Number.isFinite(radiusNm) && radiusNm > 0 && Math.abs(radiusNm - 60) >= 0.0001) {
+        if (Number.isFinite(radiusNm) && radiusNm > 0 && radiusNm < 60) {
           return radiusNm;
         }
       }
       const diameterNmMatch = text.match(/([0-9.]+)\s*NM\s+IN\s+DIAMETER/i);
       if (diameterNmMatch) {
         const diameterNm = Number(diameterNmMatch[1]);
-        if (Number.isFinite(diameterNm) && diameterNm > 0 && Math.abs((diameterNm / 2) - 60) >= 0.0001) {
+        if (Number.isFinite(diameterNm) && diameterNm > 0 && (diameterNm / 2) < 60) {
           return diameterNm / 2;
         }
       }
       const qLineRadiusMatch = text.match(/Q\)[^\n]*\/\d{3}\/\d{3}\/\d{4,6}(?:\.\d+)?[NS]\d{5,7}(?:\.\d+)?[EW](\d{3})/i);
       if (qLineRadiusMatch) {
         const qRadius = Number(qLineRadiusMatch[1]);
-        if (Number.isFinite(qRadius) && qRadius > 0 && qRadius < 900 && Math.abs(qRadius - 60) >= 0.0001) {
+        if (Number.isFinite(qRadius) && qRadius > 0 && qRadius < 60) {
           return qRadius;
         }
       }
@@ -16315,7 +16317,11 @@
               }
               return;
             }
-            if (Number.isFinite(item.radiusMeters) && item.radiusMeters > 0) {
+            if (
+              Number.isFinite(item.radiusMeters) &&
+              item.radiusMeters > 0 &&
+              item.radiusMeters < NOTAM_CIRCLE_MAX_METERS
+            ) {
               uniqueRadii.add(Math.round(item.radiusMeters));
             }
             const qCircleLat = Number(item.qCircleLat);
@@ -16325,7 +16331,8 @@
               Number.isFinite(qCircleLat) &&
               Number.isFinite(qCircleLng) &&
               Number.isFinite(qCircleRadiusMeters) &&
-              qCircleRadiusMeters > 0
+              qCircleRadiusMeters > 0 &&
+              qCircleRadiusMeters < NOTAM_CIRCLE_MAX_METERS
             ) {
               const navyKey = `${qCircleLat.toFixed(6)}|${qCircleLng.toFixed(6)}|${Math.round(qCircleRadiusMeters)}`;
               if (!navyCircleKeys.has(navyKey)) {

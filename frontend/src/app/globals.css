@@ -2342,19 +2342,36 @@ textarea {
   min-width: 0;
 }
 
+.doo-history-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
 .doo-history-body strong {
   color: #e6edf3;
   font-size: 17px;
   display: block;
+  flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+.doo-history-count-inline {
+  color: #f5d25c;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
 .doo-history-body span {
   color: #8b949e;
-  font-size: 12px;
+  font-size: 16px;
   display: block;
   min-width: 0;
   overflow: hidden;
@@ -2362,8 +2379,19 @@ textarea {
   white-space: nowrap;
 }
 
+.doo-history-body .doo-history-count-inline {
+  color: #f5d25c;
+  font-size: 17px;
+  font-weight: 800;
+  line-height: 1.1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  overflow: visible;
+  text-overflow: clip;
+}
+
 .doo-history-meta {
-  color: #8b949e;
+  color: #ffffff;
   display: block;
   white-space: nowrap;
   overflow: hidden;
