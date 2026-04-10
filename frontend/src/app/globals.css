@@ -90,13 +90,13 @@ textarea {
 }
 
 .doo-sidebar {
-  width: 320px;
-  flex: 0 0 320px;
+  width: 256px;
+  flex: 0 0 256px;
   display: flex;
   flex-direction: column;
   gap: 12px;
   min-height: 0;
-  padding: 10px 12px 18px;
+  padding: 10px 10px 16px;
   background: #0f1923;
   border-right: 1px solid #30363d;
   overflow-y: auto;
@@ -112,7 +112,7 @@ textarea {
 .doo-title-block h1 {
   margin: 0;
   color: #4a90d9;
-  font-size: 28px;
+  font-size: 23px;
   font-weight: 700;
   line-height: 1.1;
 }
@@ -120,7 +120,7 @@ textarea {
 .doo-title-block p {
   margin: 4px 0 0;
   color: #8b949e;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .doo-version-badge {
@@ -138,14 +138,43 @@ textarea {
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.03);
 }
 
+.doo-flight-prep-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 8px;
+  border: 1px solid rgba(244, 185, 84, 0.5);
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(255, 198, 88, 0.96) 0%, rgba(215, 143, 38, 0.96) 100%);
+  color: #111722;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    filter 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.doo-flight-prep-button:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 0 0 1px rgba(255, 209, 112, 0.2) inset;
+}
+
+.doo-flight-prep-button:active {
+  transform: translateY(1px) scale(0.985);
+}
+
 .doo-info-button {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   border: 0;
   border-radius: 12px;
   background: #162230;
   color: #79c0ff;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   transition:
     transform 120ms ease,
@@ -169,11 +198,11 @@ textarea {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
-  gap: 10px;
-  border-radius: 24px;
+  gap: 8px;
+  border-radius: 20px;
   border: 1px solid rgba(121, 192, 255, 0.14);
   background: linear-gradient(180deg, rgba(20, 30, 42, 0.94) 0%, rgba(13, 21, 31, 0.98) 100%);
-  padding: 12px;
+  padding: 10px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.26);
 }
 
@@ -191,7 +220,7 @@ textarea {
 
 .doo-sidebar-image-wrap {
   overflow: hidden;
-  border-radius: 20px;
+  border-radius: 16px;
   border: 1px solid rgba(121, 192, 255, 0.18);
   background: linear-gradient(180deg, rgba(239, 247, 255, 0.96) 0%, rgba(214, 234, 255, 0.92) 100%);
   box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18);
@@ -2679,6 +2708,385 @@ textarea {
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.18);
 }
 
+.doo-before-flight-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #1a2d44 0%, #0f1923 52%, #0a121c 100%);
+  padding: 30px 18px;
+}
+
+.doo-before-flight-shell {
+  width: min(1040px, 100%);
+  margin: 0 auto;
+  border-radius: 22px;
+  border: 1px solid rgba(74, 144, 217, 0.22);
+  background: linear-gradient(180deg, rgba(14, 23, 34, 0.95) 0%, rgba(9, 16, 24, 0.98) 100%);
+  box-shadow: 0 26px 56px rgba(0, 0, 0, 0.34);
+  padding: 24px;
+}
+
+.doo-before-flight-head h1 {
+  margin: 0;
+  color: #dceeff;
+  font-size: clamp(22px, 2.3vw, 30px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.doo-before-flight-head p {
+  margin: 9px 0 0;
+  color: #9fb3c8;
+  font-size: 14px;
+}
+
+.doo-before-flight-tabs {
+  margin-top: 18px;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.doo-before-flight-tab {
+  border: 1px solid rgba(111, 176, 240, 0.28);
+  border-radius: 12px;
+  background: rgba(23, 35, 49, 0.9);
+  color: #c9d9ea;
+  padding: 11px 8px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    background 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.doo-before-flight-tab:hover {
+  background: rgba(31, 46, 64, 0.95);
+  border-color: rgba(148, 197, 247, 0.55);
+}
+
+.doo-before-flight-tab:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.doo-before-flight-tab.is-active {
+  border-color: rgba(253, 209, 124, 0.92);
+  background: linear-gradient(180deg, rgba(255, 200, 98, 0.96) 0%, rgba(222, 154, 52, 0.96) 100%);
+  color: #101725;
+}
+
+.doo-before-flight-content {
+  margin-top: 16px;
+  border-radius: 16px;
+  border: 1px solid rgba(100, 147, 197, 0.22);
+  background: rgba(9, 17, 26, 0.86);
+  min-height: 340px;
+  padding: 24px;
+}
+
+.doo-before-flight-content h2 {
+  margin: 0;
+  color: #eff6ff;
+  font-size: clamp(20px, 2.1vw, 28px);
+}
+
+.doo-before-flight-content p {
+  margin: 12px 0 0;
+  color: #ffd084;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.doo-before-flight-safety-panel {
+  padding: 18px;
+}
+
+.doo-safety-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.doo-safety-actions-bottom {
+  margin-top: 14px;
+}
+
+.doo-safety-print-button {
+  border: 1px solid rgba(111, 176, 240, 0.4);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(22, 36, 53, 0.95) 0%, rgba(14, 24, 37, 0.95) 100%);
+  color: #e9f4ff;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    filter 160ms ease,
+    border-color 160ms ease;
+}
+
+.doo-safety-print-button:hover {
+  filter: brightness(1.08);
+  border-color: rgba(177, 216, 255, 0.7);
+}
+
+.doo-safety-print-button:active {
+  transform: translateY(1px) scale(0.99);
+}
+
+.doo-safety-sheet {
+  margin-top: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(161, 190, 220, 0.44);
+  background: #f7fafc;
+  color: #0f172a;
+  overflow: hidden;
+}
+
+.doo-safety-sheet-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 14px 4px;
+}
+
+.doo-safety-logo-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid rgba(90, 108, 126, 0.28);
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 150ms ease, box-shadow 180ms ease;
+}
+
+.doo-safety-logo-button:hover {
+  filter: brightness(1.03);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+}
+
+.doo-safety-logo-button:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.doo-safety-logo-image {
+  display: block;
+  width: 126px;
+  height: 56px;
+  object-fit: contain;
+}
+
+.doo-safety-sheet-head {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 14px 14px;
+  background: #f7fafc;
+}
+
+.doo-safety-sheet-head h2 {
+  margin: 0;
+  width: 100%;
+  text-align: center;
+  font-size: 44px;
+  line-height: 1.1;
+  color: #fff;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  -webkit-text-stroke: 1.9px #0b1a2b;
+  text-shadow:
+    0 2px 0 rgba(11, 26, 43, 0.9),
+    0 4px 10px rgba(0, 0, 0, 0.26);
+}
+
+.doo-safety-callsign-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.doo-safety-callsign-wrap > span {
+  color: #1e293b;
+  font-size: 20px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.doo-safety-callsign-input {
+  width: 172px;
+  min-width: 172px;
+  font-size: 20px;
+  font-weight: 700;
+  height: 44px;
+}
+
+.doo-safety-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+}
+
+.doo-safety-table col.col-a {
+  width: 11%;
+}
+
+.doo-safety-table col.col-b {
+  width: 22%;
+}
+
+.doo-safety-table col.col-c {
+  width: 12%;
+}
+
+.doo-safety-table col.col-d {
+  width: 9%;
+}
+
+.doo-safety-table col.col-e {
+  width: 16%;
+}
+
+.doo-safety-table col.col-f {
+  width: 9%;
+}
+
+.doo-safety-table col.col-g {
+  width: 21%;
+}
+
+.doo-safety-table th,
+.doo-safety-table td {
+  border: 1px solid #576879;
+  padding: 8px;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.doo-safety-table th {
+  background: #fff;
+  text-align: center;
+  font-weight: 700;
+}
+
+.doo-safety-item-cell {
+  text-align: left;
+}
+
+.doo-safety-check-heading {
+  text-align: center;
+  vertical-align: middle;
+  font-size: 24px;
+  letter-spacing: 0.26em;
+  font-weight: 900;
+  background: #fff !important;
+}
+
+.doo-safety-date-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.doo-safety-date-weekday {
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.doo-safety-input,
+.doo-safety-textarea {
+  width: 100%;
+  border: 1px solid #94a3b8;
+  border-radius: 6px;
+  background: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  padding: 6px 8px;
+  font-family: inherit;
+  text-align: center;
+}
+
+.doo-safety-input::placeholder,
+.doo-safety-textarea::placeholder {
+  text-align: center;
+}
+
+.doo-safety-input:focus,
+.doo-safety-textarea:focus {
+  outline: 2px solid rgba(74, 144, 217, 0.35);
+  border-color: #4a90d9;
+}
+
+.doo-safety-textarea {
+  min-height: 92px;
+  resize: vertical;
+}
+
+.doo-safety-logo-file-input {
+  display: none;
+}
+
+.doo-safety-logo-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  background: rgba(7, 12, 20, 0.68);
+  backdrop-filter: blur(2px);
+}
+
+.doo-safety-logo-modal {
+  width: min(90vw, 620px);
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(121, 192, 255, 0.22);
+  background: linear-gradient(180deg, rgba(16, 27, 41, 0.96) 0%, rgba(11, 20, 30, 0.96) 100%);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+}
+
+.doo-safety-logo-modal-image {
+  width: 100%;
+  max-height: min(70vh, 420px);
+  object-fit: contain;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.doo-safety-logo-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.doo-safety-logo-modal-button {
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 9px;
+  border: 1px solid rgba(121, 192, 255, 0.3);
+  background: rgba(18, 37, 56, 0.95);
+  color: #e8f4ff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doo-safety-logo-modal-button.is-close {
+  border-color: rgba(255, 179, 179, 0.35);
+  background: rgba(68, 31, 35, 0.96);
+}
+
 @media (max-width: 1080px) {
   .doo-layout {
     flex-direction: column;
@@ -2709,6 +3117,56 @@ textarea {
     height: auto;
     min-height: 0;
     overflow: visible;
+  }
+
+  .doo-before-flight-page {
+    padding: 18px 12px;
+  }
+
+  .doo-before-flight-shell {
+    padding: 18px;
+  }
+
+  .doo-before-flight-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doo-safety-table {
+    font-size: 12px;
+  }
+
+  .doo-safety-table th,
+  .doo-safety-table td {
+    padding: 6px;
+  }
+
+  .doo-safety-sheet-head h2 {
+    font-size: 24px;
+    -webkit-text-stroke: 1.2px #0b1a2b;
+  }
+
+  .doo-safety-check-heading {
+    font-size: 18px;
+  }
+
+  .doo-safety-callsign-wrap {
+    margin-left: auto;
+  }
+
+  .doo-safety-callsign-wrap > span {
+    font-size: 16px;
+  }
+
+  .doo-safety-callsign-input {
+    width: 140px;
+    min-width: 140px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .doo-safety-logo-image {
+    width: 104px;
+    height: 48px;
   }
 
   .doo-ad-rail {
@@ -2756,6 +3214,159 @@ textarea {
 
   .doo-action {
     flex: 1 1 144px;
+  }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 12mm 12mm;
+  }
+
+  html,
+  body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .doo-before-flight-page {
+    background: #fff;
+    padding: 0;
+  }
+
+  .doo-before-flight-shell {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    width: 100%;
+  }
+
+  .doo-before-flight-head,
+  .doo-before-flight-tabs,
+  .doo-safety-actions {
+    display: none;
+  }
+
+  .doo-before-flight-content {
+    border: 0;
+    background: #fff;
+    margin-top: 0;
+    padding: 0 !important;
+  }
+
+  .doo-safety-sheet {
+    width: 170mm;
+    max-width: 100%;
+    margin: 6mm auto 0;
+    border-radius: 0;
+    border: 0;
+    box-shadow: none;
+    background: #fff;
+    break-inside: avoid-page;
+    page-break-inside: avoid;
+  }
+
+  .doo-safety-sheet-brand-row {
+    align-items: center;
+    padding: 0 0 2.8mm;
+  }
+
+  .doo-safety-sheet-head {
+    padding: 3mm 0 5mm;
+  }
+
+  .doo-safety-sheet-head h2 {
+    font-size: 24pt;
+    color: #000;
+    -webkit-text-stroke: 0;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.28);
+    letter-spacing: 0.08em;
+  }
+
+  .doo-safety-callsign-wrap > span {
+    display: none;
+  }
+
+  .doo-safety-callsign-input {
+    width: 29mm;
+    min-width: 29mm;
+    height: auto;
+    font-size: 12pt;
+    font-weight: 700;
+    text-align: right;
+  }
+
+  .doo-safety-table {
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+    font-size: 10pt;
+    border-collapse: collapse;
+  }
+
+  .doo-safety-table th,
+  .doo-safety-table td {
+    border: 1px solid #000;
+    background: #fff !important;
+    color: #000;
+    padding: 2.1mm 2.3mm;
+    font-size: 10pt;
+    line-height: 1.2;
+    page-break-inside: avoid;
+    break-inside: avoid-page;
+  }
+
+  .doo-safety-check-heading {
+    font-size: 13pt;
+    letter-spacing: 0.28em;
+    font-weight: 800;
+  }
+
+  .doo-safety-item-cell {
+    text-align: left;
+    padding-left: 3mm !important;
+  }
+
+  .doo-safety-input,
+  .doo-safety-textarea {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    outline: 0;
+    box-shadow: none;
+    color: #000;
+    padding: 0;
+    font-size: 10pt;
+    text-align: center;
+  }
+
+  .doo-safety-textarea {
+    min-height: 10mm;
+    max-height: 10mm;
+    resize: none;
+    overflow: hidden;
+  }
+
+  .doo-safety-date-weekday {
+    color: #000;
+    font-size: 9pt;
+  }
+
+  .doo-safety-logo-button {
+    border: 0;
+    box-shadow: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .doo-safety-logo-image {
+    width: 32mm;
+    height: 10mm;
+    object-fit: contain;
+  }
+
+  .doo-safety-logo-modal-backdrop,
+  .doo-safety-logo-file-input {
+    display: none !important;
   }
 }
 

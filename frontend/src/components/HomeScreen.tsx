@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.0.9";
+const APP_VERSION = "4.0.10";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -2324,6 +2324,13 @@ export function HomeScreen({
                 <div className="doo-version-badge" title="현재 배포 버전">
                   WEB {APP_VERSION}
                 </div>
+                <button
+                  type="button"
+                  className="doo-flight-prep-button"
+                  onClick={() => window.open("/before-flight", "_blank", "noopener,noreferrer")}
+                >
+                  비행준비
+                </button>
               </div>
             </div>
 
