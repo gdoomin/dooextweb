@@ -4834,6 +4834,13 @@ async def convert_kml(request: Request, payload: ClientConvertPayload):
     }
     if shared_viewer_state:
         job_data["shared_viewer_state"] = shared_viewer_state
+        try:
+            for path in _viewer_state_paths_for_job(job_data):
+                _save_json(path, shared_viewer_state)
+            _viewer_state_supabase_upsert(job_data, shared_viewer_state, access_token=access_token)
+        except Exception:
+            # 공유 복원 본체(작업 데이터 저장)를 막지 않기 위해 viewer-state 동기화 오류는 무시한다.
+            pass
     payload_bucket, payload_path = _job_payload_supabase_store(job_data, access_token=access_token)
     if payload_bucket and payload_path:
         job_data["payload_bucket"] = payload_bucket

@@ -2504,19 +2504,22 @@ textarea {
 
 @media (hover: none) and (pointer: coarse) {
   .doo-history-list-main {
-    overflow-x: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
   .doo-history-row {
-    min-width: 620px;
+    min-width: 0;
   }
 
   .doo-history-actions {
     flex-wrap: nowrap;
     overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
     scrollbar-width: thin;
     padding-bottom: 2px;
   }
@@ -2527,6 +2530,7 @@ textarea {
   .doo-history-delete {
     flex: 0 0 auto;
     white-space: nowrap;
+    pointer-events: auto;
   }
 }
 
@@ -2557,6 +2561,42 @@ textarea {
   .doo-history-delete {
     width: 100%;
     min-width: 0;
+    height: 32px;
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 1180px) and (hover: none) and (pointer: coarse) {
+  .doo-history-actions {
+    display: flex;
+    grid-template-columns: none;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    gap: 6px;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .doo-history-open,
+  .doo-history-append,
+  .doo-history-share {
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
+    padding: 8px 10px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .doo-history-delete {
+    flex: 0 0 auto;
+    width: 32px;
+    min-width: 32px;
     height: 32px;
     font-size: 15px;
   }
