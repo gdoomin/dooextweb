@@ -1522,9 +1522,9 @@ textarea {
 
 .doo-path-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .doo-path-input {
@@ -1541,7 +1541,8 @@ textarea {
 
 .doo-path-display {
   min-width: 0;
-  flex: 1 1 420px;
+  flex: 0 1 40%;
+  max-width: 40%;
   min-height: 66px;
   border: 1px solid #30363d;
   background: #0d1117;
@@ -1587,14 +1588,18 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 53px;
+  flex: 1 1 0;
+  min-width: 0;
+  height: clamp(36px, 5vw, 53px);
   border: 2px solid #111111;
   border-radius: 8px;
   background: linear-gradient(180deg, #ffe066 0%, #ffd43b 100%);
   color: #111111;
-  padding: 0 30px;
-  font-size: 24px;
+  padding: 0 clamp(6px, 1.5vw, 30px);
+  font-size: clamp(10px, 1.6vw, 24px);
   font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
   text-shadow:
     0 1px 0 rgba(255, 255, 255, 0.38),
     0 2px 6px rgba(0, 0, 0, 0.26);
@@ -2497,6 +2502,38 @@ textarea {
   gap: 8px;
 }
 
+@media (max-width: 1180px) {
+  .doo-history-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .doo-history-actions {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    align-items: center;
+    gap: 6px;
+  }
+
+  .doo-history-open,
+  .doo-history-append,
+  .doo-history-share {
+    width: 100%;
+    min-width: 0;
+    padding: 8px 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .doo-history-delete {
+    width: 100%;
+    min-width: 0;
+    height: 32px;
+    font-size: 15px;
+  }
+}
+
 .doo-history-delete {
   width: 36px;
   min-width: 36px;
@@ -2639,23 +2676,26 @@ textarea {
 
 @media (max-width: 720px) {
   .doo-path-row {
-    flex-direction: column;
+    gap: 6px;
   }
 
   .doo-path-display {
-    width: 100%;
+    flex-basis: 40%;
+    max-width: 40%;
+    min-height: 50px;
+    padding: 6px 10px;
   }
 
   .doo-path-primary {
-    font-size: 14px;
+    font-size: clamp(10px, 2.8vw, 14px);
   }
 
   .doo-path-display.has-secondary .doo-path-primary {
-    font-size: 17px;
+    font-size: clamp(11px, 3vw, 17px);
   }
 
   .doo-path-secondary {
-    font-size: 14px;
+    font-size: clamp(10px, 2.6vw, 14px);
   }
 
   .doo-stack-chip {
