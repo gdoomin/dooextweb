@@ -1043,8 +1043,15 @@ textarea {
   min-height: 620px;
 }
 
+.doo-notam-before-flight .doo-notam-map-shell {
+  height: auto;
+  min-height: clamp(620px, 72vh, 980px);
+  aspect-ratio: 210 / 297;
+}
+
 .doo-notam-before-flight .doo-notam-map-canvas {
-  min-height: 500px;
+  min-height: 0;
+  height: 100%;
 }
 
 .doo-notam-map-overlay {
@@ -3285,8 +3292,13 @@ textarea {
     min-height: 580px;
   }
 
+  .doo-notam-before-flight .doo-notam-map-shell {
+    min-height: clamp(540px, 70vh, 860px);
+  }
+
   .doo-notam-before-flight .doo-notam-map-canvas {
-    min-height: 420px;
+    min-height: 0;
+    height: 100%;
   }
 
   .doo-notam-toolbar.is-before-flight {

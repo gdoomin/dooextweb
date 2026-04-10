@@ -118,9 +118,15 @@ const NOTAM_GROUP_COLORS: Record<NotamGroupKey, string> = {
 const Q_CIRCLE_COLOR = "#000080";
 const NOTAM_CIRCLE_MAX_NM = 60;
 const NOTAM_CIRCLE_MAX_METERS = NOTAM_CIRCLE_MAX_NM * 1852;
-const PLANNING_REGION_BUFFER_METERS = 10 * 1852;
 const PLANNING_ALTITUDE_BUFFER_FT = 2000;
 const BEFORE_FLIGHT_LABEL_MAX_COUNT = 24;
+const PLANNING_ROUTE_BUFFER_METERS = 5 * 1852;
+
+const PLANNING_RADIUS_METERS: Record<PlanningPointKey, number> = {
+  departure: 10 * 1852,
+  mission: 20 * 1852,
+  arrival: 10 * 1852,
+};
 
 const PLANNING_POINT_LABELS: Record<PlanningPointKey, string> = {
   departure: "출발지",
@@ -723,18 +729,53 @@ function resolvePlanningAnchor(item: ParsedNotamItem): CoordPoint {
   return { latitude: item.lat, longitude: item.lng };
 }
 
-function matchesPlanningPoint(item: ParsedNotamItem, planningPoint: PlanningPoint) {
+function matchesAltitudeWindow(item: ParsedNotamItem, centerAltitudeFt: number) {
   const altitudeRange = parseAltitudeRangeFeet(item);
   if (altitudeRange) {
-    const low = planningPoint.altitudeFt - PLANNING_ALTITUDE_BUFFER_FT;
-    const high = planningPoint.altitudeFt + PLANNING_ALTITUDE_BUFFER_FT;
+    const low = centerAltitudeFt - PLANNING_ALTITUDE_BUFFER_FT;
+    const high = centerAltitudeFt + PLANNING_ALTITUDE_BUFFER_FT;
     const overlaps = altitudeRange.highFt >= low && altitudeRange.lowFt <= high;
     if (!overlaps) {
       return false;
     }
   }
+  return true;
+}
+
+function matchesPlanningPoint(item: ParsedNotamItem, planningPoint: PlanningPoint) {
+  if (!matchesAltitudeWindow(item, planningPoint.altitudeFt)) {
+    return false;
+  }
   const distanceMeters = resolveItemDistanceMeters(item, planningPoint);
-  return Number.isFinite(distanceMeters) && distanceMeters <= PLANNING_REGION_BUFFER_METERS;
+  const radiusMeters = PLANNING_RADIUS_METERS[planningPoint.key];
+  return Number.isFinite(distanceMeters) && distanceMeters <= radiusMeters;
+}
+
+function buildPlanningRoute(planningPoints: Partial<Record<PlanningPointKey, PlanningPoint>>) {
+  return (["departure", "mission", "arrival"] as PlanningPointKey[])
+    .map((key) => planningPoints[key])
+    .filter((point): point is PlanningPoint => !!point)
+    .map((point) => ({ latitude: point.latitude, longitude: point.longitude }));
+}
+
+function matchesPlanningRoute(item: ParsedNotamItem, route: CoordPoint[], planningPointList: PlanningPoint[]) {
+  if (route.length < 2 || planningPointList.length < 2) {
+    return false;
+  }
+  const minAltitude = Math.min(...planningPointList.map((point) => point.altitudeFt));
+  const maxAltitude = Math.max(...planningPointList.map((point) => point.altitudeFt));
+  const altitudeRange = parseAltitudeRangeFeet(item);
+  if (altitudeRange) {
+    const low = minAltitude - PLANNING_ALTITUDE_BUFFER_FT;
+    const high = maxAltitude + PLANNING_ALTITUDE_BUFFER_FT;
+    const overlaps = altitudeRange.highFt >= low && altitudeRange.lowFt <= high;
+    if (!overlaps) {
+      return false;
+    }
+  }
+  const anchor = resolvePlanningAnchor(item);
+  const routeDistance = distanceToPolylineMeters(anchor, route);
+  return Number.isFinite(routeDistance) && routeDistance <= PLANNING_ROUTE_BUFFER_METERS;
 }
 
 function isNotamQrpca(content: string) {
@@ -1035,6 +1076,8 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     [planningPoints],
   );
 
+  const planningRoute = useMemo(() => buildPlanningRoute(planningPoints), [planningPoints]);
+
   const planningReady = !isBeforeFlightMode || planningPointList.length === 3;
 
   const renderItems = useMemo(() => {
@@ -1044,8 +1087,12 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     if (!planningConfirmed || !planningPointList.length) {
       return [];
     }
-    return filteredItems.filter((item) => planningPointList.some((planningPoint) => matchesPlanningPoint(item, planningPoint)));
-  }, [filteredItems, isBeforeFlightMode, planningConfirmed, planningPointList]);
+    return filteredItems.filter(
+      (item) =>
+        planningPointList.some((planningPoint) => matchesPlanningPoint(item, planningPoint)) ||
+        matchesPlanningRoute(item, planningRoute, planningPointList),
+    );
+  }, [filteredItems, isBeforeFlightMode, planningConfirmed, planningPointList, planningRoute]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1071,6 +1118,9 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
       const layerGroup = leaflet.layerGroup().addTo(map);
       mapRef.current = map;
       layerGroupRef.current = layerGroup;
+      window.setTimeout(() => {
+        map.invalidateSize();
+      }, 120);
 
       if (typeof ResizeObserver !== "undefined") {
         const observer = new ResizeObserver(() => {
@@ -1095,6 +1145,22 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
       mapRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    if (!isBeforeFlightMode) {
+      return;
+    }
+    const map = mapRef.current;
+    if (!map) {
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      map.invalidateSize();
+    }, 120);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [effectiveEndDate, effectiveStartDate, hasLoaded, isBeforeFlightMode, planningConfirmed, selectingPointKey, seriesFilter]);
 
   useEffect(() => {
     if (!isBeforeFlightMode) {
@@ -1194,6 +1260,15 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
 
     planningPointList.forEach((planningPoint) => {
       allBounds.push([planningPoint.latitude, planningPoint.longitude]);
+      const radiusCircle = leaflet.circle([planningPoint.latitude, planningPoint.longitude], {
+        radius: PLANNING_RADIUS_METERS[planningPoint.key],
+        color: "#e63946",
+        weight: 1.6,
+        opacity: 0.8,
+        fillColor: "#e63946",
+        fillOpacity: 0.08,
+      });
+      radiusCircle.addTo(layerGroup);
       const marker = leaflet.circleMarker([planningPoint.latitude, planningPoint.longitude], {
         radius: 7,
         color: "#d62828",
@@ -1217,6 +1292,20 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
       });
       labelMarker.addTo(layerGroup);
     });
+
+    if (planningRoute.length >= 2) {
+      planningRoute.forEach((point) => allBounds.push([point.latitude, point.longitude]));
+      const routeLayer = leaflet.polyline(
+        planningRoute.map((point) => [point.latitude, point.longitude] as [number, number]),
+        {
+          color: "#ff4d4f",
+          weight: 2.4,
+          opacity: 0.82,
+          dashArray: "8 6",
+        },
+      );
+      routeLayer.addTo(layerGroup);
+    }
 
     if (isBeforeFlightMode && selectingPointKey) {
       const selectingMarker = leaflet.marker(map.getCenter(), {
@@ -1437,16 +1526,57 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     if (isBeforeFlightMode && planningConfirmed && renderItems.length) {
       const mapSize = map.getSize();
       const visibleItems = renderItems.slice(0, BEFORE_FLIGHT_LABEL_MAX_COUNT);
-      const usableHeight = Math.max(120, mapSize.y - 30);
-      const gap = Math.max(26, Math.floor(usableHeight / Math.max(1, visibleItems.length)));
-      visibleItems.forEach((item, index) => {
+      const boxWidth = 250;
+      const boxHeight = 96;
+      const sidePadding = 12;
+      type Side = "left" | "right" | "top" | "bottom";
+      type Placement = {
+        side: Side;
+        anchor: CoordPoint;
+        item: ParsedNotamItem;
+      };
+      const placementsBySide: Record<Side, Placement[]> = { left: [], right: [], top: [], bottom: [] };
+
+      visibleItems.forEach((item) => {
         const anchor = resolvePlanningAnchor(item);
-        const targetY = Math.min(mapSize.y - 12, 14 + index * gap);
-        const targetPoint = leaflet.point(Math.max(20, mapSize.x - 12), targetY);
-        const targetLatLng = map.containerPointToLatLng(targetPoint);
+        const anchorPoint = map.latLngToContainerPoint([anchor.latitude, anchor.longitude]);
+        const distances = {
+          left: anchorPoint.x,
+          right: mapSize.x - anchorPoint.x,
+          top: anchorPoint.y,
+          bottom: mapSize.y - anchorPoint.y,
+        };
+        const side = (Object.entries(distances).sort((a, b) => a[1] - b[1])[0]?.[0] || "right") as Side;
+        placementsBySide[side].push({ side, anchor, item });
+      });
+
+      placementsBySide.left.sort((a, b) => a.anchor.latitude - b.anchor.latitude);
+      placementsBySide.right.sort((a, b) => a.anchor.latitude - b.anchor.latitude);
+      placementsBySide.top.sort((a, b) => a.anchor.longitude - b.anchor.longitude);
+      placementsBySide.bottom.sort((a, b) => a.anchor.longitude - b.anchor.longitude);
+
+      const distribute = (count: number, min: number, max: number) => {
+        if (count <= 0) {
+          return [];
+        }
+        if (count === 1) {
+          return [(min + max) / 2];
+        }
+        const span = Math.max(1, max - min);
+        const step = span / (count + 1);
+        return Array.from({ length: count }, (_, idx) => min + step * (idx + 1));
+      };
+
+      const leftYs = distribute(placementsBySide.left.length, sidePadding + boxHeight / 2, mapSize.y - sidePadding - boxHeight / 2);
+      const rightYs = distribute(placementsBySide.right.length, sidePadding + boxHeight / 2, mapSize.y - sidePadding - boxHeight / 2);
+      const topXs = distribute(placementsBySide.top.length, sidePadding + boxWidth / 2, mapSize.x - sidePadding - boxWidth / 2);
+      const bottomXs = distribute(placementsBySide.bottom.length, sidePadding + boxWidth / 2, mapSize.x - sidePadding - boxWidth / 2);
+
+      const renderPlacement = (placement: Placement, targetPoint: { x: number; y: number }) => {
+        const targetLatLng = map.containerPointToLatLng(leaflet.point(targetPoint.x, targetPoint.y));
         const line = leaflet.polyline(
           [
-            [anchor.latitude, anchor.longitude],
+            [placement.anchor.latitude, placement.anchor.longitude],
             [targetLatLng.lat, targetLatLng.lng],
           ],
           {
@@ -1456,21 +1586,42 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
           },
         );
         line.addTo(layerGroup);
-        const rawText = String(item.content || "")
+        const rawText = String(placement.item.content || "")
           .replace(/\s+/g, " ")
           .trim()
           .slice(0, 520);
+        const iconAnchor =
+          placement.side === "left"
+            ? [0, boxHeight / 2]
+            : placement.side === "right"
+              ? [boxWidth, boxHeight / 2]
+              : placement.side === "top"
+                ? [boxWidth / 2, 0]
+                : [boxWidth / 2, boxHeight];
         const annotation = leaflet.marker([targetLatLng.lat, targetLatLng.lng], {
           icon: leaflet.divIcon({
             className: "doo-notam-raw-label-icon",
-            html: `<div class="doo-notam-raw-label"><strong>${escapeHtml(item.notamId)}</strong><div>${escapeHtml(rawText || "내용 없음")}</div></div>`,
-            iconSize: [250, 94],
-            iconAnchor: [250, 47],
+            html: `<div class="doo-notam-raw-label"><strong>${escapeHtml(placement.item.notamId)}</strong><div>${escapeHtml(rawText || "내용 없음")}</div></div>`,
+            iconSize: [boxWidth, boxHeight],
+            iconAnchor: iconAnchor as [number, number],
           }),
           interactive: false,
           keyboard: false,
         });
         annotation.addTo(layerGroup);
+      };
+
+      placementsBySide.left.forEach((placement, index) => {
+        renderPlacement(placement, { x: sidePadding, y: leftYs[index] ?? mapSize.y / 2 });
+      });
+      placementsBySide.right.forEach((placement, index) => {
+        renderPlacement(placement, { x: mapSize.x - sidePadding, y: rightYs[index] ?? mapSize.y / 2 });
+      });
+      placementsBySide.top.forEach((placement, index) => {
+        renderPlacement(placement, { x: topXs[index] ?? mapSize.x / 2, y: sidePadding });
+      });
+      placementsBySide.bottom.forEach((placement, index) => {
+        renderPlacement(placement, { x: bottomXs[index] ?? mapSize.x / 2, y: mapSize.y - sidePadding });
       });
     }
 
