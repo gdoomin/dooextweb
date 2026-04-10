@@ -2542,25 +2542,35 @@ textarea {
   }
 
   .doo-history-actions {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
     align-items: center;
     gap: 6px;
+    width: 100%;
+    overflow-x: scroll;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
+    scroll-behavior: smooth;
+    padding-bottom: 2px;
   }
 
   .doo-history-open,
   .doo-history-append,
   .doo-history-share {
-    width: 100%;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: auto;
+    min-width: max-content;
     padding: 8px 6px;
     font-size: 11px;
     white-space: nowrap;
   }
 
   .doo-history-delete {
-    width: 100%;
-    min-width: 0;
+    flex: 0 0 auto;
+    width: 32px;
+    min-width: 32px;
     height: 32px;
     font-size: 15px;
   }
