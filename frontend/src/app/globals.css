@@ -2502,6 +2502,34 @@ textarea {
   gap: 8px;
 }
 
+@media (hover: none) and (pointer: coarse) {
+  .doo-history-list-main {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .doo-history-row {
+    min-width: 620px;
+  }
+
+  .doo-history-actions {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x;
+    scrollbar-width: thin;
+    padding-bottom: 2px;
+  }
+
+  .doo-history-open,
+  .doo-history-append,
+  .doo-history-share,
+  .doo-history-delete {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+}
+
 @media (max-width: 1180px) {
   .doo-history-row {
     grid-template-columns: 1fr;
