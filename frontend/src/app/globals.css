@@ -2509,10 +2509,17 @@ textarea {
   }
 
   .doo-history-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 10px;
     min-width: 0;
   }
 
   .doo-history-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 100%;
     flex-wrap: nowrap;
     overflow-x: auto;
     overflow-y: hidden;
