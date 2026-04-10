@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-10T15:32:19.334031+00:00",
-  "last_successful_at": "2026-04-10T15:32:19.334031+00:00",
-  "last_attempted_at": "2026-04-10T15:32:19.334031+00:00",
+  "updated_at": "2026-04-10T18:32:28.783283+00:00",
+  "last_successful_at": "2026-04-10T18:32:28.783283+00:00",
+  "last_attempted_at": "2026-04-10T18:32:28.783283+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -95,18 +95,10 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 237,
+          "readCount": 242,
           "badges": [
             {
-              "code": "B1775835215580",
-              "attributes": {}
-            },
-            {
               "code": "RECOMMENDED_JOB_CHANGE",
-              "attributes": {}
-            },
-            {
-              "code": "A1775835215580",
               "attributes": {}
             }
           ],
@@ -116,7 +108,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 5027.01,
+          "_internal_score": 4984.9404,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -128,8 +120,8 @@
           "_internal_featureSkillCode": "채용,조종사,헬리콥터",
           "_internal_featureCompanyCode": "홍익항공",
           "_internal_featureLocationCode": "김포공항,송정,강서구",
-          "_internal_featureTotalCode": "항공촬영,채용,김포공항,홍익항공,기관사,사업용조종사,강서구,호텔,조종,항공,헬리콥터,송정,여행,조종사,운송용조종사",
-          "popularityScore": 139,
+          "_internal_featureTotalCode": "항공촬영,김포공항,채용,홍익항공,기관사,사업용조종사,강서구,호텔,조종,항공,헬리콥터,송정,여행,조종사,운송용조종사",
+          "popularityScore": 125,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -258,7 +250,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 652,
+          "readCount": 696,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -271,7 +263,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2003.1598,
+          "_internal_score": 1989.6897,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -282,8 +274,8 @@
           "_internal_featureSkillCode": "수습조종요원",
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
-          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,조종,수습조종요원,항공,에어부산",
-          "popularityScore": 251,
+          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
+          "popularityScore": 268,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -407,7 +399,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1129,
+          "readCount": 1184,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -420,7 +412,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2129.5647,
+          "_internal_score": 2116.1277,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -431,8 +423,8 @@
           "_internal_featureSkillCode": "수습조종요원",
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
-          "_internal_featureTotalCode": "항공신체검사,중구,mel,기관사,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
-          "popularityScore": 418,
+          "_internal_featureTotalCode": "항공신체검사,중구,mel,기관사,김해시,강서구,여행,호텔,조종,수습조종요원,항공,에어부산",
+          "popularityScore": 426,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -556,7 +548,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 594,
+          "readCount": 615,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -564,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2200.2214,
+          "_internal_score": 2186.8645,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -576,7 +568,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 227,
+          "popularityScore": 216,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -702,27 +694,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/9/20/JK_CO_I8mqf3c25092011323175.png?v=202604110033",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/9/20/JK_CO_I8mqf3c25092011323175.png?v=202604110333",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 856,
+          "readCount": 866,
           "badges": [
             {
-              "code": "B1775835215580",
-              "attributes": {}
-            },
-            {
               "code": "WAITING_FOR_APPLICANTS",
-              "attributes": {}
-            },
-            {
-              "code": "A1775835215580",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 3815.8887,
+          "_internal_score": 3792.2349,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -734,7 +718,7 @@
           "_internal_featureSkillCode": "경량항공기,조종사,교관,sns마케팅",
           "_internal_featureCompanyCode": "하늘누리경비행기화성교육원",
           "_internal_featureLocationCode": "화성시",
-          "_internal_featureTotalCode": "화성시,경량항공기,기관사,근무복 지원,식사 지원,sns마케팅,호텔,조종,하늘누리경비행기화성교육원,항공,항공신체검사,여행,조종사,교관",
+          "_internal_featureTotalCode": "경량항공기,화성시,기관사,근무복 지원,식사 지원,sns마케팅,호텔,조종,하늘누리경비행기화성교육원,항공,항공신체검사,여행,조종사,교관",
           "popularityScore": 74,
           "payRange": {
             "start": "0",
@@ -1099,8 +1083,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1138,7 +1122,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -1173,8 +1157,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
       "role_family": "flight_instructor",
       "license_tags": [
         "FI"
@@ -1213,7 +1197,7 @@
             "비행교관"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=91b0b096-b4ac-40d8-9351-b9a2abd3b667",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=649c8b9a-f5aa-486b-9b1e-6428c2d14e99",
           "role_family": "flight_instructor",
           "license_tags": [
             "FI"
@@ -1247,8 +1231,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=fe128863-52e2-46d7-a8e3-68c2769b1132",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=fe128863-52e2-46d7-a8e3-68c2769b1132",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=4c4c54e4-365b-46be-99b1-9890670dd75d",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=4c4c54e4-365b-46be-99b1-9890670dd75d",
       "role_family": "other_flight_crew",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -1284,7 +1268,7 @@
             "운항승무원"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=fe128863-52e2-46d7-a8e3-68c2769b1132",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=4c4c54e4-365b-46be-99b1-9890670dd75d",
           "role_family": "other_flight_crew",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
