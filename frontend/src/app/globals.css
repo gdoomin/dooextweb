@@ -929,6 +929,42 @@ textarea {
   gap: 6px;
 }
 
+.doo-notam-toolbar.is-before-flight {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.doo-notam-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+
+.doo-notam-field-label {
+  color: #b7d0e7;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.doo-notam-field-input {
+  width: 100%;
+  height: 34px;
+  border-radius: 9px;
+  border: 1px solid rgba(121, 192, 255, 0.2);
+  background: rgba(13, 28, 43, 0.84);
+  color: #eff6ff;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 10px;
+}
+
+.doo-notam-field-input:focus {
+  outline: 2px solid rgba(121, 192, 255, 0.25);
+  border-color: rgba(121, 192, 255, 0.45);
+}
+
 .doo-notam-filter {
   border-radius: 999px;
   border: 1px solid rgba(121, 192, 255, 0.18);
@@ -965,6 +1001,14 @@ textarea {
   width: 100%;
   height: 100%;
   min-height: 340px;
+}
+
+.doo-notam-before-flight {
+  min-height: 620px;
+}
+
+.doo-notam-before-flight .doo-notam-map-canvas {
+  min-height: 500px;
 }
 
 .doo-notam-map-overlay {
@@ -2802,6 +2846,11 @@ textarea {
   padding: 18px;
 }
 
+.doo-before-flight-notam-panel {
+  padding: 12px;
+  min-height: 700px;
+}
+
 .doo-safety-actions {
   display: flex;
   justify-content: flex-end;
@@ -3128,6 +3177,18 @@ textarea {
   }
 
   .doo-before-flight-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .doo-before-flight-notam-panel {
+    min-height: 580px;
+  }
+
+  .doo-notam-before-flight .doo-notam-map-canvas {
+    min-height: 420px;
+  }
+
+  .doo-notam-toolbar.is-before-flight {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

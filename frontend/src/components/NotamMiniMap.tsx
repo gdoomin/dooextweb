@@ -39,6 +39,12 @@ type LayerPayload = {
 
 type NotamGroupKey = "de" | "acgz";
 type NotamFilter = "ALL" | NotamGroupKey;
+type NotamMiniMapMode = "rail" | "beforeFlight";
+type NotamSeriesFilterValue = "ALL" | "A" | "C" | "D" | "E" | "G" | "Z" | "SNOWTAM";
+
+type NotamMiniMapProps = {
+  mode?: NotamMiniMapMode;
+};
 
 type CoordPoint = {
   latitude: number;
@@ -82,8 +88,19 @@ const FILTER_OPTIONS: Array<{ value: NotamFilter; label: string }> = [
   { value: "de", label: "NOTAM D,E" },
   { value: "acgz", label: "NOTAM A,C,G,Z" },
 ];
+const BEFORE_FLIGHT_SERIES_OPTIONS: Array<{ value: NotamSeriesFilterValue; label: string }> = [
+  { value: "ALL", label: "전체" },
+  { value: "A", label: "A" },
+  { value: "C", label: "C" },
+  { value: "D", label: "D" },
+  { value: "E", label: "E" },
+  { value: "G", label: "G" },
+  { value: "Z", label: "Z" },
+  { value: "SNOWTAM", label: "SNOWTAM" },
+];
 const NOTAM_SERIES_DE = new Set(["D", "E"]);
 const NOTAM_SERIES_ACGZ = new Set(["A", "C", "G", "Z"]);
+const NOTAM_SERIES_SNOWTAM = new Set(["S"]);
 const NOTAM_GROUP_COLORS: Record<NotamGroupKey, string> = {
   de: "#ff7e67",
   acgz: "#4bc6ff",
@@ -498,12 +515,43 @@ function resolveNotamGroupKey(seriesValue: string | undefined | null, notamIdVal
   if (NOTAM_SERIES_ACGZ.has(series)) {
     return "acgz";
   }
+  if (NOTAM_SERIES_SNOWTAM.has(series)) {
+    return "acgz";
+  }
   return "";
 }
 
 function getNotamSeriesLabel(notamIdValue: string, seriesValue = "") {
   const normalized = normalizeNotamSeries(seriesValue, notamIdValue);
   return normalized || "N";
+}
+
+function resolveSeriesFilterToken(item: ParsedNotamItem): NotamSeriesFilterValue {
+  const label = getNotamSeriesLabel(item.notamId, item.series);
+  if (label === "S" || /\bSNOWTAM\b/i.test(item.notamId) || /\bSNOWTAM\b/i.test(item.content)) {
+    return "SNOWTAM";
+  }
+  if (label === "A" || label === "C" || label === "D" || label === "E" || label === "G" || label === "Z") {
+    return label;
+  }
+  return "ALL";
+}
+
+function parseNotamDateMs(value: string | undefined | null) {
+  const raw = String(value || "").trim();
+  if (!raw) {
+    return null;
+  }
+  const direct = Date.parse(raw);
+  if (Number.isFinite(direct)) {
+    return direct;
+  }
+  const normalized = raw.replace(/\./g, "-").replace(/\//g, "-").replace(/\s+/g, " ").trim();
+  const retried = Date.parse(normalized);
+  if (Number.isFinite(retried)) {
+    return retried;
+  }
+  return null;
 }
 
 function isNotamQrpca(content: string) {
@@ -739,24 +787,59 @@ async function fetchRestrictLookup(signal?: AbortSignal) {
   }
   return buildRestrictLookup(payload);
 }
-export function NotamMiniMap() {
+export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
+  const isBeforeFlightMode = mode === "beforeFlight";
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<LeafletMap | null>(null);
   const layerGroupRef = useRef<LayerGroup | null>(null);
   const leafletRef = useRef<LeafletModule | null>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
   const [activeFilter, setActiveFilter] = useState<NotamFilter>("ALL");
+  const [seriesFilter, setSeriesFilter] = useState<NotamSeriesFilterValue>("ALL");
+  const [effectiveStartDate, setEffectiveStartDate] = useState("");
+  const [effectiveEndDate, setEffectiveEndDate] = useState("");
   const [items, setItems] = useState<ParsedNotamItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
 
   const filteredItems = useMemo(() => {
-    if (activeFilter === "ALL") {
-      return items;
+    if (!isBeforeFlightMode) {
+      if (activeFilter === "ALL") {
+        return items;
+      }
+      return items.filter((item) => item.groupKey === activeFilter);
     }
-    return items.filter((item) => item.groupKey === activeFilter);
-  }, [activeFilter, items]);
+
+    const startMs = effectiveStartDate ? Date.parse(`${effectiveStartDate}T00:00:00`) : null;
+    const endMs = effectiveEndDate ? Date.parse(`${effectiveEndDate}T23:59:59.999`) : null;
+
+    return items.filter((item) => {
+      if (seriesFilter !== "ALL") {
+        const itemSeries = resolveSeriesFilterToken(item);
+        if (itemSeries !== seriesFilter) {
+          return false;
+        }
+      }
+
+      if (!Number.isFinite(startMs ?? NaN) && !Number.isFinite(endMs ?? NaN)) {
+        return true;
+      }
+
+      const itemStartMs = parseNotamDateMs(item.raw.start_date);
+      const itemEndMs = parseNotamDateMs(item.raw.end_date);
+      const windowStart = itemStartMs ?? itemEndMs;
+      const windowEnd = itemEndMs ?? itemStartMs;
+
+      if (Number.isFinite(startMs ?? NaN) && Number.isFinite(windowEnd ?? NaN) && (windowEnd as number) < (startMs as number)) {
+        return false;
+      }
+      if (Number.isFinite(endMs ?? NaN) && Number.isFinite(windowStart ?? NaN) && (windowStart as number) > (endMs as number)) {
+        return false;
+      }
+      return true;
+    });
+  }, [activeFilter, effectiveEndDate, effectiveStartDate, isBeforeFlightMode, items, seriesFilter]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1084,19 +1167,30 @@ export function NotamMiniMap() {
       return { className: "doo-notam-map-overlay", text: "표시할 NOTAM이 없습니다." };
     }
     if (!filteredItems.length) {
+      if (isBeforeFlightMode) {
+        return {
+          className: "doo-notam-map-overlay",
+          text: "선택한 발효일자/Series 조건에 맞는 NOTAM이 없습니다.",
+        };
+      }
       return {
         className: "doo-notam-map-overlay",
         text: `${activeFilter === "de" ? "NOTAM D,E" : "NOTAM A,C,G,Z"} 타입으로 표시할 NOTAM이 없습니다.`,
       };
     }
     return null;
-  }, [activeFilter, error, filteredItems.length, hasLoaded, isLoading, items.length]);
+  }, [activeFilter, error, filteredItems.length, hasLoaded, isBeforeFlightMode, isLoading, items.length]);
+
+  const sectionTitle = isBeforeFlightMode ? "NOTAM 확인" : "NOTAM 현황";
 
   return (
-    <section className="doo-rail-card doo-rail-card-notam" aria-label="NOTAM 현황">
+    <section
+      className={`doo-rail-card doo-rail-card-notam${isBeforeFlightMode ? " doo-notam-before-flight" : ""}`}
+      aria-label={sectionTitle}
+    >
       <div className="doo-notam-head">
         <div className="doo-notam-headline">
-          <span className="doo-notam-title">NOTAM 현황</span>
+          <span className="doo-notam-title">{sectionTitle}</span>
         </div>
         <div className="doo-notam-head-actions">
           <button
@@ -1123,17 +1217,58 @@ export function NotamMiniMap() {
         </div>
       </div>
 
-      <div className="doo-notam-toolbar" role="group" aria-label="NOTAM 타입 필터">
-        {FILTER_OPTIONS.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            className={`doo-notam-filter${activeFilter === option.value ? " is-active" : ""}`}
-            onClick={() => setActiveFilter(option.value)}
-          >
-            {option.label}
-          </button>
-        ))}
+      <div
+        className={`doo-notam-toolbar${isBeforeFlightMode ? " is-before-flight" : ""}`}
+        role="group"
+        aria-label={isBeforeFlightMode ? "NOTAM 발효일자 및 Series 필터" : "NOTAM 타입 필터"}
+      >
+        {isBeforeFlightMode ? (
+          <>
+            <label className="doo-notam-field">
+              <span className="doo-notam-field-label">발효 시작일자</span>
+              <input
+                type="date"
+                value={effectiveStartDate}
+                onChange={(event) => setEffectiveStartDate(event.target.value)}
+                className="doo-notam-field-input"
+              />
+            </label>
+            <label className="doo-notam-field">
+              <span className="doo-notam-field-label">발효 종료일자</span>
+              <input
+                type="date"
+                value={effectiveEndDate}
+                onChange={(event) => setEffectiveEndDate(event.target.value)}
+                className="doo-notam-field-input"
+              />
+            </label>
+            <label className="doo-notam-field">
+              <span className="doo-notam-field-label">Series</span>
+              <select
+                value={seriesFilter}
+                onChange={(event) => setSeriesFilter(event.target.value as NotamSeriesFilterValue)}
+                className="doo-notam-field-input"
+              >
+                {BEFORE_FLIGHT_SERIES_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
+        ) : (
+          FILTER_OPTIONS.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              className={`doo-notam-filter${activeFilter === option.value ? " is-active" : ""}`}
+              onClick={() => setActiveFilter(option.value)}
+            >
+              {option.label}
+            </button>
+          ))
+        )}
       </div>
 
       <div className="doo-notam-map-shell">

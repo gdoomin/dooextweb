@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
+import { NotamMiniMap } from "@/components/NotamMiniMap";
 
 type BeforeFlightTab = {
   key: string;
@@ -294,6 +295,10 @@ export default function BeforeFlightPage() {
                 print
               </button>
             </div>
+          </section>
+        ) : activeTab === "notam" ? (
+          <section className="doo-before-flight-content doo-before-flight-notam-panel" role="tabpanel" aria-live="polite">
+            <NotamMiniMap mode="beforeFlight" />
           </section>
         ) : (
           <section className="doo-before-flight-content" role="tabpanel" aria-live="polite">
