@@ -20,10 +20,10 @@
         linear-gradient(180deg, #d6dde7 0%, #c8d0db 100%);
     }
     .leaflet-tile.weather-satellite-base-tile {
-      filter: saturate(1.34) contrast(1.08) brightness(1.04);
+      filter: none;
     }
     .leaflet-tile.weather-satellite-cloud-tile {
-      filter: grayscale(1) contrast(1.34) brightness(1.22);
+      filter: saturate(1.08) contrast(1.1) brightness(1.04);
     }
     body.preview-gated #map,
     body.preview-gated .panel,
@@ -3994,7 +3994,7 @@
     const WEATHER_LAYER_DEFS = [
       { key: 'metar', label: 'METAR/TAF', note: 'AviationWeather 공항 관측/예보', badge: 'OBS' },
       { key: 'atis', label: 'ATIS', note: 'atis.guru D-ATIS', badge: 'ATIS' },
-      { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(낮/밤 자동)', badge: 'HIMA' },
+      { key: 'satellite', label: '위성영상', note: '히마와리8 실시간(B03 가시광 단일밴드)', badge: 'HIMA' },
     ];
     // CCTV_TEST_FEATURE_START
     const WEATHER_CCTV_TEST_HLS_JS_URL = 'https://cdn.jsdelivr.net/npm/hls.js@1.5.18/dist/hls.min.js';
@@ -4232,8 +4232,8 @@
     map.getPane('kmzPointPane').style.zIndex = '640';
     map.createPane('weatherSatellitePane');
     map.getPane('weatherSatellitePane').style.zIndex = '240';
-    map.getPane('weatherSatellitePane').style.mixBlendMode = 'screen';
-    map.getPane('weatherSatellitePane').style.filter = 'contrast(1.18) saturate(0.22) brightness(1.20)';
+    map.getPane('weatherSatellitePane').style.mixBlendMode = 'normal';
+    map.getPane('weatherSatellitePane').style.filter = 'none';
     map.createPane('koreaOutlinePane');
     map.getPane('koreaOutlinePane').style.zIndex = '245';
     map.createPane('weatherOverlayPane');
@@ -11890,10 +11890,8 @@
         throw new Error('himawari timestamp unavailable');
       }
 
-      const koreaBounds = [[33.0, 124.0], [39.0, 132.0]];
-      const isDay = isDaylightOverKorea(latest.date, koreaBounds);
-      const bandPath = isDay ? 'B03/ALBD' : 'B13/TBB';
-      const channel = isDay ? 'vi006' : 'ir105';
+      const bandPath = 'B03/ALBD';
+      const channel = 'vi006';
       const root = `https://www.jma.go.jp/bosai/himawari/data/satimg/${latest.raw}/fd/${latest.raw}/${bandPath}`;
       const tileUrl = `${root}/{z}/{x}/{y}.jpg`;
 
@@ -11903,7 +11901,7 @@
         updated_at: latest.date.toISOString(),
         channel,
         attribution: 'JMA Himawari',
-        opacity: isDay ? 0.56 : 0.64,
+        opacity: 0.76,
         max_zoom: 19,
         max_native_zoom: 5,
         refresh_seconds: 600,
@@ -15475,9 +15473,9 @@
     function createKoreaOutlineStyle() {
       return {
         pane: 'koreaOutlinePane',
-        color: '#111111',
-        weight: 2.0,
-        opacity: 0.95,
+        color: '#baff57',
+        weight: 1.8,
+        opacity: 0.98,
         fill: false,
         interactive: false,
         lineJoin: 'round',
@@ -15897,8 +15895,8 @@
         if (map.hasLayer(baseTileLayer)) {
           map.removeLayer(baseTileLayer);
         }
-        if (!map.hasLayer(satelliteBaseTileLayer)) {
-          satelliteBaseTileLayer.addTo(map);
+        if (map.hasLayer(satelliteBaseTileLayer)) {
+          map.removeLayer(satelliteBaseTileLayer);
         }
         applyBaseMapTone();
         return;
