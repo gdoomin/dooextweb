@@ -1636,6 +1636,7 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
   }, [hasLoaded, isBeforeFlightMode, planningConfirmed, planningPointList, renderItems, selectingPointKey]);
 
   const overlayMessage = useMemo(() => {
+    const hintOverlayClass = "doo-notam-map-overlay doo-notam-map-overlay-hint";
     if (isLoading) {
       return { className: "doo-notam-map-overlay doo-notam-map-overlay-loading", text: "NOTAM 불러오는 중..." };
     }
@@ -1651,12 +1652,12 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     if (isBeforeFlightMode && !planningConfirmed) {
       if (!planningReady) {
         return {
-          className: "doo-notam-map-overlay",
+          className: hintOverlayClass,
           text: "출발지·임무지역·도착지를 클릭해 고도를 입력한 뒤 완료를 눌러 주세요.",
         };
       }
       return {
-        className: "doo-notam-map-overlay",
+        className: hintOverlayClass,
         text: "완료를 누르면 해당 구간 NOTAM이 표시됩니다.",
       };
     }
@@ -1674,7 +1675,7 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     }
     if (isBeforeFlightMode && !renderItems.length) {
       return {
-        className: "doo-notam-map-overlay",
+        className: hintOverlayClass,
         text: "선택 위치/고도(±2000ft)에 해당하는 NOTAM이 없습니다.",
       };
     }

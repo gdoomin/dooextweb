@@ -1077,6 +1077,24 @@ textarea {
   color: #ffb1a9;
 }
 
+.doo-notam-map-overlay-hint {
+  inset: auto auto auto auto;
+  top: 12px;
+  left: 50%;
+  right: auto;
+  bottom: auto;
+  transform: translateX(-50%);
+  width: auto;
+  max-width: min(94%, 680px);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(121, 192, 255, 0.28);
+  background: rgba(8, 16, 26, 0.72);
+  font-size: 12px;
+  line-height: 1.35;
+  z-index: 520;
+}
+
 .doo-notam-pin-icon {
   background: transparent;
   border: 0;
