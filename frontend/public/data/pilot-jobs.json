@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-11T12:26:17.672071+00:00",
-  "last_successful_at": "2026-04-11T12:26:17.672071+00:00",
-  "last_attempted_at": "2026-04-11T12:26:17.672071+00:00",
+  "updated_at": "2026-04-11T15:24:34.550972+00:00",
+  "last_successful_at": "2026-04-11T15:24:34.550972+00:00",
+  "last_attempted_at": "2026-04-11T15:24:34.550972+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -98,7 +98,7 @@
           "readCount": 242,
           "badges": [
             {
-              "code": "RECOMMENDED_JOB_CHANGE",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
@@ -108,7 +108,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 4992.579,
+          "_internal_score": 5033.0527,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -253,7 +253,7 @@
           "readCount": 696,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
@@ -263,7 +263,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2008.8649,
+          "_internal_score": 2007.4763,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -412,7 +412,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2135.2903,
+          "_internal_score": 2133.5842,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -556,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2205.9333,
+          "_internal_score": 2204.0364,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -605,158 +605,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "중구,김해시,강서구 · 2"
-        }
-      }
-    },
-    {
-      "id": "48582976",
-      "slug": "하늘누리경비행기화성교육원-하늘누리-비행교육원-시간제-군-경력-교관-조종사-모집-48582976",
-      "job_no": "48582976",
-      "source_job_key": "48582976",
-      "title": "[하늘누리 비행교육원] [시간제] (군 경력) 교관 조종사 모집",
-      "company": "㈜하늘누리경비행기화성교육원",
-      "company_slug": "하늘누리경비행기화성교육원",
-      "location": "화성시",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "2",
-      "experience_level": "open",
-      "deadline_text": "2070.01.01",
-      "deadline_date": "2070.01.01",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사",
-        "비행교관"
-      ],
-      "source": "JobKorea Search",
-      "source_code": "jobkorea",
-      "source_label": "JobKorea Search",
-      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48582976",
-      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48582976",
-      "role_family": "flight_instructor",
-      "license_tags": [
-        "FI"
-      ],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "화성시 · 2",
-      "posted_at": "2026-02-10T16:27:48.07+09:00",
-      "deadline_at": "2070-01-01T00:00:00+09:00",
-      "is_always_open": true,
-      "location_country": "",
-      "location_region": "화성시",
-      "location_city": "",
-      "search_document": "[하늘누리 비행교육원] [시간제] (군 경력) 교관 조종사 모집 ㈜하늘누리경비행기화성교육원 화성시 2 ,호텔·여행·항공,조종·기관사, 항공신체검사 경량항공기,조종사,교관,sns마케팅 화성시 조종사 비행교관 FI 비행교관",
-      "raw_payload": {
-        "source_record": {
-          "id": "48582976",
-          "legacyJobNo": "50373630",
-          "title": "[하늘누리 비행교육원] [시간제] (군 경력) 교관 조종사 모집",
-          "createdAt": "2026-02-10T16:27:48.07+09:00",
-          "postingCompanyName": "㈜하늘누리경비행기화성교육원",
-          "userRefType": "C",
-          "memberSystemNo": "47259264",
-          "jobOrIndustryCodeList": [
-            "1000001",
-            "1000276"
-          ],
-          "employmentTypeCodeList": [
-            "6/0"
-          ],
-          "areaCodeList": [
-            "B390"
-          ],
-          "careerType": "2",
-          "careerRange": 2,
-          "educationCode": "5",
-          "benefitNameList": [
-            "근무복 지원",
-            "식사 지원"
-          ],
-          "companyName": "㈜하늘누리경비행기화성교육원",
-          "companyType": "0",
-          "isExposeWorkCompany": false,
-          "receptionOptionType": "100000",
-          "applicationPeriod": {
-            "start": "2026-02-10T00:00:00+09:00",
-            "end": "2070-01-01T00:00:00+09:00"
-          },
-          "isSubcontract": false,
-          "isNewcomerJob": false,
-          "jobTypeCode": null,
-          "isExistProductLogo": false,
-          "stockTypeCode": "0",
-          "companyRank": 0,
-          "companySubsidiary": null,
-          "smallGiantCompanyTypeCode": "0",
-          "excellentSmallCompanyTypeCode": 0,
-          "awardInfo": "0",
-          "goodWorkCompanyCodeList": null,
-          "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/9/20/JK_CO_I8mqf3c25092011323175.png?v=202604112127",
-          "textLogoPath": null,
-          "oemNo": "1",
-          "rewardAmount": 0,
-          "readCount": 866,
-          "badges": [
-            {
-              "code": "WAITING_FOR_APPLICANTS",
-              "attributes": {}
-            }
-          ],
-          "badgesV2": [],
-          "_internal_score": 3793.487,
-          "_internal_weightValue": 10,
-          "_internal_keywordList": [
-            "조종사",
-            "항공운송"
-          ],
-          "_internal_featureWorkCode": "기관사,조종,조종사",
-          "_internal_featureIndustryCode": "여행,호텔,항공",
-          "_internal_featureToolCode": "항공신체검사",
-          "_internal_featureSkillCode": "경량항공기,조종사,교관,sns마케팅",
-          "_internal_featureCompanyCode": "하늘누리경비행기화성교육원",
-          "_internal_featureLocationCode": "화성시",
-          "_internal_featureTotalCode": "경량항공기,화성시,기관사,근무복 지원,식사 지원,sns마케팅,호텔,조종,하늘누리경비행기화성교육원,항공,항공신체검사,여행,조종사,교관",
-          "popularityScore": 74,
-          "payRange": {
-            "start": "0",
-            "end": "0"
-          },
-          "isAppliedJob": false,
-          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
-          "memberId": "skynuri5056",
-          "payTypeCode": 0,
-          "isStarter": null,
-          "urlName": null,
-          "companyTypeCode": 1
-        },
-        "normalized": {
-          "id": "48582976",
-          "job_no": "48582976",
-          "title": "[하늘누리 비행교육원] [시간제] (군 경력) 교관 조종사 모집",
-          "company": "㈜하늘누리경비행기화성교육원",
-          "location": "화성시",
-          "employment_type": "",
-          "experience": "2",
-          "deadline_text": "2070.01.01",
-          "deadline_date": "2070.01.01",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사",
-            "비행교관"
-          ],
-          "source": "JobKorea Search",
-          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48582976",
-          "role_family": "flight_instructor",
-          "license_tags": [
-            "FI"
-          ],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "화성시 · 2"
         }
       }
     },
@@ -829,7 +677,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 264,
+          "deadlineCount": 263,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -929,7 +777,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 264,
+          "deadlineCount": 263,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1029,7 +877,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 264,
+          "deadlineCount": 263,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -1083,8 +931,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1122,7 +970,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -1157,8 +1005,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
       "role_family": "flight_instructor",
       "license_tags": [
         "FI"
@@ -1197,7 +1045,7 @@
             "비행교관"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=de923f3b-b65d-4f2b-a1fe-0438c8e39f56",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53061798&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a19b13e7-e9a7-4298-8773-3030e5d69830",
           "role_family": "flight_instructor",
           "license_tags": [
             "FI"
@@ -1231,8 +1079,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dc694457-427d-4c37-ae82-4671feb94414",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dc694457-427d-4c37-ae82-4671feb94414",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=342d09ec-2556-4c33-be7c-c4c0db38d72a",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=342d09ec-2556-4c33-be7c-c4c0db38d72a",
       "role_family": "other_flight_crew",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -1268,7 +1116,7 @@
             "운항승무원"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dc694457-427d-4c37-ae82-4671feb94414",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=342d09ec-2556-4c33-be7c-c4c0db38d72a",
           "role_family": "other_flight_crew",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
