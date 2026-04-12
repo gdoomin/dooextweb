@@ -5265,23 +5265,10 @@ def delete_history_item(job_id: str, request: Request):
     if not _job_matches_identity(target_job, user_id, user_email):
         raise HTTPException(status_code=404, detail="history item not found")
 
-    source_hash = _normalize_source_hash(str(target_job.get("source_hash") or ""))
-    if source_hash:
-        owned_jobs = _collect_owned_jobs(user_id, user_email, source_hash=source_hash, access_token=access_token)
-    else:
-        owned_jobs = [target_job]
-
-    deleted_job_ids = _delete_owned_jobs(owned_jobs, access_token=access_token)
+    deleted_job_ids = _delete_owned_jobs([target_job], access_token=access_token)
     deleted_job_ids = [job_id for job_id in deleted_job_ids if job_id]
     if not deleted_job_ids:
         deleted_job_ids = [target_job_id]
-    if source_hash:
-        _delete_viewer_state_refs_for_identity(
-            user_id,
-            user_email,
-            source_hash=source_hash,
-            access_token=access_token,
-        )
 
     removed_local = False
     removed_supabase = False
@@ -5298,7 +5285,7 @@ def delete_history_item(job_id: str, request: Request):
             "job_id": target_job_id,
             "deleted_count": len(deleted_job_ids),
             "deleted_job_ids": deleted_job_ids,
-            "source_hash": source_hash,
+            "source_hash": _normalize_source_hash(str(target_job.get("source_hash") or "")),
         }
     )
 

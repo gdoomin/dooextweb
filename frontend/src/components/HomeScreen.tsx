@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.1.8";
+const APP_VERSION = "4.1.10";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -1789,7 +1789,28 @@ export function HomeScreen({
         setStatusMessage("같은 파일입니다. 스택에 추가하지 않았습니다.");
         return;
       }
-      const nextStack = [...stackItems, createStackEntry(normalized, viewerState)];
+      const enrichedStackItems: StackEntry[] = includeCompletion
+        ? await Promise.all(
+            stackItems.map(async (entry) => {
+              if (entry.viewerState || !entry.response?.job_id) {
+                return entry;
+              }
+              try {
+                const baseViewerState = await fetchViewerStateSnapshot(
+                  entry.response.job_id,
+                  userId,
+                  userEmail,
+                  accessToken,
+                );
+                return { ...entry, viewerState: baseViewerState };
+              } catch {
+                return entry;
+              }
+            }),
+          )
+        : stackItems;
+
+      const nextStack = [...enrichedStackItems, createStackEntry(normalized, viewerState)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
       setStatusTone("success");
