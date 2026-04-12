@@ -117,6 +117,10 @@ KOREA_OUTLINE_PATH = ASSETS_DIR / "korea_outline.geojson"
 ATIS_GURU_BASE_URL = "https://atis.guru/atis"
 ATIS_GURU_TIMEOUT_SECONDS = 18
 ATIS_GURU_CACHE_TTL_SECONDS = 120
+AWC_BASE_URL = "https://aviationweather.gov/api/data"
+AWC_TIMEOUT_SECONDS = 12
+AWC_METAR_TTL_SECONDS = 300
+AWC_TAF_TTL_SECONDS = 900
 # CCTV_TEST_FEATURE_START
 CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
 CCTV42_ENTRY_PATH = "playlist.m3u8"
@@ -215,6 +219,9 @@ ATIS_VISIBLE_ICAOS = {
 }
 _ATIS_DETAIL_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _ATIS_CACHE_LOCK = threading.Lock()
+_AWC_METAR_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+_AWC_TAF_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+_AWC_CACHE_LOCK = threading.Lock()
 _PILOT_JOBS_CACHE_LOCK = threading.Lock()
 _KBS_CCTV_API_URL_CACHE: dict[str, tuple[float, str]] = {}
 _KBS_CCTV_API_CACHE_LOCK = threading.Lock()
@@ -2441,6 +2448,113 @@ def _atis_extract_block(page_html: str, title: str) -> dict[str, str]:
     return {"title": title, "observed_at": observed_at, "raw": raw}
 
 
+def _awc_extract_raw(record: dict[str, Any], keys: tuple[str, ...]) -> str:
+    for key in keys:
+        value = record.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _awc_extract_time(record: dict[str, Any], keys: tuple[str, ...]) -> str:
+    for key in keys:
+        value = record.get(key)
+        if isinstance(value, str) and value.strip():
+            return value.strip()
+    return ""
+
+
+def _fetch_awc_product(product: str, icaos: list[str]) -> dict[str, dict[str, Any]]:
+    if not icaos:
+        return {}
+    ids_param = ",".join(icaos)
+    request = UrlRequest(
+        f"{AWC_BASE_URL}/{product}?ids={quote(ids_param)}&format=json",
+        headers={
+            "User-Agent": "dooextweb-awc/0.1",
+            "Accept": "application/json",
+        },
+    )
+    try:
+        with urlopen(request, timeout=AWC_TIMEOUT_SECONDS) as response:
+            raw = response.read()
+    except (HTTPError, URLError, TimeoutError) as error:
+        raise WeatherProviderError(f"AWC fetch failed: {error}") from error
+
+    if not raw:
+        return {}
+    try:
+        payload = json.loads(raw.decode("utf-8"))
+    except Exception as error:
+        raise WeatherProviderError(f"AWC decode failed: {error}") from error
+    if not isinstance(payload, list):
+        return {}
+    results: dict[str, dict[str, Any]] = {}
+    for item in payload:
+        if not isinstance(item, dict):
+            continue
+        icao = str(item.get("icaoId") or item.get("station") or item.get("id") or "").strip().upper()
+        if not icao:
+            continue
+        results[icao] = item
+    return results
+
+
+def _get_awc_cached(
+    cache: dict[str, tuple[float, dict[str, Any]]],
+    icao: str,
+    ttl_seconds: int,
+    product: str,
+    raw_keys: tuple[str, ...],
+    time_keys: tuple[str, ...],
+) -> dict[str, str]:
+    now = time.time()
+    cached = cache.get(icao)
+    if cached and cached[0] > now:
+        return cached[1]
+
+    with _AWC_CACHE_LOCK:
+        cached = cache.get(icao)
+        if cached and cached[0] > now:
+            return cached[1]
+
+        stale_value = cached[1] if cached else {}
+        try:
+            payload = _fetch_awc_product(product, [icao])
+            record = payload.get(icao, {})
+            raw_text = _awc_extract_raw(record, raw_keys)
+            observed_at = _awc_extract_time(record, time_keys)
+            value = {"raw": raw_text, "observed_at": observed_at}
+            cache[icao] = (now + ttl_seconds, value)
+            return value
+        except WeatherProviderError:
+            if stale_value:
+                return stale_value
+            return {"raw": "", "observed_at": ""}
+
+
+def _get_awc_metar(icao: str) -> dict[str, str]:
+    return _get_awc_cached(
+        _AWC_METAR_CACHE,
+        icao,
+        AWC_METAR_TTL_SECONDS,
+        "metar",
+        ("rawOb", "rawText", "raw_text", "raw"),
+        ("reportTime", "obsTime", "obsTimeString", "time"),
+    )
+
+
+def _get_awc_taf(icao: str) -> dict[str, str]:
+    return _get_awc_cached(
+        _AWC_TAF_CACHE,
+        icao,
+        AWC_TAF_TTL_SECONDS,
+        "taf",
+        ("rawTAF", "rawText", "raw_text", "raw"),
+        ("issueTime", "issueTimeString", "validTimeFrom", "time"),
+    )
+
+
 def _fetch_atis_detail_from_source(icao: str) -> dict[str, Any]:
     normalized_icao = str(icao or "").strip().upper()
     if not normalized_icao:
@@ -2507,7 +2621,45 @@ def _get_atis_detail(icao: str) -> dict[str, Any]:
         cached = _ATIS_DETAIL_CACHE.get(normalized_icao)
         if cached and cached[0] > now:
             return cached[1]
-        payload = _fetch_atis_detail_from_source(normalized_icao)
+        awc_metar = _get_awc_metar(normalized_icao)
+        awc_taf = _get_awc_taf(normalized_icao)
+        has_awc_metar = bool(awc_metar.get("raw"))
+        has_awc_taf = bool(awc_taf.get("raw"))
+
+        payload: dict[str, Any]
+        if has_awc_metar or has_awc_taf:
+            atis_fallback: dict[str, Any] | None = None
+            if not has_awc_metar or not has_awc_taf:
+                try:
+                    atis_fallback = _fetch_atis_detail_from_source(normalized_icao)
+                except WeatherProviderError:
+                    atis_fallback = None
+
+            metar_raw = awc_metar.get("raw") or (atis_fallback or {}).get("metar", {}).get("raw", "")
+            taf_raw = awc_taf.get("raw") or (atis_fallback or {}).get("taf", {}).get("raw", "")
+            metar_time = awc_metar.get("observed_at") or (atis_fallback or {}).get("metar", {}).get("observed_at", "")
+            taf_time = awc_taf.get("observed_at") or (atis_fallback or {}).get("taf", {}).get("observed_at", "")
+            updated_at = metar_time or taf_time or (atis_fallback or {}).get("updated_at", "")
+
+            payload = {
+                "ok": True,
+                "source": "AWC",
+                "source_url": "https://aviationweather.gov/data/api/",
+                "icao": normalized_icao,
+                "page_title": normalized_icao,
+                "airport_title": (atis_fallback or {}).get("airport_title", ""),
+                "has_data": bool(metar_raw or taf_raw),
+                "no_data": not bool(metar_raw or taf_raw),
+                "updated_at": updated_at,
+                "arrival": (atis_fallback or {}).get("arrival", {"title": "Arrival ATIS", "observed_at": "", "raw": ""}),
+                "departure": (atis_fallback or {}).get("departure", {"title": "Departure ATIS", "observed_at": "", "raw": ""}),
+                "metar": {"title": "METAR", "observed_at": metar_time, "raw": metar_raw},
+                "taf": {"title": "TAF", "observed_at": taf_time, "raw": taf_raw},
+                "fetched_at": datetime.now(timezone.utc).isoformat(),
+            }
+        else:
+            payload = _fetch_atis_detail_from_source(normalized_icao)
+
         _ATIS_DETAIL_CACHE[normalized_icao] = (now + ATIS_GURU_CACHE_TTL_SECONDS, payload)
         return payload
 
