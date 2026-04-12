@@ -518,7 +518,7 @@ export async function fetchViewerStateSnapshot(
   userEmail = "",
   accessToken = "",
 ): Promise<Record<string, unknown>> {
-  const response = await fetch(`${API_BASE_URL}/api/viewer/${jobId}/viewer-state`, {
+  const response = await fetch(`${API_BASE_URL}/api/viewer/${jobId}/viewer-state?export=1`, {
     headers: buildUserHeaders(userId, userEmail, accessToken),
     cache: "no-store",
   });

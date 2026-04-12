@@ -5079,9 +5079,19 @@ def delete_user_bookmark(bookmark_id: str, request: Request):
 @app.get("/api/viewer/{job_id}/viewer-state")
 def get_viewer_state(job_id: str, request: Request):
     access_token = _extract_bearer_token(request)
-    _request_identity_with_created_at(request, required=False)
+    user_id, user_email, _ = _request_identity_with_created_at(request, required=False)
     job = _load_job(job_id, access_token=access_token)
     embedded_state = _sanitize_shared_viewer_state(job.get("shared_viewer_state"))
+    export_requested = str(request.query_params.get("export") or "").lower() in {"1", "true", "yes", "on"}
+    if export_requested and _job_matches_identity(job, user_id, user_email):
+        remote_state = _viewer_state_supabase_fetch(job, access_token=access_token)
+        if isinstance(remote_state, dict):
+            return JSONResponse(remote_state)
+        for path in _viewer_state_paths_for_job(job):
+            data = _load_json(path, {})
+            if isinstance(data, dict) and data:
+                return JSONResponse(data)
+        return JSONResponse(embedded_state)
     billing_status = _job_owner_billing_status(job)
     if not _has_feature_access(billing_status, "viewer_state"):
         return JSONResponse(embedded_state)
