@@ -1141,12 +1141,8 @@ def _viewer_state_owner_key(job: dict) -> str:
 
 def _viewer_state_storage_keys(job: dict) -> list[str]:
     keys: list[str] = []
-    owner_key = _viewer_state_owner_key(job)
-    source_hash = _normalize_source_hash(str(job.get("source_hash") or ""))
     job_id = str(job.get("job_id") or "").strip()
 
-    if owner_key and source_hash:
-        keys.append(f"file:{owner_key}:{source_hash}")
     if job_id:
         keys.append(f"job:{job_id}")
 
