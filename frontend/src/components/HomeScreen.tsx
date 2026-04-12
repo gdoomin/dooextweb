@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.1.11";
+const APP_VERSION = "4.2.1";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -630,25 +630,103 @@ function isSharedConvertFilename(filename: string): boolean {
   return String(filename || "").trim().toLowerCase().endsWith(SHARED_FILE_EXTENSION);
 }
 
-function sanitizeSharedViewerStateForExport(viewerState: Record<string, unknown>): Record<string, unknown> {
-  if (!viewerState || typeof viewerState !== "object") {
-    return {};
+const DONE_COLOR_FALLBACK = "#b7ff3c";
+
+function normalizeCompletionStateList(value: unknown): Array<{ id: number; source: "manual" | "gpx" }> {
+  if (!Array.isArray(value)) {
+    return [];
   }
-  const sanitized = { ...viewerState };
-  delete sanitized.weather;
-  delete sanitized.weatherOverlay;
-  delete sanitized.notam;
-  return sanitized;
+  return value
+    .map((item) => {
+      if (!item || typeof item !== "object") {
+        return null;
+      }
+      const record = item as Record<string, unknown>;
+      const id = Number(record.id);
+      if (!Number.isFinite(id)) {
+        return null;
+      }
+      return {
+        id,
+        source: record.source === "gpx" ? "gpx" : "manual",
+      };
+    })
+    .filter((item): item is { id: number; source: "manual" | "gpx" } => Boolean(item));
+}
+
+function sanitizeSharedViewerStateForExport(viewerState: Record<string, unknown>): Record<string, unknown> {
+  const base = viewerState && typeof viewerState === "object" ? { ...viewerState } : {};
+  delete base.weather;
+  delete base.weatherOverlay;
+  delete base.notam;
+
+  const completedLineIds = Array.isArray(base.completedLineIds)
+    ? base.completedLineIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+    : [];
+  const completionStates = normalizeCompletionStateList(base.completionStates);
+  const doneColor =
+    typeof base.doneColor === "string" && /^#[0-9a-f]{6}$/i.test(base.doneColor) ? base.doneColor : DONE_COLOR_FALLBACK;
+
+  return {
+    ...base,
+    completedLineIds,
+    completionStates,
+    doneColor,
+  };
 }
 
 function buildSharedConvertPayload(response: ConvertResponse): ClientConvertRequestBody {
+  const mapPayload = response.map_payload;
+  let patchedGeoJson = mapPayload?.geojson;
+  if (mapPayload?.mode === "linestring" && mapPayload?.geojson?.type === "FeatureCollection") {
+    const results = extractLineResults(response);
+    patchedGeoJson = {
+      ...mapPayload.geojson,
+      features: mapPayload.geojson.features.map((feature, index) => {
+        if (!feature || feature.type !== "Feature") {
+          return feature;
+        }
+        if (!feature.geometry || feature.geometry.type !== "LineString") {
+          return feature;
+        }
+        const properties = {
+          ...(feature.properties || {}),
+        };
+        const existingLabel =
+          String(properties.num || "").trim() ||
+          String(properties.FLNUM || "").trim() ||
+          String(properties.name || "").trim();
+        const fallbackLabel = String(results[index]?.num || "").trim();
+        const label = existingLabel || fallbackLabel;
+        if (label) {
+          if (!properties.num) {
+            properties.num = label;
+          }
+          if (!properties.FLNUM) {
+            properties.FLNUM = label;
+          }
+          if (!properties.name) {
+            properties.name = label;
+          }
+        }
+        return {
+          ...feature,
+          properties,
+        };
+      }),
+    };
+  }
+
   return {
     filename: response.filename,
     project_name: response.project_name,
     mode: response.mode,
     result_count: response.result_count,
     text_output: response.text_output,
-    map_payload: response.map_payload,
+    map_payload: {
+      ...(mapPayload || {}),
+      geojson: patchedGeoJson,
+    },
     results: response.results,
     source_hash: response.source_hash,
   };
