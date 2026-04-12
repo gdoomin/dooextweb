@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.2.1";
+const APP_VERSION = "4.2.2";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -660,17 +660,23 @@ function sanitizeSharedViewerStateForExport(viewerState: Record<string, unknown>
   delete base.weatherOverlay;
   delete base.notam;
 
-  const completedLineIds = Array.isArray(base.completedLineIds)
+  let completedLineIds = Array.isArray(base.completedLineIds)
     ? base.completedLineIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
     : [];
-  const completionStates = normalizeCompletionStateList(base.completionStates);
+  let completionStates = normalizeCompletionStateList(base.completionStates);
+  if (completedLineIds.length === 0 && completionStates.length > 0) {
+    completedLineIds = completionStates.map((entry) => entry.id);
+  }
+  if (completionStates.length === 0 && completedLineIds.length > 0) {
+    completionStates = completedLineIds.map((id) => ({ id, source: "manual" as const }));
+  }
   const doneColor =
     typeof base.doneColor === "string" && /^#[0-9a-f]{6}$/i.test(base.doneColor) ? base.doneColor : DONE_COLOR_FALLBACK;
 
   return {
     ...base,
-    completedLineIds,
-    completionStates,
+    completedLineIds: Array.isArray(completedLineIds) ? completedLineIds : [],
+    completionStates: Array.isArray(completionStates) ? completionStates : [],
     doneColor,
   };
 }
