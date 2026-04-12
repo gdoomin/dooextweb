@@ -3019,7 +3019,8 @@ textarea {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
+  flex-wrap: nowrap;
   font-size: 13px;
   color: #1f2937;
 }
@@ -3027,6 +3028,7 @@ textarea {
 .doo-weather-date-weekday {
   color: #475569;
   font-size: 12px;
+  margin-left: 2px;
 }
 
 .doo-weather-airport-section {
@@ -3650,6 +3652,10 @@ textarea {
     min-height: 250mm;
     margin: 0 auto;
     padding: 10mm;
+  }
+
+  .doo-weather-airport-section {
+    display: none !important;
   }
 
   .doo-weather-title {

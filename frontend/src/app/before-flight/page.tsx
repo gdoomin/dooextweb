@@ -211,6 +211,42 @@ export default function BeforeFlightPage() {
     }
   }
 
+  async function fetchAtisDetail(icao: string) {
+    setAtisLoading((prev) => ({ ...prev, [icao]: true }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/weather/atis/${icao}`, { cache: "no-store" });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload?.detail || "METAR/TAF를 불러올 수 없습니다.");
+      }
+      setAtisDetails((prev) => ({ ...prev, [icao]: payload as AtisDetail }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "METAR/TAF를 불러올 수 없습니다.";
+      setAtisDetails((prev) => ({ ...prev, [icao]: { icao, metar: { raw: message }, taf: { raw: message } } }));
+    } finally {
+      setAtisLoading((prev) => ({ ...prev, [icao]: false }));
+    }
+  }
+
+  useEffect(() => {
+    setAtisDetails((prev) => {
+      const next: Record<string, AtisDetail> = {};
+      selectedAirports.forEach((icao) => {
+        if (prev[icao]) {
+          next[icao] = prev[icao];
+        }
+      });
+      return next;
+    });
+
+    selectedAirports.forEach((icao) => {
+      if (atisDetails[icao] || atisLoading[icao]) {
+        return;
+      }
+      void fetchAtisDetail(icao);
+    });
+  }, [selectedAirports, atisDetails, atisLoading]);
+
   function handleAirportToggle(icao: string) {
     setSelectedAirports((prev) => {
       if (prev.includes(icao)) {
@@ -218,38 +254,6 @@ export default function BeforeFlightPage() {
       }
       return [...prev, icao];
     });
-
-    if (selectedAirports.includes(icao)) {
-      setAtisDetails((prev) => {
-        const next = { ...prev };
-        delete next[icao];
-        return next;
-      });
-      return;
-    }
-
-    setAtisLoading((prev) => ({ ...prev, [icao]: true }));
-    fetch(`${API_BASE_URL}/api/weather/atis/${icao}`, { cache: "no-store" })
-      .then(async (response) => {
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload?.detail || "METAR/TAF를 불러올 수 없습니다.");
-        }
-        return payload as AtisDetail;
-      })
-      .then((detail) => {
-        setAtisDetails((prev) => ({ ...prev, [icao]: detail }));
-      })
-      .catch((error) => {
-        const message = error instanceof Error ? error.message : "METAR/TAF를 불러올 수 없습니다.";
-        setAtisDetails((prev) => ({
-          ...prev,
-          [icao]: { icao, metar: { raw: message }, taf: { raw: message } },
-        }));
-      })
-      .finally(() => {
-        setAtisLoading((prev) => ({ ...prev, [icao]: false }));
-      });
   }
 
   return (
