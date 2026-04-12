@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-12T12:27:33.139413+00:00",
-  "last_successful_at": "2026-04-12T12:27:33.139413+00:00",
-  "last_attempted_at": "2026-04-12T12:27:33.139413+00:00",
+  "updated_at": "2026-04-12T15:25:21.892289+00:00",
+  "last_successful_at": "2026-04-12T15:25:21.892289+00:00",
+  "last_attempted_at": "2026-04-12T15:25:21.892289+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -98,7 +98,7 @@
           "readCount": 265,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
@@ -108,7 +108,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 5028.851,
+          "_internal_score": 5039.8784,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -253,7 +253,7 @@
           "readCount": 711,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "LUCKY_JOB_OPPORTUNITY",
               "attributes": {}
             }
           ],
@@ -263,7 +263,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2040.235,
+          "_internal_score": 2027.2804,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -412,7 +412,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2166.887,
+          "_internal_score": 2153.8267,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -551,12 +551,12 @@
           "readCount": 627,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2237.5354,
+          "_internal_score": 2224.4648,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -677,7 +677,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 263,
+          "deadlineCount": 262,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -777,7 +777,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 263,
+          "deadlineCount": 262,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -877,7 +877,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 263,
+          "deadlineCount": 262,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -931,8 +931,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2cf8d7af-d6fa-42d3-b401-0c5834fb1623",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2cf8d7af-d6fa-42d3-b401-0c5834fb1623",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f10901c5-7530-4165-9790-a47ac24b654a",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f10901c5-7530-4165-9790-a47ac24b654a",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -970,82 +970,13 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2cf8d7af-d6fa-42d3-b401-0c5834fb1623",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f10901c5-7530-4165-9790-a47ac24b654a",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
           "aircraft_types": [
             "HELICOPTER"
           ],
-          "summary": ""
-        }
-      }
-    },
-    {
-      "id": "53445156",
-      "slug": "섬에어-운항승무원-공개채용-53445156",
-      "job_no": "53445156",
-      "source_job_key": "53445156",
-      "title": "섬에어 운항승무원 공개채용",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=80be44c1-da4a-4a25-b995-b29712437046",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=80be44c1-da4a-4a25-b995-b29712437046",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "섬에어 운항승무원 공개채용 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "운항승무원",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "53445156",
-          "job_no": "53445156",
-          "title": "섬에어 운항승무원 공개채용",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53445156&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=80be44c1-da4a-4a25-b995-b29712437046",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
           "summary": ""
         }
       }
