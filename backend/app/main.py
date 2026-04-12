@@ -121,6 +121,7 @@ AWC_BASE_URL = "https://aviationweather.gov/api/data"
 AWC_TIMEOUT_SECONDS = 12
 AWC_METAR_TTL_SECONDS = 300
 AWC_TAF_TTL_SECONDS = 900
+AWC_AVAIL_TTL_SECONDS = 900
 # CCTV_TEST_FEATURE_START
 CCTV42_BASE_STREAM_URL = "http://218.148.169.193:1935/live/40.stream/"
 CCTV42_ENTRY_PATH = "playlist.m3u8"
@@ -222,6 +223,7 @@ _ATIS_CACHE_LOCK = threading.Lock()
 _AWC_METAR_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _AWC_TAF_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
 _AWC_CACHE_LOCK = threading.Lock()
+_AWC_AVAIL_CACHE: dict[str, tuple[float, set[str]]] = {}
 _PILOT_JOBS_CACHE_LOCK = threading.Lock()
 _KBS_CCTV_API_URL_CACHE: dict[str, tuple[float, str]] = {}
 _KBS_CCTV_API_CACHE_LOCK = threading.Lock()
@@ -2553,6 +2555,42 @@ def _get_awc_taf(icao: str) -> dict[str, str]:
         ("rawTAF", "rawText", "raw_text", "raw"),
         ("issueTime", "issueTimeString", "validTimeFrom", "time"),
     )
+
+
+def _chunk_list(values: list[str], size: int) -> list[list[str]]:
+    if size <= 0:
+        return [values]
+    return [values[i : i + size] for i in range(0, len(values), size)]
+
+
+def _get_awc_available_icaos(icaos: list[str]) -> set[str]:
+    normalized = [str(item or "").strip().upper() for item in icaos]
+    normalized = [item for item in normalized if item]
+    if not normalized:
+        return set()
+    cache_key = ",".join(sorted(set(normalized)))
+    now = time.time()
+    cached = _AWC_AVAIL_CACHE.get(cache_key)
+    if cached and cached[0] > now:
+        return cached[1]
+
+    with _AWC_CACHE_LOCK:
+        cached = _AWC_AVAIL_CACHE.get(cache_key)
+        if cached and cached[0] > now:
+            return cached[1]
+
+        available: set[str] = set()
+        for chunk in _chunk_list(normalized, 200):
+            metar_payload = _fetch_awc_product("metar", chunk)
+            taf_payload = _fetch_awc_product("taf", chunk)
+            for icao in chunk:
+                metar_raw = _awc_extract_raw(metar_payload.get(icao, {}), ("rawOb", "rawText", "raw_text", "raw"))
+                taf_raw = _awc_extract_raw(taf_payload.get(icao, {}), ("rawTAF", "rawText", "raw_text", "raw"))
+                if metar_raw or taf_raw:
+                    available.add(icao)
+
+        _AWC_AVAIL_CACHE[cache_key] = (now + AWC_AVAIL_TTL_SECONDS, available)
+        return available
 
 
 def _fetch_atis_detail_from_source(icao: str) -> dict[str, Any]:
@@ -6293,6 +6331,26 @@ def get_weather_atis(request: Request):
         {
             "type": "FeatureCollection",
             "features": features,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+        }
+    )
+
+
+@app.get("/api/weather/awc-availability")
+def get_weather_awc_availability(request: Request):
+    ids_param = str(request.query_params.get("ids") or "").strip()
+    if not ids_param:
+        raise HTTPException(status_code=400, detail="ids required")
+    ids = [item.strip().upper() for item in ids_param.split(",") if item.strip()]
+    if not ids:
+        raise HTTPException(status_code=400, detail="ids required")
+    try:
+        available = sorted(_get_awc_available_icaos(ids))
+    except WeatherProviderError as error:
+        raise HTTPException(status_code=502, detail=f"AWC availability unavailable: {error}") from error
+    return JSONResponse(
+        {
+            "available": available,
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
     )

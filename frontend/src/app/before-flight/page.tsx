@@ -145,7 +145,24 @@ export default function BeforeFlightPage() {
 
         airports.sort((a, b) => a.icao.localeCompare(b.icao));
         if (isMounted) {
-          setAirportOptions(airports);
+          let filtered = airports;
+          try {
+            const ids = airports.map((item) => item.icao).join(",");
+            const availabilityResponse = await fetch(
+              `${API_BASE_URL}/api/weather/awc-availability?ids=${encodeURIComponent(ids)}`,
+              { cache: "no-store" },
+            );
+            const availabilityPayload = await availabilityResponse.json();
+            if (availabilityResponse.ok && Array.isArray(availabilityPayload?.available)) {
+              const availableSet = new Set<string>(
+                availabilityPayload.available.map((item: string) => String(item || "").toUpperCase()),
+              );
+              filtered = airports.filter((item) => availableSet.has(item.icao));
+            }
+          } catch {
+            // fallback to full list if availability check fails
+          }
+          setAirportOptions(filtered);
         }
       } catch (error) {
         if (isMounted) {
