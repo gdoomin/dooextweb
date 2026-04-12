@@ -3432,7 +3432,7 @@
   </div>
   <div id="donePanel" class="panel done-panel">
     <p class="done-title">형광펜을 긋습니다</p>
-    <p class="done-help">완료 강조선 색상과 굵기를 선택하세요. 굵기는 다른 선 간섭을 줄이기 위해 6~10px로 제한됩니다.</p>
+    <p class="done-help">완료 강조선 색상과 굵기를 선택하세요. 굵기는 다른 선 간섭을 줄이기 위해 6~10px로 제한됩니다. Shift를 누르고 클릭하면 연속된 선에 형광펜이 칠해집니다</p>
     <label class="done-row">
       <span>색상</span>
       <input id="doneColorInput" type="color" value="#b7ff3c" aria-label="형광펜 색상">
@@ -4616,6 +4616,7 @@
       active: false,
       highlightColor: doneHighlightDefaultColor,
       highlightWeight: doneHighlightDefaultWeight,
+      lastToggleIndex: null,
     };
     const forceState = {
       active: false,
@@ -13691,6 +13692,31 @@
       setLineCompleted(entry, true, { suppressAuto: false, source: 'manual' });
     }
 
+    function toggleLineCompletedRange(targetEntry) {
+      if (!targetEntry || !resultLineEntries.length) {
+        return;
+      }
+      const targetIndex = resultLineEntries.indexOf(targetEntry);
+      if (targetIndex < 0) {
+        toggleLineCompletedFromUser(targetEntry);
+        return;
+      }
+      const lastIndex = Number.isFinite(doneState.lastToggleIndex) ? doneState.lastToggleIndex : targetIndex;
+      const startIndex = Math.min(lastIndex, targetIndex);
+      const endIndex = Math.max(lastIndex, targetIndex);
+      const shouldComplete = !targetEntry.completed;
+      for (let index = startIndex; index <= endIndex; index += 1) {
+        const entry = resultLineEntries[index];
+        if (!entry) {
+          continue;
+        }
+        setLineCompleted(entry, shouldComplete, { suppressAuto: !shouldComplete, source: 'manual', updateSummary: false });
+      }
+      updateCompletionSummary();
+      scheduleViewerStateSave();
+      doneState.lastToggleIndex = targetIndex;
+    }
+
     function renderResultPolygons() {
       const polygonRows = Array.isArray(payload.polygons) ? payload.polygons : [];
       polygonRows.forEach((row, index) => {
@@ -13815,7 +13841,12 @@
             L.DomEvent.stop(event.originalEvent);
           }
           if (doneState.active) {
-            toggleLineCompletedFromUser(entry);
+            if (event && event.originalEvent && event.originalEvent.shiftKey) {
+              toggleLineCompletedRange(entry);
+            } else {
+              toggleLineCompletedFromUser(entry);
+              doneState.lastToggleIndex = resultLineEntries.indexOf(entry);
+            }
             return;
           }
           if (forceState.active && forceState.mode === 'new') {
