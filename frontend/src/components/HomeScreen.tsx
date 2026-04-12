@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.1.7";
+const APP_VERSION = "4.1.8";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -376,6 +376,7 @@ type StackEntry = {
   response: ConvertResponse;
   lineCount: number;
   polygonCount: number;
+  viewerState?: Record<string, unknown>;
 };
 
 type ViewerTitleFileLabel = {
@@ -481,7 +482,7 @@ function stackEntryId(response: ConvertResponse): string {
   return `local:${filename}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function createStackEntry(response: ConvertResponse): StackEntry {
+function createStackEntry(response: ConvertResponse, viewerState?: Record<string, unknown>): StackEntry {
   const lineCount = extractLineResults(response).length;
   const polygonCount = extractPolygonResults(response).length;
   return {
@@ -489,6 +490,7 @@ function createStackEntry(response: ConvertResponse): StackEntry {
     response,
     lineCount,
     polygonCount,
+    viewerState,
   };
 }
 
@@ -749,6 +751,93 @@ function attachViewerTitleLabelToResponse(response: ConvertResponse): ConvertRes
   };
 }
 
+function buildStackViewerState(stack: StackEntry[]): Record<string, unknown> | undefined {
+  let offset = 0;
+  const completedLineIds: number[] = [];
+  const completionStates: Array<{ id: number; source: "manual" | "gpx" }> = [];
+  const gpxSuppressedLineIds: number[] = [];
+  const forceAssignments: Array<{ id: number; value: number }> = [];
+
+  stack.forEach((entry) => {
+    const lineCount = entry.lineCount || 0;
+    const state = entry.viewerState;
+    if (!state || typeof state !== "object" || !lineCount) {
+      offset += lineCount;
+      return;
+    }
+
+    const rawCompleted = Array.isArray(state.completedLineIds) ? state.completedLineIds : [];
+    rawCompleted.forEach((value) => {
+      const id = Number(value);
+      if (!Number.isFinite(id)) {
+        return;
+      }
+      completedLineIds.push(id + offset);
+    });
+
+    const rawCompletionStates = Array.isArray(state.completionStates) ? state.completionStates : [];
+    rawCompletionStates.forEach((item) => {
+      if (!item || typeof item !== "object") {
+        return;
+      }
+      const record = item as Record<string, unknown>;
+      const id = Number(record.id);
+      if (!Number.isFinite(id)) {
+        return;
+      }
+      completionStates.push({
+        id: id + offset,
+        source: record.source === "gpx" ? "gpx" : "manual",
+      });
+    });
+
+    const rawSuppressed = Array.isArray(state.gpxSuppressedLineIds) ? state.gpxSuppressedLineIds : [];
+    rawSuppressed.forEach((value) => {
+      const id = Number(value);
+      if (!Number.isFinite(id)) {
+        return;
+      }
+      gpxSuppressedLineIds.push(id + offset);
+    });
+
+    const rawForceAssignments = Array.isArray(state.forceAssignments) ? state.forceAssignments : [];
+    rawForceAssignments.forEach((item) => {
+      if (!item || typeof item !== "object") {
+        return;
+      }
+      const record = item as Record<string, unknown>;
+      const id = Number(record.id);
+      const value = Number(record.value);
+      if (!Number.isFinite(id) || !Number.isFinite(value)) {
+        return;
+      }
+      forceAssignments.push({ id: id + offset, value });
+    });
+
+    offset += lineCount;
+  });
+
+  const merged: Record<string, unknown> = {};
+  if (completedLineIds.length) {
+    merged.completedLineIds = completedLineIds;
+  }
+  if (completionStates.length) {
+    merged.completionStates = completionStates;
+  }
+  if (gpxSuppressedLineIds.length) {
+    merged.gpxSuppressedLineIds = gpxSuppressedLineIds;
+  }
+  if (forceAssignments.length) {
+    merged.forceAssignments = forceAssignments;
+  }
+
+  if (!Object.keys(merged).length) {
+    return undefined;
+  }
+
+  return sanitizeSharedViewerStateForExport(merged);
+}
+
 function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
   const lineResults = stack.flatMap((entry) => extractLineResults(entry.response));
   const polygons = stack.flatMap((entry) => extractPolygonResults(entry.response));
@@ -785,6 +874,7 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
     source_format: "kml",
     title_file_labels: titleFileLabels,
   };
+  const sharedViewerState = buildStackViewerState(stack);
 
   return {
     filename: fileLabel,
@@ -793,6 +883,7 @@ function buildStackPayload(stack: StackEntry[]): ClientConvertRequestBody {
     result_count: mode === "linestring" ? lineResults.length : polygons.length,
     text_output: buildStackTextOutput(projectName, stack, lineResults, polygons),
     map_payload: mapPayload,
+    ...(sharedViewerState ? { shared_viewer_state: sharedViewerState } : {}),
     results:
       mode === "linestring"
         ? lineResults.map((row) => ({
@@ -1673,6 +1764,8 @@ export function HomeScreen({
       return;
     }
 
+    const includeCompletion = typeof window !== "undefined" ? window.confirm("완료까지 함께 스택할까요?") : false;
+
     setHistoryAppendingId(item.job_id);
     setStatusTone("loading");
     setStatusMessage(`${item.project_name || item.filename} 파일을 스택에 추가하는 중입니다...`);
@@ -1681,17 +1774,30 @@ export function HomeScreen({
     try {
       const reopened = await reopenHistoryItem(item.job_id, userId, userEmail, accessToken);
       const normalized = attachViewerTitleLabelToResponse(reopened);
+      let viewerState: Record<string, unknown> | undefined = undefined;
+      let viewerStateFailed = false;
+      if (includeCompletion) {
+        try {
+          viewerState = await fetchViewerStateSnapshot(item.job_id, userId, userEmail, accessToken);
+        } catch {
+          viewerStateFailed = true;
+        }
+      }
       const duplicateExists = stackItems.some((entry) => isSameSourceFile(entry.response, normalized));
       if (duplicateExists) {
         setStatusTone("error");
         setStatusMessage("같은 파일입니다. 스택에 추가하지 않았습니다.");
         return;
       }
-      const nextStack = [...stackItems, createStackEntry(normalized)];
+      const nextStack = [...stackItems, createStackEntry(normalized, viewerState)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
       setStatusTone("success");
-      setStatusMessage(`${nextStack.length}개 파일 중첩이 완료되었습니다.`);
+      setStatusMessage(
+        viewerStateFailed
+          ? `${nextStack.length}개 파일 중첩이 완료되었습니다. 완료 상태는 포함되지 않았습니다.`
+          : `${nextStack.length}개 파일 중첩이 완료되었습니다.`,
+      );
       void refreshAccountState(identity);
     } catch (error) {
       setStatusTone("error");
