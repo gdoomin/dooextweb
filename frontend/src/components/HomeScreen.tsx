@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import {
@@ -51,13 +51,13 @@ import { convertKmlFileInBrowser } from "@/lib/kml-client-convert";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 const modeLabel: Record<ConvertResponse["mode"], string> = {
-  linestring: "LineString ��� | Flight Line ��ǥ ����",
-  polygon: "Polygon ��� | ������(����) �����Դϴ�. ������/���� ���� ����� �ƴմϴ�.",
+  linestring: "LineString 모드 | Flight Line 좌표 추출",
+  polygon: "Polygon 모드 | 폴리곤(도형) 파일입니다. 시작점/끝점 추출 대상이 아닙니다.",
 };
 
 const modeBadgeLabel: Record<ConvertResponse["mode"], string> = {
-  linestring: "����",
-  polygon: "������",
+  linestring: "라인",
+  polygon: "폴리곤",
 };
 
 type HomeScreenProps = {
@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.1.6";
+const APP_VERSION = "4.1.7";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -85,7 +85,7 @@ const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   minute: "2-digit",
   hour12: false,
 });
-const LOADING_STATUS_KEYWORDS = /(�ҷ����� ��|�߰��ϴ� ��|��ȯ�ϴ� ��|�����ϴ� ��)/;
+const LOADING_STATUS_KEYWORDS = /(불러오는 중|추가하는 중|변환하는 중|저장하는 중)/;
 const HOME_SYNC_VERSION = 1;
 const VIEWER_LAUNCH_VERSION = 10;
 const HOME_SYNC_POLL_MS = 15000;
@@ -262,12 +262,12 @@ async function readFileAsDataUrl(file: File): Promise<string> {
     reader.onload = () => {
       const result = typeof reader.result === "string" ? reader.result : "";
       if (!result) {
-        reject(new Error("�̹����� ���� ���߽��ϴ�."));
+        reject(new Error("이미지를 읽지 못했습니다."));
         return;
       }
       resolve(result);
     };
-    reader.onerror = () => reject(new Error("�̹����� ���� ���߽��ϴ�."));
+    reader.onerror = () => reject(new Error("이미지를 읽지 못했습니다."));
     reader.readAsDataURL(file);
   });
 }
@@ -276,7 +276,7 @@ async function loadImageDimensions(dataUrl: string): Promise<{ width: number; he
   return new Promise((resolve, reject) => {
     const image = new window.Image();
     image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-    image.onerror = () => reject(new Error("�̹��� ũ�⸦ Ȯ������ ���߽��ϴ�."));
+    image.onerror = () => reject(new Error("이미지 크기를 확인하지 못했습니다."));
     image.src = dataUrl;
   });
 }
@@ -286,7 +286,7 @@ function describeBookmarkHost(url: string): string {
     const parsed = new URL(url);
     return parsed.hostname.replace(/^www\./i, "") || parsed.hostname;
   } catch {
-    return "��ũ ����";
+    return "링크 열기";
   }
 }
 
@@ -519,10 +519,10 @@ function waitForNextPaint(): Promise<void> {
 
 function buildStackTextOutput(projectName: string, stack: StackEntry[], lineResults: LineResult[], polygons: PolygonResult[]): string {
   const lines: string[] = [];
-  lines.push(`������Ʈ: ${projectName}`);
+  lines.push(`프로젝트: ${projectName}`);
   lines.push("=".repeat(70));
-  lines.push(`��ø ���� ��: ${stack.length}��`);
-  lines.push(`����: ${lineResults.length}�� �� ������: ${polygons.length}��`);
+  lines.push(`중첩 파일 수: ${stack.length}개`);
+  lines.push(`라인: ${lineResults.length}개 · 폴리곤: ${polygons.length}개`);
   lines.push("-".repeat(70));
   stack.forEach((entry, index) => {
     lines.push(`${String(index + 1).padStart(2, "0")}. ${entry.response.filename}`);
@@ -545,9 +545,9 @@ const STACK_TURN_MINUTES_PER_LINE = 3;
 const STACK_EARTH_RADIUS_KM = 6371.0088;
 const DISPLAY_EXTENSION_PATTERN = /\.(kml|kmz|gpx|geojson|json|csv|txt)$/i;
 const REGION_KO_LABELS: Array<{ key: string; label: string }> = [
-  { key: "gyeongbuk", label: "���" },
-  { key: "gangwon", label: "����" },
-  { key: "ansan", label: "�Ȼ�" },
+  { key: "gyeongbuk", label: "경북" },
+  { key: "gangwon", label: "강원" },
+  { key: "ansan", label: "안산" },
 ];
 
 function degreesToRadians(value: number): number {
@@ -567,7 +567,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
 
 function buildStackMetaText(stackCount: number, lineResults: LineResult[], polygons: PolygonResult[]): string {
   if (!lineResults.length) {
-    return `${stackCount}�� ���� ��ø �� ���� 0�� �� ������ ${polygons.length}��`;
+    return `${stackCount}개 파일 중첩 · 라인 0개 · 폴리곤 ${polygons.length}개`;
   }
   const totalLengthKm = lineResults.reduce((sum, row) => {
     const sLat = Number(row.s_lat);
@@ -581,7 +581,7 @@ function buildStackMetaText(stackCount: number, lineResults: LineResult[], polyg
   }, 0);
   const flightHours = totalLengthKm / (STACK_AIRCRAFT_SPEED_KNOTS * STACK_KNOT_TO_KMH);
   const totalCaptureHours = flightHours + ((lineResults.length * STACK_TURN_MINUTES_PER_LINE) / 60);
-  return `${stackCount}�� ���� ��ø �� ���� ${lineResults.length}�� �� ������ ${polygons.length}�� �� �ѱ��� ${totalLengthKm.toFixed(1)}km �� ���Կ��ð�: �뷫 ${totalCaptureHours.toFixed(1)}�ð�`;
+  return `${stackCount}개 파일 중첩 · 라인 ${lineResults.length}개 · 폴리곤 ${polygons.length}개 · 총길이 ${totalLengthKm.toFixed(1)}km · 총촬영시간: 대략 ${totalCaptureHours.toFixed(1)}시간`;
 }
 
 function stripDisplayExtensions(filename: string): string {
@@ -824,7 +824,7 @@ export function HomeScreen({
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState("");
   const [statusMessage, setStatusMessage] = useState(
-    restored ? "���� ��ȯ ����� �����߽��ϴ�." : "���� ������ �ҷ��� �ּ���.",
+    restored ? "이전 변환 결과를 복원했습니다." : "지원 파일을 불러와 주세요.",
   );
   const [fileAccept, setFileAccept] = useState(DEFAULT_FILE_ACCEPT);
   const [statusTone, setStatusTone] = useState<"idle" | "loading" | "success" | "error">(restored ? "success" : "idle");
@@ -838,7 +838,7 @@ export function HomeScreen({
   const [userId, setUserId] = useState(initialUserId);
   const [accessToken, setAccessToken] = useState("");
   const [showAuthModal, setShowAuthModal] = useState(false);
-  const [authMessage, setAuthMessage] = useState("��ü ����� ����Ϸ��� ȸ�������� �ʿ��մϴ�.");
+  const [authMessage, setAuthMessage] = useState("전체 기능을 사용하려면 회원가입이 필요합니다.");
   const [billingStatus, setBillingStatus] = useState<BillingStatusResponse | null>(null);
   const [billingLoading, setBillingLoading] = useState(false);
   const [billingActionLoading, setBillingActionLoading] = useState(false);
@@ -884,34 +884,34 @@ export function HomeScreen({
       return { primary: stripDisplayExtensions(filename) || filename };
     }
     return {
-      primary: `${stackItems.length}�� ���� ��ø: ${stackItems.map((entry) => entry.response.filename).join(", ")}`,
+      primary: `${stackItems.length}개 파일 중첩: ${stackItems.map((entry) => entry.response.filename).join(", ")}`,
     };
   }, [stackItems]);
 
   const stackSummary = useMemo(() => {
     if (!stackItems.length) {
-      return "���� ������ ��� �ֽ��ϴ�.";
+      return "파일 스택이 비어 있습니다.";
     }
     const lineCount = stackItems.reduce((sum, entry) => sum + entry.lineCount, 0);
     const polygonCount = stackItems.reduce((sum, entry) => sum + entry.polygonCount, 0);
-    return `${stackItems.length}�� ���� ��ø �� ���� ${lineCount}�� �� ������ ${polygonCount}��`;
+    return `${stackItems.length}개 파일 중첩 · 라인 ${lineCount}개 · 폴리곤 ${polygonCount}개`;
   }, [stackItems]);
 
   const modeText = useMemo(() => {
     if (!response) {
-      return "���� ������ ���ε��ϸ� ��ȯ ����� ǥ�õ˴ϴ�.";
+      return "지원 파일을 업로드하면 변환 결과가 표시됩니다.";
     }
     if (stackItems.length > 1) {
-      return "���� ��ø ��� | ����ȭ ���⿡�� ��ø ���̾ ǥ���մϴ�.";
+      return "파일 중첩 모드 | 도식화 보기에서 중첩 레이어를 표시합니다.";
     }
     const sourceFormat = String(response.map_payload?.source_format || "").trim().toLowerCase();
     if (sourceFormat && sourceFormat !== "kml" && sourceFormat !== "kmz") {
-      return `${sourceFormat.toUpperCase()} ���� ��ȯ ���`;
+      return `${sourceFormat.toUpperCase()} 파일 변환 결과`;
     }
     return modeLabel[response.mode];
   }, [response, stackItems.length]);
 
-  const modeChipLabel = stackItems.length > 1 ? "��ø" : response ? modeBadgeLabel[response.mode] : "";
+  const modeChipLabel = stackItems.length > 1 ? "중첩" : response ? modeBadgeLabel[response.mode] : "";
   const canUseHistory = isAuthenticated;
   const isViewerBusy = isLoading || Boolean(historyOpeningId) || Boolean(historyAppendingId) || historyDeletingAll;
   const canOpenViewer = Boolean(response?.job_id) && !isViewerBusy;
@@ -1085,7 +1085,7 @@ export function HomeScreen({
         if (!cancelled) {
           setBillingStatus(null);
           setStatusTone("error");
-          setStatusMessage(describeUnknownError(error, "���� ���¸� Ȯ������ ���߽��ϴ�."));
+          setStatusMessage(describeUnknownError(error, "구독 상태를 확인하지 못했습니다."));
         }
       } finally {
         if (!cancelled) {
@@ -1124,7 +1124,7 @@ export function HomeScreen({
         }
       } catch (error) {
         if (!cancelled) {
-          setHistoryError(describeUnknownError(error, "�����丮�� �ҷ����� ���߽��ϴ�."));
+          setHistoryError(describeUnknownError(error, "히스토리를 불러오지 못했습니다."));
         }
       } finally {
         if (!cancelled) {
@@ -1326,13 +1326,13 @@ export function HomeScreen({
 
     if (!authAvailable) {
       setStatusTone("error");
-      setStatusMessage("Supabase ���� ������ �ʿ��մϴ�. frontend/.env.local�� URL�� anon key�� Ȯ���� �ּ���.");
-      openAuthModal("Supabase ���� ������ �ʿ��մϴ�. ���� URL�� anon key�� �ְ� �ٽ� �õ��� �ּ���.");
+      setStatusMessage("Supabase 인증 설정이 필요합니다. frontend/.env.local의 URL과 anon key를 확인해 주세요.");
+      openAuthModal("Supabase 인증 설정이 필요합니다. 실제 URL과 anon key를 넣고 다시 시도해 주세요.");
       return false;
     }
 
     setStatusTone("idle");
-    setStatusMessage("��ǥ ��� �̸������ ����� �� ������, ����� �ٽÿ���� �α��� �� ����� �� �ֽ��ϴ�.");
+    setStatusMessage("좌표 결과 미리보기는 사용할 수 있지만, 저장과 다시열기는 로그인 후 사용할 수 있습니다.");
     openAuthModal(message);
     return false;
   }
@@ -1364,7 +1364,7 @@ export function HomeScreen({
       const items = await fetchUserHistory(nextUserId, nextUserEmail, nextAccessToken);
       setHistoryItems(items);
     } catch (error) {
-      setHistoryError(describeUnknownError(error, "�����丮�� �ҷ����� ���߽��ϴ�."));
+      setHistoryError(describeUnknownError(error, "히스토리를 불러오지 못했습니다."));
     } finally {
       setHistoryLoading(false);
     }
@@ -1384,7 +1384,7 @@ export function HomeScreen({
       setHistoryItems(historyResult.value);
       setHistoryError("");
     } else {
-      setHistoryError(describeUnknownError(historyResult.reason, "�����丮�� �ҷ����� ���߽��ϴ�."));
+      setHistoryError(describeUnknownError(historyResult.reason, "히스토리를 불러오지 못했습니다."));
     }
 
     if (billingResult.status === "fulfilled") {
@@ -1444,7 +1444,7 @@ export function HomeScreen({
     }
 
     setStatusTone("loading");
-    setStatusMessage("�ٸ� ����� �۾� ���¸� �����ϴ� ���Դϴ�...");
+    setStatusMessage("다른 기기의 작업 상태를 적용하는 중입니다...");
     await waitForNextPaint();
 
     try {
@@ -1470,32 +1470,32 @@ export function HomeScreen({
         if (reopenedEntries.length > 0) {
           await applyStack(reopenedEntries, identity);
           setStatusTone("success");
-          setStatusMessage(`${reopenedEntries.length}�� ���� ����ȭ ���¸� �����߽��ϴ�.`);
+          setStatusMessage(`${reopenedEntries.length}개 파일 동기화 상태를 적용했습니다.`);
         } else if (remoteActiveJobId) {
           const reopened = await reopenByJobId(remoteActiveJobId);
           if (!reopened) {
-            throw new Error("����ȭ�� ������ ã�� ���߽��ϴ�. �ٽÿ��� �� �ٽ� �õ��� �ּ���.");
+            throw new Error("동기화할 파일을 찾지 못했습니다. 다시열기 후 다시 시도해 주세요.");
           }
           await applyStack([createStackEntry(reopened)], identity);
           setStatusTone("success");
-          setStatusMessage("�ٸ� ����� ���� ���� �۾� ���¸� �����߽��ϴ�.");
+          setStatusMessage("다른 기기의 단일 파일 작업 상태를 적용했습니다.");
         } else {
           await applyStack([], identity);
           setStatusTone("success");
-          setStatusMessage("����ȭ ���¸� ������ ���� ������ ������ϴ�.");
+          setStatusMessage("동기화 상태를 적용해 파일 스택을 비웠습니다.");
         }
       } else if (remoteActiveJobId) {
         const reopened = await reopenByJobId(remoteActiveJobId);
         if (!reopened) {
-          throw new Error("����ȭ�� ������ ã�� ���߽��ϴ�. �ٽÿ��� �� �ٽ� �õ��� �ּ���.");
+          throw new Error("동기화할 파일을 찾지 못했습니다. 다시열기 후 다시 시도해 주세요.");
         }
         await applyStack([createStackEntry(reopened)], identity);
         setStatusTone("success");
-        setStatusMessage("�ٸ� ����� �۾� ���¸� �����߽��ϴ�.");
+        setStatusMessage("다른 기기의 작업 상태를 적용했습니다.");
       } else {
         await applyStack([], identity);
         setStatusTone("success");
-        setStatusMessage("����ȭ ���¸� ������ ���� ������ ������ϴ�.");
+        setStatusMessage("동기화 상태를 적용해 파일 스택을 비웠습니다.");
       }
 
       homeSyncLastSavedComparableRef.current = remoteComparableSerialized;
@@ -1508,7 +1508,7 @@ export function HomeScreen({
       void refreshAccountState(identity);
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "����ȭ ���� ���뿡 �����߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "동기화 상태 적용에 실패했습니다."));
     } finally {
       homeSyncApplyingRef.current = false;
       window.setTimeout(() => {
@@ -1542,7 +1542,7 @@ export function HomeScreen({
 
     setIsLoading(true);
     setStatusTone("loading");
-    setStatusMessage(isSharedFile ? "���� ������ �ҷ����� ���Դϴ�..." : "���������� ������ ��ȯ�ϴ� ���Դϴ�...");
+    setStatusMessage(isSharedFile ? "공유 파일을 불러오는 중입니다..." : "브라우저에서 파일을 변환하는 중입니다...");
     await waitForNextPaint();
 
     try {
@@ -1552,7 +1552,7 @@ export function HomeScreen({
 
       if (isSharedFile) {
         const sharedPackage = await parseSharedConvertPackageFile(file);
-        setStatusMessage("���� ������ ������ ������ �����ϴ� ���Դϴ�...");
+        setStatusMessage("공유 파일을 복원해 서버에 저장하는 중입니다...");
         converted = await persistConvertedJob(
           {
             ...sharedPackage.convert_payload,
@@ -1569,7 +1569,7 @@ export function HomeScreen({
         );
       } else {
         const convertedForUpload = attachViewerTitleLabelToPayload(await convertKmlFileInBrowser(file));
-        setStatusMessage("��ȯ�� �Ϸ�Ǿ� ������ �����ϴ� ���Դϴ�...");
+        setStatusMessage("변환이 완료되어 서버에 저장하는 중입니다...");
         converted = await persistConvertedJob(
           {
             ...convertedForUpload,
@@ -1591,18 +1591,18 @@ export function HomeScreen({
         isSharedFile
           ? uploadAuthenticated
             ? filePickMode === "append" && nextStack.length > 1
-              ? `${nextStack.length}�� ������ ��ø�߰� ���� �������� �����߽��ϴ�.`
-              : "���� ���ϰ� ����ȭ ������ �����߽��ϴ�."
+              ? `${nextStack.length}개 파일을 중첩했고 공유 설정까지 복원했습니다.`
+              : "공유 파일과 도식화 설정을 복원했습니다."
             : filePickMode === "append" && nextStack.length > 1
-              ? `${nextStack.length}�� ������ ��ø�߰� ���� �������� �����߽��ϴ�.`
-              : "���� ���ϰ� ����ȭ ������ �����߽��ϴ�."
+              ? `${nextStack.length}개 파일을 중첩했고 공유 설정까지 복원했습니다.`
+              : "공유 파일과 도식화 설정을 복원했습니다."
           : uploadAuthenticated
             ? filePickMode === "append" && nextStack.length > 1
-              ? `${nextStack.length}�� ������ ��ø�߰� �պ� ����� �����丮�� �����߽��ϴ�.`
-              : `${stackedResponse?.result_count ?? converted.result_count}�� ����� ��ȯ�߰� �����丮�� �����߽��ϴ�.`
+              ? `${nextStack.length}개 파일을 중첩했고 합본 결과를 히스토리에 저장했습니다.`
+              : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했고 히스토리에 저장했습니다.`
             : filePickMode === "append" && nextStack.length > 1
-              ? `${nextStack.length}�� ������ ��ø�߽��ϴ�. �α����ϸ� �����丮�� �ٽÿ��⸦ ����� �� �ֽ��ϴ�.`
-              : `${stackedResponse?.result_count ?? converted.result_count}�� ����� ��ȯ�߽��ϴ�. �α����ϸ� �����丮�� �ٽÿ��⸦ ����� �� �ֽ��ϴ�.`,
+              ? `${nextStack.length}개 파일을 중첩했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`
+              : `${stackedResponse?.result_count ?? converted.result_count}개 결과를 변환했습니다. 로그인하면 히스토리와 다시열기를 사용할 수 있습니다.`,
       );
 
       if (uploadAuthenticated) {
@@ -1615,8 +1615,8 @@ export function HomeScreen({
         describeUnknownError(
           error,
           isSharedFile
-            ? "���� ������ ���� ���߽��ϴ�. ���� ���İ� ������ �ٽ� Ȯ���� �ּ���."
-            : "���� ��ȯ�� �����߽��ϴ�. ���İ� ������ �ٽ� Ȯ���� �ּ���.",
+            ? "공유 파일을 열지 못했습니다. 파일 형식과 내용을 다시 확인해 주세요."
+            : "파일 변환에 실패했습니다. 형식과 내용을 다시 확인해 주세요.",
         ),
       );
     } finally {
@@ -1635,16 +1635,16 @@ export function HomeScreen({
   async function handleHistoryOpen(item: ServerHistoryItem) {
     if (!canUseHistory) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� �����丮 �ٽÿ��⸦ ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.");
       return;
     }
-    if (!requireAuth("���� �����丮�� �ٽ� ������ �α����� �ּ���.")) {
+    if (!requireAuth("개인 히스토리를 다시 열려면 로그인해 주세요.")) {
       return;
     }
 
     setHistoryOpeningId(item.job_id);
     setStatusTone("loading");
-    setStatusMessage(`${item.project_name || item.filename} ����� �ٽ� �ҷ����� ���Դϴ�...`);
+    setStatusMessage(`${item.project_name || item.filename} 결과를 다시 불러오는 중입니다...`);
     await waitForNextPaint();
 
     try {
@@ -1654,10 +1654,10 @@ export function HomeScreen({
       setResponse(normalized);
       saveLastConvert(normalized);
       setStatusTone("success");
-      setStatusMessage(`${normalized.project_name || normalized.filename} ����� �ٽ� �������ϴ�.`);
+      setStatusMessage(`${normalized.project_name || normalized.filename} 결과를 다시 열었습니다.`);
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "�����丮 �׸��� �ٽ� ���� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 다시 열지 못했습니다."));
     } finally {
       setHistoryOpeningId("");
     }
@@ -1666,16 +1666,16 @@ export function HomeScreen({
   async function handleHistoryAppend(item: ServerHistoryItem) {
     if (!canUseHistory) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� �����丮 �ٽÿ��⸦ ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 히스토리 다시열기를 사용할 수 없습니다.");
       return;
     }
-    if (!requireAuth("�����丮 �׸��� ���ÿ� �߰��Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("히스토리 항목을 스택에 추가하려면 로그인해 주세요.")) {
       return;
     }
 
     setHistoryAppendingId(item.job_id);
     setStatusTone("loading");
-    setStatusMessage(`${item.project_name || item.filename} ������ ���ÿ� �߰��ϴ� ���Դϴ�...`);
+    setStatusMessage(`${item.project_name || item.filename} 파일을 스택에 추가하는 중입니다...`);
     await waitForNextPaint();
 
     try {
@@ -1684,18 +1684,18 @@ export function HomeScreen({
       const duplicateExists = stackItems.some((entry) => isSameSourceFile(entry.response, normalized));
       if (duplicateExists) {
         setStatusTone("error");
-        setStatusMessage("���� �����Դϴ�. ���ÿ� �߰����� �ʾҽ��ϴ�.");
+        setStatusMessage("같은 파일입니다. 스택에 추가하지 않았습니다.");
         return;
       }
       const nextStack = [...stackItems, createStackEntry(normalized)];
       const identity: Identity = { id: userId, email: userEmail, token: accessToken };
       await applyStack(nextStack, identity);
       setStatusTone("success");
-      setStatusMessage(`${nextStack.length}�� ���� ��ø�� �Ϸ�Ǿ����ϴ�.`);
+      setStatusMessage(`${nextStack.length}개 파일 중첩이 완료되었습니다.`);
       void refreshAccountState(identity);
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "�����丮 �׸��� ���ÿ� �߰����� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 스택에 추가하지 못했습니다."));
     } finally {
       setHistoryAppendingId("");
     }
@@ -1704,16 +1704,16 @@ export function HomeScreen({
   async function handleHistoryShare(item: ServerHistoryItem) {
     if (!canUseHistory) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� ���� ���� ������ ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 공유 파일 저장을 사용할 수 없습니다.");
       return;
     }
-    if (!requireAuth("�����丮 �׸��� �����Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("히스토리 항목을 공유하려면 로그인해 주세요.")) {
       return;
     }
 
     setHistorySharingId(item.job_id);
     setStatusTone("loading");
-    setStatusMessage(`${item.project_name || item.filename} ���� ������ ����� ���Դϴ�...`);
+    setStatusMessage(`${item.project_name || item.filename} 공유 파일을 만드는 중입니다...`);
     await waitForNextPaint();
 
     try {
@@ -1724,10 +1724,10 @@ export function HomeScreen({
       const sharedPackage = buildSharedConvertPackage(reopened, viewerState);
       downloadSharedConvertPackageFile(sharedPackage, buildSharedDownloadName(item, reopened));
       setStatusTone("success");
-      setStatusMessage("���� ������ �����߽��ϴ�. ���� ����� ���� ����� ���� ����ȭ ����� �� �� �ֽ��ϴ�.");
+      setStatusMessage("공유 파일을 저장했습니다. 받은 사람도 파일 열기로 같은 도식화 결과를 열 수 있습니다.");
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���� ������ ������ ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "공유 파일을 만들지 못했습니다."));
     } finally {
       setHistorySharingId("");
     }
@@ -1738,7 +1738,7 @@ export function HomeScreen({
     const identity = await resolveCurrentIdentity();
     try {
       setStatusTone("loading");
-      setStatusMessage("��ø ������ �����ϴ� ���Դϴ�...");
+      setStatusMessage("중첩 스택을 갱신하는 중입니다...");
       await waitForNextPaint();
       await applyStack(nextStack, identity);
       if (identity.id) {
@@ -1746,14 +1746,14 @@ export function HomeScreen({
       }
       if (!nextStack.length) {
         setStatusTone("idle");
-        setStatusMessage("������ ������ϴ�. ������ ���� �ּ���.");
+        setStatusMessage("스택을 비웠습니다. 파일을 열어 주세요.");
       } else {
         setStatusTone("success");
-        setStatusMessage(`${nextStack.length}�� ���� ��ø ���·� �����߽��ϴ�.`);
+        setStatusMessage(`${nextStack.length}개 파일 중첩 상태로 갱신했습니다.`);
       }
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���� �׸��� �������� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "스택 항목을 제거하지 못했습니다."));
     }
   }
 
@@ -1761,24 +1761,24 @@ export function HomeScreen({
     if (!stackItems.length) {
       return;
     }
-    const confirmed = window.confirm("���� ������ ��� �����?");
+    const confirmed = window.confirm("파일 스택을 모두 비울까요?");
     if (!confirmed) {
       return;
     }
     const identity = await resolveCurrentIdentity();
     try {
       setStatusTone("loading");
-      setStatusMessage("���� ������ ���� ���Դϴ�...");
+      setStatusMessage("파일 스택을 비우는 중입니다...");
       await waitForNextPaint();
       await applyStack([], identity);
       if (identity.id) {
         void refreshAccountState(identity);
       }
       setStatusTone("idle");
-      setStatusMessage("���� ������ ������ϴ�.");
+      setStatusMessage("파일 스택을 비웠습니다.");
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���� ������ ����� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "파일 스택을 비우지 못했습니다."));
     }
   }
 
@@ -1806,22 +1806,22 @@ export function HomeScreen({
   async function handleHistoryDelete(item: ServerHistoryItem) {
     if (!canUseHistory) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� �����丮 ������ ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 히스토리 삭제를 사용할 수 없습니다.");
       return;
     }
-    if (!requireAuth("���� �����丮�� �����Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("개인 히스토리를 삭제하려면 로그인해 주세요.")) {
       return;
     }
 
     const targetName = item.project_name || item.filename || item.job_id;
-    const confirmed = window.confirm(`�����丮���� \"${targetName}\" �׸��� �����ұ��?`);
+    const confirmed = window.confirm(`히스토리에서 \"${targetName}\" 항목을 삭제할까요?`);
     if (!confirmed) {
       return;
     }
 
     setHistoryDeletingId(item.job_id);
     setStatusTone("loading");
-    setStatusMessage(`${targetName} �׸��� �����ϴ� ���Դϴ�...`);
+    setStatusMessage(`${targetName} 항목을 삭제하는 중입니다...`);
     await waitForNextPaint();
 
     try {
@@ -1829,10 +1829,10 @@ export function HomeScreen({
       await removeDeletedJobsFromCurrentState(deleteResult.deleted_job_ids.length ? deleteResult.deleted_job_ids : [item.job_id]);
       await refreshHistory();
       setStatusTone("success");
-      setStatusMessage(`${targetName} �׸��� �����߽��ϴ�.`);
+      setStatusMessage(`${targetName} 항목을 삭제했습니다.`);
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "�����丮 �׸��� �������� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "히스토리 항목을 삭제하지 못했습니다."));
     } finally {
       setHistoryDeletingId("");
     }
@@ -1841,25 +1841,25 @@ export function HomeScreen({
   async function handleHistoryDeleteAll() {
     if (!canUseHistory) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� �����丮 ������ ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 히스토리 삭제를 사용할 수 없습니다.");
       return;
     }
-    if (!requireAuth("���� �����丮�� �����Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("개인 히스토리를 삭제하려면 로그인해 주세요.")) {
       return;
     }
     if (!historyItems.length) {
       setStatusTone("idle");
-      setStatusMessage("������ �����丮�� �����ϴ�.");
+      setStatusMessage("삭제할 히스토리가 없습니다.");
       return;
     }
-    const confirmed = window.confirm("��� ������ �����˴ϴ�");
+    const confirmed = window.confirm("모든 파일이 삭제됩니다");
     if (!confirmed) {
       return;
     }
 
     setHistoryDeletingAll(true);
     setStatusTone("loading");
-    setStatusMessage("�����丮�� ��ü�����ϴ� ���Դϴ�...");
+    setStatusMessage("히스토리를 전체삭제하는 중입니다...");
     await waitForNextPaint();
 
     try {
@@ -1868,10 +1868,10 @@ export function HomeScreen({
       await applyStack([], identity);
       await refreshHistory();
       setStatusTone("success");
-      setStatusMessage("�����丮�� ��ü�����߽��ϴ�.");
+      setStatusMessage("히스토리를 전체삭제했습니다.");
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "�����丮 ��ü������ �����߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "히스토리 전체삭제에 실패했습니다."));
     } finally {
       setHistoryDeletingAll(false);
     }
@@ -1880,32 +1880,32 @@ export function HomeScreen({
   async function copyClipboard() {
     if (!response?.text_output) {
       setStatusTone("error");
-      setStatusMessage("���� ���� ������ �ҷ��� �ּ���.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
-    if (!requireAuth("Ŭ������ ����� �α��� �� ����� �� �ֽ��ϴ�.")) {
+    if (!requireAuth("클립보드 복사는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
 
     try {
       await navigator.clipboard.writeText(response.text_output);
       setStatusTone("success");
-      setStatusMessage("Ŭ�����忡 �����߽��ϴ�.");
+      setStatusMessage("클립보드에 복사했습니다.");
     } catch {
       setStatusTone("error");
-      setStatusMessage("Ŭ������ ���翡 �����߽��ϴ�.");
+      setStatusMessage("클립보드 복사에 실패했습니다.");
     }
   }
 
   function openViewer() {
     if (isViewerBusy) {
       setStatusTone("loading");
-      setStatusMessage("������ �ҷ����� ���Դϴ�. �Ϸ� �� ����ȭ ���⸦ ���� �ּ���.");
+      setStatusMessage("파일을 불러오는 중입니다. 완료 후 도식화 보기를 눌러 주세요.");
       return;
     }
     if (!response?.job_id) {
       setStatusTone("error");
-      setStatusMessage("���� ��ȯ�� �Ϸ�� ���ϸ� ����ȭ ����� �� �� �ֽ��ϴ�.");
+      setStatusMessage("실제 변환이 완료된 파일만 도식화 보기로 열 수 있습니다.");
       return;
     }
     const viewerPath = `${API_BASE_URL}/api/viewer/${response.job_id}`;
@@ -1925,64 +1925,64 @@ export function HomeScreen({
       window.location.assign(viewerUrl);
     }
     setStatusTone("success");
-    setStatusMessage("����ȭ Viewer�� �������ϴ�.");
+    setStatusMessage("도식화 Viewer를 열었습니다.");
   }
 
   function downloadText() {
     if (!response?.txt_download_url) {
       setStatusTone("error");
-      setStatusMessage("���� ���� ������ �ҷ��� �ּ���.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
-    if (!requireAuth("�ؽ�Ʈ �ٿ�ε�� �α��� �� ����� �� �ֽ��ϴ�.")) {
+    if (!requireAuth("텍스트 다운로드는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
     if (!canDownloadText) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� �ؽ�Ʈ �ٿ�ε带 ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 텍스트 다운로드를 사용할 수 없습니다.");
       return;
     }
 
     window.open(response.txt_download_url, "_blank", "noopener,noreferrer");
     setStatusTone("success");
-    setStatusMessage("�ؽ�Ʈ ���� �ٿ�ε带 �����߽��ϴ�.");
+    setStatusMessage("텍스트 파일 다운로드를 시작했습니다.");
   }
 
   function downloadExcel() {
     if (!response?.xlsx_download_url) {
       setStatusTone("error");
-      setStatusMessage("���� ���� ������ �ҷ��� �ּ���.");
+      setStatusMessage("먼저 지원 파일을 불러와 주세요.");
       return;
     }
-    if (!requireAuth("���� �ٿ�ε�� �α��� �� ����� �� �ֽ��ϴ�.")) {
+    if (!requireAuth("엑셀 다운로드는 로그인 후 사용할 수 있습니다.")) {
       return;
     }
     if (!canDownloadExcel) {
       setStatusTone("error");
-      setStatusMessage("���� �÷������� ���� �ٿ�ε带 ����� �� �����ϴ�.");
+      setStatusMessage("현재 플랜에서는 엑셀 다운로드를 사용할 수 없습니다.");
       return;
     }
 
     window.open(response.xlsx_download_url, "_blank", "noopener,noreferrer");
     setStatusTone("success");
-    setStatusMessage("���� ���� �ٿ�ε带 �����߽��ϴ�.");
+    setStatusMessage("엑셀 파일 다운로드를 시작했습니다.");
   }
 
   async function handleAuthButton() {
     if (!authAvailable) {
-      openAuthModal("Supabase ���� ������ �ʿ��մϴ�. frontend/.env.local�� URL�� anon key�� Ȯ���� �ּ���.");
+      openAuthModal("Supabase 인증 설정이 필요합니다. frontend/.env.local의 URL과 anon key를 확인해 주세요.");
       return;
     }
 
     if (!isAuthenticated) {
-      openAuthModal("�� �����丮�� �ٽÿ��⸦ ����Ϸ��� �α����� �ּ���.");
+      openAuthModal("내 히스토리와 다시열기를 사용하려면 로그인해 주세요.");
       return;
     }
 
     try {
       const supabase = createSupabaseClient();
       if (!supabase) {
-        throw new Error("Supabase ���� ������ �ʿ��մϴ�.");
+        throw new Error("Supabase 인증 설정이 필요합니다.");
       }
       await supabase.auth.signOut();
       setUserId("");
@@ -1999,44 +1999,44 @@ export function HomeScreen({
       setBookmarkImageDataUrl("");
       setBookmarkError("");
       setStatusTone("idle");
-      setStatusMessage("�α׾ƿ��߽��ϴ�.");
+      setStatusMessage("로그아웃했습니다.");
     } catch {
       setStatusTone("error");
-      setStatusMessage("�α׾ƿ�� �����߽��ϴ�.");
+      setStatusMessage("로그아웃에 실패했습니다.");
     }
   }
 
   async function handleStartSubscription(planCode: "lite" | "pro") {
     const identity = await resolveCurrentIdentity();
     if (!identity.id) {
-      openAuthModal("���� ������ �����Ϸ��� �α����� �ּ���.");
+      openAuthModal("구독 결제를 시작하려면 로그인해 주세요.");
       return;
     }
     if (!identity.token) {
       setStatusTone("error");
-      setStatusMessage("������ ���� �ٽ� �α��� �� ������ ������ �ּ���.");
+      setStatusMessage("보안을 위해 다시 로그인 후 결제를 진행해 주세요.");
       return;
     }
 
     const normalizedPhone = buyerPhone.replace(/[^0-9]/g, "");
     if (normalizedPhone.length < 9) {
       setStatusTone("error");
-      setStatusMessage("������ �޴���ȭ ��ȣ�� ���� �Է��� �ּ���.");
+      setStatusMessage("결제용 휴대전화 번호를 먼저 입력해 주세요.");
       return;
     }
 
     setBillingActionLoading(true);
     setStatusTone("loading");
-    setStatusMessage("���� â�� �غ��ϰ� �ֽ��ϴ�...");
+    setStatusMessage("결제 창을 준비하고 있습니다...");
     try {
       const result = await startBillingSubscription(planCode, normalizedPhone, identity.id, identity.email, identity.token);
       if (!result.payurl) {
-        throw new Error("���� ������ URL�� ���� ���߽��ϴ�.");
+        throw new Error("결제 페이지 URL을 받지 못했습니다.");
       }
       window.location.href = result.payurl;
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���� ������ �������� ���߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "구독 결제를 시작하지 못했습니다."));
     } finally {
       setBillingActionLoading(false);
     }
@@ -2049,21 +2049,21 @@ export function HomeScreen({
     }
     if (!identity.token) {
       setStatusTone("error");
-      setStatusMessage("������ ���� �ٽ� �α��� �� ���� ������ ������ �ּ���.");
+      setStatusMessage("보안을 위해 다시 로그인 후 구독 해지를 진행해 주세요.");
       return;
     }
     setBillingActionLoading(true);
     setStatusTone("loading");
-    setStatusMessage("������ �����ϰ� �ֽ��ϴ�...");
+    setStatusMessage("구독을 해지하고 있습니다...");
     try {
       await cancelBillingSubscription(identity.id, identity.email, identity.token);
       const latest = await fetchBillingStatus(identity.id, identity.email, identity.token);
       setBillingStatus(latest);
       setStatusTone("success");
-      setStatusMessage("������ �����Ǿ����ϴ�. ���� �����Ϻ��� �ڵ������� �ߴܵ˴ϴ�.");
+      setStatusMessage("구독이 해지되었습니다. 다음 결제일부터 자동결제가 중단됩니다.");
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���� ������ �����߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "구독 해지에 실패했습니다."));
     } finally {
       setBillingActionLoading(false);
     }
@@ -2072,34 +2072,34 @@ export function HomeScreen({
   async function handleRedeemPromoCode() {
     const identity = await resolveCurrentIdentity();
     if (!identity.id) {
-      openAuthModal("���θ�� �ڵ带 �����Ϸ��� �α����� �ּ���.");
+      openAuthModal("프로모션 코드를 적용하려면 로그인해 주세요.");
       return;
     }
     if (!identity.token) {
       setStatusTone("error");
-      setStatusMessage("������ ���� �ٽ� �α��� �� ���θ�� �ڵ带 ������ �ּ���.");
+      setStatusMessage("보안을 위해 다시 로그인 후 프로모션 코드를 적용해 주세요.");
       return;
     }
 
     const normalizedCode = promoCodeInput.trim().toUpperCase();
     if (!normalizedCode) {
       setStatusTone("error");
-      setStatusMessage("���θ�� �ڵ带 ���� �Է��� �ּ���.");
+      setStatusMessage("프로모션 코드를 먼저 입력해 주세요.");
       return;
     }
 
     setBillingActionLoading(true);
     setStatusTone("loading");
-    setStatusMessage("���θ�� �ڵ带 �����ϰ� �ֽ��ϴ�...");
+    setStatusMessage("프로모션 코드를 적용하고 있습니다...");
     try {
       const result = await redeemBillingPromoCode(normalizedCode, identity.id, identity.email, identity.token);
       setBillingStatus(result.billing_status);
       setPromoCodeInput("");
       setStatusTone("success");
-      setStatusMessage(result.message || "���θ�� �ڵ尡 ����Ǿ����ϴ�.");
+      setStatusMessage(result.message || "프로모션 코드가 적용되었습니다.");
     } catch (error) {
       setStatusTone("error");
-      setStatusMessage(describeUnknownError(error, "���θ�� �ڵ� ���뿡 �����߽��ϴ�."));
+      setStatusMessage(describeUnknownError(error, "프로모션 코드 적용에 실패했습니다."));
     } finally {
       setBillingActionLoading(false);
     }
@@ -2114,7 +2114,7 @@ export function HomeScreen({
   }
 
   function openBookmarkSettings(bookmarkId = "") {
-    if (!requireAuth("���� �ϸ�ũ�� �����Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("개인 북마크를 설정하려면 로그인해 주세요.")) {
       return;
     }
     selectBookmarkForEdit(bookmarkId || bookmarks[0]?.id || "");
@@ -2122,12 +2122,12 @@ export function HomeScreen({
   }
 
   function startAddBookmark() {
-    if (!requireAuth("���� �ϸ�ũ�� �����Ϸ��� �α����� �ּ���.")) {
+    if (!requireAuth("개인 북마크를 설정하려면 로그인해 주세요.")) {
       return;
     }
     if (bookmarks.length >= bookmarkMaxItems) {
       setStatusTone("error");
-      setStatusMessage(`�ϸ�ũ�� �ִ� ${bookmarkMaxItems}������ ������ �� �ֽ��ϴ�.`);
+      setStatusMessage(`북마크는 최대 ${bookmarkMaxItems}개까지 저장할 수 있습니다.`);
       return;
     }
     selectBookmarkForEdit("");
@@ -2141,36 +2141,36 @@ export function HomeScreen({
       return;
     }
     if (!["image/png", "image/jpeg", "image/webp"].includes(file.type)) {
-      setBookmarkError("PNG, JPG, WEBP �̹����� ���ε��� �� �ֽ��ϴ�.");
+      setBookmarkError("PNG, JPG, WEBP 이미지만 업로드할 수 있습니다.");
       return;
     }
     try {
       const dataUrl = await readFileAsDataUrl(file);
       const dimensions = await loadImageDimensions(dataUrl);
       if (dimensions.width !== 92 || dimensions.height !== 92) {
-        setBookmarkError("���� 92px, ���� 92px ���簢�� �̹����� ���ε��� �� �ֽ��ϴ�.");
+        setBookmarkError("가로 92px, 세로 92px 정사각형 이미지만 업로드할 수 있습니다.");
         return;
       }
       setBookmarkImageDataUrl(dataUrl);
       setBookmarkError("");
     } catch (error) {
-      setBookmarkError(describeUnknownError(error, "�̹����� Ȯ������ ���߽��ϴ�."));
+      setBookmarkError(describeUnknownError(error, "이미지를 확인하지 못했습니다."));
     }
   }
 
   async function handleSaveBookmark() {
     const identity = await resolveCurrentIdentity();
     if (!identity.id) {
-      openAuthModal("���� �ϸ�ũ�� �����Ϸ��� �α����� �ּ���.");
+      openAuthModal("개인 북마크를 저장하려면 로그인해 주세요.");
       return;
     }
     const normalizedUrl = bookmarkUrlInput.trim();
     if (!normalizedUrl) {
-      setBookmarkError("�ϸ�ũ ��ũ�� �Է��� �ּ���.");
+      setBookmarkError("북마크 링크를 입력해 주세요.");
       return;
     }
     if (!/^https?:\/\//i.test(normalizedUrl)) {
-      setBookmarkError("��ũ �ּҴ� http:// �Ǵ� https:// �� �����ؾ� �մϴ�.");
+      setBookmarkError("링크 주소는 http:// 또는 https:// 로 시작해야 합니다.");
       return;
     }
     setBookmarkSaving(true);
@@ -2189,9 +2189,9 @@ export function HomeScreen({
       setSelectedBookmarkId(savedBookmark.item?.id || selectedBookmarkId);
       setShowBookmarkModal(false);
       setStatusTone("success");
-      setStatusMessage(selectedBookmarkId ? "���� �ϸ�ũ�� �����߽��ϴ�." : "���� �ϸ�ũ�� �߰��߽��ϴ�.");
+      setStatusMessage(selectedBookmarkId ? "개인 북마크를 수정했습니다." : "개인 북마크를 추가했습니다.");
     } catch (error) {
-      const message = describeUnknownError(error, "���� �ϸ�ũ�� �������� ���߽��ϴ�.");
+      const message = describeUnknownError(error, "개인 북마크를 저장하지 못했습니다.");
       setBookmarkError(message);
       setStatusTone("error");
       setStatusMessage(message);
@@ -2205,7 +2205,7 @@ export function HomeScreen({
     if (!identity.id || !selectedBookmarkId) {
       return;
     }
-    const confirmed = window.confirm("���� �ϸ�ũ�� �����ұ��?");
+    const confirmed = window.confirm("개인 북마크를 삭제할까요?");
     if (!confirmed) {
       return;
     }
@@ -2228,9 +2228,9 @@ export function HomeScreen({
         setShowBookmarkModal(false);
       }
       setStatusTone("success");
-      setStatusMessage("���� �ϸ�ũ�� �����߽��ϴ�.");
+      setStatusMessage("개인 북마크를 삭제했습니다.");
     } catch (error) {
-      const message = describeUnknownError(error, "���� �ϸ�ũ�� �������� ���߽��ϴ�.");
+      const message = describeUnknownError(error, "개인 북마크를 삭제하지 못했습니다.");
       setBookmarkError(message);
       setStatusTone("error");
       setStatusMessage(message);
@@ -2311,17 +2311,17 @@ export function HomeScreen({
               <button
                 type="button"
                 className="doo-info-button"
-                title="�޴�"
+                title="메뉴"
                 onClick={() =>
-                  window.alert(`DOO Extractor\n\n����: ${APP_VERSION} WEB Version\n������: DOOHEE. JANG\n����ó: gdoomin@gmail.com`)
+                  window.alert(`DOO Extractor\n\n버전: ${APP_VERSION} WEB Version\n개발자: DOOHEE. JANG\n연락처: gdoomin@gmail.com`)
                 }
               >
-                ?
+                ☰
               </button>
               <div>
                 <h1>DOO Extractor</h1>
-                <p>KML to DMS ��ǥ ��ȯ��</p>
-                <div className="doo-version-badge" title="���� ���� ����">
+                <p>KML to DMS 좌표 변환기</p>
+                <div className="doo-version-badge" title="현재 배포 버전">
                   WEB {APP_VERSION}
                 </div>
                 <button
@@ -2329,7 +2329,7 @@ export function HomeScreen({
                   className="doo-flight-prep-button"
                   onClick={() => window.open("/before-flight", "_blank", "noopener,noreferrer")}
                 >
-                  �����غ�
+                  비행준비
                 </button>
               </div>
             </div>
@@ -2356,22 +2356,22 @@ export function HomeScreen({
 
             <div className="doo-sidebar-footer">
               <button type="button" className="doo-plan-guide-button" onClick={() => setShowPlanGuide(true)}>
-                �����/��� �ȳ�
+                요금제/기능 안내
               </button>
 
               <div className="doo-sidebar-note">
                 <div className="doo-note-head">
-                  <span className="doo-note-label">{isAuthenticated ? "�α��� ����" : "��� ����"}</span>
-                  {isAuthenticated ? <div className="doo-auth-state">�α��ε�</div> : null}
+                  <span className="doo-note-label">{isAuthenticated ? "로그인 계정" : "사용 상태"}</span>
+                  {isAuthenticated ? <div className="doo-auth-state">로그인됨</div> : null}
                 </div>
-                <code>{isAuthenticated ? userEmail : "��ȸ�� �̸����� ���"}</code>
+                <code>{isAuthenticated ? userEmail : "비회원 미리보기 모드"}</code>
                 {!isAuthenticated ? (
                   <button
                     type="button"
                     className="doo-auth-button doo-auth-button-login"
                     onClick={handleAuthButton}
                   >
-                    ȸ������ / �α���
+                    회원가입 / 로그인
                   </button>
                 ) : null}
               </div>
@@ -2380,22 +2380,22 @@ export function HomeScreen({
                 <div className="doo-billing-card">
                   <div className="doo-billing-head">
                     <button type="button" className="doo-billing-status-button" disabled>
-                      ���� ���� {billingLoading ? "Ȯ�� ��..." : (billingStatus?.plan_code || "free").toUpperCase()}
+                      구독 상태 {billingLoading ? "확인 중..." : (billingStatus?.plan_code || "free").toUpperCase()}
                     </button>
                   </div>
 
                   {billingStatus?.billing_enabled ? (
                     <>
                       <p className="doo-billing-meta">
-                        �� ��ȯ: {billingStatus.monthly_kml_used}
-                        {billingStatus.monthly_kml_limit > 0 ? ` / ${billingStatus.monthly_kml_limit}` : " / ������"}
+                        월 변환: {billingStatus.monthly_kml_used}
+                        {billingStatus.monthly_kml_limit > 0 ? ` / ${billingStatus.monthly_kml_limit}` : " / 무제한"}
                       </p>
-                      <p className="doo-billing-meta">���� �ִ� �뷮: {billingStatus.file_size_limit_mb}MB</p>
+                      <p className="doo-billing-meta">파일 최대 용량: {billingStatus.file_size_limit_mb}MB</p>
                       {billingStatus.promo_active ? (
                         <p className="doo-billing-help doo-billing-promo-active">
-                          ���θ�� ���� ��: {(billingStatus.promo_plan_code || billingStatus.plan_code || "free").toUpperCase()}
+                          프로모션 적용 중: {(billingStatus.promo_plan_code || billingStatus.plan_code || "free").toUpperCase()}
                           {billingStatus.promo_expires_at
-                            ? ` �� ${new Date(billingStatus.promo_expires_at).toLocaleDateString("ko-KR")}����`
+                            ? ` · ${new Date(billingStatus.promo_expires_at).toLocaleDateString("ko-KR")}까지`
                             : ""}
                         </p>
                       ) : null}
@@ -2403,23 +2403,23 @@ export function HomeScreen({
                       {shouldShowPricing ? (
                         <div className="doo-billing-actions">
                           <label className="doo-billing-phone">
-                            <span>������ �޴���ȭ</span>
+                            <span>결제용 휴대전화</span>
                             <input
                               type="tel"
                               value={buyerPhone}
                               onChange={(event) => setBuyerPhone(event.target.value)}
-                              placeholder="���ڸ� �Է�"
+                              placeholder="숫자만 입력"
                               inputMode="numeric"
                             />
                           </label>
                           <div className="doo-billing-promo-row">
                             <label className="doo-billing-phone">
-                              <span>���θ�� �ڵ�</span>
+                              <span>프로모션 코드</span>
                               <input
                                 type="text"
                                 value={promoCodeInput}
                                 onChange={(event) => setPromoCodeInput(event.target.value.toUpperCase())}
-                                placeholder="������� ���� �ڵ� �Է�"
+                                placeholder="비워두지 말고 코드 입력"
                                 autoCapitalize="characters"
                                 disabled={billingActionLoading || Boolean(billingStatus.promo_active)}
                               />
@@ -2430,7 +2430,7 @@ export function HomeScreen({
                               onClick={handleRedeemPromoCode}
                               disabled={billingActionLoading || Boolean(billingStatus.promo_active)}
                             >
-                              �ڵ� ����
+                              코드 적용
                             </button>
                           </div>
                           <div className="doo-billing-buttons">
@@ -2440,7 +2440,7 @@ export function HomeScreen({
                               onClick={() => handleStartSubscription("lite")}
                               disabled={billingActionLoading}
                             >
-                              ����Ʈ 3,900��
+                              라이트 3,900원
                             </button>
                             <button
                               type="button"
@@ -2448,7 +2448,7 @@ export function HomeScreen({
                               onClick={() => handleStartSubscription("pro")}
                               disabled={billingActionLoading}
                             >
-                              ���� 8,900��
+                              프로 8,900원
                             </button>
                             {billingStatus.subscription_active ? (
                               <button
@@ -2457,20 +2457,20 @@ export function HomeScreen({
                                 onClick={handleCancelSubscription}
                                 disabled={billingActionLoading}
                               >
-                                ���� ����
+                                구독 해지
                               </button>
                             ) : null}
                           </div>
                           <p className="doo-billing-help">
-                            ���� ������ ������ �����Ǹ�, �� �̸��Ϸ� �ű� �����ϸ� �ű� ��å�� ����˴ϴ�.
+                            기존 가입자 혜택은 유지되며, 새 이메일로 신규 가입하면 신규 정책이 적용됩니다.
                           </p>
                         </div>
                       ) : (
-                        <p className="doo-billing-help">���� ������ ���� ������ ���� ������ �ʿ����� �ʽ��ϴ�.</p>
+                        <p className="doo-billing-help">기존 가입자 혜택 계정은 별도 결제가 필요하지 않습니다.</p>
                       )}
                     </>
                   ) : (
-                    <p className="doo-billing-help">���� ��� �غ� ���Դϴ�.</p>
+                    <p className="doo-billing-help">결제 기능 준비 중입니다.</p>
                   )}
                 </div>
               ) : null}
@@ -2481,7 +2481,7 @@ export function HomeScreen({
                   className="doo-auth-button doo-auth-button-settings"
                   onClick={() => openBookmarkSettings()}
                 >
-                  ���� ����
+                  개인 설정
                 </button>
               ) : null}
 
@@ -2491,7 +2491,7 @@ export function HomeScreen({
                   className="doo-auth-button doo-auth-button-logout"
                   onClick={handleAuthButton}
                 >
-                  �α׾ƿ�
+                  로그아웃
                 </button>
               ) : null}
             </div>
@@ -2499,7 +2499,7 @@ export function HomeScreen({
 
           <section className="doo-main">
             <div className="doo-top-panel">
-              <label className="doo-top-label">KML / KMZ / GPX / GEOJSON ����</label>
+              <label className="doo-top-label">KML / KMZ / GPX / GEOJSON 파일</label>
               <div className="doo-stack-row">
                 {stackItems.length ? (
                   <div className="doo-stack-chips">
@@ -2525,23 +2525,23 @@ export function HomeScreen({
                             type="button"
                             className="doo-stack-chip-remove"
                             onClick={() => void removeStackEntry(entry.id)}
-                            aria-label={`${entry.response.filename} ����`}
-                            title="���ÿ��� ����"
+                            aria-label={`${entry.response.filename} 제거`}
+                            title="스택에서 제거"
                             disabled={isLoading}
                           >
-                            ��
+                            ×
                           </button>
                         </div>
                       );
                     })}
                   </div>
                 ) : (
-                  <div className="doo-stack-empty">��ø�� ������ �����ϴ�. ���� ���� �Ǵ� ���� �߰��� ����� �ּ���.</div>
+                  <div className="doo-stack-empty">중첩된 파일이 없습니다. 파일 열기 또는 파일 추가를 사용해 주세요.</div>
                 )}
               </div>
               <div className="doo-path-row">
                 <div className="doo-path-display" aria-live="polite">
-                  <span className="doo-path-primary">{fileDisplay.primary || "���õ� ������ �����ϴ�."}</span>
+                  <span className="doo-path-primary">{fileDisplay.primary || "선택된 파일이 없습니다."}</span>
                 </div>
                 <button
                   type="button"
@@ -2549,7 +2549,7 @@ export function HomeScreen({
                   onClick={() => openFileDialog("replace")}
                   disabled={isLoading}
                 >
-                  {isLoading ? "�ҷ����� ��..." : "���� ����"}
+                  {isLoading ? "불러오는 중..." : "파일 열기"}
                 </button>
                 <button
                   type="button"
@@ -2557,7 +2557,7 @@ export function HomeScreen({
                   onClick={() => openFileDialog("append")}
                   disabled={isLoading}
                 >
-                  ���� �߰�
+                  파일 추가
                 </button>
                 <button
                   type="button"
@@ -2565,7 +2565,7 @@ export function HomeScreen({
                   onClick={() => void clearStack()}
                   disabled={isLoading || !stackItems.length}
                 >
-                  ���� ����
+                  스택 비우기
                 </button>
                 <input
                   ref={fileInputRef}
@@ -2585,19 +2585,19 @@ export function HomeScreen({
 
             {!isAuthenticated && response ? (
               <div className="doo-gate-banner" role="status">
-                ������ ��� �̸����� �����Դϴ�. �α����ϸ� ���ε� �̷��� ���κ��� ����ǰ�, �����丮���� �ٽÿ��⸦ ����� �� �ֽ��ϴ�.
+                지금은 결과 미리보기 상태입니다. 로그인하면 업로드 이력이 개인별로 저장되고, 히스토리에서 다시열기를 사용할 수 있습니다.
               </div>
             ) : null}
 
             {canUseViewerStateSync && homeSyncPendingRemote ? (
               <div className="doo-sync-banner" role="status">
-                <span className="doo-sync-banner-text">�ٸ� ��⿡�� �ֱ� �۾� ���°� �����Ǿ����ϴ�.</span>
+                <span className="doo-sync-banner-text">다른 기기에서 최근 작업 상태가 감지되었습니다.</span>
                 <div className="doo-sync-banner-actions">
                   <button type="button" className="doo-sync-banner-apply" onClick={() => void handleApplyPendingHomeSync()}>
-                    ����ȭ ����
+                    동기화 적용
                   </button>
                   <button type="button" className="doo-sync-banner-dismiss" onClick={handleDismissPendingHomeSync}>
-                    ���߿�
+                    나중에
                   </button>
                 </div>
               </div>
@@ -2607,8 +2607,8 @@ export function HomeScreen({
               <section className="doo-result-column">
                 <div className="doo-panel-head">
                   <div>
-                    <div className="doo-panel-title">��ȯ ���</div>
-                    <div className="doo-panel-subtitle">{response ? `${response.result_count}�� ����� ǥ�� ���Դϴ�.` : "���� ���ε带 ��ٸ��� �ֽ��ϴ�."}</div>
+                    <div className="doo-panel-title">변환 결과</div>
+                    <div className="doo-panel-subtitle">{response ? `${response.result_count}개 결과를 표시 중입니다.` : "파일 업로드를 기다리고 있습니다."}</div>
                   </div>
                 </div>
                 <div className="doo-text-panel">
@@ -2619,29 +2619,29 @@ export function HomeScreen({
               <aside className="doo-history-panel">
                 <div className="doo-panel-head">
                   <div>
-                    <div className="doo-panel-title">�����丮</div>
+                    <div className="doo-panel-title">히스토리</div>
                   </div>
                   {isAuthenticated && canUseHistory ? (
                     <div className="doo-panel-head-actions">
-                      <span className="doo-panel-count">{historyItems.length}��</span>
+                      <span className="doo-panel-count">{historyItems.length}건</span>
                       <button
                         type="button"
                         className="doo-history-delete-all"
                         onClick={() => void handleHistoryDeleteAll()}
                         disabled={historyLoading || historyDeletingAll || !historyItems.length || Boolean(historyOpeningId) || Boolean(historyAppendingId) || Boolean(historyDeletingId)}
                       >
-                        {historyDeletingAll ? "���� ��..." : "��ü����"}
+                        {historyDeletingAll ? "삭제 중..." : "전체삭제"}
                       </button>
                     </div>
                   ) : null}
                 </div>
 
                 {!isAuthenticated ? (
-                  <p className="doo-history-empty">�α����ϸ� ���ε� ������ ������ ����ǰ�, �̰����� �ٽÿ���� ���� ����� ��� �� �ֽ��ϴ�.</p>
+                  <p className="doo-history-empty">로그인하면 업로드 시점이 서버에 저장되고, 이곳에서 다시열기로 현재 결과를 덮어쓸 수 있습니다.</p>
                 ) : !canUseHistory ? (
-                  <p className="doo-history-empty">���� �÷������� �����丮�� ����� �� �����ϴ�. ���� �� �̿��� �ּ���.</p>
+                  <p className="doo-history-empty">현재 플랜에서는 히스토리를 사용할 수 없습니다. 구독 후 이용해 주세요.</p>
                 ) : historyLoading ? (
-                  <p className="doo-history-empty">�����丮�� �ҷ����� ���Դϴ�...</p>
+                  <p className="doo-history-empty">히스토리를 불러오는 중입니다...</p>
                 ) : historyError ? (
                   <p className="doo-history-empty">{historyError}</p>
                 ) : historyItems.length ? (
@@ -2658,7 +2658,7 @@ export function HomeScreen({
                             <div className="doo-history-title-row">
                               <strong>{item.filename || item.project_name}</strong>
                               <span className="doo-history-count-inline">
-                                {item.mode === "linestring" ? "����" : "������"} {item.result_count}��
+                                {item.mode === "linestring" ? "라인" : "폴리곤"} {item.result_count}개
                               </span>
                             </div>
                             <span className="doo-history-meta">
@@ -2672,7 +2672,7 @@ export function HomeScreen({
                               onClick={() => handleHistoryOpen(item)}
                               disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
-                              {isOpening ? "�ҷ����� ��..." : isCurrent ? "����" : "�ٽÿ���"}
+                              {isOpening ? "불러오는 중..." : isCurrent ? "열림" : "다시열기"}
                             </button>
                             <button
                               type="button"
@@ -2680,7 +2680,7 @@ export function HomeScreen({
                               onClick={() => void handleHistoryAppend(item)}
                               disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
-                              {isAppending ? "�߰� ��..." : "�����߰�"}
+                              {isAppending ? "추가 중..." : "스택추가"}
                             </button>
                             <button
                               type="button"
@@ -2688,17 +2688,17 @@ export function HomeScreen({
                               onClick={() => void handleHistoryShare(item)}
                               disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
-                              {isSharing ? "���� ��..." : "����"}
+                              {isSharing ? "공유 중..." : "공유"}
                             </button>
                             <button
                               type="button"
                               className="doo-history-delete"
-                              title="�����丮 ����"
-                              aria-label="�����丮 ����"
+                              title="히스토리 삭제"
+                              aria-label="히스토리 삭제"
                               onClick={() => handleHistoryDelete(item)}
                               disabled={isOpening || isAppending || isSharing || isDeleting || historyDeletingAll}
                             >
-                              {isDeleting ? "..." : "??"}
+                              {isDeleting ? "..." : "🗑"}
                             </button>
                           </div>
                         </article>
@@ -2706,7 +2706,7 @@ export function HomeScreen({
                     })}
                   </div>
                 ) : (
-                  <p className="doo-history-empty">���� ����� ���ε� ����� �����ϴ�. �α����� ���¿��� ������ ���� ���⿡ ���Դϴ�.</p>
+                  <p className="doo-history-empty">아직 저장된 업로드 기록이 없습니다. 로그인한 상태에서 파일을 열면 여기에 쌓입니다.</p>
                 )}
               </aside>
             </div>
@@ -2716,14 +2716,14 @@ export function HomeScreen({
                 {showLoadingBadge ? (
                   <span className="doo-status-loading-badge" aria-live="polite">
                     <span className="doo-status-loading-spinner" aria-hidden="true" />
-                    �ҷ����� ��
+                    불러오는 중
                   </span>
                 ) : null}
                 <span className="doo-status-text">{statusMessage}</span>
               </div>
               <div className="doo-actions">
                 <button type="button" className="doo-action doo-action-copy" onClick={copyClipboard}>
-                  Ŭ������ ����
+                  클립보드 복사
                 </button>
                 <button
                   type="button"
@@ -2731,7 +2731,7 @@ export function HomeScreen({
                   onClick={downloadExcel}
                   disabled={isAuthenticated && !canDownloadExcel}
                 >
-                  ���� ����
+                  엑셀 저장
                 </button>
                 <button
                   type="button"
@@ -2739,16 +2739,16 @@ export function HomeScreen({
                   onClick={downloadText}
                   disabled={isAuthenticated && !canDownloadText}
                 >
-                  �ؽ�Ʈ ����
+                  텍스트 저장
                 </button>
                 <button
                   type="button"
                   className="doo-action doo-action-map"
                   onClick={openViewer}
                   disabled={!canOpenViewer}
-                  title={isViewerBusy ? "���� �ҷ����� �߿��� ����ȭ ���⸦ �� �� �����ϴ�." : undefined}
+                  title={isViewerBusy ? "파일 불러오기 중에는 도식화 보기를 열 수 없습니다." : undefined}
                 >
-                  {stackItems.length > 1 ? `����ȭ ���� (${stackItems.length})` : "����ȭ ����"}
+                  {stackItems.length > 1 ? `도식화 보기 (${stackItems.length})` : "도식화 보기"}
                 </button>
               </div>
             </div>
@@ -2777,7 +2777,7 @@ export function HomeScreen({
                     >
                       <BookmarkVisual
                         bookmark={item}
-                        alt="���� �ϸ�ũ"
+                        alt="개인 북마크"
                         imageClassName="doo-bookmark-card-image"
                         textClassName="doo-bookmark-card-fallback"
                       />
@@ -2801,7 +2801,7 @@ export function HomeScreen({
             </div>
           </section>
 
-          <aside className="doo-ad-rail" aria-label="�ǽð� ����">
+          <aside className="doo-ad-rail" aria-label="실시간 정보">
             <div className="doo-ad-rail-inner">
               <div className="doo-rail-stack">
                 <div className="doo-rail-slot doo-rail-slot-top">
@@ -2822,7 +2822,7 @@ export function HomeScreen({
             <div className="auth-modal-copy">
               <span className="auth-badge">Membership</span>
               <h2>{authMessage}</h2>
-              <p>��ǥ ������ �ٷ� Ȯ���� �� ������, ���� �����丮 ����� �ٽÿ��� ���� ����� �α��� �� ����� �� �ֽ��ϴ�.</p>
+              <p>좌표 추출은 바로 확인할 수 있지만, 개인 히스토리 저장과 다시열기 같은 기능은 로그인 후 사용할 수 있습니다.</p>
             </div>
             <LoginForm
               nextPath="/"
@@ -2830,11 +2830,11 @@ export function HomeScreen({
               onSuccess={() => {
                 setShowAuthModal(false);
                 setStatusTone("success");
-                setStatusMessage("�α��εǾ����ϴ�.");
+                setStatusMessage("로그인되었습니다.");
               }}
             />
             <button type="button" className="auth-modal-close" onClick={() => setShowAuthModal(false)}>
-              �ݱ�
+              닫기
             </button>
           </section>
         </div>
@@ -2848,7 +2848,7 @@ export function HomeScreen({
               <h2>{updateNoticeMessage}</h2>
             </div>
             <button type="button" className="auth-modal-close" onClick={() => setShowUpdateNotice(false)}>
-              Ȯ��
+              확인
             </button>
           </section>
         </div>
@@ -2859,8 +2859,8 @@ export function HomeScreen({
           <section className="auth-modal-card doo-bookmark-modal" onClick={(event) => event.stopPropagation()}>
             <div className="auth-modal-copy">
               <span className="auth-badge">Bookmark</span>
-              <h2>���� ����</h2>
-              <p>� ��ǻ�Ϳ��� �α����ϴ��� ���� �ϸ�ũ�� ���Դϴ�. �̹����� 92x92 ���簢���� ����� �� �ֽ��ϴ�.</p>
+              <h2>개인 설정</h2>
+              <p>어떤 컴퓨터에서 로그인하더라도 같은 북마크가 보입니다. 이미지는 92x92 정사각형만 사용할 수 있습니다.</p>
             </div>
 
             <div className="doo-bookmark-form">
@@ -2875,7 +2875,7 @@ export function HomeScreen({
                   >
                     <BookmarkVisual
                       bookmark={item}
-                      alt="����� �ϸ�ũ"
+                      alt="저장된 북마크"
                       imageClassName="doo-bookmark-selector-image"
                       textClassName="doo-bookmark-selector-fallback"
                     />
@@ -2890,13 +2890,13 @@ export function HomeScreen({
                     disabled={bookmarkSaving}
                   >
                     <span className="doo-bookmark-selector-plus">+</span>
-                    <span className="doo-bookmark-selector-host">�� �ϸ�ũ</span>
+                    <span className="doo-bookmark-selector-host">새 북마크</span>
                   </button>
                 ) : null}
               </div>
 
               <label className="doo-billing-phone">
-                <span>�ϸ�ũ ��ũ</span>
+                <span>북마크 링크</span>
                 <input
                   type="url"
                   value={bookmarkUrlInput}
@@ -2907,7 +2907,7 @@ export function HomeScreen({
               </label>
 
               <label className="doo-billing-phone">
-                <span>�ϸ�ũ �̹��� (���û���, 92x92)</span>
+                <span>북마크 이미지 (선택사항, 92x92)</span>
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/webp"
@@ -2924,7 +2924,7 @@ export function HomeScreen({
                       bookmark_url: bookmarkUrlInput.trim() || "https://example.com",
                       image_data_url: bookmarkImageDataUrl,
                     }}
-                    alt="�ϸ�ũ �̸�����"
+                    alt="북마크 미리보기"
                     imageClassName="doo-bookmark-preview-image"
                     textClassName="doo-bookmark-preview-empty"
                   />
@@ -2935,14 +2935,14 @@ export function HomeScreen({
                       bookmark_url: bookmarkUrlInput.trim() || "https://example.com",
                       image_data_url: "",
                     }}
-                    alt="�ϸ�ũ �̸�����"
+                    alt="북마크 미리보기"
                     imageClassName="doo-bookmark-preview-image"
                     textClassName="doo-bookmark-preview-empty"
                   />
                 )}
                 <div className="doo-bookmark-preview-copy">
-                  <strong>{bookmarkUrlInput.trim() ? describeBookmarkHost(bookmarkUrlInput.trim()) : "�̸�����"}</strong>
-                  <span>{bookmarkUrlInput.trim() || "��ũ�� �Է��ص� �ĺ����� �õ��ϰ�, ������ ����Ʈ���� ǥ�õ˴ϴ�."}</span>
+                  <strong>{bookmarkUrlInput.trim() ? describeBookmarkHost(bookmarkUrlInput.trim()) : "미리보기"}</strong>
+                  <span>{bookmarkUrlInput.trim() || "링크만 입력해도 파비콘을 시도하고, 없으면 사이트명이 표시됩니다."}</span>
                 </div>
               </div>
 
@@ -2957,7 +2957,7 @@ export function HomeScreen({
                   onClick={() => void handleDeleteBookmark()}
                   disabled={bookmarkSaving}
                 >
-                  ����
+                  삭제
                 </button>
               ) : null}
               <button
@@ -2966,10 +2966,10 @@ export function HomeScreen({
                 onClick={() => void handleSaveBookmark()}
                 disabled={bookmarkSaving}
               >
-                {bookmarkSaving ? "���� ��..." : "����"}
+                {bookmarkSaving ? "저장 중..." : "저장"}
               </button>
               <button type="button" className="auth-modal-close" onClick={() => setShowBookmarkModal(false)} disabled={bookmarkSaving}>
-                �ݱ�
+                닫기
               </button>
             </div>
           </section>
@@ -2981,8 +2981,8 @@ export function HomeScreen({
           <section className="doo-pricing-modal" onClick={(event) => event.stopPropagation()}>
             <div className="doo-pricing-header">
               <div className="doo-pricing-tag">PLAN GUIDE</div>
-              <h2>DOO Extractor �����</h2>
-              <p>���� ������ ���� ������ ���� ����� �����ϸ�, �� �̸��Ϸ� �����ϸ� �ű� ��å�� ����˴ϴ�. legacy���� : �����丮 ���� ���� 90��</p>
+              <h2>DOO Extractor 요금제</h2>
+              <p>기존 가입자 혜택 계정은 기존 기능을 유지하며, 새 이메일로 가입하면 신규 정책이 적용됩니다. legacy유저 : 히스토리 보관 기한 90일</p>
             </div>
 
             <div className="doo-pricing-scroll">
@@ -2990,33 +2990,33 @@ export function HomeScreen({
                 <article className="doo-pricing-column doo-pricing-column-free">
                   <div className="doo-pricing-column-head">
                     <span className="doo-pricing-chip">FREE</span>
-                    <h3>����</h3>
-                    <p>�ʼ� ��ɸ� ������ ü��</p>
+                    <h3>무료</h3>
+                    <p>필수 기능만 빠르게 체험</p>
                   </div>
                   <div className="doo-pricing-rate doo-pricing-rate-free">
-                    <span>����</span>
-                    <strong>0��</strong>
+                    <span>월간</span>
+                    <strong>0원</strong>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>�⺻ ��뷮</h4>
+                    <h4>기본 사용량</h4>
                     <ul className="doo-pricing-list">
-                      <li>�� KML ��ȯ 5ȸ</li>
-                      <li>1���� �ִ� 1MB</li>
-                      <li className="is-off">�����丮 ���� ����</li>
-                      <li className="is-off">Viewer ���� ���� ����</li>
+                      <li>월 KML 변환 5회</li>
+                      <li>1파일 최대 1MB</li>
+                      <li className="is-off">히스토리 보관 없음</li>
+                      <li className="is-off">Viewer 설정 저장 없음</li>
                     </ul>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>��� ����</h4>
+                    <h4>기능 제한</h4>
                     <ul className="doo-pricing-list">
-                      <li className="is-off">��ȣ/�ؽ�Ʈ/������ ���� �Ұ�</li>
-                      <li className="is-off">���� ��� ��üȭ/���� �Ұ�</li>
-                      <li>��Ʈ �⺻ 1��</li>
-                      <li>NOTAM �ҷ����⸸</li>
-                      <li>�������� Ŭ������</li>
-                      <li className="is-off">����(METAR/TAF, ��������) ������</li>
-                      <li className="is-off">����/���� �Ұ�</li>
-                      <li>�� ��� MOA��</li>
+                      <li className="is-off">번호/텍스트/형광펜 편집 불가</li>
+                      <li className="is-off">측정 결과 객체화/편집 불가</li>
+                      <li>폰트 기본 1종</li>
+                      <li>NOTAM 불러오기만</li>
+                      <li>내보내기 클립보드</li>
+                      <li className="is-off">날씨(METAR/TAF, 위성영상) 미지원</li>
+                      <li className="is-off">은둔/출현 불가</li>
+                      <li>겹 기능 MOA만</li>
                     </ul>
                   </div>
                 </article>
@@ -3024,33 +3024,33 @@ export function HomeScreen({
                 <article className="doo-pricing-column doo-pricing-column-lite">
                   <div className="doo-pricing-column-head">
                     <span className="doo-pricing-chip">LITE</span>
-                    <h3>����Ʈ</h3>
-                    <p>���� ���� ��� �߽� �Ǽ� �÷�</p>
+                    <h3>라이트</h3>
+                    <p>자주 쓰는 기능 중심 실속 플랜</p>
                   </div>
                   <div className="doo-pricing-rate doo-pricing-rate-lite">
-                    <span>����</span>
-                    <strong>3,900��</strong>
+                    <span>월간</span>
+                    <strong>3,900원</strong>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>�⺻ ��뷮</h4>
+                    <h4>기본 사용량</h4>
                     <ul className="doo-pricing-list">
-                      <li>�� KML ��ȯ 30ȸ</li>
-                      <li>1���� �ִ� 5MB</li>
-                      <li>�����丮 30�� / �ִ� 10��</li>
-                      <li>Viewer ������ ���� ����</li>
+                      <li>월 KML 변환 30회</li>
+                      <li>1파일 최대 5MB</li>
+                      <li>히스토리 30일 / 최대 10건</li>
+                      <li>Viewer 마지막 설정 저장</li>
                     </ul>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>�ֿ� ���</h4>
+                    <h4>주요 기능</h4>
                     <ul className="doo-pricing-list">
-                      <li>��ȣ/�ؽ�Ʈ/������ ����(���󡤱��� ����)</li>
-                      <li>���� ��� ��üȭ/����(�� �������� ����)</li>
-                      <li>��Ʈ/���� �ɼ� ������</li>
-                      <li>NOTAM ���� ��ȸ ����</li>
-                      <li>�������� �ؽ�Ʈ/����</li>
-                      <li>���� METAR/TAF</li>
-                      <li>����/���� ����</li>
-                      <li>�� ��� ��ü</li>
+                      <li>번호/텍스트/형광펜 편집(색상·굵기 고정)</li>
+                      <li>측정 결과 객체화/편집(선 색·굵기 고정)</li>
+                      <li>폰트/정렬 옵션 무제한</li>
+                      <li>NOTAM 개별 조회 가능</li>
+                      <li>내보내기 텍스트/엑셀</li>
+                      <li>날씨 METAR/TAF</li>
+                      <li>은둔/출현 가능</li>
+                      <li>겹 기능 전체</li>
                     </ul>
                   </div>
                 </article>
@@ -3058,33 +3058,33 @@ export function HomeScreen({
                 <article className="doo-pricing-column doo-pricing-column-pro">
                   <div className="doo-pricing-column-head">
                     <span className="doo-pricing-chip">PRO</span>
-                    <h3>����</h3>
-                    <p>��뷮�� ��ü ������ ���� �÷�</p>
+                    <h3>프로</h3>
+                    <p>대용량과 전체 편집을 위한 플랜</p>
                   </div>
                   <div className="doo-pricing-rate doo-pricing-rate-pro">
-                    <span>����</span>
-                    <strong>8,900��</strong>
+                    <span>월간</span>
+                    <strong>8,900원</strong>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>�⺻ ��뷮</h4>
+                    <h4>기본 사용량</h4>
                     <ul className="doo-pricing-list">
-                      <li>�� KML ��ȯ ������</li>
-                      <li>1���� �ִ� 200MB</li>
-                      <li>�����丮 ������ / ��ǻ� ������ (��������� 15�ϵ� �����丮 ����)</li>
-                      <li>Viewer ������ ���� ����</li>
+                      <li>월 KML 변환 무제한</li>
+                      <li>1파일 최대 200MB</li>
+                      <li>히스토리 무기한 / 사실상 무제한 (구독종료시 15일뒤 히스토리 삭제)</li>
+                      <li>Viewer 마지막 설정 저장</li>
                     </ul>
                   </div>
                   <div className="doo-pricing-group">
-                    <h4>�ֿ� ���</h4>
+                    <h4>주요 기능</h4>
                     <ul className="doo-pricing-list">
-                      <li>��ȣ/�ؽ�Ʈ/������ ��ü ���� ���</li>
-                      <li>���� ��� ��üȭ/���� ��ü ���</li>
-                      <li>��Ʈ/���� �ɼ� ������</li>
-                      <li>NOTAM ���� ��ȸ ����</li>
-                      <li>�������� �ؽ�Ʈ/����</li>
-                      <li>���� METAR/TAF + ��������</li>
-                      <li>����/���� ����</li>
-                      <li>�� ��� ��ü</li>
+                      <li>번호/텍스트/형광펜 전체 편집 기능</li>
+                      <li>측정 결과 객체화/편집 전체 기능</li>
+                      <li>폰트/정렬 옵션 무제한</li>
+                      <li>NOTAM 개별 조회 가능</li>
+                      <li>내보내기 텍스트/엑셀</li>
+                      <li>날씨 METAR/TAF + 위성영상</li>
+                      <li>은둔/출현 가능</li>
+                      <li>겹 기능 전체</li>
                     </ul>
                   </div>
                 </article>
@@ -3092,9 +3092,9 @@ export function HomeScreen({
             </div>
 
             <div className="doo-pricing-footer">
-              <p className="doo-pricing-footer-note">�� ������� �� ���� �ڵ� ���ŵǸ�, �������� ���桤���� �����մϴ�.</p>
+              <p className="doo-pricing-footer-note">※ 요금제는 월 단위 자동 갱신되며, 언제든지 변경·해지 가능합니다.</p>
               <button type="button" className="doo-pricing-close" onClick={() => setShowPlanGuide(false)}>
-                �ݱ�
+                닫기
               </button>
             </div>
           </section>
