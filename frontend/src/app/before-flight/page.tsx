@@ -2,37 +2,66 @@
 
 import { type ChangeEvent, useEffect, useMemo, useRef, useState } from "react";
 import { NotamMiniMap } from "@/components/NotamMiniMap";
+import { API_BASE_URL } from "@/lib/convert";
 
 type BeforeFlightTab = {
   key: string;
   label: string;
 };
 
+type AirportOption = {
+  icao: string;
+  name: string;
+};
+
+type AtisBlock = {
+  title?: string;
+  observed_at?: string;
+  raw?: string;
+};
+
+type AtisDetail = {
+  icao: string;
+  airport_title?: string;
+  source?: string;
+  source_url?: string;
+  updated_at?: string;
+  metar?: AtisBlock;
+  taf?: AtisBlock;
+};
+
 const BEFORE_FLIGHT_TABS: BeforeFlightTab[] = [
-  { key: "safety", label: "ìš´í•­ ì•ˆì „ ì ê²€í‘œ" },
-  { key: "notam", label: "NOTAM í™•ì¸" },
-  { key: "weather", label: "ê¸°ìƒ ì²´í¬" },
+  { key: "safety", label: "¿îÇ× ¾ÈÀü Á¡°ËÇ¥" },
+  { key: "notam", label: "NOTAM È®ÀÎ" },
+  { key: "weather", label: "±â»ó Ã¼Å©" },
   { key: "weight-balance", label: "Weight & Balance" },
-  { key: "flight-plan", label: "Flgiht plan" },
+  { key: "flight-plan", label: "Flight plan" },
 ];
 
 const SAFETY_CHECKLIST_ITEMS = [
-  "ìš´í•­ê³¼ ê´€ë ¨ëœ ì¸í—ˆê°€ ì‚¬í•­ í™•ì¸.",
-  "ê¸°ìƒ ë° NOTAM í™•ì¸.",
-  "Weight & Balance í™•ì¸.",
-  "ë¹„í–‰ê³„íš ì œì¶œ í™•ì¸.",
-  "ë¹„í–‰ ì „ ë¸Œë¦¬í•‘ ì‹¤ì‹œ.",
-  "ì¡°ì¢…ì‚¬ ê±´ê°• ìƒíƒœ",
-  "1. ë¹„í–‰ 12ì‹œê°„ì´ë‚´ ìŒì£¼ì—¬ë¶€ í™•ì¸.",
-  "2. ì•½ë¬¼ ë³µìš© ì—¬ë¶€ í™•ì¸.",
-  "3. ê¸°íƒ€ ì •ì‹ ì  ì‹ ì²´ì  ì ì„±ì—¬ë¶€ í™•ì¸.",
-  "í•´ë‹¹ ìê²©ì¦, ì‹ ì²´ê²€ì‚¬ì¦ëª…ì„œ ë° ì•ˆê²½(í•´ë‹¹ì)ë“± ë¹„í–‰ì— í•„ìš”í•œ ì¡°ì¢…ì‚¬ íœ´ëŒ€í’ˆ í™•ì¸.",
-  "í•­ê³µê¸° íƒ‘ì¬ì„œë¥˜ ë° ì¸í—ˆê°€ ì‚¬í•­ í™•ì¸.",
-  "í•­ê³µê¸° ì ê²€ í™•ì¸.",
+  "¿îÇ×°ú °ü·ÃµÈ ÀÎÇã°¡ »çÇ× È®ÀÎ.",
+  "±â»ó ¹× NOTAM È®ÀÎ.",
+  "Weight & Balance È®ÀÎ.",
+  "ºñÇà°èÈ¹ Á¦Ãâ È®ÀÎ.",
+  "ºñÇà Àü ºê¸®ÇÎ ½Ç½Ã.",
+  "Á¶Á¾»ç °Ç°­ »óÅÂ",
+  "1. ºñÇà 12½Ã°£ ÀÌ³» À½ÁÖ¿©ºÎ È®ÀÎ.",
+  "2. ¾à¹° º¹¿ë ¿©ºÎ È®ÀÎ.",
+  "3. ±âÅ¸ Á¤½ÅÀû ½ÅÃ¼Àû Àû¼º¿©ºÎ È®ÀÎ.",
+  "ÇØ´ç ÀÚ°İÁõ, ½ÅÃ¼°Ë»çÁõ¸í¼­ ¹× ¾È°æ(ÇØ´çÀÚ)µî ºñÇà¿¡ ÇÊ¿äÇÑ Á¶Á¾»ç ÈŞ´ëÇ° È®ÀÎ.",
+  "Ç×°ø±â Å¾Àç¼­·ù ¹× ÀÎÇã°¡ »çÇ× È®ÀÎ.",
+  "Ç×°ø±â Á¡°Ë È®ÀÎ.",
 ];
 
 const BEFORE_FLIGHT_LOGO_STORAGE_KEY = "doo-before-flight-logo-src";
 const BEFORE_FLIGHT_DEFAULT_LOGO_SRC = "/ksgt-logo-default.jpg";
+
+function formatAirportLabel(option: AirportOption) {
+  if (option.name) {
+    return `${option.icao} ¡¤ ${option.name}`;
+  }
+  return option.icao;
+}
 
 export default function BeforeFlightPage() {
   const [activeTab, setActiveTab] = useState<string>(BEFORE_FLIGHT_TABS[0]?.key ?? "safety");
@@ -44,6 +73,14 @@ export default function BeforeFlightPage() {
   const [notes, setNotes] = useState<string>("");
   const [logoSrc, setLogoSrc] = useState<string>(BEFORE_FLIGHT_DEFAULT_LOGO_SRC);
   const [logoModalOpen, setLogoModalOpen] = useState<boolean>(false);
+
+  const [airportOptions, setAirportOptions] = useState<AirportOption[]>([]);
+  const [airportLoading, setAirportLoading] = useState<boolean>(false);
+  const [airportError, setAirportError] = useState<string>("");
+  const [selectedAirports, setSelectedAirports] = useState<string[]>([]);
+  const [atisDetails, setAtisDetails] = useState<Record<string, AtisDetail>>({});
+  const [atisLoading, setAtisLoading] = useState<Record<string, boolean>>({});
+  const [weatherRegion, setWeatherRegion] = useState<string>("");
 
   const logoFileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -74,6 +111,61 @@ export default function BeforeFlightPage() {
     }
   }, []);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadAirports() {
+      setAirportLoading(true);
+      setAirportError("");
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/viewer-default/layers.json`, { cache: "no-store" });
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error("°øÇ× ¸ñ·ÏÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.");
+        }
+        const layers = Array.isArray(payload?.layers) ? payload.layers : [];
+        const seen = new Set<string>();
+        const airports: AirportOption[] = [];
+
+        layers.forEach((layer: any) => {
+          const features = Array.isArray(layer?.features) ? layer.features : [];
+          features.forEach((feature: any) => {
+            const icao = String(feature?.icao || "").trim().toUpperCase();
+            if (!icao || !icao.startsWith("RK")) {
+              return;
+            }
+            if (seen.has(icao)) {
+              return;
+            }
+            const name = String(feature?.airport || feature?.name || "").trim();
+            seen.add(icao);
+            airports.push({ icao, name });
+          });
+        });
+
+        airports.sort((a, b) => a.icao.localeCompare(b.icao));
+        if (isMounted) {
+          setAirportOptions(airports);
+        }
+      } catch (error) {
+        if (isMounted) {
+          const message = error instanceof Error ? error.message : "°øÇ× ¸ñ·ÏÀ» ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.";
+          setAirportError(message);
+        }
+      } finally {
+        if (isMounted) {
+          setAirportLoading(false);
+        }
+      }
+    }
+
+    loadAirports();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   function handlePrint() {
     window.print();
   }
@@ -88,7 +180,7 @@ export default function BeforeFlightPage() {
       return;
     }
     if (!selectedFile.type.startsWith("image/")) {
-      window.alert("ì´ë¯¸ì§€ íŒŒì¼ë§Œ ì„ íƒí•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
+      window.alert("ÀÌ¹ÌÁö ÆÄÀÏ¸¸ ¼±ÅÃÇÒ ¼ö ÀÖ½À´Ï´Ù.");
       return;
     }
 
@@ -102,12 +194,11 @@ export default function BeforeFlightPage() {
       try {
         window.localStorage.setItem(BEFORE_FLIGHT_LOGO_STORAGE_KEY, result);
       } catch {
-        window.alert("ë¡œì»¬ ì €ì¥ê³µê°„ì´ ë¶€ì¡±í•˜ì—¬ ì´ë¯¸ì§€ë¥¼ ì €ì¥í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.");
+        window.alert("·ÎÄÃ ÀúÀå°ø°£ÀÌ ºÎÁ·ÇØ ÀÌ¹ÌÁö¸¦ ÀúÀåÇÏÁö ¸øÇß½À´Ï´Ù.");
       }
     };
     reader.readAsDataURL(selectedFile);
 
-    // ê°™ì€ íŒŒì¼ì„ ì—°ì† ì„ íƒí•´ë„ onChangeê°€ ë™ì‘í•˜ë„ë¡ ì´ˆê¸°í™”
     event.target.value = "";
   }
 
@@ -120,15 +211,56 @@ export default function BeforeFlightPage() {
     }
   }
 
+  function handleAirportToggle(icao: string) {
+    setSelectedAirports((prev) => {
+      if (prev.includes(icao)) {
+        return prev.filter((item) => item !== icao);
+      }
+      return [...prev, icao];
+    });
+
+    if (selectedAirports.includes(icao)) {
+      setAtisDetails((prev) => {
+        const next = { ...prev };
+        delete next[icao];
+        return next;
+      });
+      return;
+    }
+
+    setAtisLoading((prev) => ({ ...prev, [icao]: true }));
+    fetch(`${API_BASE_URL}/api/weather/atis/${icao}`, { cache: "no-store" })
+      .then(async (response) => {
+        const payload = await response.json();
+        if (!response.ok) {
+          throw new Error(payload?.detail || "METAR/TAF¸¦ ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.");
+        }
+        return payload as AtisDetail;
+      })
+      .then((detail) => {
+        setAtisDetails((prev) => ({ ...prev, [icao]: detail }));
+      })
+      .catch((error) => {
+        const message = error instanceof Error ? error.message : "METAR/TAF¸¦ ºÒ·¯¿Ã ¼ö ¾ø½À´Ï´Ù.";
+        setAtisDetails((prev) => ({
+          ...prev,
+          [icao]: { icao, metar: { raw: message }, taf: { raw: message } },
+        }));
+      })
+      .finally(() => {
+        setAtisLoading((prev) => ({ ...prev, [icao]: false }));
+      });
+  }
+
   return (
     <main className="doo-before-flight-page">
       <section className="doo-before-flight-shell">
         <header className="doo-before-flight-head">
-          <h1>ë¹„í–‰ì¤€ë¹„(Before Flight)</h1>
-          <p>ìš´í•­ ì „ ì¤€ë¹„ í•­ëª©ì„ íƒ­ìœ¼ë¡œ í™•ì¸í•  ìˆ˜ ìˆìŠµë‹ˆë‹¤.</p>
+          <h1>ºñÇàÁØºñ(Before Flight)</h1>
+          <p>¿îÇ× Àü ÁØºñ Ç×¸ñÀ» ÅÇÀ¸·Î È®ÀÎÇÒ ¼ö ÀÖ½À´Ï´Ù.</p>
         </header>
 
-        <div className="doo-before-flight-tabs" role="tablist" aria-label="ë¹„í–‰ì¤€ë¹„ íƒ­">
+        <div className="doo-before-flight-tabs" role="tablist" aria-label="ºñÇàÁØºñ ÅÇ">
           {BEFORE_FLIGHT_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
             return (
@@ -154,30 +286,30 @@ export default function BeforeFlightPage() {
               </button>
             </div>
 
-            <article className="doo-safety-sheet" aria-label="KSGT ìš´í•­ ì•ˆì „ ì ê²€í‘œ">
+            <article className="doo-safety-sheet" aria-label="KSGT ºñÇà Àü ¿îÇ× ¾ÈÀü Á¡°ËÇ¥">
               <div className="doo-safety-sheet-brand-row">
                 <button
                   type="button"
                   className="doo-safety-logo-button"
                   onClick={() => setLogoModalOpen(true)}
-                  title="ë¡œê³  ë³´ê¸°/ë³€ê²½"
+                  title="·Î°í º¸±â/º¯°æ"
                 >
-                  <img src={logoSrc} alt="KSGT ë¡œê³ " className="doo-safety-logo-image" />
+                  <img src={logoSrc} alt="KSGT ·Î°í" className="doo-safety-logo-image" />
                 </button>
                 <label className="doo-safety-callsign-wrap">
-                  <span>í˜¸ì¶œë¶€í˜¸ :</span>
+                  <span>È£ÃâºÎÈ£ :</span>
                   <input
                     type="text"
                     value={callSign}
                     onChange={(event) => setCallSign(event.target.value)}
                     className="doo-safety-input doo-safety-callsign-input"
-                    aria-label="í˜¸ì¶œë¶€í˜¸ ì…ë ¥"
+                    aria-label="È£ÃâºÎÈ£ ÀÔ·Â"
                   />
                 </label>
               </div>
 
               <div className="doo-safety-sheet-head">
-                <h2>ë¹„í–‰ ì „ ìš´í•­ ì•ˆì „ ì ê²€í‘œ</h2>
+                <h2>ºñÇà Àü ¿îÇ× ¾ÈÀü Á¡°ËÇ¥</h2>
               </div>
 
               <table className="doo-safety-table">
@@ -192,7 +324,7 @@ export default function BeforeFlightPage() {
                 </colgroup>
                 <tbody>
                   <tr>
-                    <th>ìš´í•­ì¼ì</th>
+                    <th>¿îÇ×ÀÏÀÚ</th>
                     <td colSpan={2}>
                       <div className="doo-safety-date-input-wrap">
                         <input
@@ -200,67 +332,67 @@ export default function BeforeFlightPage() {
                           value={flightDate}
                           onChange={(event) => setFlightDate(event.target.value)}
                           className="doo-safety-input"
-                          aria-label="ìš´í•­ì¼ì ì…ë ¥"
+                          aria-label="¿îÇ×ÀÏÀÚ ÀÔ·Â"
                         />
                         <span className="doo-safety-date-weekday">{weekdayLabel ? `(${weekdayLabel})` : ""}</span>
                       </div>
                     </td>
-                    <th colSpan={2}>ì‘ì„±ì</th>
+                    <th colSpan={2}>ÀÛ¼ºÀÚ</th>
                     <td colSpan={2}>
                       <input
                         type="text"
                         value={authorName}
                         onChange={(event) => setAuthorName(event.target.value)}
                         className="doo-safety-input"
-                        placeholder="ì‘ì„±ì ì…ë ¥"
-                        aria-label="ì‘ì„±ì ì…ë ¥"
+                        placeholder="ÀÛ¼ºÀÚ ÀÔ·Â"
+                        aria-label="ÀÛ¼ºÀÚ ÀÔ·Â"
                       />
                     </td>
                   </tr>
 
                   <tr>
                     <th colSpan={3} rowSpan={4} className="doo-safety-check-heading">
-                      ì  ê²€ ì‚¬ í•­
+                      Á¡°Ë »çÇ×
                     </th>
-                    <th colSpan={2}>ê¸° ì¥</th>
-                    <th colSpan={2}>ë¶€ ê¸° ì¥</th>
+                    <th colSpan={2}>±âÀå</th>
+                    <th colSpan={2}>ºÎ±âÀå</th>
                   </tr>
 
                   <tr>
-                    <th>ì„±ëª…</th>
+                    <th>¼º¸í</th>
                     <td>
                       <input
                         type="text"
                         value={captainName}
                         onChange={(event) => setCaptainName(event.target.value)}
                         className="doo-safety-input"
-                        placeholder="ê¸°ì¥ ì„±ëª…"
-                        aria-label="ê¸°ì¥ ì„±ëª… ì…ë ¥"
+                        placeholder="±âÀå ¼º¸í"
+                        aria-label="±âÀå ¼º¸í ÀÔ·Â"
                       />
                     </td>
-                    <th>ì„±ëª…</th>
+                    <th>¼º¸í</th>
                     <td>
                       <input
                         type="text"
                         value={firstOfficerName}
                         onChange={(event) => setFirstOfficerName(event.target.value)}
                         className="doo-safety-input"
-                        placeholder="ë¶€ê¸°ì¥ ì„±ëª…"
-                        aria-label="ë¶€ê¸°ì¥ ì„±ëª… ì…ë ¥"
+                        placeholder="ºÎ±âÀå ¼º¸í"
+                        aria-label="ºÎ±âÀå ¼º¸í ÀÔ·Â"
                       />
                     </td>
                   </tr>
 
                   <tr>
-                    <th>ì„œëª…</th>
+                    <th>¼­¸í</th>
                     <td />
-                    <th>ì„œëª…</th>
+                    <th>¼­¸í</th>
                     <td />
                   </tr>
 
                   <tr>
-                    <th colSpan={2}>ìƒ íƒœ</th>
-                    <th colSpan={2}>ìƒ íƒœ</th>
+                    <th colSpan={2}>»óÅÂ</th>
+                    <th colSpan={2}>»óÅÂ</th>
                   </tr>
 
                   {SAFETY_CHECKLIST_ITEMS.map((item) => (
@@ -274,15 +406,15 @@ export default function BeforeFlightPage() {
                   ))}
 
                   <tr>
-                    <th>ê¸°íƒ€ì‚¬í•­</th>
+                    <th>±âÅ¸»çÇ×</th>
                     <td colSpan={6}>
                       <textarea
                         value={notes}
                         onChange={(event) => setNotes(event.target.value)}
                         className="doo-safety-textarea"
-                        placeholder="ê¸°íƒ€ì‚¬í•­ ì…ë ¥"
+                        placeholder="±âÅ¸»çÇ× ÀÔ·Â"
                         rows={4}
-                        aria-label="ê¸°íƒ€ì‚¬í•­ ì…ë ¥"
+                        aria-label="±âÅ¸»çÇ× ÀÔ·Â"
                       />
                     </td>
                   </tr>
@@ -300,10 +432,93 @@ export default function BeforeFlightPage() {
           <section className="doo-before-flight-content doo-before-flight-notam-panel" role="tabpanel" aria-live="polite">
             <NotamMiniMap mode="beforeFlight" />
           </section>
+        ) : activeTab === "weather" ? (
+          <section className="doo-before-flight-content doo-before-flight-weather-panel" role="tabpanel" aria-live="polite">
+            <div className="doo-weather-actions">
+              <button type="button" className="doo-safety-print-button" onClick={handlePrint}>
+                print
+              </button>
+            </div>
+            <article className="doo-weather-sheet">
+              <div className="doo-weather-header">
+                <h2 className="doo-weather-title">WEATHER</h2>
+                <div className="doo-weather-date-row">
+                  <span>¿îÇ×ÀÏÀÚ :</span>
+                  <input
+                    type="date"
+                    value={flightDate}
+                    onChange={(event) => setFlightDate(event.target.value)}
+                    className="doo-safety-input"
+                    aria-label="¿îÇ×ÀÏÀÚ ¼±ÅÃ"
+                  />
+                  <span className="doo-weather-date-weekday">{weekdayLabel ? `(${weekdayLabel})` : ""}</span>
+                </div>
+              </div>
+
+              <div className="doo-weather-airport-section">
+                <div className="doo-weather-airport-title">°øÇ× ¼±ÅÃ</div>
+                {airportLoading ? <p className="doo-weather-helper">°øÇ× ¸ñ·ÏÀ» ºÒ·¯¿À´Â Áß...</p> : null}
+                {airportError ? <p className="doo-weather-error">{airportError}</p> : null}
+                <div className="doo-weather-airport-list">
+                  {airportOptions.map((option) => (
+                    <label key={option.icao} className="doo-weather-airport-item">
+                      <input
+                        type="checkbox"
+                        checked={selectedAirports.includes(option.icao)}
+                        onChange={() => handleAirportToggle(option.icao)}
+                      />
+                      <span>{formatAirportLabel(option)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="doo-weather-atis-section">
+                {selectedAirports.length === 0 ? (
+                  <p className="doo-weather-helper">°øÇ×À» Ã¼Å©ÇÏ¸é METAR ¡æ TAF ¼ø¼­·Î Ç¥½ÃµË´Ï´Ù.</p>
+                ) : (
+                  selectedAirports.map((icao) => {
+                    const detail = atisDetails[icao];
+                    const isLoading = atisLoading[icao];
+                    return (
+                      <div key={icao} className="doo-weather-atis-card">
+                        <div className="doo-weather-atis-head">
+                          <strong>{icao}</strong>
+                          <span>{detail?.airport_title || detail?.icao || ""}</span>
+                          {detail?.updated_at ? <span className="doo-weather-atis-updated">{detail.updated_at}</span> : null}
+                        </div>
+                        {isLoading ? <p className="doo-weather-helper">ºÒ·¯¿À´Â Áß...</p> : null}
+                        <div className="doo-weather-atis-block">
+                          <div className="doo-weather-atis-label">METAR</div>
+                          <pre className="doo-weather-atis-text">{detail?.metar?.raw || "METAR Á¤º¸°¡ ¾ø½À´Ï´Ù."}</pre>
+                        </div>
+                        <div className="doo-weather-atis-block">
+                          <div className="doo-weather-atis-label">TAF</div>
+                          <pre className="doo-weather-atis-text">{detail?.taf?.raw || "TAF Á¤º¸°¡ ¾ø½À´Ï´Ù."}</pre>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="doo-weather-region">
+                <label htmlFor="doo-weather-region-input">Áö¿ª ÀÔ·Â</label>
+                <input
+                  id="doo-weather-region-input"
+                  type="text"
+                  value={weatherRegion}
+                  onChange={(event) => setWeatherRegion(event.target.value)}
+                  className="doo-safety-input"
+                  placeholder="ºÎ»ê±¤¿ª½Ã"
+                />
+              </div>
+            </article>
+          </section>
         ) : (
           <section className="doo-before-flight-content" role="tabpanel" aria-live="polite">
             <h2>{activeLabel}</h2>
-            <p>ì¤€ë¹„ì¤‘</p>
+            <p>ÁØºñÁß</p>
           </section>
         )}
       </section>
@@ -317,22 +532,22 @@ export default function BeforeFlightPage() {
       />
 
       {logoModalOpen ? (
-        <div className="doo-safety-logo-modal-backdrop" role="dialog" aria-modal="true" aria-label="ë¡œê³  ì´ë¯¸ì§€ ë³´ê¸°">
+        <div className="doo-safety-logo-modal-backdrop" role="dialog" aria-modal="true" aria-label="·Î°í ÀÌ¹ÌÁö º¸±â">
           <div className="doo-safety-logo-modal">
-            <img src={logoSrc} alt="ë¡œê³  ë¯¸ë¦¬ë³´ê¸°" className="doo-safety-logo-modal-image" />
+            <img src={logoSrc} alt="·Î°í ¹Ì¸®º¸±â" className="doo-safety-logo-modal-image" />
             <div className="doo-safety-logo-modal-actions">
               <button type="button" className="doo-safety-logo-modal-button" onClick={handleLogoFilePickerOpen}>
-                ì‚¬ì§„ ë°”ê¾¸ê¸°
+                »çÁø ¹Ù²Ù±â
               </button>
               <button type="button" className="doo-safety-logo-modal-button" onClick={handleLogoReset}>
-                ê¸°ë³¸ ë¡œê³ 
+                ±âº» ·Î°í
               </button>
               <button
                 type="button"
                 className="doo-safety-logo-modal-button is-close"
                 onClick={() => setLogoModalOpen(false)}
               >
-                ë‹«ê¸°
+                ´İ±â
               </button>
             </div>
           </div>

@@ -2980,6 +2980,163 @@ textarea {
   min-height: 700px;
 }
 
+.doo-before-flight-weather-panel {
+  padding: 18px;
+}
+
+.doo-weather-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+.doo-weather-sheet {
+  background: #ffffff;
+  color: #111827;
+  border-radius: 14px;
+  border: 1px solid #cbd5f0;
+  padding: 20px;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.25);
+}
+
+.doo-weather-header {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.doo-weather-title {
+  margin: 0;
+  text-align: center;
+  font-size: 34px;
+  letter-spacing: 0.3em;
+  font-weight: 700;
+  color: #0f172a;
+  text-shadow: 0 3px 6px rgba(15, 23, 42, 0.35);
+}
+
+.doo-weather-date-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #1f2937;
+}
+
+.doo-weather-date-weekday {
+  color: #475569;
+  font-size: 12px;
+}
+
+.doo-weather-airport-section {
+  margin-top: 14px;
+  border: 1px solid #d4dde8;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.doo-weather-airport-title {
+  font-weight: 600;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.doo-weather-airport-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 8px;
+  max-height: 180px;
+  overflow: auto;
+  padding-right: 6px;
+}
+
+.doo-weather-airport-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: #0f172a;
+}
+
+.doo-weather-helper {
+  margin: 6px 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
+.doo-weather-error {
+  margin: 6px 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+.doo-weather-atis-section {
+  margin-top: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.doo-weather-atis-card {
+  border: 1px solid #d1d9e5;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fafc;
+}
+
+.doo-weather-atis-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 12.5px;
+  color: #0f172a;
+  margin-bottom: 8px;
+}
+
+.doo-weather-atis-updated {
+  margin-left: auto;
+  font-size: 11px;
+  color: #475569;
+}
+
+.doo-weather-atis-block {
+  margin-top: 8px;
+}
+
+.doo-weather-atis-label {
+  font-weight: 600;
+  font-size: 12px;
+  color: #1e293b;
+  margin-bottom: 4px;
+}
+
+.doo-weather-atis-text {
+  margin: 0;
+  white-space: pre-wrap;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  color: #0f172a;
+  line-height: 1.4;
+}
+
+.doo-weather-region {
+  margin-top: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.doo-weather-region label {
+  min-width: 72px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
 .doo-safety-actions {
   display: flex;
   justify-content: flex-end;
@@ -3313,6 +3470,18 @@ textarea {
     min-height: 580px;
   }
 
+  .doo-before-flight-weather-panel {
+    padding: 14px;
+  }
+
+  .doo-weather-sheet {
+    padding: 16px;
+  }
+
+  .doo-weather-title {
+    font-size: 28px;
+  }
+
   .doo-notam-before-flight .doo-notam-map-shell {
     min-height: clamp(540px, 70vh, 860px);
   }
@@ -3442,6 +3611,10 @@ textarea {
     display: none;
   }
 
+  .doo-weather-actions {
+    display: none;
+  }
+
   .doo-before-flight-content {
     border: 0;
     background: #fff;
@@ -3462,6 +3635,37 @@ textarea {
   .doo-before-flight-notam-panel {
     min-height: auto !important;
     padding: 0 !important;
+  }
+
+  .doo-before-flight-weather-panel {
+    padding: 0 !important;
+    min-height: auto !important;
+  }
+
+  .doo-weather-sheet {
+    border: 1px solid #000;
+    border-radius: 0;
+    box-shadow: none;
+    width: 190mm;
+    min-height: 250mm;
+    margin: 0 auto;
+    padding: 10mm;
+  }
+
+  .doo-weather-title {
+    color: #000;
+    text-shadow: 0 2px 2px rgba(0, 0, 0, 0.25);
+  }
+
+  .doo-weather-airport-section,
+  .doo-weather-atis-card,
+  .doo-weather-atis-text {
+    border: 1px solid #000;
+    background: #fff;
+  }
+
+  .doo-weather-airport-list {
+    max-height: none;
   }
 
   .doo-notam-before-flight {
