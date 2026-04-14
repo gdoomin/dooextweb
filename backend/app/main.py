@@ -351,8 +351,8 @@ PLAN_POLICIES: dict[str, dict[str, Any]] = {
 }
 PLAN_PRICES_KRW = {
     DEFAULT_PLAN_CODE: 0,
-    LITE_PLAN_CODE: 3900,
-    PRO_PLAN_CODE: 8900,
+    LITE_PLAN_CODE: 1900,
+    PRO_PLAN_CODE: 4900,
 }
 PLAN_PAYAPP_GOODNAME = {
     LITE_PLAN_CODE: "DOO Extractor Lite Monthly",

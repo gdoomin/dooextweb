@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.3.1";
+const APP_VERSION = "4.3.2";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -2651,7 +2651,7 @@ export function HomeScreen({
                               onClick={() => handleStartSubscription("lite")}
                               disabled={billingActionLoading}
                             >
-                              라이트 3,900원
+                              라이트 1,900원
                             </button>
                             <button
                               type="button"
@@ -2659,7 +2659,7 @@ export function HomeScreen({
                               onClick={() => handleStartSubscription("pro")}
                               disabled={billingActionLoading}
                             >
-                              프로 8,900원
+                              프로 4,900원
                             </button>
                             {billingStatus.subscription_active ? (
                               <button
@@ -3240,7 +3240,7 @@ export function HomeScreen({
                   </div>
                   <div className="doo-pricing-rate doo-pricing-rate-lite">
                     <span>월간</span>
-                    <strong>3,900원</strong>
+                    <strong>1,900원</strong>
                   </div>
                   <div className="doo-pricing-group">
                     <h4>기본 사용량</h4>
@@ -3274,7 +3274,7 @@ export function HomeScreen({
                   </div>
                   <div className="doo-pricing-rate doo-pricing-rate-pro">
                     <span>월간</span>
-                    <strong>8,900원</strong>
+                    <strong>4,900원</strong>
                   </div>
                   <div className="doo-pricing-group">
                     <h4>기본 사용량</h4>
