@@ -3308,16 +3308,8 @@
         <strong id="completionManualCountText">0개</strong>
       </div>
       <div class="completion-summary-row">
-        <span class="completion-summary-sub">총 완료라인</span>
-        <strong id="completionManualTotalText" class="completion-summary-sub">0개</strong>
-      </div>
-      <div class="completion-summary-row">
         <span>GPX 완료</span>
         <strong id="completionGpxCountText">0개</strong>
-      </div>
-      <div class="completion-summary-row">
-        <span class="completion-summary-sub">총 완료라인</span>
-        <strong id="completionGpxTotalText" class="completion-summary-sub">0개</strong>
       </div>
     </div>
   </div>
@@ -4318,9 +4310,7 @@
     const completionPercentText = document.getElementById('completionPercentText');
     const completionRemainingTimeText = document.getElementById('completionRemainingTimeText');
     const completionManualCountText = document.getElementById('completionManualCountText');
-    const completionManualTotalText = document.getElementById('completionManualTotalText');
     const completionGpxCountText = document.getElementById('completionGpxCountText');
-    const completionGpxTotalText = document.getElementById('completionGpxTotalText');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
     const weatherButton = document.getElementById('weatherButton');
@@ -13641,14 +13631,8 @@
         if (completionManualCountText) {
           completionManualCountText.textContent = '0개';
         }
-        if (completionManualTotalText) {
-          completionManualTotalText.textContent = '0개';
-        }
         if (completionGpxCountText) {
           completionGpxCountText.textContent = '0개';
-        }
-        if (completionGpxTotalText) {
-          completionGpxTotalText.textContent = '0개';
         }
         return;
       }
@@ -13689,14 +13673,8 @@
       if (completionManualCountText) {
         completionManualCountText.textContent = `${manualCompletedCount}개`;
       }
-      if (completionManualTotalText) {
-        completionManualTotalText.textContent = `${completedCount}개`;
-      }
       if (completionGpxCountText) {
         completionGpxCountText.textContent = `${gpxCompletedCount}개`;
-      }
-      if (completionGpxTotalText) {
-        completionGpxTotalText.textContent = `${completedCount}개`;
       }
       completionSummary.classList.toggle('is-visible', completedCount > 0);
     }

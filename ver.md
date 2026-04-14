@@ -8,5 +8,5 @@
   - Do not overwrite Korean-containing files with unspecified encoding.
   - If mojibake appears, stop and restore encoding before any feature work.
 
-Current Version: `4.3.3`
+Current Version: `4.3.4`
 
