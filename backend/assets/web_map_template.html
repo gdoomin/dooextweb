@@ -193,7 +193,7 @@
       pointer-events: none;
     }
     .completion-summary.is-visible {
-      max-height: 236px;
+      max-height: 280px;
       opacity: 1;
       transform: translateY(0);
       padding: 8px 10px;
@@ -216,6 +216,16 @@
       font-size: 13px;
       font-weight: 800;
       letter-spacing: 0.01em;
+    }
+    .completion-summary-sub {
+      display: block;
+      margin-top: 2px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cfd6f4;
+    }
+    .completion-summary-sub.is-remaining {
+      color: #ffd54a;
     }
     .toolbar {
       --tool-card-width: clamp(38px, 2.5vw, 46px);
@@ -3282,6 +3292,10 @@
         <strong id="completionCountText">0 / 0</strong>
       </div>
       <div class="completion-summary-row">
+        <span class="completion-summary-sub is-remaining">잔여 라인</span>
+        <strong id="completionRemainingLineText" class="completion-summary-sub is-remaining">0개</strong>
+      </div>
+      <div class="completion-summary-row">
         <span>공정률</span>
         <strong id="completionPercentText">0.0%</strong>
       </div>
@@ -3294,8 +3308,16 @@
         <strong id="completionManualCountText">0개</strong>
       </div>
       <div class="completion-summary-row">
+        <span class="completion-summary-sub">총 완료라인</span>
+        <strong id="completionManualTotalText" class="completion-summary-sub">0개</strong>
+      </div>
+      <div class="completion-summary-row">
         <span>GPX 완료</span>
         <strong id="completionGpxCountText">0개</strong>
+      </div>
+      <div class="completion-summary-row">
+        <span class="completion-summary-sub">총 완료라인</span>
+        <strong id="completionGpxTotalText" class="completion-summary-sub">0개</strong>
       </div>
     </div>
   </div>
@@ -4292,10 +4314,13 @@
     const projectMetaUnitButton = document.getElementById('projectMetaUnitButton');
     const completionSummary = document.getElementById('completionSummary');
     const completionCountText = document.getElementById('completionCountText');
+    const completionRemainingLineText = document.getElementById('completionRemainingLineText');
     const completionPercentText = document.getElementById('completionPercentText');
     const completionRemainingTimeText = document.getElementById('completionRemainingTimeText');
     const completionManualCountText = document.getElementById('completionManualCountText');
+    const completionManualTotalText = document.getElementById('completionManualTotalText');
     const completionGpxCountText = document.getElementById('completionGpxCountText');
+    const completionGpxTotalText = document.getElementById('completionGpxTotalText');
     const hintPanel = document.getElementById('hintPanel');
     const layerButton = document.getElementById('layerButton');
     const weatherButton = document.getElementById('weatherButton');
@@ -13608,13 +13633,22 @@
       if (!totalCount) {
         completionSummary.classList.remove('is-visible');
         completionCountText.textContent = '0 / 0';
+        if (completionRemainingLineText) {
+          completionRemainingLineText.textContent = '0개';
+        }
         completionPercentText.textContent = '0.0%';
         completionRemainingTimeText.textContent = '대략 0분';
         if (completionManualCountText) {
           completionManualCountText.textContent = '0개';
         }
+        if (completionManualTotalText) {
+          completionManualTotalText.textContent = '0개';
+        }
         if (completionGpxCountText) {
           completionGpxCountText.textContent = '0개';
+        }
+        if (completionGpxTotalText) {
+          completionGpxTotalText.textContent = '0개';
         }
         return;
       }
@@ -13647,13 +13681,22 @@
       const remainingTurnHours = (remainingTurns * 3) / 60;
       const remainingEstimatedHours = remainingDistanceHours + remainingTurnHours;
       completionCountText.textContent = `${completedCount} / ${totalCount}`;
+      if (completionRemainingLineText) {
+        completionRemainingLineText.textContent = `${remainingCount}개`;
+      }
       completionPercentText.textContent = `${progressPercent.toFixed(1)}%`;
       completionRemainingTimeText.textContent = formatRemainingCaptureDuration(remainingEstimatedHours);
       if (completionManualCountText) {
         completionManualCountText.textContent = `${manualCompletedCount}개`;
       }
+      if (completionManualTotalText) {
+        completionManualTotalText.textContent = `${completedCount}개`;
+      }
       if (completionGpxCountText) {
         completionGpxCountText.textContent = `${gpxCompletedCount}개`;
+      }
+      if (completionGpxTotalText) {
+        completionGpxTotalText.textContent = `${completedCount}개`;
       }
       completionSummary.classList.toggle('is-visible', completedCount > 0);
     }
