@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-15T12:38:34.544096+00:00",
-  "last_successful_at": "2026-04-15T12:38:34.544096+00:00",
-  "last_attempted_at": "2026-04-15T12:38:34.544096+00:00",
+  "updated_at": "2026-04-15T15:41:51.573476+00:00",
+  "last_successful_at": "2026-04-15T15:41:51.573476+00:00",
+  "last_attempted_at": "2026-04-15T15:41:51.573476+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -98,7 +98,7 @@
           "readCount": 341,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
@@ -108,7 +108,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 5002.4014,
+          "_internal_score": 4995.0493,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -263,7 +263,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2022.9615,
+          "_internal_score": 2003.4684,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -412,7 +412,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2150.585,
+          "_internal_score": 2130.949,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -556,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2221.9077,
+          "_internal_score": 2202.2727,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -677,7 +677,7 @@
           "imageFilePath": "",
           "recruitTypeName": "일반채용",
           "companySn": 349371,
-          "deadlineCount": 260,
+          "deadlineCount": 259,
           "defaultImageUseYn": false,
           "receiptState": "접수중",
           "recruitKindCode": "BASIC",
@@ -709,206 +709,6 @@
       }
     },
     {
-      "id": "240430",
-      "slug": "air-busan-26년-신입-운항승무원-상시채용-240430",
-      "job_no": "240430",
-      "source_job_key": "240430",
-      "title": "'26년 신입 운항승무원 상시채용",
-      "company": "Air Busan",
-      "company_slug": "air-busan",
-      "location": "",
-      "employment_type": "신입",
-      "employment_type_code": "full_time",
-      "experience": "신입",
-      "experience_level": "entry",
-      "deadline_text": "2026.04.15",
-      "deadline_date": "2026.04.15",
-      "period_text": "2026.01.19 ~ 2026.04.15",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "Air Busan Careers",
-      "source_code": "airbusan",
-      "source_label": "Air Busan Careers",
-      "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240430",
-      "source_url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240430",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "신입 · 신입",
-      "posted_at": "2026-01-19T17:00:00+09:00",
-      "deadline_at": "2026-04-15T14:00:59+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "'26년 신입 운항승무원 상시채용 Air Busan 신입 GENERAL MRS2 '26년 신입 운항승무원 상시채용 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "recruitTypeCode": "GENERAL",
-          "applyStartDate": {
-            "date": 19,
-            "hours": 17,
-            "seconds": 0,
-            "month": 0,
-            "timezoneOffset": -540,
-            "year": 126,
-            "minutes": 0,
-            "time": 1768809600000,
-            "day": 1
-          },
-          "recruitClassName": "신입",
-          "systemKindCode": "MRS2",
-          "jobnoticeName": "'26년 신입 운항승무원 상시채용",
-          "jobnoticeSn": 240430,
-          "applyEndDate": {
-            "date": 15,
-            "hours": 14,
-            "seconds": 59,
-            "month": 3,
-            "timezoneOffset": -540,
-            "year": 126,
-            "minutes": 0,
-            "time": 1776229259000,
-            "day": 3
-          },
-          "imageFilePath": "",
-          "recruitTypeName": "일반채용",
-          "companySn": 349371,
-          "deadlineCount": 0,
-          "defaultImageUseYn": false,
-          "receiptState": "접수마감",
-          "recruitKindCode": "BASIC",
-          "applyPermitCount": 1
-        },
-        "normalized": {
-          "id": "240430",
-          "job_no": "240430",
-          "title": "'26년 신입 운항승무원 상시채용",
-          "company": "Air Busan",
-          "location": "",
-          "employment_type": "신입",
-          "experience": "신입",
-          "deadline_text": "2026.04.15",
-          "deadline_date": "2026.04.15",
-          "period_text": "2026.01.19 ~ 2026.04.15",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "Air Busan Careers",
-          "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240430",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "신입 · 신입"
-        }
-      }
-    },
-    {
-      "id": "240432",
-      "slug": "air-busan-26년-신입-운항승무원군출신-상시채용-240432",
-      "job_no": "240432",
-      "source_job_key": "240432",
-      "title": "'26년 신입 운항승무원(군출신) 상시채용",
-      "company": "Air Busan",
-      "company_slug": "air-busan",
-      "location": "",
-      "employment_type": "신입",
-      "employment_type_code": "full_time",
-      "experience": "신입",
-      "experience_level": "entry",
-      "deadline_text": "2026.04.15",
-      "deadline_date": "2026.04.15",
-      "period_text": "2026.01.19 ~ 2026.04.15",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "Air Busan Careers",
-      "source_code": "airbusan",
-      "source_label": "Air Busan Careers",
-      "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240432",
-      "source_url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240432",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "신입 · 신입",
-      "posted_at": "2026-01-19T17:00:00+09:00",
-      "deadline_at": "2026-04-15T14:00:59+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "'26년 신입 운항승무원(군출신) 상시채용 Air Busan 신입 GENERAL MRS2 '26년 신입 운항승무원(군출신) 상시채용 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "recruitTypeCode": "GENERAL",
-          "applyStartDate": {
-            "date": 19,
-            "hours": 17,
-            "seconds": 0,
-            "month": 0,
-            "timezoneOffset": -540,
-            "year": 126,
-            "minutes": 0,
-            "time": 1768809600000,
-            "day": 1
-          },
-          "recruitClassName": "신입",
-          "systemKindCode": "MRS2",
-          "jobnoticeName": "'26년 신입 운항승무원(군출신) 상시채용",
-          "jobnoticeSn": 240432,
-          "applyEndDate": {
-            "date": 15,
-            "hours": 14,
-            "seconds": 59,
-            "month": 3,
-            "timezoneOffset": -540,
-            "year": 126,
-            "minutes": 0,
-            "time": 1776229259000,
-            "day": 3
-          },
-          "imageFilePath": "",
-          "recruitTypeName": "일반채용",
-          "companySn": 349371,
-          "deadlineCount": 0,
-          "defaultImageUseYn": false,
-          "receiptState": "접수마감",
-          "recruitKindCode": "BASIC",
-          "applyPermitCount": 1
-        },
-        "normalized": {
-          "id": "240432",
-          "job_no": "240432",
-          "title": "'26년 신입 운항승무원(군출신) 상시채용",
-          "company": "Air Busan",
-          "location": "",
-          "employment_type": "신입",
-          "experience": "신입",
-          "deadline_text": "2026.04.15",
-          "deadline_date": "2026.04.15",
-          "period_text": "2026.01.19 ~ 2026.04.15",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "Air Busan Careers",
-          "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=240432",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "신입 · 신입"
-        }
-      }
-    },
-    {
       "id": "53425022",
       "slug": "주이엔비에어-회전익-조종사-채용-53425022",
       "job_no": "53425022",
@@ -931,8 +731,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2e90d73b-783c-491e-9f55-5a0487ed86cc",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2e90d73b-783c-491e-9f55-5a0487ed86cc",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=5300b610-6678-4bed-8624-7d03abda0899",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=5300b610-6678-4bed-8624-7d03abda0899",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -970,7 +770,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2e90d73b-783c-491e-9f55-5a0487ed86cc",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=5300b610-6678-4bed-8624-7d03abda0899",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
