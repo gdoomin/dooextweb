@@ -3506,6 +3506,7 @@
     <p class="gpx-title">GPX 경로 옵션</p>
     <p class="gpx-help">GPX 파일을 누적으로 불러오고, 선택한 GPX 궤적의 색상과 굵기를 바꿀 수 있습니다.</p>
     <button id="gpxOpenButton" class="mini-button gpx-open-button" type="button">GPX 파일 열기</button>
+    <button id="gpxDooexExportButton" class="mini-button gpx-open-button" type="button">dooex 파일로 저장하기</button>
     <p id="gpxSelectedStatus" class="gpx-selected-status">선택된 GPX 객체 없음</p>
     <div class="gpx-style-wrap">
       <label class="force-field">색상
@@ -4336,6 +4337,7 @@
     const gpxButton = document.getElementById('gpxButton');
     const gpxFileInput = document.getElementById('gpxFileInput');
     const gpxOpenButton = document.getElementById('gpxOpenButton');
+    const gpxDooexExportButton = document.getElementById('gpxDooexExportButton');
     const gpxSelectedStatus = document.getElementById('gpxSelectedStatus');
     const gpxColorInput = document.getElementById('gpxColorInput');
     const gpxWeightInput = document.getElementById('gpxWeightInput');
@@ -14102,6 +14104,178 @@
       };
     }
 
+    function normalizeSharedCompletionStates(value) {
+      if (!Array.isArray(value)) {
+        return [];
+      }
+      return value.map((item) => {
+        if (!item || typeof item !== 'object') {
+          return null;
+        }
+        const id = Number(item.id);
+        if (!Number.isFinite(id)) {
+          return null;
+        }
+        return {
+          id,
+          source: item.source === 'gpx' ? 'gpx' : 'manual',
+        };
+      }).filter(Boolean);
+    }
+
+    function sanitizeSharedViewerStateForExport(viewerState) {
+      const base = viewerState && typeof viewerState === 'object' ? { ...viewerState } : {};
+      delete base.weather;
+      delete base.weatherOverlay;
+      delete base.notam;
+
+      let completedLineIds = Array.isArray(base.completedLineIds)
+        ? base.completedLineIds.map((value) => Number(value)).filter((value) => Number.isFinite(value))
+        : [];
+      let completionStates = normalizeSharedCompletionStates(base.completionStates);
+      if (!completedLineIds.length && completionStates.length) {
+        completedLineIds = completionStates.map((entry) => entry.id);
+      }
+      if (!completionStates.length && completedLineIds.length) {
+        completionStates = completedLineIds.map((id) => ({ id, source: 'manual' }));
+      }
+      const doneColor = typeof base.doneColor === 'string' && /^#[0-9a-f]{6}$/i.test(base.doneColor)
+        ? base.doneColor
+        : doneHighlightDefaultColor;
+
+      return {
+        ...base,
+        completedLineIds,
+        completionStates,
+        doneColor,
+      };
+    }
+
+    function stripSharedDownloadExtension(filename) {
+      let text = String(filename || '').trim();
+      while (/\.(kml|kmz|gpx|geojson|json|csv|txt|dooex)$/i.test(text)) {
+        text = text.replace(/\.(kml|kmz|gpx|geojson|json|csv|txt|dooex)$/i, '').trim();
+      }
+      return text || 'dooextractor-share';
+    }
+
+    function buildViewerMapPayloadForShare() {
+      const mapPayload = { ...(payload || {}) };
+      [
+        'api_base_url',
+        'frontend_base_url',
+        'viewer_state_key',
+        'viewer_billing',
+        'preview_gate',
+        'signup_url',
+        'share_export',
+      ].forEach((key) => delete mapPayload[key]);
+
+      if (mapPayload.geojson && mapPayload.geojson.type === 'FeatureCollection' && Array.isArray(mapPayload.geojson.features)) {
+        const rows = Array.isArray(mapPayload.results) ? mapPayload.results : [];
+        mapPayload.geojson = {
+          ...mapPayload.geojson,
+          features: mapPayload.geojson.features.map((feature, index) => {
+            if (!feature || feature.type !== 'Feature' || !feature.geometry || feature.geometry.type !== 'LineString') {
+              return feature;
+            }
+            const properties = { ...(feature.properties || {}) };
+            const existingLabel = String(properties.num || properties.FLNUM || properties.name || '').trim();
+            const fallbackLabel = String(rows[index] && rows[index].num ? rows[index].num : '').trim();
+            const label = existingLabel || fallbackLabel;
+            if (label) {
+              properties.num = properties.num || label;
+              properties.FLNUM = properties.FLNUM || label;
+              properties.name = properties.name || label;
+            }
+            return {
+              ...feature,
+              properties,
+            };
+          }),
+        };
+      }
+
+      return mapPayload;
+    }
+
+    function buildViewerSharedPackage(viewerState) {
+      const share = payload && payload.share_export && typeof payload.share_export === 'object' ? payload.share_export : {};
+      const mapPayload = buildViewerMapPayloadForShare();
+      const filename = String(share.filename || payload.filename || mapPayload.filename || mapPayload.project_name || 'dooextractor-share');
+      const projectName = String(share.project_name || mapPayload.project_name || filename || 'DOO Extractor');
+      const mode = share.mode === 'polygon' || mapPayload.mode === 'polygon' ? 'polygon' : 'linestring';
+      const results = Array.isArray(mapPayload.results) ? mapPayload.results : [];
+      const resultCount = Number.isFinite(Number(share.result_count))
+        ? Number(share.result_count)
+        : (mode === 'polygon' && Array.isArray(mapPayload.polygons) ? mapPayload.polygons.length : results.length);
+      const sourceHash = String(share.source_hash || payload.source_hash || '').trim();
+
+      return {
+        format: 'dooextractor-share',
+        version: 1,
+        exported_at: new Date().toISOString(),
+        entry: {
+          job_id: String(share.job_id || payload.job_id || ''),
+          filename,
+          project_name: projectName,
+          mode,
+          result_count: resultCount,
+          source_hash: sourceHash,
+        },
+        convert_payload: {
+          filename,
+          project_name: projectName,
+          mode,
+          result_count: resultCount,
+          text_output: String(share.text_output || ''),
+          map_payload: mapPayload,
+          results,
+          source_hash: sourceHash,
+        },
+        viewer_state: sanitizeSharedViewerStateForExport(viewerState),
+      };
+    }
+
+    function downloadViewerSharedPackage(sharedPackage) {
+      const baseName = stripSharedDownloadExtension(
+        sharedPackage && sharedPackage.entry
+          ? (sharedPackage.entry.filename || sharedPackage.entry.project_name)
+          : ''
+      );
+      const safeBase = baseName
+        .replace(/[<>:"/\\|?*\u0000-\u001f]+/g, '_')
+        .replace(/\s+/g, ' ')
+        .replace(/\.+$/g, '')
+        .slice(0, 120) || 'dooextractor-share';
+      const blob = new Blob([JSON.stringify(sharedPackage, null, 2)], { type: 'application/json;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `${safeBase}.dooex`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    }
+
+    async function exportViewerDooexFile() {
+      if (!gpxDooexExportButton) {
+        return;
+      }
+      gpxDooexExportButton.disabled = true;
+      try {
+        const viewerState = collectViewerState();
+        const sharedPackage = buildViewerSharedPackage(viewerState);
+        downloadViewerSharedPackage(sharedPackage);
+        window.alert('dooex 파일을 저장했습니다.');
+      } catch (error) {
+        window.alert('dooex 파일 저장에 실패했습니다.');
+      } finally {
+        gpxDooexExportButton.disabled = false;
+      }
+    }
+
     function recordUndoState(force = false, snapshot = null, serialized = '') {
       if (viewerStateRestoring || undoApplying) {
         return;
@@ -17528,6 +17702,13 @@
           event.preventDefault();
           event.stopPropagation();
           openGpxPicker();
+        });
+      }
+      if (gpxDooexExportButton) {
+        gpxDooexExportButton.addEventListener('click', async (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          await exportViewerDooexFile();
         });
       }
       gpxColorInput.addEventListener('input', () => {

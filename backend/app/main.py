@@ -5116,6 +5116,15 @@ def get_viewer(job_id: str, request: Request):
     payload["frontend_base_url"] = _frontend_base_url()
     payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
     payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
+    payload["share_export"] = {
+        "job_id": str(job.get("job_id") or job_id),
+        "filename": str(job.get("filename") or ""),
+        "project_name": str(job.get("project_name") or payload.get("project_name") or ""),
+        "mode": str(job.get("mode") or payload.get("mode") or "linestring"),
+        "result_count": int(job.get("result_count") or 0),
+        "text_output": str(job.get("text_output") or ""),
+        "source_hash": _normalize_source_hash(str(job.get("source_hash") or "")),
+    }
 
     preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
     if preview_gate:
