@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-27T15:52:14.514987+00:00",
-  "last_successful_at": "2026-04-27T15:52:14.514987+00:00",
-  "last_attempted_at": "2026-04-27T15:52:14.514987+00:00",
+  "updated_at": "2026-04-27T18:43:12.260866+00:00",
+  "last_successful_at": "2026-04-27T18:43:12.260866+00:00",
+  "last_attempted_at": "2026-04-27T18:43:12.260866+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -92,7 +92,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 752,
+          "readCount": 892,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -100,7 +100,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 998.0552,
+          "_internal_score": 1002.04565,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -114,7 +114,7 @@
           "_internal_featureCompanyCode": "에어맨",
           "_internal_featureLocationCode": "중구,인천국제공항",
           "_internal_featureTotalCode": "중구,문서작업,출입국,승무원,등,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외국계항공사,영어,여행에이전트,인천국제공항,여행,여행사,에어맨",
-          "popularityScore": 796,
+          "popularityScore": 950,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -239,27 +239,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202604280053",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202604280344",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 99,
+          "readCount": 106,
           "badges": [
             {
-              "code": "B1777305232610",
-              "attributes": {}
-            },
-            {
               "code": "LUCKY_JOB_OPPORTUNITY",
-              "attributes": {}
-            },
-            {
-              "code": "A1777305232610",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4676.5225,
+          "_internal_score": 4666.897,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -272,8 +264,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 99,
+          "_internal_featureTotalCode": "단양군,회전익조종사,기관사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 93,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -405,18 +397,10 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 589,
+          "readCount": 615,
           "badges": [
             {
-              "code": "B1777305232610",
-              "attributes": {}
-            },
-            {
               "code": "LUCKY_JOB_OPPORTUNITY",
-              "attributes": {}
-            },
-            {
-              "code": "A1777305232610",
               "attributes": {}
             }
           ],
@@ -426,7 +410,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 5032.4004,
+          "_internal_score": 5026.436,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "조종사",
@@ -438,8 +422,8 @@
           "_internal_featureSkillCode": "채용,조종사,헬리콥터",
           "_internal_featureCompanyCode": "홍익항공",
           "_internal_featureLocationCode": "김포공항,송정,강서구",
-          "_internal_featureTotalCode": "항공촬영,채용,김포공항,홍익항공,기관사,사업용조종사,강서구,호텔,조종,항공,헬리콥터,송정,여행,조종사,운송용조종사",
-          "popularityScore": 130,
+          "_internal_featureTotalCode": "김포공항,항공촬영,채용,홍익항공,기관사,사업용조종사,강서구,호텔,조종,항공,헬리콥터,송정,여행,조종사,운송용조종사",
+          "popularityScore": 131,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -568,7 +552,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1260,
+          "readCount": 1300,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -581,7 +565,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2049.008,
+          "_internal_score": 2057.0703,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -592,8 +576,8 @@
           "_internal_featureSkillCode": "수습조종요원",
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
-          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,조종,수습조종요원,항공,에어부산",
-          "popularityScore": 259,
+          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
+          "popularityScore": 249,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -717,7 +701,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2078,
+          "readCount": 2149,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -730,7 +714,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2178.7605,
+          "_internal_score": 2187.6335,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -741,8 +725,8 @@
           "_internal_featureSkillCode": "수습조종요원",
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
-          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
-          "popularityScore": 405,
+          "_internal_featureTotalCode": "항공신체검사,중구,mel,기관사,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
+          "popularityScore": 400,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -866,7 +850,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1105,
+          "readCount": 1145,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -874,7 +858,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2251.2876,
+          "_internal_score": 2260.6243,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -886,7 +870,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 212,
+          "popularityScore": 213,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -1049,8 +1033,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a3e212cf-6fef-45b5-8d2c-7ad16c7a5792",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a3e212cf-6fef-45b5-8d2c-7ad16c7a5792",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3478482c-15d8-4657-bf57-8d04fa59b1aa",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3478482c-15d8-4657-bf57-8d04fa59b1aa",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1088,7 +1072,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a3e212cf-6fef-45b5-8d2c-7ad16c7a5792",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3478482c-15d8-4657-bf57-8d04fa59b1aa",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
