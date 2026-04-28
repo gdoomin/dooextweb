@@ -1,11 +1,915 @@
 {
-  "updated_at": "2026-04-28T18:48:34.947951+00:00",
-  "last_successful_at": "2026-04-28T18:48:34.947951+00:00",
-  "last_attempted_at": "2026-04-28T18:48:34.947951+00:00",
+  "updated_at": "2026-04-28T21:37:16.758311+00:00",
+  "last_successful_at": "2026-04-28T21:37:16.758311+00:00",
+  "last_attempted_at": "2026-04-28T21:37:16.758311+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
+    {
+      "id": "49029576",
+      "slug": "에어맨-외국계항공사-운항-승무원-파일럿-출입국-지원업무-49029576",
+      "job_no": "49029576",
+      "source_job_key": "49029576",
+      "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무",
+      "company": "㈜에어맨",
+      "company_slug": "에어맨",
+      "location": "중구,인천국제공항",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "4",
+      "experience_level": "open",
+      "deadline_text": "2026.05.06",
+      "deadline_date": "2026.05.06",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사",
+        "파일럿"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49029576",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49029576",
+      "role_family": "pilot",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "중구,인천국제공항 · 4",
+      "posted_at": "2026-04-21T17:42:51.69+09:00",
+      "deadline_at": "2026-05-06T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "KR",
+      "location_region": "중구,인천국제공항",
+      "location_city": "",
+      "search_document": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무 ㈜에어맨 중구,인천국제공항 4 ,호텔·여행·항공,호텔종사자,여행에이전트, 영어 지원업무,출입국,외국계항공사,승무원,등,운전,문서작업,시스템입력 중구,인천국제공항 조종사 파일럿 조종사",
+      "raw_payload": {
+        "source_record": {
+          "id": "49029576",
+          "legacyJobNo": "50766873",
+          "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무",
+          "createdAt": "2026-04-21T17:42:51.69+09:00",
+          "postingCompanyName": "㈜에어맨",
+          "userRefType": "C",
+          "memberSystemNo": "53996",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000311",
+            "1000312"
+          ],
+          "employmentTypeCodeList": [
+            "1/0"
+          ],
+          "areaCodeList": [
+            "K100"
+          ],
+          "careerType": "4",
+          "careerRange": 0,
+          "educationCode": "0",
+          "benefitNameList": [],
+          "companyName": "㈜에어맨",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "110000",
+          "applicationPeriod": {
+            "start": "2026-04-21T00:00:00+09:00",
+            "end": "2026-05-06T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/h/u/2453m00mvjdmvjd332_3520eaeeziaezia05me.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 1050,
+          "badges": [
+            {
+              "code": "VIEWS_OVER_1000",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 988.50476,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "출입국 지원업무",
+            "사무",
+            " 총무"
+          ],
+          "_internal_featureWorkCode": "호텔종사자,여행에이전트",
+          "_internal_featureIndustryCode": "여행,호텔,항공,항공사,여행사",
+          "_internal_featureToolCode": "영어",
+          "_internal_featureSkillCode": "지원업무,출입국,외국계항공사,승무원,등,운전,문서작업,시스템입력",
+          "_internal_featureCompanyCode": "에어맨",
+          "_internal_featureLocationCode": "중구,인천국제공항",
+          "_internal_featureTotalCode": "중구,문서작업,출입국,승무원,등,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외국계항공사,영어,여행에이전트,인천국제공항,여행,여행사,에어맨",
+          "popularityScore": 1032,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,호텔종사자,여행에이전트,",
+          "memberId": "hunihuni82",
+          "payTypeCode": 0,
+          "isStarter": "0",
+          "urlName": "",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49029576",
+          "job_no": "49029576",
+          "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무",
+          "company": "㈜에어맨",
+          "location": "중구,인천국제공항",
+          "employment_type": "",
+          "experience": "4",
+          "deadline_text": "2026.05.06",
+          "deadline_date": "2026.05.06",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사",
+            "파일럿"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49029576",
+          "role_family": "pilot",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "중구,인천국제공항 · 4"
+        }
+      }
+    },
+    {
+      "id": "49020429",
+      "slug": "이엔비에어-회전익조종사-채용공고-49020429",
+      "job_no": "49020429",
+      "source_job_key": "49020429",
+      "title": "회전익조종사 채용공고",
+      "company": "㈜이엔비에어",
+      "company_slug": "이엔비에어",
+      "location": "단양군",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.05.20",
+      "deadline_date": "2026.05.20",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사",
+        "사업용 면장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49020429",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49020429",
+      "role_family": "helicopter_pilot",
+      "license_tags": [
+        "CPL"
+      ],
+      "aircraft_category": "rotary_wing",
+      "aircraft_types": [
+        "HELICOPTER"
+      ],
+      "summary": "단양군 · 2",
+      "posted_at": "2026-04-20T17:24:19.953+09:00",
+      "deadline_at": "2026-05-20T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "단양군",
+      "location_city": "",
+      "search_document": "회전익조종사 채용공고 ㈜이엔비에어 단양군 2 ,호텔·여행·항공,조종·기관사, 사업용조종사,항공무선통신사 회전익조종사,모집공고 단양군 조종사 사업용 면장 CPL HELICOPTER 회전익 조종사",
+      "raw_payload": {
+        "source_record": {
+          "id": "49020429",
+          "legacyJobNo": "50758648",
+          "title": "회전익조종사 채용공고",
+          "createdAt": "2026-04-20T17:24:19.953+09:00",
+          "postingCompanyName": "㈜이엔비에어",
+          "userRefType": "C",
+          "memberSystemNo": "33282469",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "1/0",
+            "2/1"
+          ],
+          "areaCodeList": [
+            "P020"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "0",
+          "benefitNameList": [],
+          "companyName": "㈜이엔비에어",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "110000",
+          "applicationPeriod": {
+            "start": "2026-04-20T00:00:00+09:00",
+            "end": "2026-05-20T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": false,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202604290638",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 116,
+          "badges": [
+            {
+              "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 4638.144,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "항공사",
+            "조종사",
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "사업용조종사,항공무선통신사",
+          "_internal_featureSkillCode": "회전익조종사,모집공고",
+          "_internal_featureCompanyCode": "이엔비에어",
+          "_internal_featureLocationCode": "단양군",
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 84,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "enbair",
+          "payTypeCode": 0,
+          "isStarter": "0",
+          "urlName": "",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49020429",
+          "job_no": "49020429",
+          "title": "회전익조종사 채용공고",
+          "company": "㈜이엔비에어",
+          "location": "단양군",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.05.20",
+          "deadline_date": "2026.05.20",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사",
+            "사업용 면장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49020429",
+          "role_family": "helicopter_pilot",
+          "license_tags": [
+            "CPL"
+          ],
+          "aircraft_category": "rotary_wing",
+          "aircraft_types": [
+            "HELICOPTER"
+          ],
+          "summary": "단양군 · 2"
+        }
+      }
+    },
+    {
+      "id": "48871880",
+      "slug": "홍익항공-헬리콥터-조종사-채용-48871880",
+      "job_no": "48871880",
+      "source_job_key": "48871880",
+      "title": "헬리콥터 조종사 채용",
+      "company": "㈜홍익항공",
+      "company_slug": "홍익항공",
+      "location": "김포공항,송정,강서구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "3",
+      "experience_level": "open",
+      "deadline_text": "2026.04.29",
+      "deadline_date": "2026.04.29",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사",
+        "사업용 면장",
+        "운송용 면장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48871880",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48871880",
+      "role_family": "pilot",
+      "license_tags": [
+        "CPL",
+        "ATPL"
+      ],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "김포공항,송정,강서구 · 3",
+      "posted_at": "2026-03-30T09:52:21.46+09:00",
+      "deadline_at": "2026-04-29T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "김포공항,송정,강서구",
+      "location_city": "",
+      "search_document": "헬리콥터 조종사 채용 ㈜홍익항공 김포공항,송정,강서구 3 ,호텔·여행·항공,조종·기관사, 사업용조종사,운송용조종사 채용,조종사,헬리콥터 김포공항,송정,강서구 조종사 사업용 면장 운송용 면장 CPL ATPL 조종사",
+      "raw_payload": {
+        "source_record": {
+          "id": "48871880",
+          "legacyJobNo": "50626817",
+          "title": "헬리콥터 조종사 채용",
+          "createdAt": "2026-03-30T09:52:21.46+09:00",
+          "postingCompanyName": "㈜홍익항공",
+          "userRefType": "C",
+          "memberSystemNo": "21577855",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "1/0"
+          ],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "3",
+          "careerRange": 100,
+          "educationCode": "5",
+          "benefitNameList": [],
+          "companyName": "㈜홍익항공",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "110000",
+          "applicationPeriod": {
+            "start": "2026-03-30T00:00:00+09:00",
+            "end": "2026-04-29T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": false,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 648,
+          "badges": [
+            {
+              "code": "DEADLINE_TODAY",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "DEADLINE_TODAY",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 4997.856,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "조종사",
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공,항공촬영",
+          "_internal_featureToolCode": "사업용조종사,운송용조종사",
+          "_internal_featureSkillCode": "채용,조종사,헬리콥터",
+          "_internal_featureCompanyCode": "홍익항공",
+          "_internal_featureLocationCode": "김포공항,송정,강서구",
+          "_internal_featureTotalCode": "김포공항,채용,항공촬영,홍익항공,기관사,사업용조종사,강서구,호텔,조종,항공,헬리콥터,송정,여행,조종사,운송용조종사",
+          "popularityScore": 127,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "hongikair",
+          "payTypeCode": 0,
+          "isStarter": "0",
+          "urlName": "",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "48871880",
+          "job_no": "48871880",
+          "title": "헬리콥터 조종사 채용",
+          "company": "㈜홍익항공",
+          "location": "김포공항,송정,강서구",
+          "employment_type": "",
+          "experience": "3",
+          "deadline_text": "2026.04.29",
+          "deadline_date": "2026.04.29",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사",
+            "사업용 면장",
+            "운송용 면장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48871880",
+          "role_family": "pilot",
+          "license_tags": [
+            "CPL",
+            "ATPL"
+          ],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "김포공항,송정,강서구 · 3"
+        }
+      }
+    },
+    {
+      "id": "48846225",
+      "slug": "에어부산주-26년-신입-운항승무원군출신-상시채용-48846225",
+      "job_no": "48846225",
+      "source_job_key": "48846225",
+      "title": "'26년 신입 운항승무원(군출신) 상시채용",
+      "company": "에어부산(주)",
+      "company_slug": "에어부산주",
+      "location": "중구,김해시,강서구",
+      "employment_type": "",
+      "employment_type_code": "open_recruiting",
+      "experience": "1",
+      "experience_level": "open",
+      "deadline_text": "2070.01.01",
+      "deadline_date": "2070.01.01",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846225",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846225",
+      "role_family": "other_flight_crew",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "중구,김해시,강서구 · 1",
+      "posted_at": "2026-03-25T11:55:06.457+09:00",
+      "deadline_at": "2070-01-01T00:00:00+09:00",
+      "is_always_open": true,
+      "location_country": "",
+      "location_region": "중구,김해시,강서구",
+      "location_city": "",
+      "search_document": "'26년 신입 운항승무원(군출신) 상시채용 에어부산(주) 중구,김해시,강서구 1 ,호텔·여행·항공,조종·기관사, 항공신체검사,mel,조종 수습조종요원 중구,김해시,강서구 운항승무원",
+      "raw_payload": {
+        "source_record": {
+          "id": "48846225",
+          "legacyJobNo": "50604665",
+          "title": "'26년 신입 운항승무원(군출신) 상시채용",
+          "createdAt": "2026-03-25T11:55:06.457+09:00",
+          "postingCompanyName": "에어부산(주)",
+          "userRefType": "C",
+          "memberSystemNo": "40554360",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "2/1"
+          ],
+          "areaCodeList": [
+            "H010",
+            "C040",
+            "K100"
+          ],
+          "careerType": "1",
+          "careerRange": 0,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "에어부산(주)",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-02-23T00:00:00+09:00",
+            "end": "2070-01-01T00:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "금호아시아나그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598012_3820-8c--220185s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 1327,
+          "badges": [
+            {
+              "code": "VIEWS_OVER_1000",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "ENTRY_NEWBIE",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 2030.3336,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "항공신체검사,mel,조종",
+          "_internal_featureSkillCode": "수습조종요원",
+          "_internal_featureCompanyCode": "에어부산",
+          "_internal_featureLocationCode": "중구,김해시,강서구",
+          "_internal_featureTotalCode": "항공신체검사,중구,기관사,mel,김해시,강서구,여행,호텔,수습조종요원,조종,항공,에어부산",
+          "popularityScore": 236,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "c-042770",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "48846225",
+          "job_no": "48846225",
+          "title": "'26년 신입 운항승무원(군출신) 상시채용",
+          "company": "에어부산(주)",
+          "location": "중구,김해시,강서구",
+          "employment_type": "",
+          "experience": "1",
+          "deadline_text": "2070.01.01",
+          "deadline_date": "2070.01.01",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846225",
+          "role_family": "other_flight_crew",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "중구,김해시,강서구 · 1"
+        }
+      }
+    },
+    {
+      "id": "48846154",
+      "slug": "에어부산주-26년-신입-운항승무원-상시채용-48846154",
+      "job_no": "48846154",
+      "source_job_key": "48846154",
+      "title": "'26년 신입 운항승무원 상시채용",
+      "company": "에어부산(주)",
+      "company_slug": "에어부산주",
+      "location": "중구,김해시,강서구",
+      "employment_type": "",
+      "employment_type_code": "open_recruiting",
+      "experience": "1",
+      "experience_level": "open",
+      "deadline_text": "2070.01.01",
+      "deadline_date": "2070.01.01",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846154",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846154",
+      "role_family": "other_flight_crew",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "중구,김해시,강서구 · 1",
+      "posted_at": "2026-03-25T11:48:47.127+09:00",
+      "deadline_at": "2070-01-01T00:00:00+09:00",
+      "is_always_open": true,
+      "location_country": "",
+      "location_region": "중구,김해시,강서구",
+      "location_city": "",
+      "search_document": "'26년 신입 운항승무원 상시채용 에어부산(주) 중구,김해시,강서구 1 ,호텔·여행·항공,조종·기관사, 항공신체검사,mel 수습조종요원 중구,김해시,강서구 운항승무원",
+      "raw_payload": {
+        "source_record": {
+          "id": "48846154",
+          "legacyJobNo": "50604598",
+          "title": "'26년 신입 운항승무원 상시채용",
+          "createdAt": "2026-03-25T11:48:47.127+09:00",
+          "postingCompanyName": "에어부산(주)",
+          "userRefType": "C",
+          "memberSystemNo": "40554360",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "2/1"
+          ],
+          "areaCodeList": [
+            "H010",
+            "C040",
+            "K100"
+          ],
+          "careerType": "1",
+          "careerRange": 0,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "에어부산(주)",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-02-23T00:00:00+09:00",
+            "end": "2070-01-01T00:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "금호아시아나그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598012_3820-8c--220185s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 2216,
+          "badges": [
+            {
+              "code": "VIEWS_OVER_1000",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "ENTRY_NEWBIE",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 2160.1873,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "항공신체검사,mel",
+          "_internal_featureSkillCode": "수습조종요원",
+          "_internal_featureCompanyCode": "에어부산",
+          "_internal_featureLocationCode": "중구,김해시,강서구",
+          "_internal_featureTotalCode": "항공신체검사,중구,mel,기관사,김해시,강서구,여행,호텔,조종,수습조종요원,항공,에어부산",
+          "popularityScore": 411,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "c-042770",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "48846154",
+          "job_no": "48846154",
+          "title": "'26년 신입 운항승무원 상시채용",
+          "company": "에어부산(주)",
+          "location": "중구,김해시,강서구",
+          "employment_type": "",
+          "experience": "1",
+          "deadline_text": "2070.01.01",
+          "deadline_date": "2070.01.01",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48846154",
+          "role_family": "other_flight_crew",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "중구,김해시,강서구 · 1"
+        }
+      }
+    },
+    {
+      "id": "48845912",
+      "slug": "에어부산주-26년-경력-운항승무원-상시채용-48845912",
+      "job_no": "48845912",
+      "source_job_key": "48845912",
+      "title": "'26년 경력 운항승무원 상시채용",
+      "company": "에어부산(주)",
+      "company_slug": "에어부산주",
+      "location": "중구,김해시,강서구",
+      "employment_type": "",
+      "employment_type_code": "open_recruiting",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2070.01.01",
+      "deadline_date": "2070.01.01",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48845912",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48845912",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "중구,김해시,강서구 · 2",
+      "posted_at": "2026-03-25T11:28:26.48+09:00",
+      "deadline_at": "2070-01-01T00:00:00+09:00",
+      "is_always_open": true,
+      "location_country": "",
+      "location_region": "중구,김해시,강서구",
+      "location_city": "",
+      "search_document": "'26년 경력 운항승무원 상시채용 에어부산(주) 중구,김해시,강서구 2 ,호텔·여행·항공,조종·기관사, 항공신체검사 부기장 중구,김해시,강서구 운항승무원 조종사 부기장 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "48845912",
+          "legacyJobNo": "50604372",
+          "title": "'26년 경력 운항승무원 상시채용",
+          "createdAt": "2026-03-25T11:28:26.48+09:00",
+          "postingCompanyName": "에어부산(주)",
+          "userRefType": "C",
+          "memberSystemNo": "40554360",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "H010",
+            "C040",
+            "K100"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "에어부산(주)",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-02-23T00:00:00+09:00",
+            "end": "2070-01-01T00:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "금호아시아나그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598012_3820-8c--220185s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 1180,
+          "badges": [
+            {
+              "code": "VIEWS_OVER_1000",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 2232.8599,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종,부기장,조종사",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "항공신체검사",
+          "_internal_featureSkillCode": "부기장",
+          "_internal_featureCompanyCode": "에어부산",
+          "_internal_featureLocationCode": "중구,김해시,강서구",
+          "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
+          "popularityScore": 225,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "c-042770",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "48845912",
+          "job_no": "48845912",
+          "title": "'26년 경력 운항승무원 상시채용",
+          "company": "에어부산(주)",
+          "location": "중구,김해시,강서구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2070.01.01",
+          "deadline_date": "2070.01.01",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/48845912",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "중구,김해시,강서구 · 2"
+        }
+      }
+    },
     {
       "id": "239859",
       "slug": "air-busan-26년-경력-운항승무원-상시채용-239859",
@@ -129,8 +1033,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0bf1102f-334a-4db5-943d-2bfe638aaab4",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0bf1102f-334a-4db5-943d-2bfe638aaab4",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=795222d9-02a2-4334-a4b5-f793f4a28ca2",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=795222d9-02a2-4334-a4b5-f793f4a28ca2",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -168,7 +1072,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0bf1102f-334a-4db5-943d-2bfe638aaab4",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=795222d9-02a2-4334-a4b5-f793f4a28ca2",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
