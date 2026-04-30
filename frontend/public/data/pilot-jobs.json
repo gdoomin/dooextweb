@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-04-30T04:25:45.972841+00:00",
-  "last_successful_at": "2026-04-30T04:25:45.972841+00:00",
-  "last_attempted_at": "2026-04-30T04:25:45.972841+00:00",
+  "updated_at": "2026-04-30T07:08:29.398403+00:00",
+  "last_successful_at": "2026-04-30T07:08:29.398403+00:00",
+  "last_attempted_at": "2026-04-30T07:08:29.398403+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -104,7 +104,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6531.525,
+          "_internal_score": 6552.8667,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -250,7 +250,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1006.37604,
+          "_internal_score": 992.79175,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -389,27 +389,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202604301327",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202604301609",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 119,
           "badges": [
             {
-              "code": "A1777523227490",
-              "attributes": {}
-            },
-            {
               "code": "LUCKY_JOB_OPPORTUNITY",
-              "attributes": {}
-            },
-            {
-              "code": "B1777523227490",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4738.2305,
+          "_internal_score": 4727.1274,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -560,7 +552,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2268.1304,
+          "_internal_score": 2239.7065,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -715,8 +707,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4015fbce-a45d-4896-8207-3728e863f639",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4015fbce-a45d-4896-8207-3728e863f639",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb1a134a-e1d0-42b8-8056-ac01ccd6e17c",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb1a134a-e1d0-42b8-8056-ac01ccd6e17c",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -754,7 +746,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4015fbce-a45d-4896-8207-3728e863f639",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53425022&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb1a134a-e1d0-42b8-8056-ac01ccd6e17c",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
