@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-03T09:41:44.421495+00:00",
-  "last_successful_at": "2026-05-03T09:41:44.421495+00:00",
-  "last_attempted_at": "2026-05-03T09:41:44.421495+00:00",
+  "updated_at": "2026-05-03T12:33:28.163517+00:00",
+  "last_successful_at": "2026-05-03T12:33:28.163517+00:00",
+  "last_attempted_at": "2026-05-03T12:33:28.163517+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -104,7 +104,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6332.1875,
+          "_internal_score": 6300.567,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -250,7 +250,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1008.84064,
+          "_internal_score": 1008.2811,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -389,19 +389,27 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605031843",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605032135",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 161,
           "badges": [
             {
+              "code": "A1777811703290",
+              "attributes": {}
+            },
+            {
+              "code": "B1777811703290",
+              "attributes": {}
+            },
+            {
               "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4691.035,
+          "_internal_score": 4728.97,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -552,7 +560,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2273.7144,
+          "_internal_score": 2272.594,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
