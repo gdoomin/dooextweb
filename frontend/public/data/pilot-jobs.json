@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-03T15:30:42.073045+00:00",
-  "last_successful_at": "2026-05-03T15:30:42.073045+00:00",
-  "last_attempted_at": "2026-05-03T15:30:42.073045+00:00",
+  "updated_at": "2026-05-03T18:33:40.275783+00:00",
+  "last_successful_at": "2026-05-03T18:33:40.275783+00:00",
+  "last_attempted_at": "2026-05-03T18:33:40.275783+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -91,7 +91,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1920,
+          "readCount": 2032,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -104,7 +104,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6319.487,
+          "_internal_score": 6113.706,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -117,8 +117,8 @@
           "_internal_featureSkillCode": "항공기,운항승무원,측량,영상처리",
           "_internal_featureCompanyCode": "첨단공간정보",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "측량,기관사,강서구,시공,조종,건설,항공신체검사,조경,항공기,조종사,토목,첨단공간정보,영상처리,운항승무원",
-          "popularityScore": 1951,
+          "_internal_featureTotalCode": "측량,기관사,강서구,시공,조종,건설,항공신체검사,조경,항공기,토목,조종사,첨단공간정보,영상처리,운항승무원",
+          "popularityScore": 2066,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -242,7 +242,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1515,
+          "readCount": 1618,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -250,7 +250,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1006.91174,
+          "_internal_score": 1008.32495,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -264,7 +264,7 @@
           "_internal_featureCompanyCode": "에어맨",
           "_internal_featureLocationCode": "중구,인천국제공항",
           "_internal_featureTotalCode": "중구,문서작업,출입국,승무원,등,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외국계항공사,영어,여행에이전트,인천국제공항,여행,여행사,에어맨",
-          "popularityScore": 915,
+          "popularityScore": 918,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -389,11 +389,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605040032",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605040335",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 161,
+          "readCount": 180,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -401,7 +401,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4660.6514,
+          "_internal_score": 4611.674,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -414,8 +414,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "기관사,회전익조종사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
-          "popularityScore": 73,
+          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 81,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -544,7 +544,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1311,
+          "readCount": 1362,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -552,7 +552,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2269.1284,
+          "_internal_score": 2272.5005,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -564,7 +564,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 235,
+          "popularityScore": 257,
           "payRange": {
             "start": "0",
             "end": "0"
