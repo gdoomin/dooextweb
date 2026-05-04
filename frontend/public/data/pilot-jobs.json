@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-04T10:00:53.108529+00:00",
-  "last_successful_at": "2026-05-04T10:00:53.108529+00:00",
-  "last_attempted_at": "2026-05-04T10:00:53.108529+00:00",
+  "updated_at": "2026-05-04T12:51:59.953264+00:00",
+  "last_successful_at": "2026-05-04T12:51:59.953264+00:00",
+  "last_attempted_at": "2026-05-04T12:51:59.953264+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -104,7 +104,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6147.3735,
+          "_internal_score": 6240.423,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -250,7 +250,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 994.0098,
+          "_internal_score": 1007.3515,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -389,7 +389,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605041902",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605042153",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -401,7 +401,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4639.4966,
+          "_internal_score": 4654.591,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -552,7 +552,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2244.1865,
+          "_internal_score": 2272.2317,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -617,9 +617,9 @@
       "employment_type_code": "full_time",
       "experience": "경력",
       "experience_level": "experienced",
-      "deadline_text": "2027.01.01",
-      "deadline_date": "2027.01.01",
-      "period_text": "2026.01.20 ~ 2027.01.01",
+      "deadline_text": "2026.12.31",
+      "deadline_date": "2026.12.31",
+      "period_text": "2026.01.19 ~ 2026.12.31",
       "d_day": "",
       "matched_keywords": [
         "운항승무원"
@@ -634,8 +634,8 @@
       "aircraft_category": "fixed_wing",
       "aircraft_types": [],
       "summary": "경력 · 경력",
-      "posted_at": "2026-01-19 17:00:00",
-      "deadline_at": "2026-12-31 23:59:59",
+      "posted_at": "2026-01-19T17:00:00+09:00",
+      "deadline_at": "2026-12-31T23:59:59+09:00",
       "is_always_open": false,
       "location_country": "",
       "location_region": "",
@@ -643,21 +643,41 @@
       "search_document": "'26년 경력 운항승무원 상시채용 Air Busan 경력 GENERAL MRS2 '26년 경력 운항승무원 상시채용 운항승무원",
       "raw_payload": {
         "source_record": {
+          "applyEndDate": {
+            "date": 31,
+            "day": 4,
+            "hours": 23,
+            "minutes": 59,
+            "month": 11,
+            "seconds": 59,
+            "time": 1798729199000,
+            "timezoneOffset": -540,
+            "year": 126
+          },
+          "applyPermitCount": 1,
+          "applyStartDate": {
+            "date": 19,
+            "day": 1,
+            "hours": 17,
+            "minutes": 0,
+            "month": 0,
+            "seconds": 0,
+            "time": 1768809600000,
+            "timezoneOffset": -540,
+            "year": 126
+          },
           "companySn": 349371,
-          "recruitTypeName": "일반채용",
+          "deadlineCount": 241,
+          "defaultImageUseYn": false,
+          "imageFilePath": "",
+          "jobnoticeName": "'26년 경력 운항승무원 상시채용",
+          "jobnoticeSn": 239859,
+          "receiptState": "접수중",
           "recruitClassName": "경력",
           "recruitKindCode": "BASIC",
-          "jobnoticeSn": 239859,
-          "jobnoticeName": "'26년 경력 운항승무원 상시채용",
-          "applyStartDate": "2026-01-19 17:00:00",
-          "applyEndDate": "2026-12-31 23:59:59",
-          "receiptState": "접수중",
           "recruitTypeCode": "GENERAL",
-          "applyPermitCount": 1,
-          "imageFilePath": null,
-          "defaultImageUseYn": false,
-          "systemKindCode": "MRS2",
-          "deadlineCount": 241
+          "recruitTypeName": "일반채용",
+          "systemKindCode": "MRS2"
         },
         "normalized": {
           "id": "239859",
@@ -667,9 +687,9 @@
           "location": "",
           "employment_type": "경력",
           "experience": "경력",
-          "deadline_text": "2027.01.01",
-          "deadline_date": "2027.01.01",
-          "period_text": "2026.01.20 ~ 2027.01.01",
+          "deadline_text": "2026.12.31",
+          "deadline_date": "2026.12.31",
+          "period_text": "2026.01.19 ~ 2026.12.31",
           "d_day": "",
           "matched_keywords": [
             "운항승무원"
