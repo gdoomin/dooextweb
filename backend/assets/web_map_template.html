@@ -13740,6 +13740,47 @@
       doneState.lastToggleIndex = targetIndex;
     }
 
+    function findDoneTargetLineFromMapClick(latlng) {
+      if (!latlng || !resultLineEntries.length) {
+        return null;
+      }
+      const clickPoint = map.latLngToLayerPoint(latlng);
+      let nearestEntry = null;
+      let nearestDistance = Infinity;
+      resultLineEntries.forEach((entry) => {
+        if (!entry || !entry.row) {
+          return;
+        }
+        const startPoint = map.latLngToLayerPoint([entry.row.s_lat, entry.row.s_lon]);
+        const endPoint = map.latLngToLayerPoint([entry.row.e_lat, entry.row.e_lon]);
+        const projected = projectPointToSegment(clickPoint, startPoint, endPoint);
+        const distance = clickPoint.distanceTo(projected.point);
+        if (distance < nearestDistance) {
+          nearestDistance = distance;
+          nearestEntry = entry;
+        }
+      });
+      return nearestDistance <= 14 ? nearestEntry : null;
+    }
+
+    function completeLineFromDoneMapClick(event) {
+      if (!doneState.active || !event || !event.latlng) {
+        return false;
+      }
+      const entry = findDoneTargetLineFromMapClick(event.latlng);
+      if (!entry) {
+        return false;
+      }
+      const originalEvent = event.originalEvent;
+      if (originalEvent && originalEvent.shiftKey) {
+        toggleLineCompletedRange(entry);
+      } else {
+        toggleLineCompletedFromUser(entry);
+        doneState.lastToggleIndex = resultLineEntries.indexOf(entry);
+      }
+      return true;
+    }
+
     function renderResultPolygons() {
       const polygonRows = Array.isArray(payload.polygons) ? payload.polygons : [];
       polygonRows.forEach((row, index) => {
@@ -18581,6 +18622,10 @@
       deselectSimulationSegment();
       if (!textState.active) {
         deselectTextMarker();
+      }
+
+      if (completeLineFromDoneMapClick(event)) {
+        return;
       }
 
       if (textState.active) {
