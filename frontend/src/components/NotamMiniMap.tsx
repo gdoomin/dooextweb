@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { LayerGroup, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
+import type { Layer, LayerGroup, LeafletMouseEvent, Map as LeafletMap } from "leaflet";
 
 import { API_BASE_URL } from "@/lib/convert";
 
@@ -118,9 +118,7 @@ const NOTAM_GROUP_COLORS: Record<NotamGroupKey, string> = {
 const Q_CIRCLE_COLOR = "#000080";
 const NOTAM_CIRCLE_MAX_NM = 60;
 const NOTAM_CIRCLE_MAX_METERS = NOTAM_CIRCLE_MAX_NM * 1852;
-const PLANNING_ALTITUDE_BUFFER_FT = 2000;
 const BEFORE_FLIGHT_LABEL_MAX_COUNT = 24;
-const PLANNING_ROUTE_BUFFER_METERS = 5 * 1852;
 
 const PLANNING_RADIUS_METERS: Record<PlanningPointKey, number> = {
   departure: 10 * 1852,
@@ -579,141 +577,6 @@ function parseNotamDateMs(value: string | undefined | null) {
   return null;
 }
 
-function haversineMeters(a: CoordPoint, b: CoordPoint) {
-  const r = 6371000;
-  const lat1 = toRadians(a.latitude);
-  const lat2 = toRadians(b.latitude);
-  const dLat = toRadians(b.latitude - a.latitude);
-  const dLon = toRadians(b.longitude - a.longitude);
-  const sinDLat = Math.sin(dLat / 2);
-  const sinDLon = Math.sin(dLon / 2);
-  const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLon * sinDLon;
-  const c = 2 * Math.atan2(Math.sqrt(h), Math.sqrt(1 - h));
-  return r * c;
-}
-
-function pointInPolygon(point: CoordPoint, polygon: CoordPoint[]) {
-  if (!Array.isArray(polygon) || polygon.length < 3) {
-    return false;
-  }
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i, i += 1) {
-    const xi = polygon[i].longitude;
-    const yi = polygon[i].latitude;
-    const xj = polygon[j].longitude;
-    const yj = polygon[j].latitude;
-    const intersects =
-      yi > point.latitude !== yj > point.latitude &&
-      point.longitude < ((xj - xi) * (point.latitude - yi)) / ((yj - yi) || Number.EPSILON) + xi;
-    if (intersects) {
-      inside = !inside;
-    }
-  }
-  return inside;
-}
-
-function distancePointToSegmentMeters(point: CoordPoint, a: CoordPoint, b: CoordPoint) {
-  const latScale = 111320;
-  const lonScale = Math.cos(toRadians((a.latitude + b.latitude + point.latitude) / 3)) * 111320;
-  const px = point.longitude * lonScale;
-  const py = point.latitude * latScale;
-  const ax = a.longitude * lonScale;
-  const ay = a.latitude * latScale;
-  const bx = b.longitude * lonScale;
-  const by = b.latitude * latScale;
-  const abx = bx - ax;
-  const aby = by - ay;
-  const lengthSq = abx * abx + aby * aby;
-  if (lengthSq <= Number.EPSILON) {
-    const dx = px - ax;
-    const dy = py - ay;
-    return Math.sqrt(dx * dx + dy * dy);
-  }
-  const t = Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / lengthSq));
-  const projX = ax + t * abx;
-  const projY = ay + t * aby;
-  const dx = px - projX;
-  const dy = py - projY;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function distanceToPolylineMeters(point: CoordPoint, polyline: CoordPoint[]) {
-  if (!Array.isArray(polyline) || polyline.length < 2) {
-    return Number.POSITIVE_INFINITY;
-  }
-  let minDistance = Number.POSITIVE_INFINITY;
-  for (let index = 0; index < polyline.length - 1; index += 1) {
-    const distance = distancePointToSegmentMeters(point, polyline[index], polyline[index + 1]);
-    if (distance < minDistance) {
-      minDistance = distance;
-    }
-  }
-  return minDistance;
-}
-
-function distanceToPolygonMeters(point: CoordPoint, polygon: CoordPoint[]) {
-  if (!Array.isArray(polygon) || polygon.length < 3) {
-    return Number.POSITIVE_INFINITY;
-  }
-  if (pointInPolygon(point, polygon)) {
-    return 0;
-  }
-  const closed = polygon.concat([polygon[0]]);
-  return distanceToPolylineMeters(point, closed);
-}
-
-function parseAltitudeRangeFeet(item: ParsedNotamItem) {
-  const match = String(item.altitudeLabel || "").match(/(\d{3})\s*-\s*(\d{3})/);
-  if (!match) {
-    return null;
-  }
-  const lowFt = Number(match[1]) * 100;
-  const highFt = Number(match[2]) * 100;
-  if (!Number.isFinite(lowFt) || !Number.isFinite(highFt)) {
-    return null;
-  }
-  return {
-    lowFt: Math.min(lowFt, highFt),
-    highFt: Math.max(lowFt, highFt),
-  };
-}
-
-function resolveItemDistanceMeters(item: ParsedNotamItem, target: CoordPoint) {
-  const candidates: number[] = [];
-  if (Array.isArray(item.restrictedAreaFeatures) && item.restrictedAreaFeatures.length) {
-    item.restrictedAreaFeatures.forEach((feature) => {
-      if (feature.featureType === "polygon") {
-        candidates.push(distanceToPolygonMeters(target, feature.coords));
-      } else if (feature.featureType === "line") {
-        candidates.push(distanceToPolylineMeters(target, feature.coords));
-      }
-    });
-  }
-  if (Array.isArray(item.corridorPolygonCoords) && item.corridorPolygonCoords.length >= 3) {
-    candidates.push(distanceToPolygonMeters(target, item.corridorPolygonCoords));
-  }
-  if (Array.isArray(item.polygonCoords) && item.polygonCoords.length >= 3) {
-    candidates.push(distanceToPolygonMeters(target, item.polygonCoords));
-  }
-  if (Array.isArray(item.polylineCoords) && item.polylineCoords.length >= 2) {
-    candidates.push(distanceToPolylineMeters(target, item.polylineCoords));
-  }
-  if (
-    Number.isFinite(item.qCircleLat ?? NaN) &&
-    Number.isFinite(item.qCircleLng ?? NaN) &&
-    Number.isFinite(item.qCircleRadiusMeters ?? NaN) &&
-    (item.qCircleRadiusMeters ?? 0) > 0
-  ) {
-    const center = { latitude: item.qCircleLat as number, longitude: item.qCircleLng as number };
-    const distanceFromCenter = haversineMeters(target, center);
-    candidates.push(Math.max(0, distanceFromCenter - (item.qCircleRadiusMeters as number)));
-  }
-  if (Number.isFinite(item.lat) && Number.isFinite(item.lng)) {
-    candidates.push(haversineMeters(target, { latitude: item.lat, longitude: item.lng }));
-  }
-  return candidates.length ? Math.min(...candidates) : Number.POSITIVE_INFINITY;
-}
-
 function resolvePlanningAnchor(item: ParsedNotamItem): CoordPoint {
   const polygonCenter =
     centroid(item.corridorPolygonCoords || []) ||
@@ -729,53 +592,11 @@ function resolvePlanningAnchor(item: ParsedNotamItem): CoordPoint {
   return { latitude: item.lat, longitude: item.lng };
 }
 
-function matchesAltitudeWindow(item: ParsedNotamItem, centerAltitudeFt: number) {
-  const altitudeRange = parseAltitudeRangeFeet(item);
-  if (altitudeRange) {
-    const low = centerAltitudeFt - PLANNING_ALTITUDE_BUFFER_FT;
-    const high = centerAltitudeFt + PLANNING_ALTITUDE_BUFFER_FT;
-    const overlaps = altitudeRange.highFt >= low && altitudeRange.lowFt <= high;
-    if (!overlaps) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function matchesPlanningPoint(item: ParsedNotamItem, planningPoint: PlanningPoint) {
-  if (!matchesAltitudeWindow(item, planningPoint.altitudeFt)) {
-    return false;
-  }
-  const distanceMeters = resolveItemDistanceMeters(item, planningPoint);
-  const radiusMeters = PLANNING_RADIUS_METERS[planningPoint.key];
-  return Number.isFinite(distanceMeters) && distanceMeters <= radiusMeters;
-}
-
 function buildPlanningRoute(planningPoints: Partial<Record<PlanningPointKey, PlanningPoint>>) {
   return (["departure", "mission", "arrival"] as PlanningPointKey[])
     .map((key) => planningPoints[key])
     .filter((point): point is PlanningPoint => !!point)
     .map((point) => ({ latitude: point.latitude, longitude: point.longitude }));
-}
-
-function matchesPlanningRoute(item: ParsedNotamItem, route: CoordPoint[], planningPointList: PlanningPoint[]) {
-  if (route.length < 2 || planningPointList.length < 2) {
-    return false;
-  }
-  const minAltitude = Math.min(...planningPointList.map((point) => point.altitudeFt));
-  const maxAltitude = Math.max(...planningPointList.map((point) => point.altitudeFt));
-  const altitudeRange = parseAltitudeRangeFeet(item);
-  if (altitudeRange) {
-    const low = minAltitude - PLANNING_ALTITUDE_BUFFER_FT;
-    const high = maxAltitude + PLANNING_ALTITUDE_BUFFER_FT;
-    const overlaps = altitudeRange.highFt >= low && altitudeRange.lowFt <= high;
-    if (!overlaps) {
-      return false;
-    }
-  }
-  const anchor = resolvePlanningAnchor(item);
-  const routeDistance = distanceToPolylineMeters(anchor, route);
-  return Number.isFinite(routeDistance) && routeDistance <= PLANNING_ROUTE_BUFFER_METERS;
 }
 
 function isNotamQrpca(content: string) {
@@ -1078,21 +899,12 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
 
   const planningRoute = useMemo(() => buildPlanningRoute(planningPoints), [planningPoints]);
 
-  const planningReady = !isBeforeFlightMode || planningPointList.length === 3;
-
   const renderItems = useMemo(() => {
     if (!isBeforeFlightMode) {
       return filteredItems;
     }
-    if (!planningConfirmed || !planningPointList.length) {
-      return [];
-    }
-    return filteredItems.filter(
-      (item) =>
-        planningPointList.some((planningPoint) => matchesPlanningPoint(item, planningPoint)) ||
-        matchesPlanningRoute(item, planningRoute, planningPointList),
-    );
-  }, [filteredItems, isBeforeFlightMode, planningConfirmed, planningPointList, planningRoute]);
+    return filteredItems;
+  }, [filteredItems, isBeforeFlightMode]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1242,7 +1054,7 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     const addCoordsToBounds = (coords: CoordPoint[]) => {
       coords.forEach((coord) => allBounds.push([coord.latitude, coord.longitude]));
     };
-    const addInteractive = (layer: any, popupHtml: string, tooltipText: string) => {
+    const addInteractive = (layer: Layer | null | undefined, popupHtml: string, tooltipText: string) => {
       if (!layer) {
         return;
       }
@@ -1633,10 +1445,9 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     } else {
       map.setView(INITIAL_CENTER, INITIAL_ZOOM);
     }
-  }, [hasLoaded, isBeforeFlightMode, planningConfirmed, planningPointList, renderItems, selectingPointKey]);
+  }, [hasLoaded, isBeforeFlightMode, planningConfirmed, planningPointList, planningRoute, renderItems, selectingPointKey]);
 
   const overlayMessage = useMemo(() => {
-    const hintOverlayClass = "doo-notam-map-overlay doo-notam-map-overlay-hint";
     if (isLoading) {
       return { className: "doo-notam-map-overlay doo-notam-map-overlay-loading", text: "NOTAM 불러오는 중..." };
     }
@@ -1648,18 +1459,6 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     }
     if (!items.length) {
       return { className: "doo-notam-map-overlay", text: "표시할 NOTAM이 없습니다." };
-    }
-    if (isBeforeFlightMode && !planningConfirmed) {
-      if (!planningReady) {
-        return {
-          className: hintOverlayClass,
-          text: "출발지·임무지역·도착지를 클릭해 고도를 입력한 뒤 완료를 눌러 주세요.",
-        };
-      }
-      return {
-        className: hintOverlayClass,
-        text: "완료를 누르면 해당 구간 NOTAM이 표시됩니다.",
-      };
     }
     if (!filteredItems.length) {
       if (isBeforeFlightMode) {
@@ -1673,12 +1472,6 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
         text: `${activeFilter === "de" ? "NOTAM D,E" : "NOTAM A,C,G,Z"} 타입으로 표시할 NOTAM이 없습니다.`,
       };
     }
-    if (isBeforeFlightMode && !renderItems.length) {
-      return {
-        className: hintOverlayClass,
-        text: "선택 위치/고도(±2000ft)에 해당하는 NOTAM이 없습니다.",
-      };
-    }
     return null;
   }, [
     activeFilter,
@@ -1688,29 +1481,7 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
     isBeforeFlightMode,
     isLoading,
     items.length,
-    planningConfirmed,
-    planningReady,
-    renderItems.length,
   ]);
-
-  const handlePlanningPointSelect = useCallback((key: PlanningPointKey) => {
-    setSelectingPointKey(key);
-  }, []);
-
-  const handlePlanningComplete = useCallback(() => {
-    if (!planningReady) {
-      window.alert("출발지, 임무지역, 도착지와 고도를 모두 입력해 주세요.");
-      return;
-    }
-    setPlanningConfirmed(true);
-    setSelectingPointKey(null);
-  }, [planningReady]);
-
-  const handlePlanningReset = useCallback(() => {
-    setPlanningPoints({});
-    setPlanningConfirmed(false);
-    setSelectingPointKey(null);
-  }, []);
 
   const handlePrint = useCallback(() => {
     window.print();
@@ -1807,24 +1578,6 @@ export function NotamMiniMap({ mode = "rail" }: NotamMiniMapProps) {
                 ))}
               </select>
             </label>
-            <div className="doo-notam-planning-actions">
-              {(["departure", "mission", "arrival"] as PlanningPointKey[]).map((key) => (
-                <button
-                  key={key}
-                  type="button"
-                  className={`doo-notam-filter${selectingPointKey === key ? " is-active" : ""}`}
-                  onClick={() => handlePlanningPointSelect(key)}
-                >
-                  {PLANNING_POINT_LABELS[key]}
-                </button>
-              ))}
-              <button type="button" className="doo-notam-filter doo-notam-complete-button" onClick={handlePlanningComplete}>
-                완료
-              </button>
-              <button type="button" className="doo-notam-filter" onClick={handlePlanningReset}>
-                초기화
-              </button>
-            </div>
           </>
         ) : (
           FILTER_OPTIONS.map((option) => (
