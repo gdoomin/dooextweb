@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-09T18:34:41.695133+00:00",
-  "last_successful_at": "2026-05-09T18:34:41.695133+00:00",
-  "last_attempted_at": "2026-05-09T18:34:41.695133+00:00",
+  "updated_at": "2026-05-09T21:29:00.687249+00:00",
+  "last_successful_at": "2026-05-09T21:29:00.687249+00:00",
+  "last_attempted_at": "2026-05-09T21:29:00.687249+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -103,7 +103,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2539.7673,
+          "_internal_score": 2527.512,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -257,7 +257,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6191.322,
+          "_internal_score": 6199.2554,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -395,7 +395,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605100336",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605100630",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -407,7 +407,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4638.844,
+          "_internal_score": 4592.865,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -558,7 +558,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2241.424,
+          "_internal_score": 2230.7524,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
