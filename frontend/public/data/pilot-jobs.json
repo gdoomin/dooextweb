@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-10T09:46:50.852676+00:00",
-  "last_successful_at": "2026-05-10T09:46:50.852676+00:00",
-  "last_attempted_at": "2026-05-10T09:46:50.852676+00:00",
+  "updated_at": "2026-05-10T12:35:13.083686+00:00",
+  "last_successful_at": "2026-05-10T12:35:13.083686+00:00",
+  "last_attempted_at": "2026-05-10T12:35:13.083686+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -98,20 +98,12 @@
           "readCount": 112,
           "badges": [
             {
-              "code": "A1778406486950",
-              "attributes": {}
-            },
-            {
-              "code": "B1778406486950",
-              "attributes": {}
-            },
-            {
               "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2581.9011,
+          "_internal_score": 2553.431,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -265,7 +257,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 6272.627,
+          "_internal_score": 6287.94,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -403,27 +395,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605101848",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605102136",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 245,
           "badges": [
             {
-              "code": "A1778406486950",
-              "attributes": {}
-            },
-            {
-              "code": "B1778406486950",
-              "attributes": {}
-            },
-            {
               "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4702.565,
+          "_internal_score": 4649.264,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -574,7 +558,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2251.7998,
+          "_internal_score": 2271.1494,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
