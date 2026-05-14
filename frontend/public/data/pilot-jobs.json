@@ -1,11 +1,160 @@
 {
-  "updated_at": "2026-05-14T15:59:58.209587+00:00",
-  "last_successful_at": "2026-05-14T15:59:58.209587+00:00",
-  "last_attempted_at": "2026-05-14T15:59:58.209587+00:00",
+  "updated_at": "2026-05-14T18:53:21.763707+00:00",
+  "last_successful_at": "2026-05-14T18:53:21.763707+00:00",
+  "last_attempted_at": "2026-05-14T18:53:21.763707+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
+    {
+      "id": "49155314",
+      "slug": "유니에스-파견-k-aviation-직원헬기조종사-이송-차량-운전-기사-채용-49155314",
+      "job_no": "49155314",
+      "source_job_key": "49155314",
+      "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전 기사 채용",
+      "company": "유니에스",
+      "company_slug": "유니에스",
+      "location": "강서구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.05.26",
+      "deadline_date": "2026.05.26",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49155314",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49155314",
+      "role_family": "pilot",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "강서구 · 2",
+      "posted_at": "2026-05-12T12:47:57.907+09:00",
+      "deadline_at": "2026-05-26T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "강서구",
+      "location_city": "",
+      "search_document": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전 기사 채용 유니에스 강서구 2 ,호텔·여행·항공,수행·운전기사, 운전기사,수행기사 강서구 조종사",
+      "raw_payload": {
+        "source_record": {
+          "id": "49155314",
+          "legacyJobNo": "50877230",
+          "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전 기사 채용",
+          "createdAt": "2026-05-12T12:47:57.907+09:00",
+          "postingCompanyName": "유니에스",
+          "userRefType": "C",
+          "memberSystemNo": "35855026",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000272"
+          ],
+          "employmentTypeCodeList": [
+            "4/0"
+          ],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "0",
+          "benefitNameList": [],
+          "companyName": "유니에스",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "100000",
+          "applicationPeriod": {
+            "start": "2026-05-12T00:00:00+09:00",
+            "end": "2026-05-26T23:00:00+09:00"
+          },
+          "isSubcontract": true,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/u/n/2331z00zbarfc9816_3920d9ddicd77592zd.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 237,
+          "badges": [
+            {
+              "code": "WAITING_FOR_APPLICANTS",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "FROM_MID_SIZED_ENTERPRISE",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 1576.512,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "항공사",
+            "수행기사",
+            "운전기사"
+          ],
+          "_internal_featureWorkCode": "운전기사,수행,헬기 조종사",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "운전기사,수행기사",
+          "_internal_featureCompanyCode": "유니에스,대한항공",
+          "_internal_featureLocationCode": "강서구",
+          "_internal_featureTotalCode": "운전기사,유니에스,헬기 조종사,수행,수행기사,강서구,대한항공,여행,호텔,항공",
+          "popularityScore": 255,
+          "payRange": {
+            "start": "3600",
+            "end": "4100"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,수행·운전기사,",
+          "memberId": "unies9026",
+          "payTypeCode": 1,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 2
+        },
+        "normalized": {
+          "id": "49155314",
+          "job_no": "49155314",
+          "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전 기사 채용",
+          "company": "유니에스",
+          "location": "강서구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.05.26",
+          "deadline_date": "2026.05.26",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49155314",
+          "role_family": "pilot",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "강서구 · 2"
+        }
+      }
+    },
     {
       "id": "49119804",
       "slug": "cae-flight-simulator-services-korea-co-ltd-cae-korea-b747-fleet-flight-sim-instructor-채용-49119804",
@@ -95,7 +244,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 183,
+          "readCount": 205,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -103,7 +252,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1193.4032,
+          "_internal_score": 1179.1077,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -115,8 +264,8 @@
           "_internal_featureSkillCode": "B747,Fleet,training",
           "_internal_featureCompanyCode": "CAE Flight Simulator Services Korea Co. Ltd.",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,여행,training,B747,조종,호텔,Fleet,항공",
-          "popularityScore": 184,
+          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,여행,training,호텔,B747,조종,항공,Fleet",
+          "popularityScore": 140,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -244,7 +393,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 3280,
+          "readCount": 3350,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -257,7 +406,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2883.053,
+          "_internal_score": 2841.932,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -271,7 +420,7 @@
           "_internal_featureCompanyCode": "첨단공간정보",
           "_internal_featureLocationCode": "강서구",
           "_internal_featureTotalCode": "측량,기관사,강서구,시공,조종,건설,항공신체검사,조경,항공기,토목,조종사,첨단공간정보,영상처리,운항승무원",
-          "popularityScore": 595,
+          "popularityScore": 556,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -395,11 +544,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605150101",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605150354",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 286,
+          "readCount": 296,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -407,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2153.7898,
+          "_internal_score": 2131.907,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -420,8 +569,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "기관사,회전익조종사,단양군,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 70,
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 72,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -550,7 +699,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1764,
+          "readCount": 1796,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -558,7 +707,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1190.9838,
+          "_internal_score": 1176.3004,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -570,7 +719,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 279,
+          "popularityScore": 246,
           "payRange": {
             "start": "0",
             "end": "0"
