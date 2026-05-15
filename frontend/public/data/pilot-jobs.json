@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-15T18:48:48.359600+00:00",
-  "last_successful_at": "2026-05-15T18:48:48.359600+00:00",
-  "last_attempted_at": "2026-05-15T18:48:48.359600+00:00",
+  "updated_at": "2026-05-15T21:36:04.635070+00:00",
+  "last_successful_at": "2026-05-15T21:36:04.635070+00:00",
+  "last_attempted_at": "2026-05-15T21:36:04.635070+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -103,7 +103,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1581.8066,
+          "_internal_score": 1585.5282,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -252,7 +252,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1182.5294,
+          "_internal_score": 1186.7092,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -406,7 +406,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2857.3538,
+          "_internal_score": 2878.5396,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -544,7 +544,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605160350",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605160637",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -556,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2140.7068,
+          "_internal_score": 2145.2175,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -707,7 +707,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1182.2456,
+          "_internal_score": 1182.831,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
