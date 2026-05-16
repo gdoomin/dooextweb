@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-16T12:37:11.595167+00:00",
-  "last_successful_at": "2026-05-16T12:37:11.595167+00:00",
-  "last_attempted_at": "2026-05-16T12:37:11.595167+00:00",
+  "updated_at": "2026-05-16T15:36:08.727938+00:00",
+  "last_successful_at": "2026-05-16T15:36:08.727938+00:00",
+  "last_attempted_at": "2026-05-16T15:36:08.727938+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -93,7 +93,7 @@
           "readCount": 280,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
@@ -103,7 +103,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1609.22,
+          "_internal_score": 1603.1823,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -247,12 +247,12 @@
           "readCount": 240,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1202.1685,
+          "_internal_score": 1197.569,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -406,7 +406,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2919.1926,
+          "_internal_score": 2904.0342,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -544,19 +544,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605162138",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605170037",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 329,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2174.3835,
+          "_internal_score": 2167.1575,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -707,7 +707,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1198.2424,
+          "_internal_score": 1192.434,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -822,7 +822,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 229,
+          "deadlineCount": 228,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
