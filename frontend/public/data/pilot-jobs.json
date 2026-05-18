@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-18T16:23:49.844893+00:00",
-  "last_successful_at": "2026-05-18T16:23:49.844893+00:00",
-  "last_attempted_at": "2026-05-18T16:23:49.844893+00:00",
+  "updated_at": "2026-05-18T18:53:14.599906+00:00",
+  "last_successful_at": "2026-05-18T18:53:14.599906+00:00",
+  "last_attempted_at": "2026-05-18T18:53:14.599906+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -90,7 +90,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 410,
+          "readCount": 481,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -103,7 +103,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1615.4894,
+          "_internal_score": 1600.5359,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -116,8 +116,8 @@
           "_internal_featureSkillCode": "운전기사,수행기사",
           "_internal_featureCompanyCode": "유니에스,대한항공",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "운전기사,유니에스,헬기 조종사,수행,강서구,대한항공,여행,수행기사,호텔,항공",
-          "popularityScore": 444,
+          "_internal_featureTotalCode": "운전기사,유니에스,헬기 조종사,수행,강서구,여행,수행기사,대한항공,호텔,항공",
+          "popularityScore": 522,
           "payRange": {
             "start": "3600",
             "end": "4100"
@@ -244,7 +244,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 260,
+          "readCount": 270,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -252,7 +252,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1197.243,
+          "_internal_score": 1190.4647,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -264,8 +264,8 @@
           "_internal_featureSkillCode": "B747,Fleet,training",
           "_internal_featureCompanyCode": "CAE Flight Simulator Services Korea Co. Ltd.",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,여행,training,B747,조종,호텔,Fleet,항공",
-          "popularityScore": 132,
+          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,training,여행,B747,조종,호텔,Fleet,항공",
+          "popularityScore": 126,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -393,7 +393,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 3472,
+          "readCount": 3526,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -406,7 +406,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2908.8845,
+          "_internal_score": 2917.751,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -420,7 +420,7 @@
           "_internal_featureCompanyCode": "첨단공간정보",
           "_internal_featureLocationCode": "강서구",
           "_internal_featureTotalCode": "측량,기관사,강서구,시공,조종,건설,항공신체검사,조경,항공기,토목,조종사,첨단공간정보,영상처리,운항승무원",
-          "popularityScore": 492,
+          "popularityScore": 481,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -544,11 +544,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605190125",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605190355",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 355,
+          "readCount": 387,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -556,7 +556,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2161.5684,
+          "_internal_score": 2145.6965,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -569,8 +569,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 100,
+          "_internal_featureTotalCode": "기관사,단양군,회전익조종사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
+          "popularityScore": 128,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -699,7 +699,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1905,
+          "readCount": 1936,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -707,7 +707,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1199.2035,
+          "_internal_score": 1212.331,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -719,7 +719,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 254,
+          "popularityScore": 244,
           "payRange": {
             "start": "0",
             "end": "0"
