@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-21T16:21:25.370978+00:00",
-  "last_successful_at": "2026-05-21T16:21:25.370978+00:00",
-  "last_attempted_at": "2026-05-21T16:21:25.370978+00:00",
+  "updated_at": "2026-05-21T18:54:36.172163+00:00",
+  "last_successful_at": "2026-05-21T18:54:36.172163+00:00",
+  "last_attempted_at": "2026-05-21T18:54:36.172163+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -90,16 +90,8 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 711,
+          "readCount": 805,
           "badges": [
-            {
-              "code": "A1779380592050",
-              "attributes": {}
-            },
-            {
-              "code": "B1779380592050",
-              "attributes": {}
-            },
             {
               "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
@@ -111,7 +103,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1628.4557,
+          "_internal_score": 1602.9357,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -124,8 +116,8 @@
           "_internal_featureSkillCode": "운전기사,수행기사",
           "_internal_featureCompanyCode": "유니에스,대한항공",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "운전기사,유니에스,헬기 조종사,수행,수행기사,강서구,대한항공,여행,호텔,항공",
-          "popularityScore": 578,
+          "_internal_featureTotalCode": "운전기사,유니에스,헬기 조종사,수행,강서구,수행기사,대한항공,여행,호텔,항공",
+          "popularityScore": 632,
           "payRange": {
             "start": "3600",
             "end": "4100"
@@ -252,23 +244,15 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 298,
+          "readCount": 315,
           "badges": [
-            {
-              "code": "A1779380592050",
-              "attributes": {}
-            },
-            {
-              "code": "B1779380592050",
-              "attributes": {}
-            },
             {
               "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1203.9318,
+          "_internal_score": 1192.2881,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -280,8 +264,8 @@
           "_internal_featureSkillCode": "B747,Fleet,training",
           "_internal_featureCompanyCode": "CAE Flight Simulator Services Korea Co. Ltd.",
           "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,training,여행,강서구,호텔,조종,B747,항공,Fleet",
-          "popularityScore": 116,
+          "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,여행,training,B747,호텔,조종,Fleet,항공",
+          "popularityScore": 109,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -409,7 +393,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 3634,
+          "readCount": 3702,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -422,7 +406,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2918.7446,
+          "_internal_score": 2909.2236,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -436,7 +420,7 @@
           "_internal_featureCompanyCode": "첨단공간정보",
           "_internal_featureLocationCode": "강서구",
           "_internal_featureTotalCode": "측량,기관사,강서구,시공,조종,건설,항공신체검사,조경,항공기,조종사,토목,첨단공간정보,영상처리,운항승무원",
-          "popularityScore": 370,
+          "popularityScore": 367,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -560,27 +544,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605220123",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605220356",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 493,
+          "readCount": 523,
           "badges": [
-            {
-              "code": "A1779380592050",
-              "attributes": {}
-            },
-            {
-              "code": "B1779380592050",
-              "attributes": {}
-            },
             {
               "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2173.8528,
+          "_internal_score": 2145.9841,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -593,8 +569,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "단양군,기관사,회전익조종사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 210,
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 229,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -723,7 +699,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2014,
+          "readCount": 2056,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -731,7 +707,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1203.2185,
+          "_internal_score": 1199.9473,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "항공운송"
@@ -743,7 +719,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,김해시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,김해시,부기장,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 250,
+          "popularityScore": 260,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -906,8 +882,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f6e0cba6-95bb-4206-ae8c-d075ae89e499",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f6e0cba6-95bb-4206-ae8c-d075ae89e499",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=1043737b-916f-49c7-811c-bae16f7c2882",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=1043737b-916f-49c7-811c-bae16f7c2882",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -945,7 +921,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f6e0cba6-95bb-4206-ae8c-d075ae89e499",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=1043737b-916f-49c7-811c-bae16f7c2882",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
