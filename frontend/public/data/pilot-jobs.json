@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-05-28T19:09:11.208246+00:00",
-  "last_successful_at": "2026-05-28T19:09:11.208246+00:00",
-  "last_attempted_at": "2026-05-28T19:09:11.208246+00:00",
+  "updated_at": "2026-05-28T21:53:22.470974+00:00",
+  "last_successful_at": "2026-05-28T21:53:22.470974+00:00",
+  "last_attempted_at": "2026-05-28T21:53:22.470974+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -98,18 +98,10 @@
             {
               "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
-            },
-            {
-              "code": "B1779995431460",
-              "attributes": {}
-            },
-            {
-              "code": "A1779995431460",
-              "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1187.9384,
+          "_internal_score": 1204.1903,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -259,7 +251,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1184.8254,
+          "_internal_score": 1196.4595,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -413,7 +405,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 2858.5234,
+          "_internal_score": 2908.3406,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "측량",
@@ -551,7 +543,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605290410",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605290654",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -563,7 +555,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2138.8188,
+          "_internal_score": 2162.6672,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -743,8 +735,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=52d4757b-22dd-4e7f-9b25-64b4a49343a2",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=52d4757b-22dd-4e7f-9b25-64b4a49343a2",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=e6feacc4-82c6-4cee-add7-ba037442c8ac",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=e6feacc4-82c6-4cee-add7-ba037442c8ac",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -782,7 +774,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=52d4757b-22dd-4e7f-9b25-64b4a49343a2",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=e6feacc4-82c6-4cee-add7-ba037442c8ac",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
