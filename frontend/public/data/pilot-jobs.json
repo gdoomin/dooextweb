@@ -1,160 +1,11 @@
 {
-  "updated_at": "2026-05-31T12:46:15.124490+00:00",
-  "last_successful_at": "2026-05-31T12:46:15.124490+00:00",
-  "last_attempted_at": "2026-05-31T12:46:15.124490+00:00",
+  "updated_at": "2026-05-31T15:42:21.783736+00:00",
+  "last_successful_at": "2026-05-31T15:42:21.783736+00:00",
+  "last_attempted_at": "2026-05-31T15:42:21.783736+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
-    {
-      "id": "49259880",
-      "slug": "유니에스-파견-k-aviation-직원헬기조종사-이송-차량-운전직-채용-49259880",
-      "job_no": "49259880",
-      "source_job_key": "49259880",
-      "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전직 채용",
-      "company": "유니에스",
-      "company_slug": "유니에스",
-      "location": "강서구",
-      "employment_type": "",
-      "employment_type_code": "full_time",
-      "experience": "2",
-      "experience_level": "open",
-      "deadline_text": "2026.05.31",
-      "deadline_date": "2026.05.31",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사"
-      ],
-      "source": "JobKorea Search",
-      "source_code": "jobkorea",
-      "source_label": "JobKorea Search",
-      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49259880",
-      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49259880",
-      "role_family": "pilot",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "강서구 · 2",
-      "posted_at": "2026-05-28T09:23:57.677+09:00",
-      "deadline_at": "2026-05-31T23:00:00+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "강서구",
-      "location_city": "",
-      "search_document": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전직 채용 유니에스 강서구 2 ,호텔·여행·항공,수행·운전기사, 운전직 강서구 조종사",
-      "raw_payload": {
-        "source_record": {
-          "id": "49259880",
-          "legacyJobNo": "50969781",
-          "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전직 채용",
-          "createdAt": "2026-05-28T09:23:57.677+09:00",
-          "postingCompanyName": "유니에스",
-          "userRefType": "C",
-          "memberSystemNo": "35855026",
-          "jobOrIndustryCodeList": [
-            "1000001",
-            "1000272"
-          ],
-          "employmentTypeCodeList": [
-            "4/0"
-          ],
-          "areaCodeList": [
-            "I040"
-          ],
-          "careerType": "2",
-          "careerRange": 100,
-          "educationCode": "0",
-          "benefitNameList": [],
-          "companyName": "유니에스",
-          "companyType": "0",
-          "isExposeWorkCompany": false,
-          "receptionOptionType": "100000",
-          "applicationPeriod": {
-            "start": "2026-05-28T00:00:00+09:00",
-            "end": "2026-05-31T23:00:00+09:00"
-          },
-          "isSubcontract": true,
-          "isNewcomerJob": false,
-          "jobTypeCode": null,
-          "isExistProductLogo": true,
-          "stockTypeCode": "0",
-          "companyRank": 0,
-          "companySubsidiary": null,
-          "smallGiantCompanyTypeCode": "0",
-          "excellentSmallCompanyTypeCode": 0,
-          "awardInfo": "0",
-          "goodWorkCompanyCodeList": null,
-          "productStatus": 0,
-          "companyLogoPath": "/Images/Logo/128/u/n/2331z00zbarfc9816_3920d9ddicd77592zd.gif?p=y&hash=c",
-          "textLogoPath": null,
-          "oemNo": "1",
-          "rewardAmount": 0,
-          "readCount": 231,
-          "badges": [
-            {
-              "code": "DEADLINE_TODAY",
-              "attributes": {}
-            }
-          ],
-          "badgesV2": [
-            {
-              "code": "DEADLINE_TODAY",
-              "attributes": {}
-            }
-          ],
-          "_internal_score": 1628.6696,
-          "_internal_weightValue": 10,
-          "_internal_keywordList": [
-            "항공사",
-            "수행기사",
-            "운전기사"
-          ],
-          "_internal_featureWorkCode": "운전기사,수행,헬기 조종사",
-          "_internal_featureIndustryCode": "여행,호텔,항공",
-          "_internal_featureToolCode": "",
-          "_internal_featureSkillCode": "운전직",
-          "_internal_featureCompanyCode": "유니에스,대한항공",
-          "_internal_featureLocationCode": "강서구",
-          "_internal_featureTotalCode": "운전기사,운전직,유니에스,헬기 조종사,수행,강서구,대한항공,여행,호텔,항공",
-          "popularityScore": 250,
-          "payRange": {
-            "start": "3500",
-            "end": "4100"
-          },
-          "isAppliedJob": false,
-          "jobClassificationOrIndustry": ",호텔·여행·항공,수행·운전기사,",
-          "memberId": "unies9026",
-          "payTypeCode": 1,
-          "isStarter": null,
-          "urlName": null,
-          "companyTypeCode": 2
-        },
-        "normalized": {
-          "id": "49259880",
-          "job_no": "49259880",
-          "title": "[파견] K-aviation 직원(헬기조종사) 이송 차량 운전직 채용",
-          "company": "유니에스",
-          "location": "강서구",
-          "employment_type": "",
-          "experience": "2",
-          "deadline_text": "2026.05.31",
-          "deadline_date": "2026.05.31",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사"
-          ],
-          "source": "JobKorea Search",
-          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49259880",
-          "role_family": "pilot",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "강서구 · 2"
-        }
-      }
-    },
     {
       "id": "49256490",
       "slug": "에어부산주-26년-경력-운항승무원-상시채용-49256490",
@@ -245,12 +96,12 @@
           "readCount": 199,
           "badges": [
             {
-              "code": "RECOMMENDED_JOB_CHANGE",
+              "code": "LUCKY_JOB_OPPORTUNITY",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1204.497,
+          "_internal_score": 1188.7075,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -400,7 +251,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1193.2073,
+          "_internal_score": 1188.1506,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -542,7 +393,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202605312147",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606010044",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -554,7 +405,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2166.929,
+          "_internal_score": 2158.5051,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -674,7 +525,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 214,
+          "deadlineCount": 213,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
@@ -734,8 +585,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2b8edd66-b03a-44e1-9ea9-c540a8998f63",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2b8edd66-b03a-44e1-9ea9-c540a8998f63",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=54378610-bedd-4f9d-91c6-dd017fe8f1c8",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=54378610-bedd-4f9d-91c6-dd017fe8f1c8",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -773,7 +624,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=2b8edd66-b03a-44e1-9ea9-c540a8998f63",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=54378610-bedd-4f9d-91c6-dd017fe8f1c8",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
