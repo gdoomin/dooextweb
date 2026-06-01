@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-01T14:22:13.213174+00:00",
-  "last_successful_at": "2026-06-01T14:22:13.213174+00:00",
-  "last_attempted_at": "2026-06-01T14:22:13.213174+00:00",
+  "updated_at": "2026-06-01T17:03:13.915018+00:00",
+  "last_successful_at": "2026-06-01T17:03:13.915018+00:00",
+  "last_attempted_at": "2026-06-01T17:03:13.915018+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -93,7 +93,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 245,
+          "readCount": 305,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -101,7 +101,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1190.6926,
+          "_internal_score": 1176.0558,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -114,7 +114,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,제주시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,부기장,제주시,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 245,
+          "popularityScore": 305,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -243,15 +243,15 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 423,
+          "readCount": 435,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "LUCKY_JOB_OPPORTUNITY",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1186.2505,
+          "_internal_score": 1180.1666,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -264,7 +264,7 @@
           "_internal_featureCompanyCode": "CAE Flight Simulator Services Korea Co. Ltd.",
           "_internal_featureLocationCode": "강서구",
           "_internal_featureTotalCode": "CAE Flight Simulator Services Korea Co. Ltd.,기관사,사업용조종사,강서구,training,여행,B747,조종,호텔,Fleet,항공",
-          "popularityScore": 78,
+          "popularityScore": 85,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -393,11 +393,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606012323",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606020204",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 631,
+          "readCount": 637,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -405,7 +405,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2167.4583,
+          "_internal_score": 2149.1284,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -418,8 +418,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "단양군,기관사,회전익조종사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 79,
+          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 75,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -463,106 +463,6 @@
       }
     },
     {
-      "id": "239859",
-      "slug": "air-busan-26년-경력-운항승무원-상시채용-239859",
-      "job_no": "239859",
-      "source_job_key": "239859",
-      "title": "'26년 경력 운항승무원 상시채용",
-      "company": "Air Busan",
-      "company_slug": "air-busan",
-      "location": "",
-      "employment_type": "경력",
-      "employment_type_code": "full_time",
-      "experience": "경력",
-      "experience_level": "experienced",
-      "deadline_text": "2026.12.31",
-      "deadline_date": "2026.12.31",
-      "period_text": "2026.01.19 ~ 2026.12.31",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "Air Busan Careers",
-      "source_code": "airbusan",
-      "source_label": "Air Busan Careers",
-      "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-      "source_url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "경력 · 경력",
-      "posted_at": "2026-01-19T17:00:00+09:00",
-      "deadline_at": "2026-12-31T23:59:59+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "'26년 경력 운항승무원 상시채용 Air Busan 경력 GENERAL MRS2 '26년 경력 운항승무원 상시채용 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "applyEndDate": {
-            "date": 31,
-            "day": 4,
-            "hours": 23,
-            "minutes": 59,
-            "month": 11,
-            "seconds": 59,
-            "time": 1798729199000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "applyPermitCount": 1,
-          "applyStartDate": {
-            "date": 19,
-            "day": 1,
-            "hours": 17,
-            "minutes": 0,
-            "month": 0,
-            "seconds": 0,
-            "time": 1768809600000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "companySn": 349371,
-          "deadlineCount": 213,
-          "defaultImageUseYn": false,
-          "imageFilePath": "",
-          "jobnoticeName": "'26년 경력 운항승무원 상시채용",
-          "jobnoticeSn": 239859,
-          "receiptState": "접수중",
-          "recruitClassName": "경력",
-          "recruitKindCode": "BASIC",
-          "recruitTypeCode": "GENERAL",
-          "recruitTypeName": "일반채용",
-          "systemKindCode": "MRS2"
-        },
-        "normalized": {
-          "id": "239859",
-          "job_no": "239859",
-          "title": "'26년 경력 운항승무원 상시채용",
-          "company": "Air Busan",
-          "location": "",
-          "employment_type": "경력",
-          "experience": "경력",
-          "deadline_text": "2026.12.31",
-          "deadline_date": "2026.12.31",
-          "period_text": "2026.01.19 ~ 2026.12.31",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "Air Busan Careers",
-          "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "경력 · 경력"
-        }
-      }
-    },
-    {
       "id": "53941428",
       "slug": "주이엔비에어-회전익-조종사-채용-53941428",
       "job_no": "53941428",
@@ -585,8 +485,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b94c9ff0-7ae8-4dc7-aeb6-9ba85b7e3223",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b94c9ff0-7ae8-4dc7-aeb6-9ba85b7e3223",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6cfacd79-b3e0-47f2-8456-ecc8f70d18cd",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6cfacd79-b3e0-47f2-8456-ecc8f70d18cd",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -624,7 +524,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b94c9ff0-7ae8-4dc7-aeb6-9ba85b7e3223",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6cfacd79-b3e0-47f2-8456-ecc8f70d18cd",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
