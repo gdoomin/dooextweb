@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-11T04:51:13.522164+00:00",
-  "last_successful_at": "2026-06-11T04:51:13.522164+00:00",
-  "last_attempted_at": "2026-06-11T04:51:13.522164+00:00",
+  "updated_at": "2026-06-11T08:00:10.238856+00:00",
+  "last_successful_at": "2026-06-11T08:00:10.238856+00:00",
+  "last_attempted_at": "2026-06-11T08:00:10.238856+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -95,20 +95,20 @@
           "readCount": 0,
           "badges": [
             {
-              "code": "A1781153557380",
-              "attributes": {}
-            },
-            {
-              "code": "B1781153557380",
-              "attributes": {}
-            },
-            {
               "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            },
+            {
+              "code": "B1781164905880",
+              "attributes": {}
+            },
+            {
+              "code": "A1781164905880",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 444.97113,
+          "_internal_score": 443.88202,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -254,10 +254,18 @@
             {
               "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
+            },
+            {
+              "code": "B1781164905880",
+              "attributes": {}
+            },
+            {
+              "code": "A1781164905880",
+              "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1185.1418,
+          "_internal_score": 1182.596,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -396,7 +404,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606111352",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606111701",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -408,7 +416,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2183.3306,
+          "_internal_score": 2184.7595,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -588,8 +596,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=040b9c9c-f77a-4eee-bd88-1f3a7b067d0f",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=040b9c9c-f77a-4eee-bd88-1f3a7b067d0f",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=35958e95-ad30-406d-9d32-b9a4c19b0d20",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=35958e95-ad30-406d-9d32-b9a4c19b0d20",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -627,7 +635,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=040b9c9c-f77a-4eee-bd88-1f3a7b067d0f",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=35958e95-ad30-406d-9d32-b9a4c19b0d20",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
