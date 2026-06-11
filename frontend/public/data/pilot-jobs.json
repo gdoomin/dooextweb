@@ -1,159 +1,11 @@
 {
-  "updated_at": "2026-06-11T13:41:17.790586+00:00",
-  "last_successful_at": "2026-06-11T13:41:17.790586+00:00",
-  "last_attempted_at": "2026-06-11T13:41:17.790586+00:00",
+  "updated_at": "2026-06-11T16:37:08.334831+00:00",
+  "last_successful_at": "2026-06-11T16:37:08.334831+00:00",
+  "last_attempted_at": "2026-06-11T16:37:08.334831+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
-    {
-      "id": "49339914",
-      "slug": "에어맨-외국계항공사-운항-승무원-파일럿-출입국-지원업무-총괄업무-49339914",
-      "job_no": "49339914",
-      "source_job_key": "49339914",
-      "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무 / 총괄업무",
-      "company": "㈜에어맨",
-      "company_slug": "에어맨",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "full_time",
-      "experience": "4",
-      "experience_level": "open",
-      "deadline_text": "2026.07.09",
-      "deadline_date": "2026.07.09",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사",
-        "파일럿"
-      ],
-      "source": "JobKorea Search",
-      "source_code": "jobkorea",
-      "source_label": "JobKorea Search",
-      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49339914",
-      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49339914",
-      "role_family": "pilot",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "4",
-      "posted_at": "2026-06-11T10:53:30.56+09:00",
-      "deadline_at": "2026-07-09T23:00:00+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무 / 총괄업무 ㈜에어맨 4 ,호텔·여행·항공,호텔종사자,여행에이전트, 조종사 파일럿 조종사",
-      "raw_payload": {
-        "source_record": {
-          "id": "49339914",
-          "legacyJobNo": "51040287",
-          "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무 / 총괄업무",
-          "createdAt": "2026-06-11T10:53:30.56+09:00",
-          "postingCompanyName": "㈜에어맨",
-          "userRefType": "C",
-          "memberSystemNo": "53996",
-          "jobOrIndustryCodeList": [
-            "1000001",
-            "1000311",
-            "1000312"
-          ],
-          "employmentTypeCodeList": [
-            "1/0"
-          ],
-          "areaCodeList": [
-            "K100"
-          ],
-          "careerType": "4",
-          "careerRange": 0,
-          "educationCode": "0",
-          "benefitNameList": null,
-          "companyName": "㈜에어맨",
-          "companyType": "0",
-          "isExposeWorkCompany": false,
-          "receptionOptionType": "110000",
-          "applicationPeriod": {
-            "start": "2026-06-09T00:00:00+09:00",
-            "end": "2026-07-09T23:00:00+09:00"
-          },
-          "isSubcontract": false,
-          "isNewcomerJob": false,
-          "jobTypeCode": null,
-          "isExistProductLogo": true,
-          "stockTypeCode": "0",
-          "companyRank": 0,
-          "companySubsidiary": null,
-          "smallGiantCompanyTypeCode": "0",
-          "excellentSmallCompanyTypeCode": 0,
-          "awardInfo": "0",
-          "goodWorkCompanyCodeList": null,
-          "productStatus": 0,
-          "companyLogoPath": "/Images/Logo/128/h/u/2453m00mvjdmvjd332_3520eaeeziaezia05me.gif?p=y&hash=c",
-          "textLogoPath": null,
-          "oemNo": "1",
-          "rewardAmount": 0,
-          "readCount": 0,
-          "badges": [
-            {
-              "code": "RECOMMENDED_JOB_CHANGE",
-              "attributes": {}
-            }
-          ],
-          "badgesV2": [],
-          "_internal_score": 453.83224,
-          "_internal_weightValue": 10,
-          "_internal_keywordList": [
-            "출입국 지원업무",
-            "행정업무",
-            "사무",
-            " 총무"
-          ],
-          "_internal_featureWorkCode": null,
-          "_internal_featureIndustryCode": null,
-          "_internal_featureToolCode": null,
-          "_internal_featureSkillCode": null,
-          "_internal_featureCompanyCode": null,
-          "_internal_featureLocationCode": null,
-          "_internal_featureTotalCode": null,
-          "popularityScore": 0,
-          "payRange": {
-            "start": "0",
-            "end": "0"
-          },
-          "isAppliedJob": false,
-          "jobClassificationOrIndustry": ",호텔·여행·항공,호텔종사자,여행에이전트,",
-          "memberId": "hunihuni82",
-          "payTypeCode": 0,
-          "isStarter": "0",
-          "urlName": "",
-          "companyTypeCode": 1
-        },
-        "normalized": {
-          "id": "49339914",
-          "job_no": "49339914",
-          "title": "외국계항공사 운항 승무원 (파일럿) 출입국 지원업무 / 총괄업무",
-          "company": "㈜에어맨",
-          "location": "",
-          "employment_type": "",
-          "experience": "4",
-          "deadline_text": "2026.07.09",
-          "deadline_date": "2026.07.09",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사",
-            "파일럿"
-          ],
-          "source": "JobKorea Search",
-          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49339914",
-          "role_family": "pilot",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "4"
-        }
-      }
-    },
     {
       "id": "49256490",
       "slug": "에어부산주-26년-경력-운항승무원-상시채용-49256490",
@@ -241,15 +93,15 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 864,
+          "readCount": 945,
           "badges": [
             {
-              "code": "RECOMMENDED_JOB_CHANGE",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1204.1261,
+          "_internal_score": 1161.3033,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -262,7 +114,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,제주시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,부기장,제주시,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 457,
+          "popularityScore": 479,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -388,19 +240,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606112242",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606120138",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 749,
+          "readCount": 756,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2205.6377,
+          "_internal_score": 2156.0574,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -413,8 +265,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "단양군,기관사,회전익조종사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 78,
+          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 70,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -520,7 +372,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 203,
+          "deadlineCount": 202,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
@@ -580,8 +432,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=ffc14d3d-29af-48ed-9789-510435103ba4",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=ffc14d3d-29af-48ed-9789-510435103ba4",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=78bbfbfa-677b-47ea-95f5-f3ec5ec0fc69",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=78bbfbfa-677b-47ea-95f5-f3ec5ec0fc69",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -619,7 +471,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=ffc14d3d-29af-48ed-9789-510435103ba4",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=78bbfbfa-677b-47ea-95f5-f3ec5ec0fc69",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
