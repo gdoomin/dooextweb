@@ -1,11 +1,170 @@
 {
-  "updated_at": "2026-06-12T04:51:38.491350+00:00",
-  "last_successful_at": "2026-06-12T04:51:38.491350+00:00",
-  "last_attempted_at": "2026-06-12T04:51:38.491350+00:00",
+  "updated_at": "2026-06-12T07:55:46.764256+00:00",
+  "last_successful_at": "2026-06-12T07:55:46.764256+00:00",
+  "last_attempted_at": "2026-06-12T07:55:46.764256+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
+    {
+      "id": "49366388",
+      "slug": "이스타항공-이스타항공-2026년-하반기-경력직-운항승무원-공개채용기장부기장-49366388",
+      "job_no": "49366388",
+      "source_job_key": "49366388",
+      "title": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용(기장/부기장)",
+      "company": "이스타항공㈜",
+      "company_slug": "이스타항공",
+      "location": "",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.06.24",
+      "deadline_date": "2026.06.24",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49366388",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49366388",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "2",
+      "posted_at": "2026-06-12T14:23:37.197+09:00",
+      "deadline_at": "2026-06-24T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "",
+      "location_city": "",
+      "search_document": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용(기장/부기장) 이스타항공㈜ 2 ,호텔·여행·항공,조종·기관사,기술·전문강사, 운항승무원 조종사 부기장 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49366388",
+          "legacyJobNo": "51063929",
+          "title": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용(기장/부기장)",
+          "createdAt": "2026-06-12T14:23:37.197+09:00",
+          "postingCompanyName": "이스타항공㈜",
+          "userRefType": "C",
+          "memberSystemNo": "39607656",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000349",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "1/0"
+          ],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "0",
+          "benefitNameList": null,
+          "companyName": "이스타항공㈜",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-06-12T00:00:00+09:00",
+            "end": "2026-06-24T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/e/a/2331c00cdfcwqrpsk_3920w9dwqskqjcd2cw.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 0,
+          "badges": [
+            {
+              "code": "RECENT_POSTED_TODAY",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "RECENT_POSTED_TODAY",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 1008.36285,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "이스타항공",
+            "항공사",
+            "이스타항공㈜",
+            "자격증·기술",
+            "항공운송",
+            "직업훈련",
+            "공항",
+            "여행사"
+          ],
+          "_internal_featureWorkCode": null,
+          "_internal_featureIndustryCode": null,
+          "_internal_featureToolCode": null,
+          "_internal_featureSkillCode": null,
+          "_internal_featureCompanyCode": null,
+          "_internal_featureLocationCode": null,
+          "_internal_featureTotalCode": null,
+          "popularityScore": 0,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,기술·전문강사,",
+          "memberId": "eastarjet",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 2
+        },
+        "normalized": {
+          "id": "49366388",
+          "job_no": "49366388",
+          "title": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용(기장/부기장)",
+          "company": "이스타항공㈜",
+          "location": "",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.06.24",
+          "deadline_date": "2026.06.24",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49366388",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "2"
+        }
+      }
+    },
     {
       "id": "49256490",
       "slug": "에어부산주-26년-경력-운항승무원-상시채용-49256490",
@@ -101,7 +260,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1177.5394,
+          "_internal_score": 1184.411,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -240,19 +399,27 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606121353",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202606121657",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 756,
           "badges": [
             {
+              "code": "B1781251048190",
+              "attributes": {}
+            },
+            {
               "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            },
+            {
+              "code": "A1781251048190",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2172.831,
+          "_internal_score": 2178.1875,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -432,8 +599,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b4875873-11f1-4b3d-9308-e57f74ba8d72",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b4875873-11f1-4b3d-9308-e57f74ba8d72",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=999e449e-65f6-442f-9810-1603ea497fd4",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=999e449e-65f6-442f-9810-1603ea497fd4",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -471,13 +638,82 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b4875873-11f1-4b3d-9308-e57f74ba8d72",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=999e449e-65f6-442f-9810-1603ea497fd4",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
           "aircraft_types": [
             "HELICOPTER"
           ],
+          "summary": ""
+        }
+      }
+    },
+    {
+      "id": "54159388",
+      "slug": "이스타항공-2026년-하반기-경력직-운항승무원-공개채용-54159388",
+      "job_no": "54159388",
+      "source_job_key": "54159388",
+      "title": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용",
+      "company": "",
+      "company_slug": "saramin-company",
+      "location": "",
+      "employment_type": "",
+      "employment_type_code": "open_recruiting",
+      "experience": "",
+      "experience_level": "open",
+      "deadline_text": "",
+      "deadline_date": "",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원"
+      ],
+      "source": "Saramin Search",
+      "source_code": "saramin",
+      "source_label": "Saramin Search",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dd3e460d-e390-4d7c-9a60-ddb115ac15ea",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dd3e460d-e390-4d7c-9a60-ddb115ac15ea",
+      "role_family": "other_flight_crew",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "",
+      "posted_at": "",
+      "deadline_at": "",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "",
+      "location_city": "",
+      "search_document": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용 운항승무원",
+      "raw_payload": {
+        "source_record": {
+          "search_term": "운항승무원",
+          "deadline_text": "",
+          "posted_text": "",
+          "sector_text": ""
+        },
+        "normalized": {
+          "id": "54159388",
+          "job_no": "54159388",
+          "title": "[이스타항공] 2026년 하반기 경력직 운항승무원 공개채용",
+          "company": "",
+          "location": "",
+          "employment_type": "",
+          "experience": "",
+          "deadline_text": "",
+          "deadline_date": "",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원"
+          ],
+          "source": "Saramin Search",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=dd3e460d-e390-4d7c-9a60-ddb115ac15ea",
+          "role_family": "other_flight_crew",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
           "summary": ""
         }
       }
