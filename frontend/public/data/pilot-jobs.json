@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-20T15:50:13.195197+00:00",
-  "last_successful_at": "2026-06-20T15:50:13.195197+00:00",
-  "last_attempted_at": "2026-06-20T15:50:13.195197+00:00",
+  "updated_at": "2026-06-20T18:44:56.308496+00:00",
+  "last_successful_at": "2026-06-20T18:44:56.308496+00:00",
+  "last_attempted_at": "2026-06-20T18:44:56.308496+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -93,7 +93,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 612,
+          "readCount": 647,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -106,7 +106,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1000.5254,
+          "_internal_score": 994.66516,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "이스타항공",
@@ -125,7 +125,7 @@
           "_internal_featureCompanyCode": "이스타항공",
           "_internal_featureLocationCode": "마곡,강서구,발산",
           "_internal_featureTotalCode": "전문강사,기관사,항공사,마곡,이스타항공,강서구,여행,발산,호텔,조종,기술,항공",
-          "popularityScore": 557,
+          "popularityScore": 522,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -252,7 +252,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1338,
+          "readCount": 1363,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -260,7 +260,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1168.2249,
+          "_internal_score": 1162.1891,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -273,7 +273,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,제주시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,부기장,제주시,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 334,
+          "popularityScore": 324,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -436,8 +436,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=868a1f04-5376-451c-99f8-87e3c22306f2",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=868a1f04-5376-451c-99f8-87e3c22306f2",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c28393cf-adb1-42b4-a58d-fcfa5a08b2ad",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c28393cf-adb1-42b4-a58d-fcfa5a08b2ad",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -475,7 +475,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=868a1f04-5376-451c-99f8-87e3c22306f2",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c28393cf-adb1-42b4-a58d-fcfa5a08b2ad",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -509,8 +509,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=8622e3a1-a801-4b9b-905e-6becd2f98769",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=8622e3a1-a801-4b9b-905e-6becd2f98769",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=e6a41000-94e0-4d2d-8b58-746666315aad",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=e6a41000-94e0-4d2d-8b58-746666315aad",
       "role_family": "other_flight_crew",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -546,7 +546,7 @@
             "운항승무원"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=8622e3a1-a801-4b9b-905e-6becd2f98769",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54159388&location=ts&searchword=%EC%9A%B4%ED%95%AD%EC%8A%B9%EB%AC%B4%EC%9B%90&searchType=search&paid_fl=n&search_uuid=e6a41000-94e0-4d2d-8b58-746666315aad",
           "role_family": "other_flight_crew",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
