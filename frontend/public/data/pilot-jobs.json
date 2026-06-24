@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-24T18:52:12.687958+00:00",
-  "last_successful_at": "2026-06-24T18:52:12.687958+00:00",
-  "last_attempted_at": "2026-06-24T18:52:12.687958+00:00",
+  "updated_at": "2026-06-24T21:45:10.340721+00:00",
+  "last_successful_at": "2026-06-24T21:45:10.340721+00:00",
+  "last_attempted_at": "2026-06-24T21:45:10.340721+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -101,7 +101,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1193.2992,
+          "_internal_score": 1180.3109,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -277,8 +277,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8a62b54f-b3ce-429a-a6c8-4b111a7ca3da",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8a62b54f-b3ce-429a-a6c8-4b111a7ca3da",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb00454d-9243-4339-8696-27d7b24c5326",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb00454d-9243-4339-8696-27d7b24c5326",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -316,7 +316,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8a62b54f-b3ce-429a-a6c8-4b111a7ca3da",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fb00454d-9243-4339-8696-27d7b24c5326",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
