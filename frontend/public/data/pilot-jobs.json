@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-27T09:54:44.788485+00:00",
-  "last_successful_at": "2026-06-27T09:54:44.788485+00:00",
-  "last_attempted_at": "2026-06-27T09:54:44.788485+00:00",
+  "updated_at": "2026-06-27T12:43:48.008013+00:00",
+  "last_successful_at": "2026-06-27T12:43:48.008013+00:00",
+  "last_attempted_at": "2026-06-27T12:43:48.008013+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -209,7 +209,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1191.2593,
+          "_internal_score": 1191.4232,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -359,79 +359,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "경력 · 경력"
-        }
-      }
-    },
-    {
-      "id": "53941428",
-      "slug": "주이엔비에어-회전익-조종사-채용-53941428",
-      "job_no": "53941428",
-      "source_job_key": "53941428",
-      "title": "(주)이엔비에어 회전익 조종사 채용",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d220018c-382f-47da-afeb-01fccaa7445f",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d220018c-382f-47da-afeb-01fccaa7445f",
-      "role_family": "helicopter_pilot",
-      "license_tags": [],
-      "aircraft_category": "rotary_wing",
-      "aircraft_types": [
-        "HELICOPTER"
-      ],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "(주)이엔비에어 회전익 조종사 채용 조종사 HELICOPTER 회전익 조종사",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "조종사",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "53941428",
-          "job_no": "53941428",
-          "title": "(주)이엔비에어 회전익 조종사 채용",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d220018c-382f-47da-afeb-01fccaa7445f",
-          "role_family": "helicopter_pilot",
-          "license_tags": [],
-          "aircraft_category": "rotary_wing",
-          "aircraft_types": [
-            "HELICOPTER"
-          ],
-          "summary": ""
         }
       }
     }
