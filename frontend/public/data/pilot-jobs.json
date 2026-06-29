@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-06-29T16:28:33.974020+00:00",
-  "last_successful_at": "2026-06-29T16:28:33.974020+00:00",
-  "last_attempted_at": "2026-06-29T16:28:33.974020+00:00",
+  "updated_at": "2026-06-29T18:55:02.824611+00:00",
+  "last_successful_at": "2026-06-29T18:55:02.824611+00:00",
+  "last_attempted_at": "2026-06-29T18:55:02.824611+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -14,7 +14,7 @@
       "title": "운항승무원(B737 신입 부기장)",
       "company": "㈜티웨이항공",
       "company_slug": "티웨이항공",
-      "location": "",
+      "location": "강서구",
       "employment_type": "",
       "employment_type_code": "full_time",
       "experience": "1",
@@ -39,14 +39,14 @@
       "aircraft_types": [
         "B737"
       ],
-      "summary": "1",
+      "summary": "강서구 · 1",
       "posted_at": "2026-06-29T16:29:28.863+09:00",
       "deadline_at": "2026-07-06T14:00:00+09:00",
       "is_always_open": false,
       "location_country": "",
-      "location_region": "",
+      "location_region": "강서구",
       "location_city": "",
-      "search_document": "운항승무원(B737 신입 부기장) ㈜티웨이항공 1 ,호텔·여행·항공,조종·기관사, 운항승무원 조종사 부기장 B737 부기장",
+      "search_document": "운항승무원(B737 신입 부기장) ㈜티웨이항공 강서구 1 ,호텔·여행·항공,조종·기관사, 부기장 강서구 운항승무원 조종사 부기장 B737 부기장",
       "raw_payload": {
         "source_record": {
           "id": "49475403",
@@ -67,7 +67,7 @@
           "careerType": "1",
           "careerRange": 0,
           "educationCode": "255",
-          "benefitNameList": null,
+          "benefitNameList": [],
           "companyName": "㈜티웨이항공",
           "companyType": "0",
           "isExposeWorkCompany": false,
@@ -92,7 +92,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 0,
+          "readCount": 63,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -105,20 +105,20 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1188.541,
+          "_internal_score": 1172.7672,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
             "항공운송"
           ],
-          "_internal_featureWorkCode": null,
-          "_internal_featureIndustryCode": null,
-          "_internal_featureToolCode": null,
-          "_internal_featureSkillCode": null,
-          "_internal_featureCompanyCode": null,
-          "_internal_featureLocationCode": null,
-          "_internal_featureTotalCode": null,
-          "popularityScore": 0,
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "부기장",
+          "_internal_featureCompanyCode": "티웨이항공",
+          "_internal_featureLocationCode": "강서구",
+          "_internal_featureTotalCode": "기관사,부기장,티웨이항공,강서구,여행,호텔,조종,항공",
+          "popularityScore": 65,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -136,7 +136,7 @@
           "job_no": "49475403",
           "title": "운항승무원(B737 신입 부기장)",
           "company": "㈜티웨이항공",
-          "location": "",
+          "location": "강서구",
           "employment_type": "",
           "experience": "1",
           "deadline_text": "2026.07.06",
@@ -156,7 +156,7 @@
           "aircraft_types": [
             "B737"
           ],
-          "summary": "1"
+          "summary": "강서구 · 1"
         }
       }
     },
@@ -355,7 +355,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1751,
+          "readCount": 1783,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -363,7 +363,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1189.3142,
+          "_internal_score": 1173.5465,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -376,7 +376,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "중구,제주시,강서구",
           "_internal_featureTotalCode": "항공신체검사,중구,기관사,부기장,제주시,강서구,여행,조종사,호텔,조종,항공,에어부산",
-          "popularityScore": 359,
+          "popularityScore": 326,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -539,8 +539,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d13d040a-da84-47a1-a53a-0ff54016bdcf",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d13d040a-da84-47a1-a53a-0ff54016bdcf",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=482af119-bedb-4bd4-bf58-8d36835012b9",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=482af119-bedb-4bd4-bf58-8d36835012b9",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -578,7 +578,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d13d040a-da84-47a1-a53a-0ff54016bdcf",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=482af119-bedb-4bd4-bf58-8d36835012b9",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
