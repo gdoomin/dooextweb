@@ -1,11 +1,165 @@
 {
-  "updated_at": "2026-06-29T04:51:25.846216+00:00",
-  "last_successful_at": "2026-06-29T04:51:25.846216+00:00",
-  "last_attempted_at": "2026-06-29T04:51:25.846216+00:00",
+  "updated_at": "2026-06-29T08:06:49.183349+00:00",
+  "last_successful_at": "2026-06-29T08:06:49.183349+00:00",
+  "last_attempted_at": "2026-06-29T08:06:49.183349+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
+    {
+      "id": "49475403",
+      "slug": "티웨이항공-운항승무원b737-신입-부기장-49475403",
+      "job_no": "49475403",
+      "source_job_key": "49475403",
+      "title": "운항승무원(B737 신입 부기장)",
+      "company": "㈜티웨이항공",
+      "company_slug": "티웨이항공",
+      "location": "",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "1",
+      "experience_level": "open",
+      "deadline_text": "2026.07.06",
+      "deadline_date": "2026.07.06",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49475403",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49475403",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "airliner",
+      "aircraft_types": [
+        "B737"
+      ],
+      "summary": "1",
+      "posted_at": "2026-06-29T16:29:28.863+09:00",
+      "deadline_at": "2026-07-06T14:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "",
+      "location_city": "",
+      "search_document": "운항승무원(B737 신입 부기장) ㈜티웨이항공 1 ,호텔·여행·항공,조종·기관사, 운항승무원 조종사 부기장 B737 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49475403",
+          "legacyJobNo": "51160550",
+          "title": "운항승무원(B737 신입 부기장)",
+          "createdAt": "2026-06-29T16:29:28.863+09:00",
+          "postingCompanyName": "㈜티웨이항공",
+          "userRefType": "C",
+          "memberSystemNo": "27325920",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "1",
+          "careerRange": 0,
+          "educationCode": "255",
+          "benefitNameList": null,
+          "companyName": "㈜티웨이항공",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-06-26T00:00:00+09:00",
+            "end": "2026-07-06T14:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8574172_3820-8c--433659s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 0,
+          "badges": [
+            {
+              "code": "LUCKY_JOB_OPPORTUNITY",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [
+            {
+              "code": "ENTRY_NEWBIE",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 1170.0414,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "부기장",
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": null,
+          "_internal_featureIndustryCode": null,
+          "_internal_featureToolCode": null,
+          "_internal_featureSkillCode": null,
+          "_internal_featureCompanyCode": null,
+          "_internal_featureLocationCode": null,
+          "_internal_featureTotalCode": null,
+          "popularityScore": 0,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "c-039185",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49475403",
+          "job_no": "49475403",
+          "title": "운항승무원(B737 신입 부기장)",
+          "company": "㈜티웨이항공",
+          "location": "",
+          "employment_type": "",
+          "experience": "1",
+          "deadline_text": "2026.07.06",
+          "deadline_date": "2026.07.06",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49475403",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "airliner",
+          "aircraft_types": [
+            "B737"
+          ],
+          "summary": "1"
+        }
+      }
+    },
     {
       "id": "257894",
       "slug": "tway-air-운항승무원b737-신입-부기장-257894",
@@ -209,7 +363,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1183.3999,
+          "_internal_score": 1170.8246,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -385,8 +539,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f0bcfe4e-f3c7-4fc8-9fcf-b1ae692c194b",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f0bcfe4e-f3c7-4fc8-9fcf-b1ae692c194b",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b77d784c-40e1-4f8b-864c-fa713ebbf9c8",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b77d784c-40e1-4f8b-864c-fa713ebbf9c8",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -424,7 +578,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f0bcfe4e-f3c7-4fc8-9fcf-b1ae692c194b",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=53941428&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b77d784c-40e1-4f8b-864c-fa713ebbf9c8",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
