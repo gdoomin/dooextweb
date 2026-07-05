@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-05T12:42:37.960586+00:00",
-  "last_successful_at": "2026-07-05T12:42:37.960586+00:00",
-  "last_attempted_at": "2026-07-05T12:42:37.960586+00:00",
+  "updated_at": "2026-07-05T15:40:29.566403+00:00",
+  "last_successful_at": "2026-07-05T15:40:29.566403+00:00",
+  "last_attempted_at": "2026-07-05T15:40:29.566403+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -95,25 +95,17 @@
           "readCount": 308,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
-              "attributes": {}
-            },
-            {
-              "code": "B1783255457320",
-              "attributes": {}
-            },
-            {
-              "code": "A1783255457320",
+              "code": "DEADLINE_TODAY",
               "attributes": {}
             }
           ],
           "badgesV2": [
             {
-              "code": "ENTRY_NEWBIE",
+              "code": "DEADLINE_TODAY",
               "attributes": {}
             }
           ],
-          "_internal_score": 1185.6804,
+          "_internal_score": 1183.0929,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -235,7 +227,7 @@
             "year": 126
           },
           "companySn": 387199,
-          "deadlineCount": 1,
+          "deadlineCount": 0,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "운항승무원(B737 신입 부기장)",
@@ -371,7 +363,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1186.4806,
+          "_internal_score": 1183.887,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -487,7 +479,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 179,
+          "deadlineCount": 178,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
