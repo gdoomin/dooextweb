@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-10T12:58:50.929780+00:00",
-  "last_successful_at": "2026-07-10T12:58:50.929780+00:00",
-  "last_attempted_at": "2026-07-10T12:58:50.929780+00:00",
+  "updated_at": "2026-07-10T16:02:32.546640+00:00",
+  "last_successful_at": "2026-07-10T16:02:32.546640+00:00",
+  "last_attempted_at": "2026-07-10T16:02:32.546640+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -101,7 +101,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1185.6005,
+          "_internal_score": 1188.4303,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -217,7 +217,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 174,
+          "deadlineCount": 173,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
