@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-16T15:46:00.020499+00:00",
-  "last_successful_at": "2026-07-16T15:46:00.020499+00:00",
-  "last_attempted_at": "2026-07-16T15:46:00.020499+00:00",
+  "updated_at": "2026-07-16T18:38:33.060914+00:00",
+  "last_successful_at": "2026-07-16T18:38:33.060914+00:00",
+  "last_attempted_at": "2026-07-16T18:38:33.060914+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -14,7 +14,7 @@
       "title": "초당대학교 비행교육원 비행교관 채용",
       "company": "초당대학교",
       "company_slug": "초당대학교",
-      "location": "",
+      "location": "무안군",
       "employment_type": "",
       "employment_type_code": "full_time",
       "experience": "4",
@@ -38,14 +38,14 @@
       ],
       "aircraft_category": "fixed_wing",
       "aircraft_types": [],
-      "summary": "4",
+      "summary": "무안군 · 4",
       "posted_at": "2026-07-16T15:55:42.597+09:00",
       "deadline_at": "2026-08-02T23:00:00+09:00",
       "is_always_open": false,
       "location_country": "",
-      "location_region": "",
+      "location_region": "무안군",
       "location_city": "",
-      "search_document": "초당대학교 비행교육원 비행교관 채용 초당대학교 4 ,학교(초·중·고·대학·특수),교직원·조교, 조종사 비행교관 FI 비행교관",
+      "search_document": "초당대학교 비행교육원 비행교관 채용 초당대학교 무안군 4 ,학교(초·중·고·대학·특수),교직원·조교, 비행,교관 무안군 조종사 비행교관 FI 비행교관",
       "raw_payload": {
         "source_record": {
           "id": "49598072",
@@ -68,7 +68,7 @@
           "careerType": "4",
           "careerRange": 0,
           "educationCode": "5",
-          "benefitNameList": null,
+          "benefitNameList": [],
           "companyName": "초당대학교",
           "companyType": "0",
           "isExposeWorkCompany": false,
@@ -93,15 +93,23 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 0,
+          "readCount": 14,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
+            },
+            {
+              "code": "A1784227219110",
+              "attributes": {}
+            },
+            {
+              "code": "B1784227219110",
+              "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1297.8848,
+          "_internal_score": 2663.3289,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "대학교",
@@ -111,14 +119,14 @@
             "조종교육",
             "대학교"
           ],
-          "_internal_featureWorkCode": null,
-          "_internal_featureIndustryCode": null,
-          "_internal_featureToolCode": null,
-          "_internal_featureSkillCode": null,
-          "_internal_featureCompanyCode": null,
-          "_internal_featureLocationCode": null,
-          "_internal_featureTotalCode": null,
-          "popularityScore": 0,
+          "_internal_featureWorkCode": "조교,교직원",
+          "_internal_featureIndustryCode": "중,대학,특수),고,학교(초",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "비행,교관",
+          "_internal_featureCompanyCode": "초당대학교",
+          "_internal_featureLocationCode": "무안군",
+          "_internal_featureTotalCode": "중,조교,무안군,대학,특수),고,학교(초,비행,초당대학교,교직원,교관",
+          "popularityScore": 14,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -136,7 +144,7 @@
           "job_no": "49598072",
           "title": "초당대학교 비행교육원 비행교관 채용",
           "company": "초당대학교",
-          "location": "",
+          "location": "무안군",
           "employment_type": "",
           "experience": "4",
           "deadline_text": "2026.08.02",
@@ -155,7 +163,7 @@
           ],
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
-          "summary": "4"
+          "summary": "무안군 · 4"
         }
       }
     },
@@ -245,11 +253,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607170047",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607170340",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 16,
+          "readCount": 23,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -257,7 +265,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2181.0217,
+          "_internal_score": 2160.453,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -270,8 +278,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "단양군,기관사,회전익조종사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
-          "popularityScore": 17,
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 24,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -402,7 +410,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2418,
+          "readCount": 2458,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -410,7 +418,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1178.5822,
+          "_internal_score": 1176.7786,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -423,7 +431,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 253,
+          "popularityScore": 255,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -586,8 +594,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c16dceb7-2ee0-42cf-8f5b-82883294331f",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c16dceb7-2ee0-42cf-8f5b-82883294331f",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c309329a-6c3c-4d8d-9f22-efb82593d03b",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c309329a-6c3c-4d8d-9f22-efb82593d03b",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -625,7 +633,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c16dceb7-2ee0-42cf-8f5b-82883294331f",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c309329a-6c3c-4d8d-9f22-efb82593d03b",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
