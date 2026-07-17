@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-17T15:43:28.054756+00:00",
-  "last_successful_at": "2026-07-17T15:43:28.054756+00:00",
-  "last_attempted_at": "2026-07-17T15:43:28.054756+00:00",
+  "updated_at": "2026-07-17T18:36:00.015351+00:00",
+  "last_successful_at": "2026-07-17T18:36:00.015351+00:00",
+  "last_attempted_at": "2026-07-17T18:36:00.015351+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -45,7 +45,7 @@
       "location_country": "",
       "location_region": "무안군",
       "location_city": "",
-      "search_document": "초당대학교 비행교육원 비행교관 채용 초당대학교 무안군 4 ,학교(초·중·고·대학·특수),교직원·조교, 비행,교관 무안군 조종사 비행교관 FI 비행교관",
+      "search_document": "초당대학교 비행교육원 비행교관 채용 초당대학교 무안군 4 ,학교(초·중·고·대학·특수),교직원·조교, 비행교관 비행,교관,교육생관리 무안군 조종사 비행교관 FI 비행교관",
       "raw_payload": {
         "source_record": {
           "id": "49598072",
@@ -93,7 +93,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 14,
+          "readCount": 30,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -101,7 +101,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2709.539,
+          "_internal_score": 4373.655,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "대학교",
@@ -112,13 +112,13 @@
             "대학교"
           ],
           "_internal_featureWorkCode": "조교,교직원",
-          "_internal_featureIndustryCode": "중,대학,특수),고,학교(초",
-          "_internal_featureToolCode": "",
-          "_internal_featureSkillCode": "비행,교관",
+          "_internal_featureIndustryCode": "중,대학,특수),고,학교(초,대학교",
+          "_internal_featureToolCode": "비행교관",
+          "_internal_featureSkillCode": "비행,교관,교육생관리",
           "_internal_featureCompanyCode": "초당대학교",
           "_internal_featureLocationCode": "무안군",
-          "_internal_featureTotalCode": "중,조교,무안군,대학,특수),고,학교(초,비행,초당대학교,교직원,교관",
-          "popularityScore": 14,
+          "_internal_featureTotalCode": "고,학교(초,초당대학교,대학교,교직원,중,조교,무안군,비행교관,대학,특수),비행,교관,교육생관리",
+          "popularityScore": 30,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -245,11 +245,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607180045",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607180337",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 23,
+          "readCount": 39,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -257,7 +257,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2172.1453,
+          "_internal_score": 2148.6118,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -271,7 +271,7 @@
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
           "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
-          "popularityScore": 24,
+          "popularityScore": 40,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -402,7 +402,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2458,
+          "readCount": 2490,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -410,7 +410,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1190.1246,
+          "_internal_score": 1178.283,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -423,7 +423,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 255,
+          "popularityScore": 263,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -586,8 +586,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d1fc8cf4-39f3-45c2-88c7-95d21336a046",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d1fc8cf4-39f3-45c2-88c7-95d21336a046",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=31904bfc-e33e-41ce-ad3e-eb5795d3a983",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=31904bfc-e33e-41ce-ad3e-eb5795d3a983",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -625,7 +625,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=d1fc8cf4-39f3-45c2-88c7-95d21336a046",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=31904bfc-e33e-41ce-ad3e-eb5795d3a983",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
