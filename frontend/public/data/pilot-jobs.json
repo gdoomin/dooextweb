@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-31T12:53:16.285700+00:00",
-  "last_successful_at": "2026-07-31T12:53:16.285700+00:00",
-  "last_attempted_at": "2026-07-31T12:53:16.285700+00:00",
+  "updated_at": "2026-07-31T15:54:19.415724+00:00",
+  "last_successful_at": "2026-07-31T15:54:19.415724+00:00",
+  "last_attempted_at": "2026-07-31T15:54:19.415724+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -97,12 +97,12 @@
           "readCount": 112,
           "badges": [
             {
-              "code": "WAITING_FOR_APPLICANTS",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1174.3057,
+          "_internal_score": 1183.8368,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -245,12 +245,12 @@
           "readCount": 182,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4342.1504,
+          "_internal_score": 4376.6274,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "대학교",
@@ -394,19 +394,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607312154",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608010055",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 134,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "WAITING_FOR_APPLICANTS",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2150.3704,
+          "_internal_score": 2154.1062,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -526,7 +526,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 153,
+          "deadlineCount": 152,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
@@ -586,8 +586,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7f18f880-f825-46c1-a501-8c20777a8c85",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7f18f880-f825-46c1-a501-8c20777a8c85",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=863be19f-20dc-47aa-87cc-d5699a08bb8e",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=863be19f-20dc-47aa-87cc-d5699a08bb8e",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -625,7 +625,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7f18f880-f825-46c1-a501-8c20777a8c85",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=863be19f-20dc-47aa-87cc-d5699a08bb8e",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
