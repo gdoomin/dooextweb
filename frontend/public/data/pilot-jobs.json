@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-07-30T21:39:19.065885+00:00",
-  "last_successful_at": "2026-07-30T21:39:19.065885+00:00",
-  "last_attempted_at": "2026-07-30T21:39:19.065885+00:00",
+  "updated_at": "2026-07-31T00:54:47.257254+00:00",
+  "last_successful_at": "2026-07-31T00:54:47.257254+00:00",
+  "last_attempted_at": "2026-07-31T00:54:47.257254+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -102,7 +102,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1183.0927,
+          "_internal_score": 1175.7094,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -250,7 +250,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 4350.458,
+          "_internal_score": 4442.274,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "대학교",
@@ -394,11 +394,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607310640",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202607310956",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 130,
+          "readCount": 134,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -406,7 +406,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2169.9006,
+          "_internal_score": 2158.6401,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -419,8 +419,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
-          "popularityScore": 63,
+          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
+          "popularityScore": 60,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -586,8 +586,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa52416f-4842-4ce1-bdc8-7ee4cfbdeab0",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa52416f-4842-4ce1-bdc8-7ee4cfbdeab0",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a2df5998-51d5-4a47-9d00-2c3b3be2b84b",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a2df5998-51d5-4a47-9d00-2c3b3be2b84b",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -625,7 +625,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa52416f-4842-4ce1-bdc8-7ee4cfbdeab0",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a2df5998-51d5-4a47-9d00-2c3b3be2b84b",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
