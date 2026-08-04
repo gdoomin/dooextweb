@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-04T16:00:24.123976+00:00",
-  "last_successful_at": "2026-08-04T16:00:24.123976+00:00",
-  "last_attempted_at": "2026-08-04T16:00:24.123976+00:00",
+  "updated_at": "2026-08-04T18:47:29.269917+00:00",
+  "last_successful_at": "2026-08-04T18:47:29.269917+00:00",
+  "last_attempted_at": "2026-08-04T18:47:29.269917+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -94,7 +94,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 268,
+          "readCount": 320,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -102,7 +102,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1188.5981,
+          "_internal_score": 1186.587,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -115,7 +115,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 268,
+          "popularityScore": 320,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -241,27 +241,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608050102",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608050348",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 153,
+          "readCount": 163,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
               "attributes": {}
-            },
-            {
-              "code": "A1785859320810",
-              "attributes": {}
-            },
-            {
-              "code": "B1785859320810",
-              "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2145.6624,
+          "_internal_score": 2147.5046,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -441,8 +433,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c231e6f3-8cb8-4ac5-a1dd-cea0f13f5210",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c231e6f3-8cb8-4ac5-a1dd-cea0f13f5210",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=cb8d27da-6521-4d4e-9b81-70d1de134565",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=cb8d27da-6521-4d4e-9b81-70d1de134565",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -480,7 +472,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c231e6f3-8cb8-4ac5-a1dd-cea0f13f5210",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=cb8d27da-6521-4d4e-9b81-70d1de134565",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
