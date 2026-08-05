@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-05T15:54:28.571938+00:00",
-  "last_successful_at": "2026-08-05T15:54:28.571938+00:00",
-  "last_attempted_at": "2026-08-05T15:54:28.571938+00:00",
+  "updated_at": "2026-08-05T18:47:01.786650+00:00",
+  "last_successful_at": "2026-08-05T18:47:01.786650+00:00",
+  "last_attempted_at": "2026-08-05T18:47:01.786650+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -94,7 +94,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 320,
+          "readCount": 353,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -102,7 +102,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1181.515,
+          "_internal_score": 1178.6317,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -115,7 +115,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 320,
+          "popularityScore": 295,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -241,11 +241,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608060056",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608060348",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 163,
+          "readCount": 168,
           "badges": [
             {
               "code": "WAITING_FOR_APPLICANTS",
@@ -253,7 +253,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2158.3533,
+          "_internal_score": 2149.9912,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -266,8 +266,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "단양군,기관사,회전익조종사,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
-          "popularityScore": 52,
+          "_internal_featureTotalCode": "회전익조종사,단양군,기관사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
+          "popularityScore": 51,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -433,8 +433,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -472,7 +472,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -506,8 +506,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -543,7 +543,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6c11cd9e-0ab0-468c-a1a7-fd7db64ac855",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b091a633-7750-4ae4-b9b4-5448d854a66e",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
