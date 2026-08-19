@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-19T09:26:16.952040+00:00",
-  "last_successful_at": "2026-08-19T09:26:16.952040+00:00",
-  "last_attempted_at": "2026-08-19T09:26:16.952040+00:00",
+  "updated_at": "2026-08-19T12:24:15.713588+00:00",
+  "last_successful_at": "2026-08-19T12:24:15.713588+00:00",
+  "last_attempted_at": "2026-08-19T12:24:15.713588+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -210,7 +210,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1187.4504,
+          "_internal_score": 1158.0637,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -349,7 +349,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608191827",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608192125",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -361,7 +361,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2198.0515,
+          "_internal_score": 2162.1802,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -515,223 +515,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "경력 · 경력"
-        }
-      }
-    },
-    {
-      "id": "54457835",
-      "slug": "주이엔비에어-회전익-조종사-채용-54457835",
-      "job_no": "54457835",
-      "source_job_key": "54457835",
-      "title": "(주)이엔비에어 회전익 조종사 채용",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-      "role_family": "helicopter_pilot",
-      "license_tags": [],
-      "aircraft_category": "rotary_wing",
-      "aircraft_types": [
-        "HELICOPTER"
-      ],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "(주)이엔비에어 회전익 조종사 채용 조종사 HELICOPTER 회전익 조종사",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "조종사",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "54457835",
-          "job_no": "54457835",
-          "title": "(주)이엔비에어 회전익 조종사 채용",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-          "role_family": "helicopter_pilot",
-          "license_tags": [],
-          "aircraft_category": "rotary_wing",
-          "aircraft_types": [
-            "HELICOPTER"
-          ],
-          "summary": ""
-        }
-      }
-    },
-    {
-      "id": "54659785",
-      "slug": "무인항공기-제작-조종사-모집-54659785",
-      "job_no": "54659785",
-      "source_job_key": "54659785",
-      "title": "무인항공기 (제작 / 조종사) 모집",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-      "role_family": "pilot",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "무인항공기 (제작 / 조종사) 모집 조종사",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "조종사",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "54659785",
-          "job_no": "54659785",
-          "title": "무인항공기 (제작 / 조종사) 모집",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=b69c71ce-3e23-4d57-9f9a-7481d3e842d1",
-          "role_family": "pilot",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": ""
-        }
-      }
-    },
-    {
-      "id": "54728663",
-      "slug": "청주대학교-계약직원비행교관-정비사-채용-공고-54728663",
-      "job_no": "54728663",
-      "source_job_key": "54728663",
-      "title": "청주대학교 계약직원(비행교관, 정비사) 채용 공고",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사",
-        "비행교관"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54728663&location=ts&searchword=%EB%B9%84%ED%96%89%EA%B5%90%EA%B4%80&searchType=search&paid_fl=n&search_uuid=3467d74b-a892-4e27-8679-ddb2a2496315",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54728663&location=ts&searchword=%EB%B9%84%ED%96%89%EA%B5%90%EA%B4%80&searchType=search&paid_fl=n&search_uuid=3467d74b-a892-4e27-8679-ddb2a2496315",
-      "role_family": "flight_instructor",
-      "license_tags": [
-        "FI"
-      ],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "청주대학교 계약직원(비행교관, 정비사) 채용 공고 조종사 비행교관 FI 비행교관",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "비행교관",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "54728663",
-          "job_no": "54728663",
-          "title": "청주대학교 계약직원(비행교관, 정비사) 채용 공고",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사",
-            "비행교관"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54728663&location=ts&searchword=%EB%B9%84%ED%96%89%EA%B5%90%EA%B4%80&searchType=search&paid_fl=n&search_uuid=3467d74b-a892-4e27-8679-ddb2a2496315",
-          "role_family": "flight_instructor",
-          "license_tags": [
-            "FI"
-          ],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": ""
         }
       }
     }
