@@ -1,11 +1,602 @@
 {
-  "updated_at": "2026-08-25T06:24:28.445508+00:00",
-  "last_successful_at": "2026-08-25T06:24:28.445508+00:00",
-  "last_attempted_at": "2026-08-25T06:24:28.445508+00:00",
+  "updated_at": "2026-08-25T09:24:25.124387+00:00",
+  "last_successful_at": "2026-08-25T09:24:25.124387+00:00",
+  "last_attempted_at": "2026-08-25T09:24:25.124387+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
   "items": [
+    {
+      "id": "49830725",
+      "slug": "진에어-a321320-경력직-운항승무원부기장-채용-49830725",
+      "job_no": "49830725",
+      "source_job_key": "49830725",
+      "title": "A321/320 경력직 운항승무원(부기장) 채용",
+      "company": "진에어",
+      "company_slug": "진에어",
+      "location": "영종구,강서구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.08.27",
+      "deadline_date": "2026.08.27",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830725",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830725",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "airliner",
+      "aircraft_types": [
+        "A321"
+      ],
+      "summary": "영종구,강서구 · 2",
+      "posted_at": "2026-08-21T17:21:52.273+09:00",
+      "deadline_at": "2026-08-27T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "영종구,강서구",
+      "location_city": "",
+      "search_document": "A321/320 경력직 운항승무원(부기장) 채용 진에어 영종구,강서구 2 ,호텔·여행·항공,승무원, 운항승무원 영종구,강서구 운항승무원 조종사 부기장 A321 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49830725",
+          "legacyJobNo": "51476346",
+          "title": "A321/320 경력직 운항승무원(부기장) 채용",
+          "createdAt": "2026-08-21T17:21:52.273+09:00",
+          "postingCompanyName": "진에어",
+          "userRefType": "C",
+          "memberSystemNo": "39002329",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000324"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "진에어",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-08-19T00:00:00+09:00",
+            "end": "2026-08-27T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "한진그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598172_3820-8c--226001s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 101,
+          "badges": [
+            {
+              "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 3256.392,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "부기장"
+          ],
+          "_internal_featureWorkCode": "승무원",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "운항승무원",
+          "_internal_featureCompanyCode": "진에어",
+          "_internal_featureLocationCode": "영종구,강서구",
+          "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
+          "popularityScore": 103,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,승무원,",
+          "memberId": "c-042687",
+          "payTypeCode": 0,
+          "isStarter": "1",
+          "urlName": "1851298",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49830725",
+          "job_no": "49830725",
+          "title": "A321/320 경력직 운항승무원(부기장) 채용",
+          "company": "진에어",
+          "location": "영종구,강서구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.08.27",
+          "deadline_date": "2026.08.27",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830725",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "airliner",
+          "aircraft_types": [
+            "A321"
+          ],
+          "summary": "영종구,강서구 · 2"
+        }
+      }
+    },
+    {
+      "id": "49830720",
+      "slug": "진에어-a321320-경력직-운항승무원기장-채용-49830720",
+      "job_no": "49830720",
+      "source_job_key": "49830720",
+      "title": "A321/320 경력직 운항승무원(기장) 채용",
+      "company": "진에어",
+      "company_slug": "진에어",
+      "location": "영종구,강서구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.08.27",
+      "deadline_date": "2026.08.27",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830720",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830720",
+      "role_family": "captain",
+      "license_tags": [],
+      "aircraft_category": "airliner",
+      "aircraft_types": [
+        "A321"
+      ],
+      "summary": "영종구,강서구 · 2",
+      "posted_at": "2026-08-21T17:21:25.813+09:00",
+      "deadline_at": "2026-08-27T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "영종구,강서구",
+      "location_city": "",
+      "search_document": "A321/320 경력직 운항승무원(기장) 채용 진에어 영종구,강서구 2 ,호텔·여행·항공,승무원, 운항승무원 영종구,강서구 운항승무원 조종사 기장 A321 기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49830720",
+          "legacyJobNo": "51476343",
+          "title": "A321/320 경력직 운항승무원(기장) 채용",
+          "createdAt": "2026-08-21T17:21:25.813+09:00",
+          "postingCompanyName": "진에어",
+          "userRefType": "C",
+          "memberSystemNo": "39002329",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000324"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "진에어",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-08-19T00:00:00+09:00",
+            "end": "2026-08-27T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "한진그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598172_3820-8c--226001s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 111,
+          "badges": [
+            {
+              "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 3286.0999,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "기장"
+          ],
+          "_internal_featureWorkCode": "승무원",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "운항승무원",
+          "_internal_featureCompanyCode": "진에어",
+          "_internal_featureLocationCode": "영종구,강서구",
+          "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
+          "popularityScore": 112,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,승무원,",
+          "memberId": "c-042687",
+          "payTypeCode": 0,
+          "isStarter": "1",
+          "urlName": "1851298",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49830720",
+          "job_no": "49830720",
+          "title": "A321/320 경력직 운항승무원(기장) 채용",
+          "company": "진에어",
+          "location": "영종구,강서구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.08.27",
+          "deadline_date": "2026.08.27",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830720",
+          "role_family": "captain",
+          "license_tags": [],
+          "aircraft_category": "airliner",
+          "aircraft_types": [
+            "A321"
+          ],
+          "summary": "영종구,강서구 · 2"
+        }
+      }
+    },
+    {
+      "id": "49830698",
+      "slug": "진에어-a321320-경력직-운항승무원기장부기장-채용-49830698",
+      "job_no": "49830698",
+      "source_job_key": "49830698",
+      "title": "A321/320 경력직 운항승무원(기장/부기장) 채용",
+      "company": "진에어",
+      "company_slug": "진에어",
+      "location": "영종구,강서구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.08.27",
+      "deadline_date": "2026.08.27",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830698",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830698",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "airliner",
+      "aircraft_types": [
+        "A321"
+      ],
+      "summary": "영종구,강서구 · 2",
+      "posted_at": "2026-08-21T17:19:55.38+09:00",
+      "deadline_at": "2026-08-27T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "영종구,강서구",
+      "location_city": "",
+      "search_document": "A321/320 경력직 운항승무원(기장/부기장) 채용 진에어 영종구,강서구 2 ,호텔·여행·항공,승무원, 운항승무원 영종구,강서구 운항승무원 조종사 부기장 A321 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49830698",
+          "legacyJobNo": "51476323",
+          "title": "A321/320 경력직 운항승무원(기장/부기장) 채용",
+          "createdAt": "2026-08-21T17:19:55.38+09:00",
+          "postingCompanyName": "진에어",
+          "userRefType": "C",
+          "memberSystemNo": "39002329",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000324"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "I040"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "진에어",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-08-19T00:00:00+09:00",
+            "end": "2026-08-27T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "한진그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598172_3820-8c--226001s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 107,
+          "badges": [
+            {
+              "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 3229.509,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "부기장",
+            "기장"
+          ],
+          "_internal_featureWorkCode": "승무원",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "운항승무원",
+          "_internal_featureCompanyCode": "진에어",
+          "_internal_featureLocationCode": "영종구,강서구",
+          "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
+          "popularityScore": 109,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,승무원,",
+          "memberId": "c-042687",
+          "payTypeCode": 0,
+          "isStarter": "1",
+          "urlName": "1851298",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49830698",
+          "job_no": "49830698",
+          "title": "A321/320 경력직 운항승무원(기장/부기장) 채용",
+          "company": "진에어",
+          "location": "영종구,강서구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.08.27",
+          "deadline_date": "2026.08.27",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49830698",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "airliner",
+          "aircraft_types": [
+            "A321"
+          ],
+          "summary": "영종구,강서구 · 2"
+        }
+      }
+    },
+    {
+      "id": "49813598",
+      "slug": "토프모빌리티-토프모빌리티-전기비행기경량항공기-교관-채용-49813598",
+      "job_no": "49813598",
+      "source_job_key": "49813598",
+      "title": "[토프모빌리티] 전기비행기(경량항공기) 교관 채용",
+      "company": "㈜토프모빌리티",
+      "company_slug": "토프모빌리티",
+      "location": "화성시,만세구",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "4",
+      "experience_level": "open",
+      "deadline_text": "2026.08.30",
+      "deadline_date": "2026.08.30",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49813598",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49813598",
+      "role_family": "pilot",
+      "license_tags": [
+        "FI"
+      ],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "화성시,만세구 · 4",
+      "posted_at": "2026-08-19T17:59:26.217+09:00",
+      "deadline_at": "2026-08-30T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "화성시,만세구",
+      "location_city": "",
+      "search_document": "[토프모빌리티] 전기비행기(경량항공기) 교관 채용 ㈜토프모빌리티 화성시,만세구 4 ,호텔·여행·항공,조종·기관사, 항공정비사,경량항공기조종사 경량항공기,교관,인프라구축,교육지원 화성시,만세구 조종사 FI",
+      "raw_payload": {
+        "source_record": {
+          "id": "49813598",
+          "legacyJobNo": "51461052",
+          "title": "[토프모빌리티] 전기비행기(경량항공기) 교관 채용",
+          "createdAt": "2026-08-19T17:59:26.217+09:00",
+          "postingCompanyName": "㈜토프모빌리티",
+          "userRefType": "C",
+          "memberSystemNo": "51318635",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "1/0"
+          ],
+          "areaCodeList": [
+            "B391"
+          ],
+          "careerType": "4",
+          "careerRange": 0,
+          "educationCode": "0",
+          "benefitNameList": [],
+          "companyName": "㈜토프모빌리티",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "110000",
+          "applicationPeriod": {
+            "start": "2026-08-19T00:00:00+09:00",
+            "end": "2026-08-30T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": false,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 310,
+          "badges": [
+            {
+              "code": "RECOMMENDED_JOB_CHANGE",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 1157.7859,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "항공정비사,경량항공기조종사",
+          "_internal_featureSkillCode": "경량항공기,교관,인프라구축,교육지원",
+          "_internal_featureCompanyCode": "토프모빌리티",
+          "_internal_featureLocationCode": "화성시,만세구",
+          "_internal_featureTotalCode": "화성시,경량항공기,만세구,기관사,토프모빌리티,호텔,조종,항공,경량항공기조종사,항공정비사,인프라구축,여행,교관,교육지원",
+          "popularityScore": 311,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "toff0707",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49813598",
+          "job_no": "49813598",
+          "title": "[토프모빌리티] 전기비행기(경량항공기) 교관 채용",
+          "company": "㈜토프모빌리티",
+          "location": "화성시,만세구",
+          "employment_type": "",
+          "experience": "4",
+          "deadline_text": "2026.08.30",
+          "deadline_date": "2026.08.30",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49813598",
+          "role_family": "pilot",
+          "license_tags": [
+            "FI"
+          ],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "화성시,만세구 · 4"
+        }
+      }
+    },
     {
       "id": "263606",
       "slug": "jin-air-a321320-경력직-운항승무원기장부기장-채용공고-263606",
@@ -111,6 +702,310 @@
             "A321"
           ],
           "summary": "경력 · 경력"
+        }
+      }
+    },
+    {
+      "id": "49673434",
+      "slug": "에어부산주-26년-경력-운항승무원-상시채용-49673434",
+      "job_no": "49673434",
+      "source_job_key": "49673434",
+      "title": "'26년 경력 운항승무원 상시채용",
+      "company": "에어부산(주)",
+      "company_slug": "에어부산주",
+      "location": "제주시,영종구,강서구,제물포구",
+      "employment_type": "",
+      "employment_type_code": "open_recruiting",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2070.01.01",
+      "deadline_date": "2070.01.01",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "운항승무원",
+        "조종사",
+        "부기장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49673434",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49673434",
+      "role_family": "first_officer",
+      "license_tags": [],
+      "aircraft_category": "fixed_wing",
+      "aircraft_types": [],
+      "summary": "제주시,영종구,강서구,제물포구 · 2",
+      "posted_at": "2026-07-29T09:24:17.86+09:00",
+      "deadline_at": "2070-01-01T00:00:00+09:00",
+      "is_always_open": true,
+      "location_country": "KR",
+      "location_region": "제주시,영종구,강서구,제물포구",
+      "location_city": "",
+      "search_document": "'26년 경력 운항승무원 상시채용 에어부산(주) 제주시,영종구,강서구,제물포구 2 ,호텔·여행·항공,조종·기관사, 항공신체검사 부기장 제주시,영종구,강서구,제물포구 운항승무원 조종사 부기장 부기장",
+      "raw_payload": {
+        "source_record": {
+          "id": "49673434",
+          "legacyJobNo": "51336685",
+          "title": "'26년 경력 운항승무원 상시채용",
+          "createdAt": "2026-07-29T09:24:17.86+09:00",
+          "postingCompanyName": "에어부산(주)",
+          "userRefType": "C",
+          "memberSystemNo": "40554360",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [],
+          "areaCodeList": [
+            "H010",
+            "K100",
+            "N040",
+            "I040",
+            "K050"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "255",
+          "benefitNameList": [],
+          "companyName": "에어부산(주)",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "000010",
+          "applicationPeriod": {
+            "start": "2026-07-29T00:00:00+09:00",
+            "end": "2070-01-01T00:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": true,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": "금호아시아나그룹",
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "/Images/Logo/128/c/etc/2617s00sr8598012_3820-8c--220185s-.gif?p=y&hash=c",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 1187,
+          "badges": [
+            {
+              "code": "VIEWS_OVER_1000",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 1167.5442,
+          "_internal_weightValue": 40,
+          "_internal_keywordList": [
+            "부기장",
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종,부기장,조종사",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "항공신체검사",
+          "_internal_featureSkillCode": "부기장",
+          "_internal_featureCompanyCode": "에어부산",
+          "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
+          "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
+          "popularityScore": 354,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "c-042770",
+          "payTypeCode": 0,
+          "isStarter": null,
+          "urlName": null,
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49673434",
+          "job_no": "49673434",
+          "title": "'26년 경력 운항승무원 상시채용",
+          "company": "에어부산(주)",
+          "location": "제주시,영종구,강서구,제물포구",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2070.01.01",
+          "deadline_date": "2070.01.01",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "운항승무원",
+            "조종사",
+            "부기장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49673434",
+          "role_family": "first_officer",
+          "license_tags": [],
+          "aircraft_category": "fixed_wing",
+          "aircraft_types": [],
+          "summary": "제주시,영종구,강서구,제물포구 · 2"
+        }
+      }
+    },
+    {
+      "id": "49576130",
+      "slug": "이엔비에어-회전익조종사-채용공고-49576130",
+      "job_no": "49576130",
+      "source_job_key": "49576130",
+      "title": "회전익조종사 채용공고",
+      "company": "㈜이엔비에어",
+      "company_slug": "이엔비에어",
+      "location": "단양군",
+      "employment_type": "",
+      "employment_type_code": "full_time",
+      "experience": "2",
+      "experience_level": "open",
+      "deadline_text": "2026.08.31",
+      "deadline_date": "2026.08.31",
+      "period_text": "",
+      "d_day": "",
+      "matched_keywords": [
+        "조종사",
+        "사업용 면장"
+      ],
+      "source": "JobKorea Search",
+      "source_code": "jobkorea",
+      "source_label": "JobKorea Search",
+      "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49576130",
+      "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49576130",
+      "role_family": "helicopter_pilot",
+      "license_tags": [
+        "CPL"
+      ],
+      "aircraft_category": "rotary_wing",
+      "aircraft_types": [
+        "HELICOPTER"
+      ],
+      "summary": "단양군 · 2",
+      "posted_at": "2026-07-15T00:03:11.803+09:00",
+      "deadline_at": "2026-08-31T23:00:00+09:00",
+      "is_always_open": false,
+      "location_country": "",
+      "location_region": "단양군",
+      "location_city": "",
+      "search_document": "회전익조종사 채용공고 ㈜이엔비에어 단양군 2 ,호텔·여행·항공,조종·기관사, 사업용조종사,항공무선통신사 회전익조종사,모집공고 단양군 조종사 사업용 면장 CPL HELICOPTER 회전익 조종사",
+      "raw_payload": {
+        "source_record": {
+          "id": "49576130",
+          "legacyJobNo": "51250358",
+          "title": "회전익조종사 채용공고",
+          "createdAt": "2026-07-15T00:03:11.803+09:00",
+          "postingCompanyName": "㈜이엔비에어",
+          "userRefType": "C",
+          "memberSystemNo": "33282469",
+          "jobOrIndustryCodeList": [
+            "1000001",
+            "1000276"
+          ],
+          "employmentTypeCodeList": [
+            "1/0",
+            "2/1"
+          ],
+          "areaCodeList": [
+            "P020"
+          ],
+          "careerType": "2",
+          "careerRange": 100,
+          "educationCode": "0",
+          "benefitNameList": [],
+          "companyName": "㈜이엔비에어",
+          "companyType": "0",
+          "isExposeWorkCompany": false,
+          "receptionOptionType": "110000",
+          "applicationPeriod": {
+            "start": "2026-07-15T00:00:00+09:00",
+            "end": "2026-08-31T23:00:00+09:00"
+          },
+          "isSubcontract": false,
+          "isNewcomerJob": false,
+          "jobTypeCode": null,
+          "isExistProductLogo": false,
+          "stockTypeCode": "0",
+          "companyRank": 0,
+          "companySubsidiary": null,
+          "smallGiantCompanyTypeCode": "0",
+          "excellentSmallCompanyTypeCode": 0,
+          "awardInfo": "0",
+          "goodWorkCompanyCodeList": null,
+          "productStatus": 0,
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608251826",
+          "textLogoPath": null,
+          "oemNo": "1",
+          "rewardAmount": 0,
+          "readCount": 340,
+          "badges": [
+            {
+              "code": "WAITING_FOR_APPLICANTS",
+              "attributes": {}
+            }
+          ],
+          "badgesV2": [],
+          "_internal_score": 2208.853,
+          "_internal_weightValue": 10,
+          "_internal_keywordList": [
+            "항공사",
+            "조종사",
+            "항공운송"
+          ],
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "사업용조종사,항공무선통신사",
+          "_internal_featureSkillCode": "회전익조종사,모집공고",
+          "_internal_featureCompanyCode": "이엔비에어",
+          "_internal_featureLocationCode": "단양군",
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 66,
+          "payRange": {
+            "start": "0",
+            "end": "0"
+          },
+          "isAppliedJob": false,
+          "jobClassificationOrIndustry": ",호텔·여행·항공,조종·기관사,",
+          "memberId": "enbair",
+          "payTypeCode": 0,
+          "isStarter": "0",
+          "urlName": "",
+          "companyTypeCode": 1
+        },
+        "normalized": {
+          "id": "49576130",
+          "job_no": "49576130",
+          "title": "회전익조종사 채용공고",
+          "company": "㈜이엔비에어",
+          "location": "단양군",
+          "employment_type": "",
+          "experience": "2",
+          "deadline_text": "2026.08.31",
+          "deadline_date": "2026.08.31",
+          "period_text": "",
+          "d_day": "",
+          "matched_keywords": [
+            "조종사",
+            "사업용 면장"
+          ],
+          "source": "JobKorea Search",
+          "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/49576130",
+          "role_family": "helicopter_pilot",
+          "license_tags": [
+            "CPL"
+          ],
+          "aircraft_category": "rotary_wing",
+          "aircraft_types": [
+            "HELICOPTER"
+          ],
+          "summary": "단양군 · 2"
         }
       }
     },
@@ -237,8 +1132,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -276,7 +1171,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -310,8 +1205,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -347,7 +1242,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7839b91b-e0c7-442f-b9fa-935705a8f9ac",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6efabf91-bf9a-462c-8590-2908a7fadc5a",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
