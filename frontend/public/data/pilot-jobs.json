@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-25T18:24:09.070988+00:00",
-  "last_successful_at": "2026-08-25T18:24:09.070988+00:00",
-  "last_attempted_at": "2026-08-25T18:24:09.070988+00:00",
+  "updated_at": "2026-08-25T21:23:10.956928+00:00",
+  "last_successful_at": "2026-08-25T21:23:10.956928+00:00",
+  "last_attempted_at": "2026-08-25T21:23:10.956928+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -100,7 +100,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 3277.467,
+          "_internal_score": 3266.4158,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장"
@@ -248,7 +248,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 3307.0828,
+          "_internal_score": 3296.0537,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "기장"
@@ -396,7 +396,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 3250.6968,
+          "_internal_score": 3239.6353,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -545,7 +545,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1135.6407,
+          "_internal_score": 1133.0645,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공운송"
@@ -801,7 +801,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1149.7156,
+          "_internal_score": 1146.2263,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -940,7 +940,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608260325",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608260624",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -952,7 +952,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2154.2668,
+          "_internal_score": 2150.8123,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -1132,8 +1132,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1171,7 +1171,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -1205,8 +1205,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -1242,7 +1242,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6782b897-7c0b-4285-b8d6-f55aec5ebbc5",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=3910a3d3-0aea-4ab5-a63a-f3571ddebb1d",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
