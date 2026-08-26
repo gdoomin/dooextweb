@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-26T15:51:21.776747+00:00",
-  "last_successful_at": "2026-08-26T15:51:21.776747+00:00",
-  "last_attempted_at": "2026-08-26T15:51:21.776747+00:00",
+  "updated_at": "2026-08-26T18:54:43.287964+00:00",
+  "last_successful_at": "2026-08-26T18:54:43.287964+00:00",
+  "last_attempted_at": "2026-08-26T18:54:43.287964+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -92,7 +92,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 126,
+          "readCount": 149,
           "badges": [
             {
               "code": "DEADLINE_TODAY",
@@ -105,7 +105,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 3237.5981,
+          "_internal_score": 3318.2888,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장"
@@ -117,7 +117,7 @@
           "_internal_featureCompanyCode": "진에어",
           "_internal_featureLocationCode": "영종구,강서구",
           "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
-          "popularityScore": 128,
+          "popularityScore": 151,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -245,7 +245,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 135,
+          "readCount": 146,
           "badges": [
             {
               "code": "DEADLINE_TODAY",
@@ -258,7 +258,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 3267.6677,
+          "_internal_score": 3348.189,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "기장"
@@ -270,7 +270,7 @@
           "_internal_featureCompanyCode": "진에어",
           "_internal_featureLocationCode": "영종구,강서구",
           "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
-          "popularityScore": 136,
+          "popularityScore": 147,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -398,7 +398,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 127,
+          "readCount": 144,
           "badges": [
             {
               "code": "DEADLINE_TODAY",
@@ -411,7 +411,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 3210.3896,
+          "_internal_score": 3291.2576,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -424,7 +424,7 @@
           "_internal_featureCompanyCode": "진에어",
           "_internal_featureLocationCode": "영종구,강서구",
           "_internal_featureTotalCode": "영종구,승무원,강서구,여행,호텔,항공,운항승무원,진에어",
-          "popularityScore": 129,
+          "popularityScore": 146,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -552,7 +552,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 326,
+          "readCount": 338,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -560,7 +560,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1111.4695,
+          "_internal_score": 1138.8647,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공운송"
@@ -571,8 +571,8 @@
           "_internal_featureSkillCode": "경량항공기,교관,인프라구축,교육지원",
           "_internal_featureCompanyCode": "토프모빌리티",
           "_internal_featureLocationCode": "화성시,만세구",
-          "_internal_featureTotalCode": "경량항공기,화성시,만세구,기관사,토프모빌리티,호텔,조종,항공,경량항공기조종사,항공정비사,여행,인프라구축,교관,교육지원",
-          "popularityScore": 327,
+          "_internal_featureTotalCode": "경량항공기,화성시,만세구,기관사,토프모빌리티,호텔,조종,항공,경량항공기조종사,항공정비사,인프라구축,여행,교관,교육지원",
+          "popularityScore": 329,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -609,114 +609,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "화성시,만세구 · 4"
-        }
-      }
-    },
-    {
-      "id": "263606",
-      "slug": "jin-air-a321320-경력직-운항승무원기장부기장-채용공고-263606",
-      "job_no": "263606",
-      "source_job_key": "263606",
-      "title": "A321/320 경력직 운항승무원(기장/부기장) 채용공고",
-      "company": "Jin Air",
-      "company_slug": "jin-air",
-      "location": "",
-      "employment_type": "경력",
-      "employment_type_code": "full_time",
-      "experience": "경력",
-      "experience_level": "experienced",
-      "deadline_text": "2026.08.27",
-      "deadline_date": "2026.08.27",
-      "period_text": "2026.08.19 ~ 2026.08.27",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원",
-        "조종사",
-        "부기장"
-      ],
-      "source": "Jin Air Careers",
-      "source_code": "jinair",
-      "source_label": "Jin Air Careers",
-      "url": "https://jinair.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263606",
-      "source_url": "https://jinair.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263606",
-      "role_family": "first_officer",
-      "license_tags": [],
-      "aircraft_category": "airliner",
-      "aircraft_types": [
-        "A321"
-      ],
-      "summary": "경력 · 경력",
-      "posted_at": "2026-08-19T00:00:00+09:00",
-      "deadline_at": "2026-08-27T23:59:59+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "A321/320 경력직 운항승무원(기장/부기장) 채용공고 Jin Air 경력 GENERAL MRS2 A321/320 경력직 운항승무원(기장/부기장) 채용공고 운항승무원 조종사 부기장 A321 부기장",
-      "raw_payload": {
-        "source_record": {
-          "applyEndDate": {
-            "date": 27,
-            "day": 4,
-            "hours": 23,
-            "minutes": 59,
-            "month": 7,
-            "seconds": 59,
-            "time": 1787842799000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "applyPermitCount": 1,
-          "applyStartDate": {
-            "date": 19,
-            "day": 3,
-            "hours": 0,
-            "minutes": 0,
-            "month": 7,
-            "seconds": 0,
-            "time": 1787065200000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "companySn": 361194,
-          "deadlineCount": 0,
-          "defaultImageUseYn": false,
-          "imageFilePath": "",
-          "jobnoticeName": "A321/320 경력직 운항승무원(기장/부기장) 채용공고",
-          "jobnoticeSn": 263606,
-          "receiptState": "접수중",
-          "recruitClassName": "경력",
-          "recruitKindCode": "BASIC",
-          "recruitTypeCode": "GENERAL",
-          "recruitTypeName": "일반채용",
-          "systemKindCode": "MRS2"
-        },
-        "normalized": {
-          "id": "263606",
-          "job_no": "263606",
-          "title": "A321/320 경력직 운항승무원(기장/부기장) 채용공고",
-          "company": "Jin Air",
-          "location": "",
-          "employment_type": "경력",
-          "experience": "경력",
-          "deadline_text": "2026.08.27",
-          "deadline_date": "2026.08.27",
-          "period_text": "2026.08.19 ~ 2026.08.27",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원",
-            "조종사",
-            "부기장"
-          ],
-          "source": "Jin Air Careers",
-          "url": "https://jinair.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=263606",
-          "role_family": "first_officer",
-          "license_tags": [],
-          "aircraft_category": "airliner",
-          "aircraft_types": [
-            "A321"
-          ],
-          "summary": "경력 · 경력"
         }
       }
     },
@@ -808,7 +700,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1233,
+          "readCount": 1283,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -816,7 +708,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1171.3156,
+          "_internal_score": 1160.1643,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -829,7 +721,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 359,
+          "popularityScore": 343,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -955,11 +847,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608270053",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608270355",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 350,
+          "readCount": 359,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -967,7 +859,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2139.9321,
+          "_internal_score": 2163.7632,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -980,8 +872,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "기관사,회전익조종사,단양군,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 67,
+          "_internal_featureTotalCode": "기관사,단양군,회전익조종사,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
+          "popularityScore": 69,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -1025,106 +917,6 @@
       }
     },
     {
-      "id": "239859",
-      "slug": "air-busan-26년-경력-운항승무원-상시채용-239859",
-      "job_no": "239859",
-      "source_job_key": "239859",
-      "title": "'26년 경력 운항승무원 상시채용",
-      "company": "Air Busan",
-      "company_slug": "air-busan",
-      "location": "",
-      "employment_type": "경력",
-      "employment_type_code": "full_time",
-      "experience": "경력",
-      "experience_level": "experienced",
-      "deadline_text": "2026.12.31",
-      "deadline_date": "2026.12.31",
-      "period_text": "2026.01.19 ~ 2026.12.31",
-      "d_day": "",
-      "matched_keywords": [
-        "운항승무원"
-      ],
-      "source": "Air Busan Careers",
-      "source_code": "airbusan",
-      "source_label": "Air Busan Careers",
-      "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-      "source_url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-      "role_family": "other_flight_crew",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "경력 · 경력",
-      "posted_at": "2026-01-19T17:00:00+09:00",
-      "deadline_at": "2026-12-31T23:59:59+09:00",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "'26년 경력 운항승무원 상시채용 Air Busan 경력 GENERAL MRS2 '26년 경력 운항승무원 상시채용 운항승무원",
-      "raw_payload": {
-        "source_record": {
-          "applyEndDate": {
-            "date": 31,
-            "day": 4,
-            "hours": 23,
-            "minutes": 59,
-            "month": 11,
-            "seconds": 59,
-            "time": 1798729199000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "applyPermitCount": 1,
-          "applyStartDate": {
-            "date": 19,
-            "day": 1,
-            "hours": 17,
-            "minutes": 0,
-            "month": 0,
-            "seconds": 0,
-            "time": 1768809600000,
-            "timezoneOffset": -540,
-            "year": 126
-          },
-          "companySn": 349371,
-          "deadlineCount": 126,
-          "defaultImageUseYn": false,
-          "imageFilePath": "",
-          "jobnoticeName": "'26년 경력 운항승무원 상시채용",
-          "jobnoticeSn": 239859,
-          "receiptState": "접수중",
-          "recruitClassName": "경력",
-          "recruitKindCode": "BASIC",
-          "recruitTypeCode": "GENERAL",
-          "recruitTypeName": "일반채용",
-          "systemKindCode": "MRS2"
-        },
-        "normalized": {
-          "id": "239859",
-          "job_no": "239859",
-          "title": "'26년 경력 운항승무원 상시채용",
-          "company": "Air Busan",
-          "location": "",
-          "employment_type": "경력",
-          "experience": "경력",
-          "deadline_text": "2026.12.31",
-          "deadline_date": "2026.12.31",
-          "period_text": "2026.01.19 ~ 2026.12.31",
-          "d_day": "",
-          "matched_keywords": [
-            "운항승무원"
-          ],
-          "source": "Air Busan Careers",
-          "url": "https://airbusan.recruiter.co.kr/app/jobnotice/view?systemKindCode=MRS2&jobnoticeSn=239859",
-          "role_family": "other_flight_crew",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": "경력 · 경력"
-        }
-      }
-    },
-    {
       "id": "54457835",
       "slug": "주이엔비에어-회전익-조종사-채용-54457835",
       "job_no": "54457835",
@@ -1147,8 +939,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -1186,7 +978,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -1220,8 +1012,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -1257,7 +1049,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=0710cdb6-02f1-4d69-911a-f11fa3cbdb36",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=27e3a89e-53dd-46ca-8523-be684f575f78",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
