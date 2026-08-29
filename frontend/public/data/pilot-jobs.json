@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-29T15:19:28.785506+00:00",
-  "last_successful_at": "2026-08-29T15:19:28.785506+00:00",
-  "last_attempted_at": "2026-08-29T15:19:28.785506+00:00",
+  "updated_at": "2026-08-29T18:24:44.779763+00:00",
+  "last_successful_at": "2026-08-29T18:24:44.779763+00:00",
+  "last_attempted_at": "2026-08-29T18:24:44.779763+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -92,7 +92,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 362,
+          "readCount": 366,
           "badges": [
             {
               "code": "DEADLINE_TODAY",
@@ -105,7 +105,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1129.6938,
+          "_internal_score": 1125.8221,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공운송"
@@ -116,8 +116,8 @@
           "_internal_featureSkillCode": "경량항공기,교관,인프라구축,교육지원",
           "_internal_featureCompanyCode": "토프모빌리티",
           "_internal_featureLocationCode": "화성시,만세구",
-          "_internal_featureTotalCode": "화성시,경량항공기,만세구,기관사,토프모빌리티,호텔,조종,항공,경량항공기조종사,항공정비사,여행,인프라구축,교관,교육지원",
-          "popularityScore": 288,
+          "_internal_featureTotalCode": "경량항공기,화성시,만세구,기관사,토프모빌리티,호텔,조종,항공,경량항공기조종사,항공정비사,여행,인프라구축,교관,교육지원",
+          "popularityScore": 280,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -245,7 +245,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1382,
+          "readCount": 1414,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -253,7 +253,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1172.352,
+          "_internal_score": 1194.3082,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -266,7 +266,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 349,
+          "popularityScore": 348,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -392,11 +392,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608300021",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608300326",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 364,
+          "readCount": 367,
           "badges": [
             {
               "code": "RECOMMENDED_JOB_CHANGE",
@@ -404,7 +404,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2138.7517,
+          "_internal_score": 2157.7507,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -417,8 +417,8 @@
           "_internal_featureSkillCode": "회전익조종사,모집공고",
           "_internal_featureCompanyCode": "이엔비에어",
           "_internal_featureLocationCode": "단양군",
-          "_internal_featureTotalCode": "기관사,회전익조종사,단양군,사업용조종사,이엔비에어,여행,호텔,조종,항공무선통신사,항공,모집공고",
-          "popularityScore": 57,
+          "_internal_featureTotalCode": "회전익조종사,기관사,단양군,사업용조종사,이엔비에어,여행,호텔,항공무선통신사,조종,항공,모집공고",
+          "popularityScore": 49,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -584,8 +584,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -623,7 +623,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -657,8 +657,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -694,7 +694,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
