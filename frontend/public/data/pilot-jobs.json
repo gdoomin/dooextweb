@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-29T12:29:18.703513+00:00",
-  "last_successful_at": "2026-08-29T12:29:18.703513+00:00",
-  "last_attempted_at": "2026-08-29T12:29:18.703513+00:00",
+  "updated_at": "2026-08-29T15:19:28.785506+00:00",
+  "last_successful_at": "2026-08-29T15:19:28.785506+00:00",
+  "last_attempted_at": "2026-08-29T15:19:28.785506+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -95,12 +95,17 @@
           "readCount": 362,
           "badges": [
             {
-              "code": "RECOMMENDED_JOB_CHANGE",
+              "code": "DEADLINE_TODAY",
               "attributes": {}
             }
           ],
-          "badgesV2": [],
-          "_internal_score": 1129.4976,
+          "badgesV2": [
+            {
+              "code": "DEADLINE_TODAY",
+              "attributes": {}
+            }
+          ],
+          "_internal_score": 1129.6938,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공운송"
@@ -248,7 +253,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1173.8472,
+          "_internal_score": 1172.352,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -387,19 +392,19 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608292131",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608300021",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
           "readCount": 364,
           "badges": [
             {
-              "code": "LUCKY_JOB_OPPORTUNITY",
+              "code": "RECOMMENDED_JOB_CHANGE",
               "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2116.5232,
+          "_internal_score": 2138.7517,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -519,7 +524,7 @@
             "year": 126
           },
           "companySn": 349371,
-          "deadlineCount": 124,
+          "deadlineCount": 123,
           "defaultImageUseYn": false,
           "imageFilePath": "",
           "jobnoticeName": "'26년 경력 운항승무원 상시채용",
@@ -579,8 +584,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -618,7 +623,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -652,8 +657,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -689,7 +694,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=fa0245f8-e042-407a-b1ac-4ceb70164400",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8dc3971f-4fd3-4bf4-974e-7dac2efc4c88",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
