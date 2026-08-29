@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-08-29T18:24:44.779763+00:00",
-  "last_successful_at": "2026-08-29T18:24:44.779763+00:00",
-  "last_attempted_at": "2026-08-29T18:24:44.779763+00:00",
+  "updated_at": "2026-08-29T21:19:39.436068+00:00",
+  "last_successful_at": "2026-08-29T21:19:39.436068+00:00",
+  "last_attempted_at": "2026-08-29T21:19:39.436068+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -105,7 +105,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1125.8221,
+          "_internal_score": 1121.9524,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공운송"
@@ -253,7 +253,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1194.3082,
+          "_internal_score": 1157.4292,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -392,7 +392,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608300326",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2022/1/06/JK_CO_XEtqk3B22010611112741.png?v=202608300620",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -404,7 +404,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 2157.7507,
+          "_internal_score": 2132.1362,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -584,8 +584,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
       "role_family": "helicopter_pilot",
       "license_tags": [],
       "aircraft_category": "rotary_wing",
@@ -623,7 +623,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54457835&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
           "role_family": "helicopter_pilot",
           "license_tags": [],
           "aircraft_category": "rotary_wing",
@@ -657,8 +657,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -694,7 +694,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=7dd50648-08a3-483d-82c6-8e1eecfa3e88",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=76dfdf2e-facf-4656-9b9b-50da57d22a30",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
