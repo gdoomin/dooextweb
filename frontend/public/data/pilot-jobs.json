@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-02T18:29:51.789083+00:00",
-  "last_successful_at": "2026-09-02T18:29:51.789083+00:00",
-  "last_attempted_at": "2026-09-02T18:29:51.789083+00:00",
+  "updated_at": "2026-09-02T21:21:04.839659+00:00",
+  "last_successful_at": "2026-09-02T21:21:04.839659+00:00",
+  "last_attempted_at": "2026-09-02T21:21:04.839659+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -102,7 +102,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1166.7653,
+          "_internal_score": 1168.5421,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -278,8 +278,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f60c3016-4078-4170-9da2-853e1bff5152",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f60c3016-4078-4170-9da2-853e1bff5152",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c9841819-cdb3-4359-bb3d-a4c64d6582ea",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c9841819-cdb3-4359-bb3d-a4c64d6582ea",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -315,7 +315,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f60c3016-4078-4170-9da2-853e1bff5152",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c9841819-cdb3-4359-bb3d-a4c64d6582ea",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
