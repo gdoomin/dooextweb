@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-05T00:55:30.451061+00:00",
-  "last_successful_at": "2026-09-05T00:55:30.451061+00:00",
-  "last_attempted_at": "2026-09-05T00:55:30.451061+00:00",
+  "updated_at": "2026-09-05T03:26:20.758420+00:00",
+  "last_successful_at": "2026-09-05T03:26:20.758420+00:00",
+  "last_attempted_at": "2026-09-05T03:26:20.758420+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -100,7 +100,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 467.6789,
+          "_internal_score": 465.65472,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -248,7 +248,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1169.5468,
+          "_internal_score": 1165.153,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
