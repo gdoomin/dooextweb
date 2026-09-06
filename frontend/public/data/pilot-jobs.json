@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-06T15:20:19.435021+00:00",
-  "last_successful_at": "2026-09-06T15:20:19.435021+00:00",
-  "last_attempted_at": "2026-09-06T15:20:19.435021+00:00",
+  "updated_at": "2026-09-06T18:24:27.526152+00:00",
+  "last_successful_at": "2026-09-06T18:24:27.526152+00:00",
+  "last_attempted_at": "2026-09-06T18:24:27.526152+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -92,15 +92,23 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 154,
+          "readCount": 221,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
               "attributes": {}
+            },
+            {
+              "code": "A1788719160450",
+              "attributes": {}
+            },
+            {
+              "code": "B1788719160450",
+              "attributes": {}
             }
           ],
           "badgesV2": [],
-          "_internal_score": 468.8463,
+          "_internal_score": 459.18454,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -112,8 +120,8 @@
           "_internal_featureSkillCode": "지원업무,출입국,외항사,승무원,운전,문서작업,시스템입력",
           "_internal_featureCompanyCode": "에어맨",
           "_internal_featureLocationCode": "인천국제공항,영종구",
-          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,영어,외항사,여행에이전트,인천국제공항,영종구,여행,여행사,에어맨",
-          "popularityScore": 164,
+          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외항사,여행에이전트,영어,인천국제공항,영종구,여행,여행사,에어맨",
+          "popularityScore": 235,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -240,7 +248,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1682,
+          "readCount": 1713,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -248,7 +256,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1171.4104,
+          "_internal_score": 1152.4137,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -261,7 +269,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 268,
+          "popularityScore": 267,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -424,8 +432,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=65dd8385-ad8c-4187-99aa-35de8d1637f5",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=65dd8385-ad8c-4187-99aa-35de8d1637f5",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c14e4afa-b8e7-4c10-ba4c-b35350521f6c",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c14e4afa-b8e7-4c10-ba4c-b35350521f6c",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -461,7 +469,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=65dd8385-ad8c-4187-99aa-35de8d1637f5",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=c14e4afa-b8e7-4c10-ba4c-b35350521f6c",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
