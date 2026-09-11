@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-11T15:24:07.510901+00:00",
-  "last_successful_at": "2026-09-11T15:24:07.510901+00:00",
-  "last_attempted_at": "2026-09-11T15:24:07.510901+00:00",
+  "updated_at": "2026-09-11T18:27:59.057036+00:00",
+  "last_successful_at": "2026-09-11T18:27:59.057036+00:00",
+  "last_attempted_at": "2026-09-11T18:27:59.057036+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -103,75 +103,6 @@
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
           "summary": "경력 · 경력"
-        }
-      }
-    },
-    {
-      "id": "54659785",
-      "slug": "무인항공기-제작-조종사-모집-54659785",
-      "job_no": "54659785",
-      "source_job_key": "54659785",
-      "title": "무인항공기 (제작 / 조종사) 모집",
-      "company": "",
-      "company_slug": "saramin-company",
-      "location": "",
-      "employment_type": "",
-      "employment_type_code": "open_recruiting",
-      "experience": "",
-      "experience_level": "open",
-      "deadline_text": "",
-      "deadline_date": "",
-      "period_text": "",
-      "d_day": "",
-      "matched_keywords": [
-        "조종사"
-      ],
-      "source": "Saramin Search",
-      "source_code": "saramin",
-      "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a05c16e2-0056-4bdb-bb94-cebaf3c9cb30",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a05c16e2-0056-4bdb-bb94-cebaf3c9cb30",
-      "role_family": "pilot",
-      "license_tags": [],
-      "aircraft_category": "fixed_wing",
-      "aircraft_types": [],
-      "summary": "",
-      "posted_at": "",
-      "deadline_at": "",
-      "is_always_open": false,
-      "location_country": "",
-      "location_region": "",
-      "location_city": "",
-      "search_document": "무인항공기 (제작 / 조종사) 모집 조종사",
-      "raw_payload": {
-        "source_record": {
-          "search_term": "조종사",
-          "deadline_text": "",
-          "posted_text": "",
-          "sector_text": ""
-        },
-        "normalized": {
-          "id": "54659785",
-          "job_no": "54659785",
-          "title": "무인항공기 (제작 / 조종사) 모집",
-          "company": "",
-          "location": "",
-          "employment_type": "",
-          "experience": "",
-          "deadline_text": "",
-          "deadline_date": "",
-          "period_text": "",
-          "d_day": "",
-          "matched_keywords": [
-            "조종사"
-          ],
-          "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=a05c16e2-0056-4bdb-bb94-cebaf3c9cb30",
-          "role_family": "pilot",
-          "license_tags": [],
-          "aircraft_category": "fixed_wing",
-          "aircraft_types": [],
-          "summary": ""
         }
       }
     }
