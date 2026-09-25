@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-25T15:25:40.919608+00:00",
-  "last_successful_at": "2026-09-25T15:25:40.919608+00:00",
-  "last_attempted_at": "2026-09-25T15:25:40.919608+00:00",
+  "updated_at": "2026-09-25T18:28:17.759372+00:00",
+  "last_successful_at": "2026-09-25T18:28:17.759372+00:00",
+  "last_attempted_at": "2026-09-25T18:28:17.759372+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -108,11 +108,11 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/6/12/JK_CO_TgzwTnr25061209223179.gif?v=202609260027",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/6/12/JK_CO_TgzwTnr25061209223179.gif?v=202609260329",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 122,
+          "readCount": 136,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -125,7 +125,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1098.4297,
+          "_internal_score": 1100.0104,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -137,8 +137,8 @@
           "_internal_featureSkillCode": "헬기,조정사",
           "_internal_featureCompanyCode": "더스카이",
           "_internal_featureLocationCode": "포항시,영천시,청송군,경산시,영덕군,영주시,청도군,안동시,영양군,성주군,남구,예천군,경북전지역,북구,의성군,김천시",
-          "_internal_featureTotalCode": "공정엔지니어,포항시,청송군,경산시,영주시,조종,항공,영양군,남구,예천군,여행,유연근무,의성군,김천시,헬기,기관사,품질관리자,사업용조종사,영천시,헬기 조종사,영덕군,호텔,항공무선통신사,청도군,자율복장,안동시,조정사,성주군,4대보험,더스카이,점심 식사 지원,경북전지역,북구,기계엔지니어",
-          "popularityScore": 123,
+          "_internal_featureTotalCode": "공정엔지니어,포항시,청송군,경산시,조종,영주시,항공,영양군,남구,예천군,여행,유연근무,의성군,김천시,헬기,기관사,품질관리자,사업용조종사,영천시,헬기 조종사,영덕군,호텔,청도군,안동시,자율복장,항공무선통신사,조정사,성주군,4대보험,더스카이,점심 식사 지원,경북전지역,북구,기계엔지니어",
+          "popularityScore": 137,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -265,7 +265,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 1961,
+          "readCount": 2061,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -273,7 +273,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 462.27994,
+          "_internal_score": 461.88556,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -285,8 +285,8 @@
           "_internal_featureSkillCode": "지원업무,출입국,외항사,승무원,운전,문서작업,시스템입력",
           "_internal_featureCompanyCode": "에어맨",
           "_internal_featureLocationCode": "인천국제공항,영종구",
-          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외항사,영어,여행에이전트,인천국제공항,영종구,여행,여행사,에어맨",
-          "popularityScore": 608,
+          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외항사,여행에이전트,영어,인천국제공항,영종구,여행,여행사,에어맨",
+          "popularityScore": 622,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -413,7 +413,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2282,
+          "readCount": 2332,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -421,7 +421,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1158.2771,
+          "_internal_score": 1157.5751,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -434,7 +434,7 @@
           "_internal_featureCompanyCode": "에어부산",
           "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
           "_internal_featureTotalCode": "항공신체검사,기관사,부기장,제주시,영종구,강서구,여행,조종사,호텔,조종,제물포구,항공,에어부산",
-          "popularityScore": 184,
+          "popularityScore": 207,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -597,8 +597,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=303146b3-c8f4-4f4f-ba82-d45082516b26",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=303146b3-c8f4-4f4f-ba82-d45082516b26",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f31ef8fe-1a5f-4a57-b375-e6bc5b1a05af",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f31ef8fe-1a5f-4a57-b375-e6bc5b1a05af",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -634,7 +634,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=303146b3-c8f4-4f4f-ba82-d45082516b26",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=f31ef8fe-1a5f-4a57-b375-e6bc5b1a05af",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
