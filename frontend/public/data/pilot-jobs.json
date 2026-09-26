@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-26T09:24:06.033065+00:00",
-  "last_successful_at": "2026-09-26T09:24:06.033065+00:00",
-  "last_attempted_at": "2026-09-26T09:24:06.033065+00:00",
+  "updated_at": "2026-09-26T12:31:33.154332+00:00",
+  "last_successful_at": "2026-09-26T12:31:33.154332+00:00",
+  "last_attempted_at": "2026-09-26T12:31:33.154332+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -108,7 +108,7 @@
           "awardInfo": "0",
           "goodWorkCompanyCodeList": null,
           "productStatus": 0,
-          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/6/12/JK_CO_TgzwTnr25061209223179.gif?v=202609261825",
+          "companyLogoPath": "//img1/_whitebg/200X80/Co_Logo/Logo/2025/6/12/JK_CO_TgzwTnr25061209223179.gif?v=202609262133",
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
@@ -125,7 +125,7 @@
               "attributes": {}
             }
           ],
-          "_internal_score": 1104.3994,
+          "_internal_score": 1094.3497,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "항공사",
@@ -273,7 +273,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 462.05875,
+          "_internal_score": 460.972,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -421,7 +421,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1158.845,
+          "_internal_score": 1155.8267,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
@@ -597,8 +597,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6b627e74-364b-4fe7-b283-d5ceb586021a",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6b627e74-364b-4fe7-b283-d5ceb586021a",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4c8ce74d-2911-45c9-940e-56c2e01fcd1f",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4c8ce74d-2911-45c9-940e-56c2e01fcd1f",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -634,7 +634,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=6b627e74-364b-4fe7-b283-d5ceb586021a",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=4c8ce74d-2911-45c9-940e-56c2e01fcd1f",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
