@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-09-29T15:27:17.262912+00:00",
-  "last_successful_at": "2026-09-29T15:27:17.262912+00:00",
-  "last_attempted_at": "2026-09-29T15:27:17.262912+00:00",
+  "updated_at": "2026-09-29T18:32:09.361246+00:00",
+  "last_successful_at": "2026-09-29T18:32:09.361246+00:00",
+  "last_attempted_at": "2026-09-29T18:32:09.361246+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -14,7 +14,7 @@
       "title": "'26년 경력 운항승무원 상시채용",
       "company": "에어부산(주)",
       "company_slug": "에어부산주",
-      "location": "",
+      "location": "제주시,영종구,강서구,제물포구",
       "employment_type": "",
       "employment_type_code": "open_recruiting",
       "experience": "2",
@@ -24,25 +24,27 @@
       "period_text": "",
       "d_day": "",
       "matched_keywords": [
-        "운항승무원"
+        "운항승무원",
+        "조종사",
+        "부기장"
       ],
       "source": "JobKorea Search",
       "source_code": "jobkorea",
       "source_label": "JobKorea Search",
       "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/50072677",
       "source_url": "https://www.jobkorea.co.kr/Recruit/GI_Read/50072677",
-      "role_family": "other_flight_crew",
+      "role_family": "first_officer",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
       "aircraft_types": [],
-      "summary": "2",
+      "summary": "제주시,영종구,강서구,제물포구 · 2",
       "posted_at": "2026-09-29T15:09:55.33+09:00",
       "deadline_at": "2070-01-01T00:00:00+09:00",
       "is_always_open": true,
-      "location_country": "",
-      "location_region": "",
+      "location_country": "KR",
+      "location_region": "제주시,영종구,강서구,제물포구",
       "location_city": "",
-      "search_document": "'26년 경력 운항승무원 상시채용 에어부산(주) 2 ,호텔·여행·항공,조종·기관사, 운항승무원",
+      "search_document": "'26년 경력 운항승무원 상시채용 에어부산(주) 제주시,영종구,강서구,제물포구 2 ,호텔·여행·항공,조종·기관사, 부기장 제주시,영종구,강서구,제물포구 운항승무원 조종사 부기장 부기장",
       "raw_payload": {
         "source_record": {
           "id": "50072677",
@@ -67,7 +69,7 @@
           "careerType": "2",
           "careerRange": 100,
           "educationCode": "255",
-          "benefitNameList": null,
+          "benefitNameList": [],
           "companyName": "에어부산(주)",
           "companyType": "0",
           "isExposeWorkCompany": false,
@@ -92,7 +94,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 0,
+          "readCount": 68,
           "badges": [
             {
               "code": "LUCKY_JOB_OPPORTUNITY",
@@ -100,20 +102,20 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1146.3312,
+          "_internal_score": 1144.9518,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
             "항공운송"
           ],
-          "_internal_featureWorkCode": null,
-          "_internal_featureIndustryCode": null,
-          "_internal_featureToolCode": null,
-          "_internal_featureSkillCode": null,
-          "_internal_featureCompanyCode": null,
-          "_internal_featureLocationCode": null,
-          "_internal_featureTotalCode": null,
-          "popularityScore": 0,
+          "_internal_featureWorkCode": "기관사,조종",
+          "_internal_featureIndustryCode": "여행,호텔,항공",
+          "_internal_featureToolCode": "",
+          "_internal_featureSkillCode": "부기장",
+          "_internal_featureCompanyCode": "에어부산",
+          "_internal_featureLocationCode": "제주시,영종구,강서구,제물포구",
+          "_internal_featureTotalCode": "기관사,부기장,제주시,영종구,강서구,여행,호텔,조종,제물포구,항공,에어부산",
+          "popularityScore": 68,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -131,7 +133,7 @@
           "job_no": "50072677",
           "title": "'26년 경력 운항승무원 상시채용",
           "company": "에어부산(주)",
-          "location": "",
+          "location": "제주시,영종구,강서구,제물포구",
           "employment_type": "",
           "experience": "2",
           "deadline_text": "2070.01.01",
@@ -139,15 +141,17 @@
           "period_text": "",
           "d_day": "",
           "matched_keywords": [
-            "운항승무원"
+            "운항승무원",
+            "조종사",
+            "부기장"
           ],
           "source": "JobKorea Search",
           "url": "https://www.jobkorea.co.kr/Recruit/GI_Read/50072677",
-          "role_family": "other_flight_crew",
+          "role_family": "first_officer",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
           "aircraft_types": [],
-          "summary": "2"
+          "summary": "제주시,영종구,강서구,제물포구 · 2"
         }
       }
     },
@@ -237,7 +241,7 @@
           "textLogoPath": null,
           "oemNo": "1",
           "rewardAmount": 0,
-          "readCount": 2317,
+          "readCount": 2453,
           "badges": [
             {
               "code": "VIEWS_OVER_1000",
@@ -245,7 +249,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 456.2762,
+          "_internal_score": 455.75455,
           "_internal_weightValue": 10,
           "_internal_keywordList": [
             "출입국 지원업무",
@@ -257,8 +261,8 @@
           "_internal_featureSkillCode": "지원업무,출입국,외항사,승무원,운전,문서작업,시스템입력",
           "_internal_featureCompanyCode": "에어맨",
           "_internal_featureLocationCode": "인천국제공항,영종구",
-          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,영어,여행에이전트,외항사,인천국제공항,영종구,여행,여행사,에어맨",
-          "popularityScore": 627,
+          "_internal_featureTotalCode": "문서작업,출입국,승무원,호텔,항공,호텔종사자,지원업무,운전,항공사,시스템입력,외항사,여행에이전트,영어,인천국제공항,영종구,여행,여행사,에어맨",
+          "popularityScore": 648,
           "payRange": {
             "start": "0",
             "end": "0"
@@ -420,8 +424,8 @@
       "source": "Saramin Search",
       "source_code": "saramin",
       "source_label": "Saramin Search",
-      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=685f65b4-a688-4d25-8b17-26877742757e",
-      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=685f65b4-a688-4d25-8b17-26877742757e",
+      "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8cfef0d2-a35a-4c77-bbb8-7d3ee254bc3e",
+      "source_url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8cfef0d2-a35a-4c77-bbb8-7d3ee254bc3e",
       "role_family": "pilot",
       "license_tags": [],
       "aircraft_category": "fixed_wing",
@@ -457,7 +461,7 @@
             "조종사"
           ],
           "source": "Saramin Search",
-          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=685f65b4-a688-4d25-8b17-26877742757e",
+          "url": "https://www.saramin.co.kr/zf_user/jobs/relay/view?view_type=search&rec_idx=54659785&location=ts&searchword=%EC%A1%B0%EC%A2%85%EC%82%AC&searchType=search&paid_fl=n&search_uuid=8cfef0d2-a35a-4c77-bbb8-7d3ee254bc3e",
           "role_family": "pilot",
           "license_tags": [],
           "aircraft_category": "fixed_wing",
