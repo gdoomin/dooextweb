@@ -1,7 +1,7 @@
 {
-  "updated_at": "2026-10-04T21:32:33.999814+00:00",
-  "last_successful_at": "2026-10-04T21:32:33.999814+00:00",
-  "last_attempted_at": "2026-10-04T21:32:33.999814+00:00",
+  "updated_at": "2026-10-05T01:07:47.700988+00:00",
+  "last_successful_at": "2026-10-05T01:07:47.700988+00:00",
+  "last_attempted_at": "2026-10-05T01:07:47.700988+00:00",
   "source_label": "Integrated pilot jobs",
   "cache_status": "fresh",
   "cache_warning": "",
@@ -102,7 +102,7 @@
             }
           ],
           "badgesV2": [],
-          "_internal_score": 1141.8695,
+          "_internal_score": 1147.1024,
           "_internal_weightValue": 40,
           "_internal_keywordList": [
             "부기장",
