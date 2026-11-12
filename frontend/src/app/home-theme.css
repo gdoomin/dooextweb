@@ -1,0 +1,173 @@
+/* Home workspace presentation only; keep layout and application states intact. */
+.doo-home-theme {
+  --home-border: rgba(97, 164, 233, 0.24);
+  --home-muted: #a4bad4;
+  color: #e7effb;
+  background: #071120;
+  font-family: "NanumSquareRound", "Malgun Gothic", "Segoe UI", sans-serif;
+}
+
+.doo-home-theme .doo-main {
+  background:
+    linear-gradient(143deg, transparent 30%, rgba(32, 130, 238, 0.08) 42%, transparent 43%),
+    radial-gradient(ellipse at 90% 0%, #112c51 0%, transparent 48%), #081321;
+}
+
+.doo-home-theme .doo-sidebar {
+  background: linear-gradient(155deg, #101f38, #081322 60%, #0c1b31);
+  border-right-color: rgba(91, 158, 255, 0.36);
+  box-shadow: 5px 0 24px #0966c812;
+}
+
+.doo-home-theme .doo-title-block h1 { color: #93cfff; letter-spacing: -0.6px; }
+.doo-home-theme .doo-title-block p,
+.doo-home-theme .doo-panel-subtitle,
+.doo-home-theme .doo-history-empty,
+.doo-home-theme .doo-note-label { color: var(--home-muted); }
+
+.doo-home-theme .doo-top-panel { background: transparent; }
+.doo-home-theme .doo-top-label { color: #75c1ff; font-size: 15px; }
+
+.doo-home-theme .doo-sidebar-card,
+.doo-home-theme .doo-sidebar-note,
+.doo-home-theme .doo-history-card,
+.doo-home-theme .doo-result-column,
+.doo-home-theme .doo-history-panel,
+.doo-home-theme .doo-rail-card,
+.doo-home-theme .doo-bottom-bar,
+.doo-home-theme .doo-bottom-ad-wrap {
+  background: linear-gradient(145deg, #112438, #0c192d 85%);
+  border: 1px solid var(--home-border);
+  border-radius: 18px;
+  box-shadow: inset 0 1px 0 #ffffff05, 0 8px 24px #00000020;
+}
+
+.doo-home-theme .doo-sidebar-card { padding: 9px; }
+.doo-home-theme .doo-sidebar-image-wrap {
+  border-color: rgba(100, 177, 255, 0.45);
+  box-shadow: 0 0 16px #218bff20;
+}
+.doo-home-theme .doo-ad-rail { background: #091526; border-left-color: var(--home-border); }
+.doo-home-theme .doo-ad-rail-inner { background: transparent; border-color: transparent; padding: 0; }
+.doo-home-theme .doo-rail-card { border-color: rgba(62, 150, 239, 0.32); }
+.doo-home-theme .doo-panel-head { border-bottom-color: #82baff16; }
+.doo-home-theme .doo-panel-title { color: #eef5ff; font-weight: 800; }
+.doo-home-theme .doo-text-panel,
+.doo-home-theme .doo-text-viewer { background: #070f1b; }
+.doo-home-theme .doo-text-viewer { color: #f4d766; text-shadow: none; }
+
+.doo-home-theme .doo-path-display,
+.doo-home-theme .doo-path-input {
+  background: linear-gradient(100deg, #07101d, #0c1b30);
+  border: 1px solid var(--home-border);
+  border-radius: 14px;
+  color: #f1f5fc;
+  box-shadow: inset 0 1px 3px #00000030;
+}
+.doo-home-theme .doo-stack-chip,
+.doo-home-theme .doo-stack-summary,
+.doo-home-theme .doo-stack-empty {
+  background: #101f34;
+  border-color: var(--home-border);
+  color: #b7cde7;
+  border-radius: 12px;
+}
+.doo-home-theme .doo-version-badge,
+.doo-home-theme .doo-mode-chip,
+.doo-home-theme .doo-panel-count { background: #142d4a; color: #a4d4ff; }
+.doo-home-theme .doo-mode-active,
+.doo-home-theme .doo-status-success { color: #41dba7; }
+.doo-home-theme .doo-auth-state {
+  background: #0d493e;
+  color: #95f4d7;
+  box-shadow: 0 0 12px #25d7a52a;
+}
+
+.doo-home-theme .doo-open-button,
+.doo-home-theme .doo-plan-guide-button {
+  --button-glow: #239aff50;
+  border: 1px solid #65b9ff;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #a1d9ff 0%, #4daaff 44%, #1680ee 100%);
+  color: #061d35;
+  text-shadow: none;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 #ffffff80, 0 0 16px var(--button-glow), 0 4px 12px #00000030;
+}
+.doo-home-theme .doo-open-button { font-size: clamp(10px, 1.3vw, 19px); }
+.doo-home-theme .doo-open-button-secondary,
+.doo-home-theme .doo-open-button-clear {
+  --button-glow: #238bff20;
+  background: linear-gradient(180deg, #183957, #10223a);
+  border-color: #3577aa;
+  color: #d9ecff;
+}
+.doo-home-theme .doo-open-button-clear { background: linear-gradient(180deg, #233149, #152238); border-color: #465d7e; }
+.doo-home-theme .doo-open-button:hover:not(:disabled),
+.doo-home-theme .doo-plan-guide-button:hover {
+  filter: brightness(1.08);
+  box-shadow: inset 0 1px 0 #ffffff80, 0 0 23px var(--button-glow), 0 5px 16px #00000030;
+}
+.doo-home-theme .doo-open-button:hover:not(:disabled)::after { opacity: 0.25; }
+
+.doo-home-theme .doo-action {
+  --button-glow: #2189ff40;
+  border: 1px solid #ffffff26;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 800;
+  text-shadow: none;
+  box-shadow: inset 0 1px 0 #ffffff26, 0 0 12px var(--button-glow);
+}
+.doo-home-theme .doo-action-copy { --button-glow: #bb55ed38; background: linear-gradient(#a54ed2, #7530a8); }
+.doo-home-theme .doo-action-xlsx { --button-glow: #ff922e38; background: linear-gradient(#df791c, #b64d08); }
+.doo-home-theme .doo-action-txt { --button-glow: #20d99b35; background: linear-gradient(#109a72, #08765d); }
+.doo-home-theme .doo-action-map { background: linear-gradient(#308ee9, #1554b6); }
+.doo-home-theme .doo-action:hover:enabled { filter: brightness(1.12); box-shadow: inset 0 1px 0 #ffffff40, 0 0 20px var(--button-glow); }
+.doo-home-theme .doo-action:disabled,
+.doo-home-theme .doo-open-button:disabled { box-shadow: none; filter: saturate(0.35); opacity: 0.5; }
+
+.doo-home-theme .doo-auth-button-settings,
+.doo-home-theme .doo-info-button,
+.doo-home-theme .doo-rail-refresh {
+  background: linear-gradient(#1c416b, #122b49);
+  color: #d3e7ff;
+  border: 1px solid #416e9f;
+  box-shadow: inset 0 1px 0 #ffffff18, 0 0 10px #268dff15;
+}
+.doo-home-theme .doo-billing-card {
+  background: linear-gradient(135deg, #493611, #29291f 50%, #14263b);
+  color: #f9e3a4;
+  border-color: #b994465c;
+  box-shadow: inset 0 1px 0 #fff0b52b, 0 0 15px #f6bb3420;
+}
+.doo-home-theme .doo-billing-status-button {
+  background: linear-gradient(#73571e, #493b1d);
+  border-color: #c9a45475;
+  color: #fff0c6;
+  box-shadow: inset 0 1px 0 #ffeaa32a;
+}
+.doo-home-theme .doo-billing-status-button::after { display: none; }
+.doo-home-theme .doo-billing-meta { color: #f4dfac; }
+.doo-home-theme .doo-notam-filter { background: #11223b; border-color: #537aa544; color: #bdd6f4; }
+.doo-home-theme .doo-notam-filter.is-active {
+  background: linear-gradient(#48baff, #1472cf);
+  border-color: #79cbff;
+  color: #fff;
+  box-shadow: 0 0 12px #299dff40;
+}
+.doo-home-theme .doo-notam-map-shell,
+.doo-home-theme .doo-rail-hima-canvas { border: 1px solid var(--home-border); border-radius: 14px; }
+.doo-home-theme .doo-bookmark-card { background: linear-gradient(145deg, #13273e, #0b1729); border-color: var(--home-border); border-radius: 16px; }
+.doo-home-theme .doo-bookmark-card:hover { border-color: #4e9ee7; box-shadow: 0 0 14px #2a8aff25; }
+.doo-home-theme .doo-bookmark-card-fallback { background: #19344c; border-color: #345c7b; }
+.doo-home-theme .doo-bookmark-card-host { color: #b4c8e3; }
+.doo-home-theme :is(button, a, input, textarea):focus-visible { outline: 2px solid #8dd5ff; outline-offset: 3px; }
+.doo-home-theme * { scrollbar-color: #375472 #0a1627; scrollbar-width: thin; }
+
+@media (prefers-reduced-motion: reduce) {
+  .doo-home-theme *, .doo-home-theme *::before, .doo-home-theme *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

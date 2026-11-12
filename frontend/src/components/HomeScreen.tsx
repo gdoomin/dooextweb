@@ -76,7 +76,7 @@ const DOOGPX_APPSTORE_URL =
 const BOTTOM_AD_SLOT = process.env.NEXT_PUBLIC_ADSENSE_BOTTOM_SLOT ?? "";
 const SHARED_FILE_EXTENSION = ".dooex";
 const DEFAULT_FILE_ACCEPT = `.kml,.kmz,.gpx,.geojson,.json,.csv,.txt,${SHARED_FILE_EXTENSION}`;
-const APP_VERSION = "4.3.7";
+const APP_VERSION = "4.3.8";
 const HISTORY_DATE_TIME_FORMATTER = new Intl.DateTimeFormat("ko-KR", {
   year: "numeric",
   month: "2-digit",
@@ -2515,7 +2515,7 @@ export function HomeScreen({
 
   return (
     <>
-      <main className="doo-shell">
+      <main className="doo-shell doo-home-theme">
         <div className="doo-layout">
           <aside className="doo-sidebar">
             <div className="doo-title-block">
