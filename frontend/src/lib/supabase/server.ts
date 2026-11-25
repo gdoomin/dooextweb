@@ -29,17 +29,16 @@ export async function createClient() {
   });
 }
 
-export async function getUser(): Promise<User | null> {
+export async function getUser(): Promise<Pick<User, "id" | "email"> | null> {
   const supabase = await createClient();
   if (!supabase) {
     return null;
   }
 
   try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
+    const { data, error } = await supabase.auth.getClaims();
+    if (error || !data?.claims?.sub) return null;
+    return { id: data.claims.sub, email: typeof data.claims.email === "string" ? data.claims.email : undefined };
   } catch {
     return null;
   }

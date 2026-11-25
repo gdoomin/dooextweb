@@ -25,6 +25,9 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, PlainTextResponse, Response, StreamingResponse
 from pydantic import BaseModel
+from .auth_identity_cache import VerifiedIdentityCache
+
+VERIFIED_IDENTITY_CACHE = VerifiedIdentityCache()
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -3272,6 +3275,8 @@ def _try_mark_legacy_from_admin_profile(record: dict[str, Any], user_id: str, us
             user_email=user_email,
         )
         created_at = str(profile.get("created_at") or "").strip()
+        if _parse_iso_datetime(created_at) is None:
+            return False, False
         if _is_legacy_member(created_at):
             _mark_legacy_full_access(record)
             return True, True
@@ -3299,6 +3304,10 @@ def _ensure_billing_record(user_id: str, user_email: str, created_at_hint: str =
             if _is_legacy_member(created_at_hint):
                 _mark_legacy_full_access(existing, "legacy_member_from_access_token")
                 changed = True
+            elif _parse_iso_datetime(created_at_hint) is not None:
+                if not bool(existing.get("legacy_checked")):
+                    existing["legacy_checked"] = True
+                    changed = True
             elif not bool(existing.get("legacy_checked")):
                 checked, upgraded = _try_mark_legacy_from_admin_profile(existing, normalized_user_id, user_email)
                 if checked or upgraded:
@@ -3310,6 +3319,8 @@ def _ensure_billing_record(user_id: str, user_email: str, created_at_hint: str =
     next_record = _default_billing_record(normalized_user_id, user_email)
     if _is_legacy_member(created_at_hint):
         _mark_legacy_full_access(next_record, "legacy_member_from_access_token")
+    elif _parse_iso_datetime(created_at_hint) is not None:
+        next_record["legacy_checked"] = True
     else:
         _try_mark_legacy_from_admin_profile(next_record, normalized_user_id, user_email)
     _refresh_record_promo_state(next_record)
@@ -3378,6 +3389,8 @@ def _billing_status_for_user(user_id: str, user_email: str, created_at_hint: str
         }
 
     record = _ensure_billing_record(normalized_user_id, normalized_email, created_at_hint=created_at_hint)
+    if not record.get("legacy_full_access") and not record.get("legacy_checked"):
+        raise HTTPException(status_code=503, detail="회원 등급을 확인 중입니다. 잠시 후 다시 시도해 주세요.")
     promo_snapshot = _promo_snapshot_from_record(record)
     history_grace_snapshot = _history_grace_snapshot_from_record(record)
     effective_plan = _effective_plan_code(record)
@@ -3999,32 +4012,33 @@ def _request_identity_with_created_at(
 ) -> tuple[str, str, str]:
     token = _extract_bearer_token(request)
     if token:
-        try:
+        def load_verified_profile():
             supabase_url, auth_key = _supabase_auth_config()
             supabase_request = UrlRequest(
                 url=f"{supabase_url}/auth/v1/user",
                 method="GET",
-                headers={
-                    "apikey": auth_key,
-                    "Authorization": f"Bearer {token}",
-                },
+                headers={"apikey": auth_key, "Authorization": f"Bearer {token}"},
             )
-            with urlopen(supabase_request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
-                raw = response.read()
-            payload = json.loads(raw.decode("utf-8")) if raw else {}
-            if isinstance(payload, dict):
-                user_id = _normalize_user_identity(str(payload.get("id") or ""))
-                user_email = _normalize_user_email(str(payload.get("email") or ""))
-                created_at = str(payload.get("created_at") or "").strip()
-                if user_id:
-                    _record_user_activity(request, user_id, user_email)
-                    return user_id, user_email, created_at
-        except HTTPException:
-            if required:
-                raise
-        except Exception:
-            if required:
-                raise HTTPException(status_code=401, detail="?筌뤾쑴理???ルㅎ荑???熬곣뫗???紐껊퉵?? ???곕뻣 ?β돦裕??筌뤿굝???낅슣?섋땻??")
+            try:
+                with urlopen(supabase_request, timeout=SUPABASE_HTTP_TIMEOUT_SECONDS) as response:
+                    payload = json.loads(response.read().decode("utf-8"))
+            except HTTPError as error:
+                code = 401 if error.code in {401, 403} else 503
+                raise HTTPException(status_code=code, detail="로그인 정보를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.") from error
+            except (URLError, TimeoutError, ValueError) as error:
+                raise HTTPException(status_code=503, detail="인증 서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.") from error
+            if not isinstance(payload, dict) or not payload.get("id"):
+                raise HTTPException(status_code=401, detail="로그인 정보를 확인할 수 없습니다.")
+            return (
+                _normalize_user_identity(str(payload["id"])),
+                _normalize_user_email(str(payload.get("email") or "")),
+                str(payload.get("created_at") or "").strip(),
+            )
+
+        # Mutations requiring a token always perform a fresh verification.
+        user_id, user_email, created_at = VERIFIED_IDENTITY_CACHE.get(token, load_verified_profile, fresh=require_token)
+        _record_user_activity(request, user_id, user_email)
+        return user_id, user_email, created_at
 
     if required and require_token:
         raise HTTPException(status_code=401, detail="?筌뤾쑴理???ルㅎ荑???熬곣뫗???紐껊퉵?? ???곕뻣 ?β돦裕??筌뤿굝???낅슣?섋땻??")
@@ -5115,9 +5129,8 @@ def get_default_viewer(request: Request):
     payload["frontend_base_url"] = _frontend_base_url()
     viewer_user_id = _normalize_user_identity(str(request.query_params.get("user_id") or ""))
     viewer_user_email = _normalize_user_email(str(request.query_params.get("user_email") or ""))
-    viewer_created_at = str(request.query_params.get("created_at") or "").strip()
     payload["viewer_billing"] = _viewer_billing_payload(
-        _billing_status_for_user(viewer_user_id, viewer_user_email, created_at_hint=viewer_created_at)
+        _billing_status_for_user(viewer_user_id, viewer_user_email)
     )
 
     preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}

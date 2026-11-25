@@ -689,7 +689,20 @@ export async function deleteAllHistoryItems(
   };
 }
 
-export async function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
+const billingStatusRequests = new Map<string, Promise<BillingStatusResponse>>();
+
+export function fetchBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
+  const key = JSON.stringify([userId, accessToken]);
+  const pending = billingStatusRequests.get(key);
+  if (pending) return pending;
+  const request = requestBillingStatus(userId, userEmail, accessToken).finally(() => {
+    if (billingStatusRequests.get(key) === request) billingStatusRequests.delete(key);
+  });
+  billingStatusRequests.set(key, request);
+  return request;
+}
+
+async function requestBillingStatus(userId: string, userEmail = "", accessToken = ""): Promise<BillingStatusResponse> {
   const response = await fetch(`${API_BASE_URL}/api/billing/status`, {
     headers: buildUserHeaders(userId, userEmail, accessToken),
     cache: "no-store",
