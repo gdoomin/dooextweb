@@ -4934,7 +4934,7 @@ def update_popup_notice(payload: PopupNoticeUpdatePayload):
 
     message = str(payload.message or "").strip()
     if len(message) > 500:
-        raise HTTPException(status_code=400, detail="??밸씜 ?얜㈇???500????꾨릭嚥???낆젾??雅뚯눘苑??")
+        raise HTTPException(status_code=400, detail="공지 메시지는 500자 이내로 입력해 주세요.")
 
     notice = _save_popup_notice(message, payload.enabled)
     return JSONResponse({"ok": True, "notice": notice})
@@ -5069,7 +5069,7 @@ def download_txt(job_id: str):
         raise HTTPException(status_code=402, detail="?袁⑹삺 ???삏?癒?퐣????용뮞????쇱뒲嚥≪뮆諭띄몴??????????곷뮸??덈뼄.")
     content = (job.get("text_output") or "").encode("utf-8-sig")
     filename = _download_filename(job, ".txt")
-    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    headers = {"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename, safe='')}"}
     return StreamingResponse(BytesIO(content), media_type="text/plain; charset=utf-8", headers=headers)
 
 
@@ -5100,38 +5100,12 @@ def download_xlsx(job_id: str):
         temp_path.unlink(missing_ok=True)
 
     filename = _download_filename(job, ".xlsx")
-    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    headers = {"Content-Disposition": f"attachment; filename*=UTF-8''{quote(filename, safe='')}"}
     return StreamingResponse(
         BytesIO(content),
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=headers,
     )
-
-
-@app.get("/api/viewer/{job_id}", response_class=HTMLResponse)
-def get_viewer(job_id: str, request: Request):
-    job = _load_job(job_id)
-    payload = dict(job["map_payload"])
-    payload["api_base_url"] = _external_base_url(request)
-    payload["frontend_base_url"] = _frontend_base_url()
-    payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
-    payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
-    payload["share_export"] = {
-        "job_id": str(job.get("job_id") or job_id),
-        "filename": str(job.get("filename") or ""),
-        "project_name": str(job.get("project_name") or payload.get("project_name") or ""),
-        "mode": str(job.get("mode") or payload.get("mode") or "linestring"),
-        "result_count": int(job.get("result_count") or 0),
-        "text_output": str(job.get("text_output") or ""),
-        "source_hash": _normalize_source_hash(str(job.get("source_hash") or "")),
-    }
-
-    preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
-    if preview_gate:
-        payload["preview_gate"] = True
-        payload["signup_url"] = request.query_params.get("signup_url") or f"{_allowed_origins()[0]}/login?next=/"
-
-    return HTMLResponse(_viewer_html(job_id, payload), headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/viewer/default", response_class=HTMLResponse)
@@ -5160,6 +5134,32 @@ def get_default_viewer(request: Request):
         ),
         headers=NO_STORE_HEADERS,
     )
+
+
+@app.get("/api/viewer/{job_id}", response_class=HTMLResponse)
+def get_viewer(job_id: str, request: Request):
+    job = _load_job(job_id)
+    payload = dict(job["map_payload"])
+    payload["api_base_url"] = _external_base_url(request)
+    payload["frontend_base_url"] = _frontend_base_url()
+    payload["viewer_state_key"] = _viewer_state_primary_storage_key(job)
+    payload["viewer_billing"] = _viewer_billing_payload(_job_owner_billing_status(job))
+    payload["share_export"] = {
+        "job_id": str(job.get("job_id") or job_id),
+        "filename": str(job.get("filename") or ""),
+        "project_name": str(job.get("project_name") or payload.get("project_name") or ""),
+        "mode": str(job.get("mode") or payload.get("mode") or "linestring"),
+        "result_count": int(job.get("result_count") or 0),
+        "text_output": str(job.get("text_output") or ""),
+        "source_hash": _normalize_source_hash(str(job.get("source_hash") or "")),
+    }
+
+    preview_gate = str(request.query_params.get("preview_gate", "")).lower() in {"1", "true", "yes", "on"}
+    if preview_gate:
+        payload["preview_gate"] = True
+        payload["signup_url"] = request.query_params.get("signup_url") or f"{_allowed_origins()[0]}/login?next=/"
+
+    return HTMLResponse(_viewer_html(job_id, payload), headers=NO_STORE_HEADERS)
 
 
 @app.get("/api/viewer-default/viewer-state")

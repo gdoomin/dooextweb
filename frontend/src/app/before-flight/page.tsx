@@ -127,9 +127,12 @@ export default function BeforeFlightPage() {
         const seen = new Set<string>();
         const airports: AirportOption[] = [];
 
-        layers.forEach((layer: any) => {
+        layers.forEach((layer: unknown) => {
+          if (!layer || typeof layer !== "object" || !("features" in layer)) return;
           const features = Array.isArray(layer?.features) ? layer.features : [];
-          features.forEach((feature: any) => {
+          features.forEach((value: unknown) => {
+            if (!value || typeof value !== "object") return;
+            const feature = value as Record<string, unknown>;
             const icao = String(feature?.icao || "").trim().toUpperCase();
             if (!icao || !icao.startsWith("RK")) {
               return;
