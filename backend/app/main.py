@@ -2106,10 +2106,9 @@ def _admin_popup_password() -> str:
 def _require_popup_admin_password(password: str) -> None:
     configured = _admin_popup_password()
     if not configured:
-        raise HTTPException(status_code=503, detail="?온?귐딆쁽 ??쑬?甕곕뜇?뉐첎? ??쇱젟??? ??녿릭??щ빍??")
-    if not secrets.compare_digest(str(password or ""), configured):
-        raise HTTPException(status_code=401, detail="??쑬?甕곕뜇?뉐첎? ??깊뒄??? ??녿뮸??덈뼄.")
-
+        raise HTTPException(status_code=503, detail="관리자 비밀번호가 설정되지 않았습니다. 운영 설정을 확인해 주세요.")
+    if not secrets.compare_digest(str(password or "").encode("utf-8"), configured.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="관리자 비밀번호가 일치하지 않습니다. 일반 회원 로그인 비밀번호와는 별도입니다.")
 
 def _safe_int(value: Any, default: int = 0) -> int:
     try:
@@ -2219,7 +2218,7 @@ def _collect_popup_admin_usage_rows() -> tuple[str, list[dict[str, Any]]]:
 
         plan_code_raw = str(payload.get("plan_code") or "").strip()
         if plan_code_raw:
-            row["plan_code"] = _normalize_plan_code(plan_code_raw, fallback=DEFAULT_PLAN_CODE)
+            row["plan_code"] = _effective_plan_code(payload)
 
         subscription_status = str(payload.get("subscription_status") or "").strip().lower()
         if subscription_status:
