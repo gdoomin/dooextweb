@@ -30,14 +30,12 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  let user = null;
+  let user = false;
   try {
-    const {
-      data: { user: currentUser },
-    } = await supabase.auth.getUser();
-    user = currentUser;
+    const { data, error } = await supabase.auth.getClaims();
+    user = !error && Boolean(data?.claims?.sub);
   } catch {
-    user = null;
+    user = false;
   }
 
   const { pathname } = request.nextUrl;

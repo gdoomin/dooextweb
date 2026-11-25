@@ -1091,12 +1091,13 @@ export function HomeScreen({
   const isViewerBusy = isLoading || Boolean(historyOpeningId) || Boolean(historyAppendingId) || historyDeletingAll;
   const canOpenViewer = Boolean(response?.job_id) && !isViewerBusy;
   const showLoadingBadge = statusTone === "loading" && (isViewerBusy || LOADING_STATUS_KEYWORDS.test(statusMessage));
+  const billingReady = Boolean(accessToken && billingStatus?.user_id === userId && !billingLoading);
   const canDownloadText = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.text_download);
   const canDownloadExcel = !billingStatus?.billing_enabled || Boolean(billingStatus.features?.excel_download);
-  const canUseViewerStateSync = isAuthenticated && (billingStatus?.billing_enabled ? Boolean(billingStatus?.features?.viewer_state) : true);
+  const canUseViewerStateSync = billingReady && isAuthenticated && (billingStatus?.billing_enabled ? Boolean(billingStatus?.features?.viewer_state) : true);
   const shouldShowPricing =
-    Boolean(billingStatus?.billing_enabled) &&
-    isAuthenticated &&
+    billingReady && Boolean(billingStatus?.billing_enabled) &&
+    isAuthenticated && !billingStatus?.legacy_full_access && billingStatus?.plan_code !== "legacy" &&
     Boolean(billingStatus?.is_new_pricing_user);
   const selectedBookmark = useMemo(
     () => bookmarks.find((item) => item.id === selectedBookmarkId) || null,
@@ -1137,14 +1138,9 @@ export function HomeScreen({
     }
 
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const resolvedId = user?.id || "";
-      const resolvedEmail = user?.email || "";
+      const { data: { session } } = await supabase.auth.getSession();
+      const resolvedId = session?.user.id || "";
+      const resolvedEmail = session?.user.email || "";
       const resolvedToken = session?.access_token || "";
 
       if (resolvedId !== userId) {
@@ -1183,17 +1179,10 @@ export function HomeScreen({
         return;
       }
 
-      supabase.auth.getUser().then(({ data }) => {
-        if (!mounted) {
-          return;
-        }
-        setUserId(data.user?.id || "");
-        setUserEmail(data.user?.email || "");
-      });
       supabase.auth.getSession().then(({ data }) => {
-        if (!mounted) {
-          return;
-        }
+        if (!mounted) return;
+        setUserId(data.session?.user.id || "");
+        setUserEmail(data.session?.user.email || "");
         setAccessToken(data.session?.access_token || "");
       });
 
@@ -1245,8 +1234,9 @@ export function HomeScreen({
     let cancelled = false;
 
     async function run() {
-      if (!userId) {
+      if (!userId || !accessToken) {
         setBillingStatus(null);
+        setBillingLoading(false);
         return;
       }
 
@@ -1279,7 +1269,7 @@ export function HomeScreen({
     let cancelled = false;
 
     async function run() {
-      if (!userId) {
+      if (!userId || !accessToken) {
         setHistoryItems([]);
         setHistoryError("");
         return;
@@ -1319,7 +1309,7 @@ export function HomeScreen({
     let cancelled = false;
 
     async function run() {
-      if (!userId) {
+      if (!userId || !accessToken) {
         setBookmarks([]);
         setBookmarkMaxItems(20);
         setBookmarkLoading(false);
@@ -1549,9 +1539,12 @@ export function HomeScreen({
     if (!identity.id) {
       return;
     }
-    const [historyResult, billingResult, bookmarkResult] = await Promise.allSettled([
+    const [historyResult, , bookmarkResult] = await Promise.allSettled([
       fetchUserHistory(identity.id, identity.email, identity.token),
-      fetchBillingStatus(identity.id, identity.email, identity.token),
+      fetchBillingStatus(identity.id, identity.email, identity.token).then((status) => {
+        setBillingStatus(status);
+        return status;
+      }),
       fetchUserBookmark(identity.id, identity.email, identity.token),
     ]);
 
@@ -1560,10 +1553,6 @@ export function HomeScreen({
       setHistoryError("");
     } else {
       setHistoryError(describeUnknownError(historyResult.reason, "히스토리를 불러오지 못했습니다."));
-    }
-
-    if (billingResult.status === "fulfilled") {
-      setBillingStatus(billingResult.value);
     }
 
     if (bookmarkResult.status === "fulfilled") {
@@ -2109,6 +2098,11 @@ export function HomeScreen({
   }
 
   function openViewer() {
+    if (isAuthenticated && !billingReady) {
+      setStatusTone("loading");
+      setStatusMessage("회원 혜택을 확인하고 있습니다. 잠시 후 다시 눌러 주세요.");
+      return;
+    }
     if (isViewerBusy) {
       setStatusTone("loading");
       setStatusMessage("파일을 불러오는 중입니다. 완료 후 도식화 보기를 눌러 주세요.");
@@ -2591,11 +2585,13 @@ export function HomeScreen({
                 <div className="doo-billing-card">
                   <div className="doo-billing-head">
                     <button type="button" className="doo-billing-status-button" disabled>
-                      구독 상태 {billingLoading ? "확인 중..." : (billingStatus?.plan_code || "free").toUpperCase()}
+                      구독 상태 {!billingReady ? "확인 중..." : billingStatus?.plan_code.toUpperCase()}
                     </button>
                   </div>
 
-                  {billingStatus?.billing_enabled ? (
+                  {!billingReady ? (
+                    <p className="doo-billing-help">회원 혜택을 확인하고 있습니다.</p>
+                  ) : billingStatus?.billing_enabled ? (
                     <>
                       <p className="doo-billing-meta">
                         월 변환: {billingStatus.monthly_kml_used}
