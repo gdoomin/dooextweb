@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { type FormEvent, useEffect, useMemo, useState } from "react";
+import { type FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
-import { API_BASE_URL } from "@/lib/convert";
+import { cleanRecoveryUrl, getRecoveryLinkError, initializePasswordRecovery, EXPIRED_RECOVERY_MESSAGE } from "@/lib/password-recovery";
 import { createClient as createSupabaseClient } from "@/lib/supabase/client";
 
 type ResetPasswordFormProps = {
@@ -13,7 +13,7 @@ type ResetPasswordFormProps = {
 };
 
 function normalizeNextPath(nextPath: string) {
-  return nextPath.startsWith("/") ? nextPath : "/";
+  return nextPath.startsWith("/") && !nextPath.startsWith("//") && !nextPath.includes("\\") ? nextPath : "/";
 }
 
 export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPasswordFormProps) {
@@ -35,104 +35,53 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
     [safeNextPath],
   );
 
+  const recoveryInitialization = useRef<Promise<boolean> | null>(null);
+  const recoveryUrl = useRef<URL | null>(null);
+
   useEffect(() => {
     let isMounted = true;
+    const currentUrl = recoveryUrl.current ??= new URL(window.location.href);
+    const linkError = getRecoveryLinkError(currentUrl);
+    if (linkError) {
+      setCanUpdatePassword(false);
+      setTone("error");
+      setMessage(linkError);
+      setIsInitializing(false);
+      window.history.replaceState({}, "", cleanRecoveryUrl(currentUrl));
+      return;
+    }
     if (!authAvailable) {
       setIsInitializing(false);
       return;
     }
-
-    const supabaseClient = createSupabaseClient();
-    if (!supabaseClient) {
-      setTone("error");
-      setMessage("Supabase 인증 설정이 필요합니다.");
+    const supabase = createSupabaseClient();
+    if (!supabase) {
       setIsInitializing(false);
       return;
     }
-    const supabase = supabaseClient;
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!isMounted) {
-        return;
-      }
-
-      if ((event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") && session?.user) {
-        setCanUpdatePassword(true);
+    // React Strict Mode re-runs effects; retain the one-time verification.
+    recoveryInitialization.current ??= initializePasswordRecovery(supabase, currentUrl);
+    void recoveryInitialization.current.then((ready) => {
+      if (!isMounted) return;
+      setCanUpdatePassword(ready);
+      if (ready) {
         setTone("success");
         setMessage("새 비밀번호를 입력해 저장해 주세요.");
       }
+    }).catch((caught: unknown) => {
+      if (!isMounted) return;
+      setCanUpdatePassword(false);
+      setTone("error");
+      const error = caught as { code?: string; message?: string };
+      setMessage(error?.code === "otp_expired" ? EXPIRED_RECOVERY_MESSAGE : error?.message || "비밀번호 재설정 준비에 실패했습니다. 메일을 다시 요청해 주세요.");
+    }).finally(() => {
+      if (!isMounted) return;
+      window.history.replaceState({}, "", cleanRecoveryUrl(currentUrl));
+      setIsInitializing(false);
     });
 
-    async function initializeRecoverySession() {
-      try {
-        const currentUrl = new URL(window.location.href);
-        const code = currentUrl.searchParams.get("code");
-        const tokenHash = currentUrl.searchParams.get("token_hash");
-        const type = currentUrl.searchParams.get("type");
-
-        if (code) {
-          const { error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) {
-            throw error;
-          }
-        } else if (type === "recovery" && tokenHash) {
-          const { error } = await supabase.auth.verifyOtp({
-            type: "recovery",
-            token_hash: tokenHash,
-          });
-          if (error) {
-            throw error;
-          }
-        }
-
-        if (code || tokenHash || type) {
-          currentUrl.searchParams.delete("code");
-          currentUrl.searchParams.delete("token_hash");
-          currentUrl.searchParams.delete("type");
-          window.history.replaceState({}, "", `${currentUrl.pathname}${currentUrl.search}`);
-        }
-
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-        if (sessionError) {
-          throw sessionError;
-        }
-
-        if (!isMounted) {
-          return;
-        }
-
-        if (session?.user) {
-          setCanUpdatePassword(true);
-          setTone("success");
-          setMessage("새 비밀번호를 입력해 저장해 주세요.");
-        } else {
-          setCanUpdatePassword(false);
-        }
-      } catch (caught) {
-        if (!isMounted) {
-          return;
-        }
-
-        setTone("error");
-        setMessage(caught instanceof Error ? caught.message : "비밀번호 재설정 준비에 실패했습니다.");
-      } finally {
-        if (isMounted) {
-          setIsInitializing(false);
-        }
-      }
-    }
-
-    void initializeRecoverySession();
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => { isMounted = false; };
   }, [authAvailable]);
 
   async function handleSendResetEmail(event: FormEvent<HTMLFormElement>) {
@@ -142,27 +91,17 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
     setMessage("비밀번호 재설정 메일을 보내는 중입니다.");
 
     try {
-      const redirectTo =
-        typeof window !== "undefined"
-          ? `${window.location.origin}/reset-password?next=${encodeURIComponent(safeNextPath)}`
-          : undefined;
-      const response = await fetch(`${API_BASE_URL}/api/auth/password-reset/request`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          redirect_to: redirectTo,
-        }),
+      const supabase = createSupabaseClient();
+      if (!supabase) throw new Error("현재 비밀번호 재설정을 사용할 수 없습니다.");
+      // Use the browser SDK so the PKCE verifier stays in this browser.
+      // Keep this URL exact so Supabase's redirect allowlist can match it.
+      const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
-      const payload = (await response.json()) as { detail?: string };
-      if (!response.ok) {
-        throw new Error(payload.detail || "비밀번호 재설정 메일 발송에 실패했습니다.");
-      }
+      if (error) throw error;
 
       setTone("success");
-      setMessage("재설정 메일을 보냈습니다. 받은 링크를 열어 새 비밀번호를 설정해 주세요.");
+      setMessage("재설정 메일을 보냈습니다. 이 브라우저에서 가장 최근 메일의 링크를 열어 새 비밀번호를 설정해 주세요.");
     } catch (caught) {
       setTone("error");
       setMessage(caught instanceof Error ? caught.message : "비밀번호 재설정 메일 발송에 실패했습니다.");
@@ -215,7 +154,7 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
     return (
       <div className="auth-form">
         <div className="auth-message auth-message-error">
-          Supabase 인증을 사용하려면 `frontend/.env.local`에 실제 URL과 anon key를 입력해 주세요.
+          {tone === "error" ? message : "현재 비밀번호 재설정을 사용할 수 없습니다. 잠시 후 다시 시도해 주세요."}
         </div>
         <div className="auth-link-row">
           <Link className="auth-link" href={loginHref}>
@@ -274,7 +213,7 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
         <p className="auth-helper">메일에서 받은 재설정 링크를 열면 새 비밀번호 입력 칸이 여기에 표시됩니다.</p>
       )}
 
-      <div className={`auth-message auth-message-${tone}`}>{message}</div>
+      <div role="status" aria-live="polite" className={`auth-message auth-message-${tone}`}>{message}</div>
 
       <div className="auth-link-row">
         <Link className="auth-link" href={loginHref}>

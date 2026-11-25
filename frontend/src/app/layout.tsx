@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Noto_Sans_KR, Syne } from "next/font/google";
 import Script from "next/script";
+import { AuthRecoveryRedirect } from "@/components/AuthRecoveryRedirect";
 import "leaflet/dist/leaflet.css";
 import "./globals.css";
 
@@ -48,6 +49,7 @@ export default function RootLayout({
           crossOrigin="anonymous"
           strategy="afterInteractive"
         />
+        <AuthRecoveryRedirect />
         {children}
       </body>
     </html>

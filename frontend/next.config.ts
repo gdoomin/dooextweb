@@ -21,6 +21,9 @@ const htmlNoStoreHeader = {
 };
 
 const nextConfig: NextConfig = {
+  turbopack: {
+    root: fs.realpathSync.native(process.cwd()),
+  },
   env: {
     NEXT_PUBLIC_APP_VERSION: appVersion,
   },
