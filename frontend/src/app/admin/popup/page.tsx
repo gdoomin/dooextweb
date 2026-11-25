@@ -38,6 +38,8 @@ type PromoCodeRow = {
 
 function readErrorMessage(error: unknown, fallback: string): string {
   if (error instanceof Error) {
+    if (error.name === "TimeoutError" || error.name === "AbortError") return "서버 응답이 지연되고 있습니다. 잠시 후 다시 시도해 주세요.";
+    if (error instanceof TypeError) return "관리 서버에 연결할 수 없습니다. 네트워크 연결을 확인해 주세요.";
     const text = (error.message || "").trim();
     return text || fallback;
   }
@@ -183,6 +185,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/popup-notice/usage`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: nextPassword }),
       });
@@ -229,6 +232,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes/list`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: nextPassword }),
       });
@@ -272,6 +276,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/popup-notice/verify`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password }),
       });
@@ -287,8 +292,7 @@ export default function PopupAdminPage() {
       setUpdatedAt(typeof notice.updated_at === "string" ? notice.updated_at : "");
       setStatus("비밀번호 확인 완료. 팝업 문구를 수정할 수 있습니다.");
       setStatusTone("success");
-      await loadUsage(password);
-      await loadPromoCodes(password);
+      await Promise.all([loadUsage(password), loadPromoCodes(password)]);
     } catch (error) {
       setStatus(readErrorMessage(error, "비밀번호 확인에 실패했습니다."));
       setStatusTone("error");
@@ -306,6 +310,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           password,
@@ -360,6 +365,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/promo-codes/toggle`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password, code, enabled: nextEnabled }),
       });
@@ -405,6 +411,7 @@ export default function PopupAdminPage() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/admin/popup-notice`, {
         method: "POST",
+        signal: AbortSignal.timeout(15000),
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password, message, enabled }),
       });
@@ -430,12 +437,12 @@ export default function PopupAdminPage() {
   return (
     <main className="popup-admin-shell">
       <section className="popup-admin-card">
-        <h1>팝업 문구 관리자</h1>
-        <p>이 페이지에서 메인 화면 공지 팝업 문구를 수정할 수 있습니다.</p>
+        <h1>접속 현황 · 팝업 관리자</h1>
+        <p>회원의 최근 접속과 사용량을 확인하고 메인 화면 공지 팝업을 관리합니다.</p>
 
         {!verified ? (
           <form className="popup-admin-form" onSubmit={verifyPassword}>
-            <label htmlFor="popup-admin-password">비밀번호</label>
+            <label htmlFor="popup-admin-password">관리자 비밀번호</label>
             <input
               id="popup-admin-password"
               type="password"
@@ -445,6 +452,7 @@ export default function PopupAdminPage() {
               autoComplete="current-password"
               required
             />
+            <p>일반 회원 로그인과 별도의 관리자 비밀번호를 입력해 주세요.</p>
             <button type="submit" disabled={isLoading}>
               {isLoading ? "확인 중..." : "입장"}
             </button>
