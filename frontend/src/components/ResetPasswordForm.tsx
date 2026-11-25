@@ -167,23 +167,25 @@ export function ResetPasswordForm({ nextPath, authAvailable = true }: ResetPassw
 
   return (
     <div className="auth-form">
-      <form className="auth-form" onSubmit={handleSendResetEmail}>
-        <label className="auth-field">
-          <span>이메일</span>
-          <input
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </label>
-        <button type="submit" className="auth-submit" disabled={isInitializing || isSending}>
-          {isSending ? "메일 발송 중.." : "재설정 메일 보내기"}
-        </button>
-      </form>
+      {!isInitializing && !canUpdatePassword ? (
+        <form className="auth-form" onSubmit={handleSendResetEmail}>
+          <label className="auth-field">
+            <span>이메일</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+            />
+          </label>
+          <button type="submit" className="auth-submit" disabled={isInitializing || isSending}>
+            {isSending ? "메일 발송 중.." : "재설정 메일 보내기"}
+          </button>
+        </form>
+      ) : null}
 
       {canUpdatePassword ? (
-        <form className="auth-form auth-section" onSubmit={handleUpdatePassword}>
+        <form className="auth-form" onSubmit={handleUpdatePassword}>
           <p className="auth-helper">재설정 링크로 접속되었으니 새 비밀번호를 바로 저장할 수 있습니다.</p>
           <label className="auth-field">
             <span>새 비밀번호</span>
